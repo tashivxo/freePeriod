@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --color-coral: #FF8BB0;
+  --color-coral-light: #FFB8D0;
+  --color-coral-dark: #E5709A;
+  --color-mustard: #F7C34B;
+  --color-mustard-light: #FADB8A;
+  --color-mustard-dark: #D4A52E;
+  --color-background: #FFFBF7;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #1A1A2E;
+  --color-text-secondary: #6B7280;
+  --color-error: #EF4444;
+  --color-success: #10B981;
+
+  --font-display: "Nunito", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-body antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-coral;
+  }
+}
