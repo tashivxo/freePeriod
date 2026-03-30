@@ -13,9 +13,10 @@ jest.mock('@/lib/supabase/client', () => ({
 
 // Mock next/navigation
 const mockPush = jest.fn();
+const mockRefresh = jest.fn();
 const mockSearchParams = new URLSearchParams();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
   useSearchParams: () => mockSearchParams,
 }));
 

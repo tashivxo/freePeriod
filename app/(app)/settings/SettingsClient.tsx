@@ -3,19 +3,31 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { SUBJECTS } from '@/lib/utils/subjects';
 import type { User } from '@/types/database';
 
 export function SettingsClient({ user }: { user: User }) {
-  const [subject, setSubject] = useState(user.default_subject ?? '');
+  const subjectsPreset = SUBJECTS as readonly string[];
+  const initialSubjectIsPreset = user.default_subject ? subjectsPreset.includes(user.default_subject) : false;
+  const [subjectSelect, setSubjectSelect] = useState<string>(
+    initialSubjectIsPreset ? (user.default_subject ?? '') : (user.default_subject ? 'Other' : '')
+  );
+  const [customSubject, setCustomSubject] = useState<string>(
+    !initialSubjectIsPreset && user.default_subject ? user.default_subject : ''
+  );
+  const subject = subjectSelect === 'Other' ? customSubject : subjectSelect;
   const [grade, setGrade] = useState(user.default_grade ?? '');
   const [curriculum, setCurriculum] = useState(user.default_curriculum ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSaveDefaults = useCallback(async () => {
     setSaving(true);
+    setSaved(false);
+    setSaveError(null);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from('users')
       .update({
         default_subject: subject || null,
@@ -24,7 +36,11 @@ export function SettingsClient({ user }: { user: User }) {
       })
       .eq('id', user.id);
     setSaving(false);
-    setSaved(true);
+    if (error) {
+      setSaveError('Failed to save defaults. Please try again.');
+    } else {
+      setSaved(true);
+    }
   }, [subject, grade, curriculum, user.id]);
 
   useEffect(() => {
@@ -69,17 +85,30 @@ export function SettingsClient({ user }: { user: User }) {
         </h2>
         <div className="rounded-xl border border-gray-100 bg-surface p-5 space-y-4">
           <div>
-            <label htmlFor="subject" className="block text-xs font-body text-text-secondary mb-1">
+            <label htmlFor="subject-select" className="block text-xs font-body text-text-secondary mb-1">
               Default Subject
             </label>
-            <input
-              id="subject"
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Mathematics"
-              className="w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
-            />
+            <select
+              id="subject-select"
+              value={subjectSelect}
+              onChange={(e) => setSubjectSelect(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+            >
+              <option value="">Select subject</option>
+              {SUBJECTS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              <option value="Other">Other</option>
+            </select>
+            {subjectSelect === 'Other' && (
+              <input
+                type="text"
+                value={customSubject}
+                onChange={(e) => setCustomSubject(e.target.value)}
+                placeholder="Enter subject"
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+              />
+            )}
           </div>
           <div>
             <label htmlFor="grade" className="block text-xs font-body text-text-secondary mb-1">
@@ -108,11 +137,14 @@ export function SettingsClient({ user }: { user: User }) {
             />
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="primary" size="md" isLoading={saving} onClick={handleSaveDefaults}>
+            <Button type="button" variant="primary" size="md" isLoading={saving} onClick={handleSaveDefaults}>
               Save Defaults
             </Button>
             {saved && (
               <span className="text-sm font-body text-green-600">Saved!</span>
+            )}
+            {saveError && (
+              <span className="text-sm font-body text-error">{saveError}</span>
             )}
           </div>
         </div>

@@ -43,6 +43,7 @@ export function SignInPage() {
       return;
     }
 
+    router.refresh();
     router.push(searchParams.get('next') ?? '/dashboard');
   }
 

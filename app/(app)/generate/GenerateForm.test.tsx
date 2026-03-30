@@ -7,6 +7,10 @@ const mockUpload = jest.fn().mockResolvedValue({
   error: null,
 });
 const mockRemove = jest.fn().mockResolvedValue({ data: null, error: null });
+const mockSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-123' }, error: null });
+const mockSelectChain = jest.fn(() => ({ single: mockSingle }));
+const mockDbInsert = jest.fn(() => ({ select: mockSelectChain }));
+const mockFromDb = jest.fn(() => ({ insert: mockDbInsert }));
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
@@ -16,6 +20,7 @@ jest.mock('@/lib/supabase/client', () => ({
         error: null,
       }),
     },
+    from: mockFromDb,
     storage: {
       from: jest.fn(() => ({
         upload: mockUpload,
@@ -38,7 +43,7 @@ const GRADES = [
   'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
 ];
 
-const defaults = { subject: 'Maths', grade: '9', curriculum: 'CAPS' };
+const defaults = { subject: 'Mathematics', grade: '9', curriculum: 'CAPS' };
 
 // --- Tests ---
 
@@ -47,6 +52,8 @@ describe('GenerateForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock fetch used by uploadFile to call /api/parse-document
+    (global as { fetch: unknown }).fetch = jest.fn().mockResolvedValue({ ok: true });
   });
 
   // ---- Rendering ----
@@ -62,7 +69,7 @@ describe('GenerateForm', () => {
 
   it('pre-fills subject from defaults', () => {
     render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
-    expect(screen.getByLabelText('Subject')).toHaveValue('Maths');
+    expect(screen.getByLabelText('Subject')).toHaveValue('Mathematics');
   });
 
   it('pre-fills grade from defaults', () => {
@@ -171,7 +178,7 @@ describe('GenerateForm', () => {
 
   it('enables Generate button when subject is filled', async () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Subject'), 'Maths');
+    await user.selectOptions(screen.getByLabelText('Subject'), 'Science');
     expect(screen.getByRole('button', { name: /generate/i })).toBeEnabled();
   });
 
@@ -184,7 +191,7 @@ describe('GenerateForm', () => {
 
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        subject: 'Maths',
+        subject: 'Mathematics',
         grade: '9',
         curriculum: 'CAPS',
         duration: 60,

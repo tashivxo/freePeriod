@@ -176,15 +176,25 @@ export async function POST(request: NextRequest) {
           usage: { inputTokens, outputTokens },
         });
       } catch (err: unknown) {
-        const error = err as { status?: number; error?: { type?: string }; message?: string };
+        // Anthropic SDK wraps errors as: { status, error: { type: 'error', error: { type, message } } }
+        const sdkErr = err as {
+          status?: number;
+          error?: { type?: string; error?: { type?: string; message?: string } };
+          message?: string;
+        };
+        const errType = sdkErr.error?.error?.type ?? sdkErr.error?.type;
+        const errMessage = sdkErr.error?.error?.message ?? sdkErr.message ?? '';
 
-        if (error.error?.type === 'overloaded_error') {
+        if (errType === 'overloaded_error') {
           send({ type: 'error', message: 'Claude is currently overloaded. Please try again in a moment.' });
-        } else if (error.status === 429) {
+        } else if (sdkErr.status === 429) {
           send({ type: 'error', message: 'Rate limit reached. Please wait a moment and try again.' });
-        } else if (error.error?.type === 'invalid_request_error') {
+        } else if (errMessage.toLowerCase().includes('credit balance') || errMessage.toLowerCase().includes('insufficient')) {
+          send({ type: 'error', message: 'Anthropic API credits are exhausted. Please add credits at console.anthropic.com.' });
+        } else if (errType === 'invalid_request_error') {
           send({ type: 'error', message: 'Invalid request to Claude API. Please try again.' });
         } else {
+          console.error('[generate] Unexpected Claude error:', JSON.stringify(err));
           send({ type: 'error', message: 'An unexpected error occurred during generation.' });
         }
       } finally {

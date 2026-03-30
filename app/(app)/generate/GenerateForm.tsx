@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, type ChangeEvent } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { SUBJECTS } from '@/lib/utils/subjects';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
@@ -53,7 +54,15 @@ function getTypeBadge(fileName: string): string {
 }
 
 export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
-  const [subject, setSubject] = useState(defaults?.subject ?? '');
+  const subjectsPreset = SUBJECTS as readonly string[];
+  const defaultIsPreset = defaults?.subject ? subjectsPreset.includes(defaults.subject) : false;
+  const [subjectSelect, setSubjectSelect] = useState<string>(
+    defaultIsPreset ? (defaults?.subject ?? '') : (defaults?.subject ? 'Other' : '')
+  );
+  const [customSubject, setCustomSubject] = useState<string>(
+    !defaultIsPreset && defaults?.subject ? defaults.subject : ''
+  );
+  const subject = subjectSelect === 'Other' ? customSubject : subjectSelect;
   const [grade, setGrade] = useState(defaults?.grade ?? '');
   const [curriculum, setCurriculum] = useState(defaults?.curriculum ?? '');
   const [durationSelect, setDurationSelect] = useState('60');
@@ -62,6 +71,8 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
 
   const [curriculumDoc, setCurriculumDoc] = useState<UploadedFile | null>(null);
   const [template, setTemplate] = useState<UploadedFile | null>(null);
+  const [curriculumDocLoading, setCurriculumDocLoading] = useState(false);
+  const [templateLoading, setTemplateLoading] = useState(false);
 
   const curriculumInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +82,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
     ? parseInt(customDuration, 10) || 0
     : parseInt(durationSelect, 10);
 
-  const canSubmit = subject.trim().length > 0;
+  const canSubmit = subject.trim().length > 0 && !curriculumDocLoading && !templateLoading;
 
   const uploadFile = useCallback(
     async (file: File, type: 'curriculum' | 'template') => {
@@ -91,6 +102,29 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
 
       if (error) return null;
 
+      // Insert upload record into DB so the generate API can look it up
+      const { data: uploadRecord } = await supabase
+        .from('uploads')
+        .insert({
+          user_id: user.id,
+          lesson_id: null,
+          type: (type === 'curriculum' ? 'curriculum_doc' : 'template') as 'curriculum_doc' | 'template',
+          file_name: file.name,
+          storage_path: storagePath,
+          parsed_content: null,
+        })
+        .select('id')
+        .single();
+
+      // Await parsing so parsed_content is ready before the user hits Generate
+      if (uploadRecord?.id) {
+        await fetch('/api/parse-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storagePath, uploadId: uploadRecord.id }),
+        });
+      }
+
       return {
         name: file.name,
         typeBadge: getTypeBadge(file.name),
@@ -104,7 +138,9 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      setCurriculumDocLoading(true);
       const uploaded = await uploadFile(file, 'curriculum');
+      setCurriculumDocLoading(false);
       if (uploaded) setCurriculumDoc(uploaded);
     },
     [uploadFile],
@@ -114,7 +150,9 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      setTemplateLoading(true);
       const uploaded = await uploadFile(file, 'template');
+      setTemplateLoading(false);
       if (uploaded) setTemplate(uploaded);
     },
     [uploadFile],
@@ -175,11 +213,35 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Subject */}
-        <Input
-          label="Subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-        />
+        <div>
+          <label
+            htmlFor="subject-select"
+            className="mb-1 block text-sm font-body font-medium text-text-secondary"
+          >
+            Subject
+          </label>
+          <select
+            id="subject-select"
+            value={subjectSelect}
+            onChange={(e) => setSubjectSelect(e.target.value)}
+            className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+          >
+            <option value="">Select subject</option>
+            {SUBJECTS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+            <option value="Other">Other</option>
+          </select>
+          {subjectSelect === 'Other' && (
+            <div className="mt-2">
+              <Input
+                label="Enter subject"
+                value={customSubject}
+                onChange={(e) => setCustomSubject(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Grade */}
         <div>
@@ -281,6 +343,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
             inputRef={curriculumInputRef}
             onChange={handleCurriculumDocChange}
             onRemove={() => removeFile('curriculum')}
+            isLoading={curriculumDocLoading}
           />
 
           <UploadZone
@@ -291,6 +354,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
             inputRef={templateInputRef}
             onChange={handleTemplateChange}
             onRemove={() => removeFile('template')}
+            isLoading={templateLoading}
           />
         </div>
 
@@ -317,6 +381,7 @@ function UploadZone({
   inputRef,
   onChange,
   onRemove,
+  isLoading = false,
 }: {
   title: string;
   accept: string;
@@ -325,6 +390,7 @@ function UploadZone({
   inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onRemove: () => void;
+  isLoading?: boolean;
 }) {
   return (
     <div className="rounded-xl border-2 border-dashed border-text-secondary/30 p-4 text-center transition-colors hover:border-coral/50">
@@ -338,22 +404,32 @@ function UploadZone({
           .join(', ')}
       </p>
 
-      <label className="cursor-pointer">
-        <span className="sr-only">{ariaLabel}</span>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          aria-label={ariaLabel}
-          onChange={onChange}
-          className="sr-only"
-        />
-        <span className="inline-block rounded-lg bg-coral/10 px-3 py-1.5 text-sm font-body font-medium text-coral transition-colors hover:bg-coral/20">
-          Browse files
-        </span>
-      </label>
+      {isLoading ? (
+        <div className="flex items-center justify-center gap-2 py-1">
+          <svg className="animate-spin h-4 w-4 text-coral" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sm font-body text-text-secondary">Processing…</span>
+        </div>
+      ) : (
+        <label className="cursor-pointer">
+          <span className="sr-only">{ariaLabel}</span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept={accept}
+            aria-label={ariaLabel}
+            onChange={onChange}
+            className="sr-only"
+          />
+          <span className="inline-block rounded-lg bg-coral/10 px-3 py-1.5 text-sm font-body font-medium text-coral transition-colors hover:bg-coral/20">
+            Browse files
+          </span>
+        </label>
+      )}
 
-      {file && (
+      {!isLoading && file && (
         <div className="mt-3 flex items-center justify-center gap-2">
           <span className="rounded bg-mustard/20 px-1.5 py-0.5 text-xs font-bold text-mustard">
             {file.typeBadge}

@@ -39,14 +39,22 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isAuthPage && pathname !== '/') {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
   }
 
   // Authenticated users should not see auth pages
   if (user && isAuthPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value);
+    });
+    return redirectResponse;
   }
 
   // Redirect authenticated users who haven't completed onboarding
@@ -60,7 +68,11 @@ export async function updateSession(request: NextRequest) {
     if (data && !data.onboarding_complete) {
       const url = request.nextUrl.clone();
       url.pathname = '/onboarding';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
     }
   }
 
