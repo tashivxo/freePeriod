@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, modelPreference } = body;
+  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, templatePath, modelPreference } = body;
 
   if (!subject || !grade || !duration) {
     return new Response(JSON.stringify({ error: 'subject, grade, and duration are required' }), {
@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
             content: lessonContent as LessonSection,
             model_used: model,
             token_count: totalTokens,
+            template_path: templatePath || null,
           })
           .select('id')
           .single();

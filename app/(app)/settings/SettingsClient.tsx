@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { SUBJECTS } from '@/lib/utils/subjects';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { User } from '@/types/database';
 
 export function SettingsClient({ user }: { user: User }) {
@@ -60,7 +61,8 @@ export function SettingsClient({ user }: { user: User }) {
         <h2 className="font-display text-xl font-semibold text-text-primary mb-4">
           Profile
         </h2>
-        <div className="rounded-xl border border-gray-100 bg-surface p-5 space-y-3">
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-5 space-y-3">
           <div>
             <label className="block text-xs font-body text-text-secondary mb-1">Name</label>
             <p className="font-body text-text-primary">{user.name}</p>
@@ -75,7 +77,8 @@ export function SettingsClient({ user }: { user: User }) {
               {user.plan}
             </span>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Teaching defaults */}
@@ -83,7 +86,8 @@ export function SettingsClient({ user }: { user: User }) {
         <h2 className="font-display text-xl font-semibold text-text-primary mb-4">
           Teaching Defaults
         </h2>
-        <div className="rounded-xl border border-gray-100 bg-surface p-5 space-y-4">
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-5 space-y-4">
           <div>
             <label htmlFor="subject-select" className="block text-xs font-body text-text-secondary mb-1">
               Default Subject
@@ -92,7 +96,7 @@ export function SettingsClient({ user }: { user: User }) {
               id="subject-select"
               value={subjectSelect}
               onChange={(e) => setSubjectSelect(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
             >
               <option value="">Select subject</option>
               {SUBJECTS.map((s) => (
@@ -106,7 +110,7 @@ export function SettingsClient({ user }: { user: User }) {
                 value={customSubject}
                 onChange={(e) => setCustomSubject(e.target.value)}
                 placeholder="Enter subject"
-                className="mt-2 w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+                className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
               />
             )}
           </div>
@@ -120,7 +124,7 @@ export function SettingsClient({ user }: { user: User }) {
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
               placeholder="e.g. Year 9"
-              className="w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
             />
           </div>
           <div>
@@ -133,11 +137,11 @@ export function SettingsClient({ user }: { user: User }) {
               value={curriculum}
               onChange={(e) => setCurriculum(e.target.value)}
               placeholder="e.g. UK National Curriculum"
-              className="w-full rounded-lg border border-gray-200 bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
             />
           </div>
           <div className="flex items-center gap-3">
-            <Button type="button" variant="primary" size="md" isLoading={saving} onClick={handleSaveDefaults}>
+            <Button type="button" isLoading={saving} onClick={handleSaveDefaults}>
               Save Defaults
             </Button>
             {saved && (
@@ -147,7 +151,8 @@ export function SettingsClient({ user }: { user: User }) {
               <span className="text-sm font-body text-error">{saveError}</span>
             )}
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Usage */}
@@ -155,12 +160,14 @@ export function SettingsClient({ user }: { user: User }) {
         <h2 className="font-display text-xl font-semibold text-text-primary mb-4">
           Usage
         </h2>
-        <div className="rounded-xl border border-gray-100 bg-surface p-5">
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-5">
           <p className="font-body text-text-primary">
             <span className="text-2xl font-display font-bold text-coral">{user.generation_count}</span>
             <span className="ml-2 text-text-secondary text-sm">lessons generated</span>
           </p>
-        </div>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );

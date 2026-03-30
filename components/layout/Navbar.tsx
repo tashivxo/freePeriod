@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, PenLine, Clock, Settings } from 'lucide-react';
+import { Logo } from '@/components/ui/Logo';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -15,10 +16,10 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-gray-100 bg-surface/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-40 border-b border-border/60 bg-surface/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/dashboard" className="font-display text-lg font-bold text-coral">
-          FreePeriod
+        <Link href="/dashboard" aria-label="FreePeriod home">
+          <Logo size="sm" />
         </Link>
 
         <ul className="flex items-center gap-1">
@@ -31,8 +32,8 @@ export function Navbar() {
                   aria-label={label}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-body transition-colors ${
                     active
-                      ? 'bg-coral/10 text-coral font-medium'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-gray-50'
+                      ? 'bg-coral/10 text-coral font-semibold'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
                   <Icon className="h-4 w-4" />

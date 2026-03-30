@@ -1,95 +1,267 @@
+'use client';
+
 import Link from 'next/link';
-import { PenLine, Download, Sparkles } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen } from 'lucide-react';
+import { animate, stagger } from 'animejs';
+import { Logo } from '@/components/ui/Logo';
+import { Card, CardContent } from '@/components/ui/card';
+import dynamic from 'next/dynamic';
+
+const MugAnimation = dynamic(
+  () => import('@/components/animations/MugAnimation').then((m) => m.MugAnimation),
+  { ssr: false }
+);
 
 const FEATURES = [
   {
     icon: PenLine,
     title: 'Structured Plans',
-    description: '12 sections covering objectives, activities, differentiation and assessment.',
+    description: '12 sections covering objectives, activities, differentiation and assessment — every time.',
+    color: 'bg-coral/10 text-coral',
   },
   {
     icon: Sparkles,
     title: 'AI-Powered',
-    description: 'Claude generates plans tailored to your subject, grade and curriculum.',
+    description: 'Claude generates plans tailored to your subject, year group and curriculum in seconds.',
+    color: 'bg-mustard/20 text-mustard-dark',
   },
   {
     icon: Download,
     title: 'Export Anywhere',
-    description: 'Download as DOCX or PDF. Edit inline before exporting.',
+    description: 'Download as DOCX or PDF. Fill your own template. Edit inline before exporting.',
+    color: 'bg-coral/10 text-coral',
   },
 ] as const;
 
+const PERKS = [
+  'No more Sunday planning marathons',
+  'Differentiation built in every time',
+  'Works with any subject or year group',
+];
+
 export default function HomePage() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    // Hero entrance
+    if (heroRef.current) {
+      const targets = heroRef.current.querySelectorAll('[data-animate]');
+      animate(targets, {
+        translateY: [20, 0],
+        opacity: [0, 1],
+        duration: 600,
+        delay: stagger(100),
+        easing: 'easeOutCubic',
+      });
+    }
+
+    // Features on scroll
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const cards = entry.target.querySelectorAll('[data-feature]');
+            animate(cards, {
+              translateY: [24, 0],
+              opacity: [0, 1],
+              duration: 500,
+              delay: stagger(120),
+              easing: 'easeOutCubic',
+            });
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    if (featuresRef.current) observer.observe(featuresRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4">
-        <span className="font-display text-lg font-bold text-coral">FreePeriod</span>
-        <div className="flex gap-3">
-          <Link
-            href="/sign-in"
-            className="rounded-lg px-4 py-2.5 text-sm font-body text-text-secondary hover:text-text-primary transition-colors"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="rounded-lg bg-coral px-4 py-2.5 text-sm font-body font-medium text-white hover:bg-coral/90 transition-colors"
-          >
-            Get started
-          </Link>
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <Logo size="sm" />
+          <nav className="flex items-center gap-2">
+            <Link
+              href="/sign-in"
+              className="rounded-lg px-4 py-2 text-sm font-body text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/sign-up"
+              className="rounded-xl bg-coral px-4 py-2 text-sm font-body font-semibold text-white hover:bg-coral-dark transition-colors"
+            >
+              Get started free
+            </Link>
+          </nav>
         </div>
       </header>
 
       <main>
-      <section className="mx-auto max-w-3xl px-6 pt-20 pb-16 text-center">
-        <h1 className="font-display text-5xl font-bold leading-tight text-text-primary sm:text-6xl">
-          Lesson plans in{' '}
-          <span className="text-coral">seconds</span>,{' '}
-          not hours
-        </h1>
-        <p className="mt-6 font-body text-lg text-text-secondary max-w-xl mx-auto">
-          Upload curriculum documents, describe what you need, and FreePeriod generates a
-          complete, structured lesson plan you can edit and export.
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link
-            href="/sign-up"
-            className="inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-medium text-white shadow-sm hover:bg-coral/90 transition-colors"
-          >
-            Start for free
-          </Link>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-gray-50 transition-colors"
-          >
-            Sign in
-          </Link>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="mx-auto max-w-4xl px-6 py-16">
-        <div className="grid gap-8 sm:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="rounded-xl border border-gray-100 bg-surface p-6 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-coral/10">
-                <Icon className="h-6 w-6 text-coral" />
+        {/* Hero */}
+        <section className="mx-auto max-w-5xl px-6 pt-20 pb-16">
+          <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
+            {/* Text */}
+            <div ref={heroRef} className="flex-1 text-center lg:text-left">
+              <div
+                data-animate
+                className="mb-4 inline-flex items-center gap-2 rounded-full bg-coral/10 px-4 py-1.5"
+                style={{ opacity: 0 }}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-coral" />
+                <span className="text-xs font-body font-semibold text-coral">Powered by Claude AI</span>
               </div>
-              <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
-              <p className="mt-2 font-body text-sm text-text-secondary">{description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Footer */}
+              <h1
+                data-animate
+                className="font-display text-5xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-6xl"
+                style={{ opacity: 0 }}
+              >
+                Lesson plans in{' '}
+                <span className="relative whitespace-nowrap text-coral">
+                  seconds
+                  <svg
+                    className="absolute -bottom-1 left-0 w-full"
+                    viewBox="0 0 200 8"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M2 6 Q50 2 100 5 Q150 8 198 3"
+                      stroke="#FF8BB0"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  </svg>
+                </span>
+                ,{' '}not hours
+              </h1>
+
+              <p
+                data-animate
+                className="mt-6 font-body text-lg text-text-secondary max-w-lg"
+                style={{ opacity: 0 }}
+              >
+                Upload your curriculum docs, describe what you need, and FreePeriod
+                generates a complete, structured lesson plan you can edit and export.
+              </p>
+
+              <ul data-animate className="mt-5 space-y-2" style={{ opacity: 0 }}>
+                {PERKS.map((perk) => (
+                  <li key={perk} className="flex items-center gap-2 justify-center lg:justify-start">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-coral" />
+                    <span className="text-sm font-body text-text-secondary">{perk}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div
+                data-animate
+                className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"
+                style={{ opacity: 0 }}
+              >
+                <Link
+                  href="/sign-up"
+                  className="inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+                >
+                  Start for free
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors"
+                >
+                  Sign in
+                </Link>
+              </div>
+
+              <div data-animate className="mt-6 flex items-center gap-4 justify-center lg:justify-start" style={{ opacity: 0 }}>
+                <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
+                  <Clock className="h-3.5 w-3.5" />
+                  Avg. 15 seconds to generate
+                </div>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Free to start
+                </div>
+              </div>
+            </div>
+
+            {/* Mug illustration */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <div className="relative flex h-48 w-48 items-center justify-center rounded-3xl bg-coral/10">
+                <MugAnimation />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section ref={featuresRef} className="mx-auto max-w-5xl px-6 py-16">
+          <div className="mb-10 text-center">
+            <h2 className="font-display text-3xl font-bold text-text-primary">
+              Everything teachers need
+            </h2>
+            <p className="mt-2 font-body text-text-secondary">Built with your real workflow in mind.</p>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, description, color }) => (
+              <Card
+                key={title}
+                data-feature
+                className="border-border/60 bg-surface shadow-sm"
+                style={{ opacity: 0 }}
+              >
+                <CardContent className="p-6">
+                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
+                  <p className="mt-2 font-body text-sm text-text-secondary leading-relaxed">{description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA banner */}
+        <section className="mx-auto max-w-5xl px-6 pb-20">
+          <div className="rounded-2xl bg-coral/10 border border-coral/20 px-8 py-10 text-center">
+            <h2 className="font-display text-3xl font-bold text-text-primary">
+              Ready to reclaim your evenings?
+            </h2>
+            <p className="mt-3 font-body text-text-secondary max-w-md mx-auto">
+              Join teachers who've stopped spending hours on planning and started spending that time on what matters.
+            </p>
+            <Link
+              href="/sign-up"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-coral px-8 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+            >
+              Get started for free
+            </Link>
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t border-gray-100 py-8 text-center">
-        <p className="font-body text-xs text-text-secondary">
-          &copy; {new Date().getFullYear()} FreePeriod. Built for teachers.
-        </p>
+      <footer className="border-t border-border py-8 text-center">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6">
+          <Logo size="sm" />
+          <p className="font-body text-xs text-text-secondary">
+            &copy; {new Date().getFullYear()} FreePeriod. Built for teachers.
+          </p>
+        </div>
       </footer>
     </div>
   );

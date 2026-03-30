@@ -217,7 +217,7 @@ function StepSubjects({
             className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
               subjects.includes(subject)
                 ? 'border-primary bg-primary text-white'
-                : 'border-gray-300 bg-white text-text-primary hover:border-primary'
+                : 'border-border bg-background text-text-primary hover:border-coral'
             }`}
           >
             {subject}
@@ -230,12 +230,12 @@ function StepSubjects({
         placeholder="Other subject..."
         value={customSubject}
         onChange={(e) => onCustomChange(e.target.value)}
-        className="mb-6 w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        className="mb-6 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
       />
 
       <Button
         onClick={onNext}
-        fullWidth
+        className="w-full"
         disabled={subjects.length === 0 && !customSubject.trim()}
       >
         Next
@@ -269,7 +269,7 @@ function StepGrade({
           id="grade-select"
           value={grade}
           onChange={(e) => onGradeChange(e.target.value)}
-          className="min-h-[44px] w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="min-h-[44px] w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
         >
           <option value="">Select a grade...</option>
           {GRADES.map((g) => (
@@ -281,10 +281,10 @@ function StepGrade({
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" fullWidth>
+        <Button onClick={onBack} variant="outline" className="w-full">
           Back
         </Button>
-        <Button onClick={onNext} fullWidth disabled={!grade}>
+        <Button onClick={onNext} className="w-full" disabled={!grade}>
           Next
         </Button>
       </div>
@@ -320,7 +320,7 @@ function StepCurriculum({
             className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
               curriculum === c
                 ? 'border-primary bg-primary text-white'
-                : 'border-gray-300 bg-white text-text-primary hover:border-primary'
+                : 'border-border bg-background text-text-primary hover:border-coral'
             }`}
           >
             {c}
@@ -338,17 +338,17 @@ function StepCurriculum({
           value={curriculum}
           onChange={(e) => onCurriculumChange(e.target.value)}
           placeholder="Or type your curriculum..."
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
         />
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" fullWidth>
+        <Button onClick={onBack} variant="outline" className="w-full">
           Back
         </Button>
         <Button
           onClick={onFinish}
-          fullWidth
+          className="w-full"
           isLoading={isSubmitting}
           disabled={!curriculum.trim()}
         >

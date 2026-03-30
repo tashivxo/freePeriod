@@ -1,14 +1,18 @@
 import type { Metadata } from 'next';
-import { Nunito, Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans, DM_Sans, Geist } from 'next/font/google';
 import './globals.css';
+import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-const nunito = Nunito({
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-display',
 });
 
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-body',
@@ -25,8 +29,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${nunito.variable} ${inter.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={cn(plusJakartaSans.variable, dmSans.variable, "font-sans", geist.variable)}>
+      <body><TooltipProvider>{children}</TooltipProvider></body>
     </html>
   );
 }
+

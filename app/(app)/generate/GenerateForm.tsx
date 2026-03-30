@@ -347,9 +347,9 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
           />
 
           <UploadZone
-            title="School Template"
+            title="Lesson Plan Template"
             accept={TEMPLATE_ACCEPT}
-            ariaLabel="Upload school template"
+            ariaLabel="Upload lesson plan template"
             file={template}
             inputRef={templateInputRef}
             onChange={handleTemplateChange}
@@ -361,7 +361,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
         {/* Submit */}
         <Button
           type="submit"
-          fullWidth
+          className="w-full"
           disabled={!canSubmit}
         >
           Generate

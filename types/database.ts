@@ -44,6 +44,7 @@ export type LessonPlan = {
   content: LessonSection;
   model_used: string;
   token_count: number;
+  template_path: string | null;
   created_at: string;
   updated_at: string;
 }

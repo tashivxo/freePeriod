@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Plus, BookOpen, Clock } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 function DashboardSkeleton() {
   return (
@@ -42,7 +44,8 @@ async function DashboardContent() {
         Hi, {firstName}!
       </h1>
       <p className="font-body text-text-secondary mb-6">
-        {profile?.generation_count ?? 0} lesson{(profile?.generation_count ?? 0) !== 1 ? 's' : ''} generated
+        <Badge variant="secondary" className="mr-2">{profile?.generation_count ?? 0}</Badge>
+        lesson{(profile?.generation_count ?? 0) !== 1 ? 's' : ''} generated
       </p>
 
       {/* Quick generate */}
@@ -69,11 +72,12 @@ async function DashboardContent() {
                   : null;
 
               return (
-                <Link
-                  key={lesson.id}
-                  href={`/lesson/${lesson.id}`}
-                  className="group block rounded-xl border border-gray-100 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
-                >
+              <Link
+                key={lesson.id}
+                href={`/lesson/${lesson.id}`}
+              >
+                <Card className="group border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
+                  <CardContent className="p-5">
                   <h3 className="font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2">
                     {lesson.title}
                   </h3>
@@ -96,7 +100,9 @@ async function DashboardContent() {
                   <p className="mt-3 text-[10px] font-body text-text-secondary/60">
                     {new Date(lesson.created_at).toLocaleDateString()}
                   </p>
-                </Link>
+                  </CardContent>
+                </Card>
+              </Link>
               );
             })}
           </div>
@@ -113,13 +119,13 @@ async function DashboardContent() {
           )}
         </>
       ) : (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-surface p-12 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
           <p className="font-body text-text-secondary mb-4">
             No lessons yet. Create your first one!
           </p>
           <Link
             href="/generate"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-surface px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2"
           >
             <Plus className="h-4 w-4" />
             Generate Lesson

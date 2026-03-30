@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Search, BookOpen, Clock, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/Input';
+import { Card, CardContent } from '@/components/ui/card';
 import type { LessonPlan } from '@/types/database';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
@@ -67,7 +68,7 @@ export function HistoryClient() {
             aria-label="Search lessons by title"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-surface py-2 pl-9 pr-3 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
           />
         </div>
         {subjects.length > 1 && (
@@ -75,7 +76,7 @@ export function HistoryClient() {
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
             aria-label="Filter by subject"
-            className="rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+            className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
           >
             <option value="">All subjects</option>
             {subjects.map((s) => (
@@ -99,10 +100,11 @@ export function HistoryClient() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lessons.map((lesson) => (
-            <div
+            <Card
               key={lesson.id}
-              className="group relative rounded-xl border border-gray-100 bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
+              className="group relative border-border/60 shadow-sm hover:shadow-md transition-shadow"
             >
+              <CardContent className="p-5">
               <Link href={`/lesson/${lesson.id}`} className="block">
                 <h3 className="font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2">
                   {lesson.title}
@@ -149,7 +151,7 @@ export function HistoryClient() {
                       <button
                         type="button"
                         onClick={() => setDeleteId(null)}
-                        className="rounded-lg border border-gray-200 px-4 py-2.5 text-xs font-body text-text-secondary hover:bg-gray-50 transition-colors"
+                        className="rounded-lg border border-border px-4 py-2.5 text-xs font-body text-text-secondary hover:bg-muted transition-colors"
                       >
                         Cancel
                       </button>
@@ -157,7 +159,8 @@ export function HistoryClient() {
                   </div>
                 </div>
               )}
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

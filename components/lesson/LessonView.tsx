@@ -34,6 +34,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [exportLoading, setExportLoading] = useState<'docx' | 'pdf' | null>(null);
+  const [fillLoading, setFillLoading] = useState(false);
+  const [showNoPdfFieldsDialog, setShowNoPdfFieldsDialog] = useState(false);
 
   // Staggered reveal animation
   useEffect(() => {
@@ -107,6 +109,39 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     [lesson],
   );
 
+  const handleFillTemplate = useCallback(async () => {
+    setFillLoading(true);
+    try {
+      const response = await fetch('/api/export/fill-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId: lesson.id }),
+      });
+
+      if (!response.ok) return;
+
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json')) {
+        const json = (await response.json()) as { status?: string };
+        if (json.status === 'no_fields') {
+          setShowNoPdfFieldsDialog(true);
+        }
+        return;
+      }
+
+      const blob = await response.blob();
+      const ext = lesson.template_path?.split('.').pop() ?? 'docx';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${lesson.title || 'lesson-plan'}-filled.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setFillLoading(false);
+    }
+  }, [lesson]);
+
   const content = lesson.content;
 
   return (
@@ -141,7 +176,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         </div>
 
         {/* Export buttons */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button
             size="sm"
             variant="secondary"
@@ -160,8 +195,58 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             <Download className="h-4 w-4 mr-1" />
             PDF
           </Button>
+          {lesson.template_path && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleFillTemplate}
+              isLoading={fillLoading}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Filled Template
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* No PDF fields dialog */}
+      {showNoPdfFieldsDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="noPdfFieldsTitle"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
+            <h2 id="noPdfFieldsTitle" className="font-display text-lg font-semibold text-text-primary mb-2">
+              No fillable fields found
+            </h2>
+            <p className="font-body text-sm text-text-secondary mb-6">
+              This PDF template doesn&apos;t contain any form fields. Would you like to generate
+              a fresh DOCX export instead?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowNoPdfFieldsDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowNoPdfFieldsDialog(false);
+                  handleExport('docx');
+                }}
+                isLoading={exportLoading === 'docx'}
+              >
+                Generate DOCX
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section cards */}
       <div ref={cardsRef} className="space-y-4">

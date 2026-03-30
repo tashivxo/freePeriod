@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Logo } from '@/components/ui/Logo';
 
 export function SignInPage() {
   const router = useRouter();
@@ -79,16 +81,22 @@ export function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-display font-bold text-text-primary">
-            Welcome back
-          </h1>
-          <p className="mt-2 text-text-secondary">
-            Sign in to continue planning lessons
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-4 text-center">
+          <Logo size="lg" />
+          <div>
+            <h1 className="text-2xl font-display font-bold text-text-primary">
+              Welcome back
+            </h1>
+            <p className="mt-1 font-body text-sm text-text-secondary">
+              Sign in to continue planning lessons
+            </p>
+          </div>
         </div>
+
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-6 space-y-5">
 
         {serverError && (
           <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">
@@ -120,7 +128,7 @@ export function SignInPage() {
             autoComplete="current-password"
           />
 
-          <Button type="submit" fullWidth isLoading={isLoading}>
+          <Button type="submit" className="w-full" isLoading={isLoading}>
             Sign in
           </Button>
         </form>
@@ -134,7 +142,7 @@ export function SignInPage() {
         <div className="space-y-3">
           <Button
             variant="outline"
-            fullWidth
+            className="w-full"
             onClick={handleGoogleLogin}
             type="button"
           >
@@ -143,7 +151,7 @@ export function SignInPage() {
 
           <Button
             variant="ghost"
-            fullWidth
+            className="w-full"
             onClick={handleMagicLink}
             type="button"
           >
@@ -151,15 +159,15 @@ export function SignInPage() {
           </Button>
         </div>
 
-        <p className="text-center text-sm text-text-secondary">
+        <p className="text-center text-sm font-body text-text-secondary">
           Don&apos;t have an account?{' '}
-          <Link
-            href="/sign-up"
-            className="text-coral font-semibold hover:underline"
-          >
+          <Link href="/sign-up" className="text-coral font-semibold hover:underline">
             Sign up
           </Link>
         </p>
+
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

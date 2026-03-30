@@ -123,10 +123,10 @@ describe('GenerateForm', () => {
     expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.jpg,.png');
   });
 
-  it('renders school template upload zone with accepted types', () => {
+  it('renders lesson plan template upload zone with accepted types', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
-    expect(screen.getByText('School Template')).toBeInTheDocument();
-    const input = screen.getByLabelText(/upload school template/i);
+    expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();
+    const input = screen.getByLabelText(/upload lesson plan template/i);
     expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx');
   });
 
