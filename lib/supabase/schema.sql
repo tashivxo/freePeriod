@@ -16,6 +16,7 @@ create table public.users (
   default_curriculum text,
   plan text not null default 'free',
   generation_count int not null default 0,
+  generation_count_reset_at timestamptz,
   onboarding_complete boolean not null default false,
   created_at timestamptz not null default now()
 );

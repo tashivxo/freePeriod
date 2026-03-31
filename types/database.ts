@@ -11,6 +11,7 @@ export type User = {
   default_curriculum: string | null;
   plan: Plan;
   generation_count: number;
+  generation_count_reset_at: string | null;
   onboarding_complete: boolean;
   created_at: string;
 }
@@ -73,8 +74,9 @@ export type Database = {
     Tables: {
       users: {
         Row: User;
-        Insert: Omit<User, 'created_at' | 'generation_count' | 'onboarding_complete' | 'plan'> & {
+        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan'> & {
           generation_count?: number;
+          generation_count_reset_at?: string | null;
           onboarding_complete?: boolean;
           plan?: Plan;
         };

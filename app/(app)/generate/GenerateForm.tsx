@@ -23,6 +23,7 @@ export type GenerateFormData = {
   teacherPrompt: string;
   curriculumDocPath: string | null;
   templatePath: string | null;
+  modelPreference?: 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5';
 };
 
 type UploadedFile = {
@@ -37,6 +38,7 @@ type GenerateFormProps = {
     grade: string;
     curriculum: string;
   };
+  userPlan?: 'free' | 'pro';
   onSubmit: (data: GenerateFormData) => void;
 };
 
@@ -53,7 +55,7 @@ function getTypeBadge(fileName: string): string {
   return map[ext] ?? ext.toUpperCase();
 }
 
-export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
+export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: GenerateFormProps) {
   const subjectsPreset = SUBJECTS as readonly string[];
   const defaultIsPreset = defaults?.subject ? subjectsPreset.includes(defaults.subject) : false;
   const [subjectSelect, setSubjectSelect] = useState<string>(
@@ -68,6 +70,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
+  const [modelPreference, setModelPreference] = useState<'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5'>('claude-opus-4-6');
 
   const [curriculumDoc, setCurriculumDoc] = useState<UploadedFile | null>(null);
   const [template, setTemplate] = useState<UploadedFile | null>(null);
@@ -190,6 +193,7 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
         teacherPrompt: teacherPrompt.trim(),
         curriculumDocPath: curriculumDoc?.storagePath ?? null,
         templatePath: template?.storagePath ?? null,
+        modelPreference: userPlan === 'pro' ? modelPreference : undefined,
       });
     },
     [
@@ -202,6 +206,8 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
       curriculumDoc,
       template,
       onSubmit,
+      modelPreference,
+      userPlan,
     ],
   );
 
@@ -332,6 +338,32 @@ export function GenerateForm({ defaults, onSubmit }: GenerateFormProps) {
             className="w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 py-3 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none resize-none"
           />
         </div>
+
+        {/* AI Model selector (pro only) */}
+        {userPlan === 'pro' && (
+          <div>
+            <label
+              htmlFor="model-select"
+              className="mb-1 block text-sm font-body font-medium text-text-secondary"
+            >
+              AI Model
+            </label>
+            <select
+              id="model-select"
+              value={modelPreference}
+              onChange={(e) =>
+                setModelPreference(
+                  e.target.value as 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5',
+                )
+              }
+              className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <option value="claude-opus-4-6">Claude Opus (most capable)</option>
+              <option value="claude-sonnet-4-6">Claude Sonnet (balanced)</option>
+              <option value="claude-haiku-4-5">Claude Haiku (fastest)</option>
+            </select>
+          </div>
+        )}
 
         {/* File upload zones */}
         <div className="grid gap-4 sm:grid-cols-2">

@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from '@/lib/claude/prompts';
+import { generateWithGemini } from '@/lib/gemini/generate';
+import { isRateLimited, FREE_GENERATION_LIMIT } from '@/lib/ai/router';
 import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
 import type { LessonSection } from '@/types/database';
 
@@ -16,6 +18,12 @@ function encodeSSE(event: GenerateStreamEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
 }
 
+const SECTION_KEYS = [
+  'title', 'objectives', 'successCriteria', 'keyConcepts',
+  'hook', 'mainActivities', 'guidedPractice', 'independentPractice',
+  'formativeAssessment', 'differentiation', 'realWorldConnections', 'plenary',
+] as const;
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,6 +33,25 @@ export async function POST(request: NextRequest) {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Fetch user plan and generation count before processing the request
+  const { data: userRecord } = await supabase
+    .from('users')
+    .select('plan, generation_count')
+    .eq('id', user.id)
+    .single();
+
+  const userPlan = (userRecord?.plan ?? 'free') as 'free' | 'pro';
+  const generationCount = userRecord?.generation_count ?? 0;
+
+  if (isRateLimited(userPlan, generationCount)) {
+    return new Response(
+      JSON.stringify({
+        error: `You've reached the free plan limit of ${FREE_GENERATION_LIMIT} lesson plans. Upgrade to Pro for unlimited generations.`,
+      }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } },
+    );
   }
 
   let body: GenerateRequest;
@@ -46,7 +73,13 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const model = modelPreference && isAllowedModel(modelPreference) ? modelPreference : 'claude-opus-4-6';
+  // Pro users can choose their Claude model; free users always use Gemini
+  const isFreePlan = userPlan === 'free';
+  const claudeModel: AllowedModel =
+    !isFreePlan && modelPreference && isAllowedModel(modelPreference)
+      ? modelPreference
+      : 'claude-opus-4-6';
+  const modelUsed = isFreePlan ? 'gemini-2.0-flash' : claudeModel;
 
   // Fetch parsed curriculum doc text if provided
   let curriculumText: string | undefined;
@@ -62,11 +95,6 @@ export async function POST(request: NextRequest) {
       curriculumText = (uploadRecord.parsed_content as { text?: string }).text ?? undefined;
     }
   }
-
-  const systemPrompt = buildSystemPrompt(curriculumText);
-  const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt });
-
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -85,52 +113,70 @@ export async function POST(request: NextRequest) {
 
         send({ type: 'status', message: 'Writing lesson plan…' });
 
-        const messageStream = anthropic.messages.stream({
-          model,
-          max_tokens: 4096,
-          thinking: { type: 'adaptive' },
-          system: [
-            {
-              type: 'text',
-              text: systemPrompt,
-              cache_control: { type: 'ephemeral' },
-            },
-          ],
-          messages: [{ role: 'user', content: userPrompt }],
-        });
+        let lessonContent: LessonSection;
+        let inputTokens = 0;
+        let outputTokens = 0;
 
-        let fullText = '';
+        if (isFreePlan) {
+          // --- Gemini path ---
+          const geminiResult = await generateWithGemini({
+            subject,
+            grade,
+            curriculum: curriculum ?? '',
+            duration,
+            teacherPrompt: teacherPrompt ?? '',
+            curriculumText,
+          });
+          lessonContent = geminiResult.lessonContent;
+          inputTokens = geminiResult.tokenCount;
+          outputTokens = 0;
+        } else {
+          // --- Claude path ---
+          const systemPrompt = buildSystemPrompt(curriculumText);
+          const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt });
 
-        messageStream.on('text', (text) => {
-          fullText += text;
-        });
+          const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-        const finalMessage = await messageStream.finalMessage();
+          const messageStream = anthropic.messages.stream({
+            model: claudeModel,
+            max_tokens: 4096,
+            thinking: { type: 'adaptive' },
+            system: [
+              {
+                type: 'text',
+                text: systemPrompt,
+                cache_control: { type: 'ephemeral' },
+              },
+            ],
+            messages: [{ role: 'user', content: userPrompt }],
+          });
+
+          let fullText = '';
+          messageStream.on('text', (text) => {
+            fullText += text;
+          });
+
+          const finalMessage = await messageStream.finalMessage();
+          inputTokens = finalMessage.usage.input_tokens;
+          outputTokens = finalMessage.usage.output_tokens;
+
+          send({ type: 'status', message: 'Structuring sections…' });
+
+          const parsed = parseLessonContent(fullText);
+          if (!parsed) {
+            send({ type: 'error', message: 'Failed to parse lesson plan from Claude response' });
+            controller.close();
+            return;
+          }
+          lessonContent = parsed;
+        }
 
         send({ type: 'status', message: 'Structuring sections…' });
 
-        const lessonContent = parseLessonContent(fullText);
-
-        if (!lessonContent) {
-          send({ type: 'error', message: 'Failed to parse lesson plan from Claude response' });
-          controller.close();
-          return;
-        }
-
-        // Send each section as a stream event
-        const sectionKeys = [
-          'title', 'objectives', 'successCriteria', 'keyConcepts',
-          'hook', 'mainActivities', 'guidedPractice', 'independentPractice',
-          'formativeAssessment', 'differentiation', 'realWorldConnections', 'plenary',
-        ] as const;
-
-        for (const key of sectionKeys) {
+        for (const key of SECTION_KEYS) {
           send({ type: 'section', key, data: lessonContent[key] });
         }
 
-        // Calculate token usage
-        const inputTokens = finalMessage.usage.input_tokens;
-        const outputTokens = finalMessage.usage.output_tokens;
         const totalTokens = inputTokens + outputTokens;
 
         // Save lesson plan to database
@@ -144,7 +190,7 @@ export async function POST(request: NextRequest) {
             curriculum: curriculum || null,
             duration_minutes: duration,
             content: lessonContent as LessonSection,
-            model_used: model,
+            model_used: modelUsed,
             token_count: totalTokens,
             template_path: templatePath || null,
           })
@@ -157,19 +203,11 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        // Increment user generation count
-        const { data: userData } = await supabase
+        // Increment generation count using the pre-fetched value
+        await supabase
           .from('users')
-          .select('generation_count')
-          .eq('id', user.id)
-          .single();
-
-        if (userData) {
-          await supabase
-            .from('users')
-            .update({ generation_count: userData.generation_count + 1 })
-            .eq('id', user.id);
-        }
+          .update({ generation_count: generationCount + 1 })
+          .eq('id', user.id);
 
         send({
           type: 'complete',
@@ -177,7 +215,6 @@ export async function POST(request: NextRequest) {
           usage: { inputTokens, outputTokens },
         });
       } catch (err: unknown) {
-        // Anthropic SDK wraps errors as: { status, error: { type: 'error', error: { type, message } } }
         const sdkErr = err as {
           status?: number;
           error?: { type?: string; error?: { type?: string; message?: string } };
@@ -195,7 +232,7 @@ export async function POST(request: NextRequest) {
         } else if (errType === 'invalid_request_error') {
           send({ type: 'error', message: 'Invalid request to Claude API. Please try again.' });
         } else {
-          console.error('[generate] Unexpected Claude error:', JSON.stringify(err));
+          console.error('[generate] Unexpected error:', JSON.stringify(err));
           send({ type: 'error', message: 'An unexpected error occurred during generation.' });
         }
       } finally {

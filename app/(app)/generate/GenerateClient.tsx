@@ -12,9 +12,10 @@ type GenerateClientProps = {
     grade: string;
     curriculum: string;
   };
+  plan?: 'free' | 'pro';
 };
 
-export function GenerateClient({ defaults }: GenerateClientProps) {
+export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps) {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
@@ -92,7 +93,7 @@ export function GenerateClient({ defaults }: GenerateClientProps) {
 
   return (
     <>
-      <GenerateForm defaults={defaults} onSubmit={handleSubmit} />
+      <GenerateForm defaults={defaults} userPlan={plan} onSubmit={handleSubmit} />
       {isGenerating && (
         <GenerationScreen events={events} onComplete={handleComplete} />
       )}

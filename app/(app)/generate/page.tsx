@@ -15,23 +15,28 @@ async function GeneratePageContent() {
 
   let defaults: { subject: string; grade: string; curriculum: string } | undefined;
 
+  let userPlan: 'free' | 'pro' = 'free';
+
   if (user) {
     const { data } = await supabase
       .from('users')
-      .select('default_subject, default_grade, default_curriculum')
+      .select('default_subject, default_grade, default_curriculum, plan')
       .eq('id', user.id)
       .single();
 
-    if (data?.default_subject || data?.default_grade || data?.default_curriculum) {
-      defaults = {
-        subject: data.default_subject ?? '',
-        grade: data.default_grade ?? '',
-        curriculum: data.default_curriculum ?? '',
-      };
+    if (data) {
+      userPlan = (data.plan ?? 'free') as 'free' | 'pro';
+      if (data.default_subject || data.default_grade || data.default_curriculum) {
+        defaults = {
+          subject: data.default_subject ?? '',
+          grade: data.default_grade ?? '',
+          curriculum: data.default_curriculum ?? '',
+        };
+      }
     }
   }
 
-  return <GenerateClient defaults={defaults} />;
+  return <GenerateClient defaults={defaults} plan={userPlan} />;
 }
 
 export default function GeneratePage() {
