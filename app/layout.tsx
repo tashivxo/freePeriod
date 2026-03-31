@@ -1,10 +1,5 @@
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
-
-const GrainOverlay = dynamic(
-  () => import('@/components/animations/GrainOverlay').then((m) => m.GrainOverlay),
-  { ssr: false }
-);
+import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
 import { Plus_Jakarta_Sans, DM_Sans, Geist } from 'next/font/google';
 import './globals.css';
 import { cn } from "@/lib/utils";
@@ -36,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={cn(plusJakartaSans.variable, dmSans.variable, "font-sans", geist.variable)}>
-      <body><TooltipProvider>{children}</TooltipProvider><GrainOverlay /></body>
+      <body><TooltipProvider>{children}</TooltipProvider><GrainOverlayClient /></body>
     </html>
   );
 }
