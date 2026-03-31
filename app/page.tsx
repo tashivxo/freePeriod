@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
@@ -10,6 +10,11 @@ import dynamic from 'next/dynamic';
 
 const MugAnimation = dynamic(
   () => import('@/components/animations/MugAnimation').then((m) => m.MugAnimation),
+  { ssr: false }
+);
+
+const SoftAurora = dynamic(
+  () => import('@/components/ui/SoftAurora/SoftAurora'),
   { ssr: false }
 );
 
@@ -43,9 +48,17 @@ const PERKS = [
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const [prefersReduced, setPrefersReduced] = useState(false);
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
     if (prefersReduced) return;
 
     // Hero entrance
@@ -85,7 +98,29 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-x-hidden bg-background">
+      {/* Aurora background — hero area */}
+      {!prefersReduced && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[700px]" aria-hidden="true">
+          <SoftAurora
+            speed={0.4}
+            scale={1.5}
+            brightness={0.8}
+            color1="#FF8BB0"
+            color2="#F7C34B"
+            noiseFrequency={2.5}
+            noiseAmplitude={1}
+            bandHeight={0.5}
+            bandSpread={1}
+            octaveDecay={0.1}
+            layerOffset={0}
+            colorSpeed={1}
+            enableMouseInteraction={true}
+            mouseInfluence={0.25}
+          />
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
@@ -107,9 +142,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main>
+      <main className="relative">
         {/* Hero */}
-        <section className="mx-auto max-w-5xl px-6 pt-20 pb-16">
+        <section className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-16">
           <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
             {/* Text */}
             <div ref={heroRef} className="flex-1 text-center lg:text-left">
