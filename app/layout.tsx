@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: 'FreePeriod — AI Lesson Planner',
-  description: 'Generate structured lesson plans with AI. Upload curriculum docs, get formatted plans, export to DOCX/PDF.',
+  description: 'AI lesson planner for teachers. Describe what you need and get a complete, structured lesson plan in seconds. Export to DOCX or PDF.',
 };
 
 export default function RootLayout({

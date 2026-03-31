@@ -36,7 +36,7 @@ const FEATURES = [
 
 const PERKS = [
   'No more Sunday planning marathons',
-  'Differentiation built in every time',
+  'Differentiation built in, every time',
   'Works with any subject or year group',
 ];
 

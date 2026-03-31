@@ -307,7 +307,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
                 htmlFor="custom-duration"
                 className="mb-1 block text-sm font-body font-medium text-text-secondary"
               >
-                Custom duration (minutes)
+                How long is the lesson? (minutes)
               </label>
               <input
                 id="custom-duration"
@@ -396,7 +396,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           className="w-full"
           disabled={!canSubmit}
         >
-          Generate
+          Generate lesson plan
         </Button>
       </form>
     </div>
