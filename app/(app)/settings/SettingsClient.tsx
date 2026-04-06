@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { User } from '@/types/database';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export function SettingsClient({ user }: { user: User }) {
   const subjectsPreset = SUBJECTS as readonly string[];
@@ -166,6 +167,24 @@ export function SettingsClient({ user }: { user: User }) {
             <span className="text-2xl font-display font-bold text-coral">{user.generation_count}</span>
             <span className="ml-2 text-text-secondary text-sm">lessons generated</span>
           </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Appearance */}
+      <section className="mt-8">
+        <h2 className="font-display text-xl font-semibold text-text-primary mb-4">
+          Appearance
+        </h2>
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-body text-sm font-medium text-text-primary">Theme</p>
+                <p className="font-body text-xs text-text-secondary mt-0.5">Choose light or dark mode</p>
+              </div>
+              <ThemeToggle />
+            </div>
           </CardContent>
         </Card>
       </section>

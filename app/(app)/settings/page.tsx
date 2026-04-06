@@ -28,7 +28,7 @@ async function SettingsContent() {
     .eq('id', authUser.id)
     .single();
 
-  if (!profile) redirect('/sign-in');
+  if (!profile) redirect('/onboarding');
 
   return <SettingsClient user={profile as User} />;
 }

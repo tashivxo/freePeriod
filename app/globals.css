@@ -13,13 +13,13 @@
   --color-mustard-dark: #D4A52E;
   --color-background: #FFFBF7;
   --color-surface: #FFFFFF;
-  --color-text-primary: #1A1A2E;
-  --color-text-secondary: #6B7280;
+  --color-text-primary: var(--text-primary, #1A1A2E);
+  --color-text-secondary: var(--text-secondary, #6B7280);
   --color-error: #EF4444;
   --color-success: #10B981;
 
-  --font-display: "Plus Jakarta Sans", sans-serif;
-  --font-body: "DM Sans", sans-serif;
+  --font-display: "Nunito", sans-serif;
+  --font-body: "Inter", sans-serif;
 }
 
 @layer base {
@@ -124,6 +124,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --text-primary: #1A1A2E;
+  --text-secondary: #6B7280;
 }
 
 .dark {
@@ -158,4 +160,31 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --text-primary: #F0F4FF;
+  --text-secondary: #94A3B8;
+}
+
+@keyframes shine {
+  from { transform: translateX(-200%) skewX(-15deg); }
+  to { transform: translateX(320%) skewX(-15deg); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-shine {
+    overflow: hidden;
+  }
+  .btn-shine::after {
+    content: '';
+    position: absolute;
+    top: -20%;
+    left: 0;
+    height: 140%;
+    width: 35%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    transform: translateX(-200%) skewX(-15deg);
+    pointer-events: none;
+  }
+  .btn-shine:hover::after {
+    animation: shine 0.55s ease-in-out forwards;
+  }
 }

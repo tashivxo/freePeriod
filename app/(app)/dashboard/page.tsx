@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { AppBackground } from '@/components/animations/AppBackground';
 
 function DashboardSkeleton() {
   return (
@@ -38,7 +39,9 @@ async function DashboardContent() {
   const firstName = profile?.name?.split(' ')[0] ?? 'there';
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="relative">
+      <AppBackground />
+      <div className="relative z-10 mx-auto max-w-5xl px-4 py-8">
       {/* Greeting */}
       <h1 className="font-display text-3xl font-bold text-text-primary mb-1">
         Hi, {firstName}!
@@ -132,6 +135,7 @@ async function DashboardContent() {
           </Link>
         </div>
       )}
+      </div>
     </div>
   );
 }

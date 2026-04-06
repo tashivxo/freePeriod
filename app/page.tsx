@@ -186,7 +186,7 @@ export default function HomePage() {
 
               <p
                 data-animate
-                className="mt-6 font-body text-lg text-text-secondary max-w-lg"
+                className="mt-6 font-body text-lg text-text-primary max-w-lg"
                 style={{ opacity: 0 }}
               >
                 Upload your curriculum docs, describe what you need, and FreePeriod
@@ -197,7 +197,7 @@ export default function HomePage() {
                 {PERKS.map((perk) => (
                   <li key={perk} className="flex items-center gap-2 justify-center lg:justify-start">
                     <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-coral" />
-                    <span className="text-sm font-body text-text-secondary">{perk}</span>
+                    <span className="text-sm font-body text-text-primary">{perk}</span>
                   </li>
                 ))}
               </ul>
