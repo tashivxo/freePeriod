@@ -21,3 +21,18 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
   disconnect() {}
 } as unknown as typeof IntersectionObserver;
+
+// jsdom does not implement ResizeObserver — mock it for all tests (needed by Radix UI)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+
+// jsdom does not implement Pointer Events API — mock for Radix UI components
+window.Element.prototype.hasPointerCapture = () => false;
+window.Element.prototype.setPointerCapture = () => {};
+window.Element.prototype.releasePointerCapture = () => {};
+
+// jsdom does not implement scrollIntoView — mock for Radix UI Select (scrolls to selected item on open)
+window.HTMLElement.prototype.scrollIntoView = () => {};

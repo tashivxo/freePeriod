@@ -127,4 +127,10 @@ describe('SignInPage', () => {
       await screen.findByText(/invalid login credentials/i),
     ).toBeInTheDocument();
   });
+
+  it('renders Google button with same coral styling as Sign In button', () => {
+    render(<SignInPage />);
+    const googleBtn = screen.getByRole('button', { name: /continue with google/i });
+    expect(googleBtn.className).toContain('bg-primary');
+  });
 });

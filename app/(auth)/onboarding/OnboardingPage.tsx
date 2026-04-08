@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const SUBJECTS = [
   'Maths',
@@ -265,19 +266,21 @@ function StepGrade({
         <label htmlFor="grade-select" className="mb-2 block text-sm font-medium text-text-secondary">
           Grade Level
         </label>
-        <select
-          id="grade-select"
-          value={grade}
-          onChange={(e) => onGradeChange(e.target.value)}
-          className="min-h-[44px] w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-        >
-          <option value="">Select a grade...</option>
-          {GRADES.map((g) => (
-            <option key={g} value={g}>
-              {g === 'K' ? 'Kindergarten' : g === 'Pre-K' ? 'Pre-K' : `Grade ${g}`}
-            </option>
-          ))}
-        </select>
+        <Select value={grade} onValueChange={onGradeChange}>
+          <SelectTrigger
+            id="grade-select"
+            className="min-h-[44px] w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
+          >
+            <SelectValue placeholder="Select a grade..." />
+          </SelectTrigger>
+          <SelectContent>
+            {GRADES.map((g) => (
+              <SelectItem key={g} value={g}>
+                {g === 'K' ? 'Kindergarten' : g === 'Pre-K' ? 'Pre-K' : `Grade ${g}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex gap-3">

@@ -141,7 +141,6 @@ export function SignInPage() {
 
         <div className="space-y-3">
           <Button
-            variant="outline"
             className="w-full"
             onClick={handleGoogleLogin}
             type="button"

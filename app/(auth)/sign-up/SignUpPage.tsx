@@ -128,7 +128,6 @@ export function SignUpPage() {
         </div>
 
         <Button
-          variant="outline"
           className="w-full"
           onClick={handleGoogleLogin}
           type="button"

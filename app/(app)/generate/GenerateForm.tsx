@@ -6,6 +6,7 @@ import { SUBJECTS } from '@/lib/utils/subjects';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/BlurText';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const GRADES = [
   'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
@@ -225,18 +226,20 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           >
             Subject
           </label>
-          <select
-            id="subject-select"
-            value={subjectSelect}
-            onChange={(e) => setSubjectSelect(e.target.value)}
-            className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-          >
-            <option value="">Select subject</option>
-            {SUBJECTS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-            <option value="Other">Other</option>
-          </select>
+          <Select value={subjectSelect} onValueChange={setSubjectSelect}>
+            <SelectTrigger
+              id="subject-select"
+              className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <SelectValue placeholder="Select subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {SUBJECTS.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
           {subjectSelect === 'Other' && (
             <div className="mt-2">
               <Input
@@ -256,19 +259,19 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           >
             Grade
           </label>
-          <select
-            id="grade-select"
-            value={grade}
-            onChange={(e) => setGrade(e.target.value)}
-            className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-          >
-            <option value="">Select grade</option>
-            {GRADES.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
+          <Select value={grade} onValueChange={setGrade}>
+            <SelectTrigger
+              id="grade-select"
+              className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <SelectValue placeholder="Select grade" />
+            </SelectTrigger>
+            <SelectContent>
+              {GRADES.map((g) => (
+                <SelectItem key={g} value={g}>{g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Curriculum */}
@@ -286,19 +289,20 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           >
             Duration
           </label>
-          <select
-            id="duration-select"
-            value={durationSelect}
-            onChange={(e) => setDurationSelect(e.target.value)}
-            className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface px-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-          >
-            {DURATION_PRESETS.map((d) => (
-              <option key={d} value={String(d)}>
-                {d} min
-              </option>
-            ))}
-            <option value="custom">Custom</option>
-          </select>
+          <Select value={durationSelect} onValueChange={setDurationSelect}>
+            <SelectTrigger
+              id="duration-select"
+              className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <SelectValue placeholder="Select duration" />
+            </SelectTrigger>
+            <SelectContent>
+              {DURATION_PRESETS.map((d) => (
+                <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
+              ))}
+              <SelectItem value="custom">Custom</SelectItem>
+            </SelectContent>
+          </Select>
 
           {isCustomDuration && (
             <div className="mt-2">

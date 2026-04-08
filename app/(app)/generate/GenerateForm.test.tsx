@@ -69,12 +69,14 @@ describe('GenerateForm', () => {
 
   it('pre-fills subject from defaults', () => {
     render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
-    expect(screen.getByLabelText('Subject')).toHaveValue('Mathematics');
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Subject').textContent?.trim()).toBe('Mathematics');
   });
 
   it('pre-fills grade from defaults', () => {
     render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
-    expect(screen.getByLabelText('Grade')).toHaveValue('9');
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Grade').textContent?.trim()).toBe('9');
   });
 
   it('pre-fills curriculum from defaults', () => {
@@ -84,15 +86,19 @@ describe('GenerateForm', () => {
 
   // ---- Dropdowns ----
 
-  it('renders grade dropdown with all options', () => {
-    render(<GenerateForm onSubmit={onSubmit} />);
+  it('renders grade dropdown with all options', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    // With Radix Select, options only appear in the DOM after opening the trigger
+    await user.click(screen.getByRole('combobox', { name: /^grade$/i }));
     for (const grade of GRADES) {
       expect(screen.getByRole('option', { name: grade })).toBeInTheDocument();
     }
   });
 
-  it('renders duration dropdown with preset options and Custom', () => {
-    render(<GenerateForm onSubmit={onSubmit} />);
+  it('renders duration dropdown with preset options and Custom', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    // With Radix Select, options only appear in the DOM after opening the trigger
+    await user.click(screen.getByRole('combobox', { name: /^duration$/i }));
     for (const label of ['30 min', '45 min', '60 min', '90 min', '120 min']) {
       expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
     }
@@ -101,7 +107,9 @@ describe('GenerateForm', () => {
 
   it('shows custom duration input when Custom is selected', async () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
-    await user.selectOptions(screen.getByLabelText('Duration'), 'custom');
+    // Radix Select: click trigger to open, then click the option
+    await user.click(screen.getByRole('combobox', { name: /^duration$/i }));
+    await user.click(screen.getByRole('option', { name: 'Custom' }));
     expect(screen.getByLabelText(/how long is the lesson/i)).toBeInTheDocument();
   });
 
@@ -178,7 +186,9 @@ describe('GenerateForm', () => {
 
   it('enables Generate button when subject is filled', async () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
-    await user.selectOptions(screen.getByLabelText('Subject'), 'Science');
+    // Radix Select: click trigger to open, then click the option
+    await user.click(screen.getByRole('combobox', { name: /^subject$/i }));
+    await user.click(screen.getByRole('option', { name: 'Science' }));
     expect(screen.getByRole('button', { name: /generate/i })).toBeEnabled();
   });
 

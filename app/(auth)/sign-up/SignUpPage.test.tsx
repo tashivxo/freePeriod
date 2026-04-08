@@ -126,4 +126,10 @@ describe('SignUpPage', () => {
       await screen.findByText(/user already registered/i),
     ).toBeInTheDocument();
   });
+
+  it('renders Google button with same coral styling as Create Account button', () => {
+    render(<SignUpPage />);
+    const googleBtn = screen.getByRole('button', { name: /continue with google/i });
+    expect(googleBtn.className).toContain('bg-primary');
+  });
 });

@@ -127,7 +127,9 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByLabelText(/grade level/i), '9');
+    // Radix Select: click trigger to open, then click the option
+    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -145,7 +147,9 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByLabelText(/grade level/i), '9');
+    // Radix Select: click trigger to open, then click the option
+    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -188,7 +192,9 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByLabelText(/grade level/i), '9');
+    // Radix Select: click trigger to open, then click the option
+    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Step 3: enter curriculum and finish
