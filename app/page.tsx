@@ -216,7 +216,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/sign-in"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
                 >
                   Sign in
                 </Link>
@@ -257,8 +257,7 @@ export default function HomePage() {
               <Card
                 key={title}
                 data-feature
-                className="border-border/60 bg-surface shadow-sm"
-                style={{ opacity: 0 }}
+                className="border-border/60 bg-surface dark:bg-card shadow-sm"
               >
                 <CardContent className="p-6">
                   <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>

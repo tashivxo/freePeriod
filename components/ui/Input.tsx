@@ -23,7 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={[
-          'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-surface text-text-primary',
+          'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-surface dark:bg-card text-text-primary',
           'transition-colors duration-150 outline-none',
           'placeholder-transparent',
           error
