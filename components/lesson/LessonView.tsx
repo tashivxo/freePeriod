@@ -9,6 +9,7 @@ import { SectionCard } from '@/components/lesson/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan, LessonSection } from '@/types/database';
 import type { LessonSectionKey } from '@/types/lesson';
+import { BlurText } from '@/components/BlurText';
 
 const SECTION_ORDER: { key: LessonSectionKey; label: string }[] = [
   { key: 'title', label: 'Title' },
@@ -157,9 +158,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           Back to Dashboard
         </button>
 
-        <h1 className="font-display text-3xl font-bold text-text-primary mb-2">
-          {content.title || lesson.title}
-        </h1>
+        <BlurText as="h1" text={content.title || lesson.title} className="font-display text-3xl font-bold text-text-primary mb-2" />
 
         <div className="flex flex-wrap items-center gap-4 text-sm font-body text-text-secondary">
           <span className="inline-flex items-center gap-1">

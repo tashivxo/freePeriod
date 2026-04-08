@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AppBackground } from '@/components/animations/AppBackground';
+import { BlurText } from '@/components/BlurText';
 
 function DashboardSkeleton() {
   return (
@@ -40,12 +40,9 @@ async function DashboardContent() {
 
   return (
     <div className="relative">
-      <AppBackground />
       <div className="relative z-10 mx-auto max-w-5xl px-4 py-8">
       {/* Greeting */}
-      <h1 className="font-display text-3xl font-bold text-text-primary mb-1">
-        Hi, {firstName}!
-      </h1>
+      <BlurText as="h1" text={`Hi, ${firstName}!`} className="font-display text-3xl font-bold text-text-primary mb-1" />
       <p className="font-body text-text-secondary mb-6">
         <Badge variant="secondary" className="mr-2">{profile?.generation_count ?? 0}</Badge>
         lesson{(profile?.generation_count ?? 0) !== 1 ? 's' : ''} generated

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { BlurText } from '@/components/BlurText';
 
 const GRADES = [
   'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
@@ -213,9 +214,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="mb-8 text-center font-display text-3xl font-bold text-text-primary">
-        Generate a Lesson
-      </h1>
+      <BlurText as="h1" text="Generate a Lesson" className="mb-8 text-center font-display text-3xl font-bold text-text-primary" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Subject */}

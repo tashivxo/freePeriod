@@ -7,6 +7,7 @@ import { SUBJECTS } from '@/lib/utils/subjects';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { User } from '@/types/database';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { BlurText } from '@/components/BlurText';
 
 export function SettingsClient({ user }: { user: User }) {
   const subjectsPreset = SUBJECTS as readonly string[];
@@ -53,9 +54,7 @@ export function SettingsClient({ user }: { user: User }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="font-display text-3xl font-bold text-text-primary mb-8">
-        Settings
-      </h1>
+      <BlurText as="h1" text="Settings" className="font-display text-3xl font-bold text-text-primary mb-8" />
 
       {/* Profile */}
       <section className="mb-8">

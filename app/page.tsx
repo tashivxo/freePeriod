@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
+import { ShinyText } from '@/components/ShinyText';
 import { Card, CardContent } from '@/components/ui/card';
 import dynamic from 'next/dynamic';
 
@@ -164,7 +165,7 @@ export default function HomePage() {
               >
                 Lesson plans in{' '}
                 <span className="relative whitespace-nowrap text-coral">
-                  seconds
+                  seconds,
                   <svg
                     className="absolute -bottom-1 left-0 w-full"
                     viewBox="0 0 200 8"
@@ -181,7 +182,7 @@ export default function HomePage() {
                     />
                   </svg>
                 </span>
-                ,{' '}not hours
+                {' '}not hours
               </h1>
 
               <p
@@ -247,7 +248,7 @@ export default function HomePage() {
         <section ref={featuresRef} className="mx-auto max-w-5xl px-6 py-16">
           <div className="mb-10 text-center">
             <h2 className="font-display text-3xl font-bold text-text-primary">
-              Everything teachers need
+              <ShinyText text="Everything teachers need" shineColor="rgba(247,195,75,0.7)" speed={6} />
             </h2>
             <p className="mt-2 font-body text-text-secondary">Built with your real workflow in mind.</p>
           </div>
@@ -275,7 +276,7 @@ export default function HomePage() {
         <section className="mx-auto max-w-5xl px-6 pb-20">
           <div className="rounded-2xl bg-coral/10 border border-coral/20 px-8 py-10 text-center">
             <h2 className="font-display text-3xl font-bold text-text-primary">
-              Ready to reclaim your evenings?
+              <ShinyText text="Ready to reclaim your evenings?" shineColor="rgba(255,139,176,0.9)" speed={6} />
             </h2>
             <p className="mt-3 font-body text-text-secondary max-w-md mx-auto">
               Join teachers who've stopped spending hours on planning and started spending that time on what matters.

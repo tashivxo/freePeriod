@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LessonPlan } from '@/types/database';
+import { BlurText } from '@/components/BlurText';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
@@ -54,9 +55,7 @@ export function HistoryClient() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="font-display text-3xl font-bold text-text-primary mb-6">
-        Lesson History
-      </h1>
+      <BlurText as="h1" text="Lesson History" className="font-display text-3xl font-bold text-text-primary mb-6" />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

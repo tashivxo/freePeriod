@@ -5,16 +5,18 @@ import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+const SPOTLIGHT_VARIANTS = new Set(['default', 'outline', 'secondary'])
+
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 relative btn-shine",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 relative",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80 btn-shine overflow-hidden",
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 btn-shine overflow-hidden",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground btn-shine overflow-hidden",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
@@ -56,16 +58,45 @@ function Button({
     isLoading?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
+  const spotlightRef = React.useRef<HTMLButtonElement>(null)
+  const hasSpotlight = !asChild && SPOTLIGHT_VARIANTS.has(variant ?? 'default')
+
+  function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
+    const el = spotlightRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    el.style.setProperty('--sp-x', `${e.clientX - rect.left}px`)
+    el.style.setProperty('--sp-y', `${e.clientY - rect.top}px`)
+    el.style.setProperty('--sp-o', '1')
+  }
+
+  function handleMouseLeave() {
+    spotlightRef.current?.style.setProperty('--sp-o', '0')
+  }
 
   return (
     <Comp
+      ref={spotlightRef as React.RefObject<HTMLButtonElement>}
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={isLoading || props.disabled}
+      style={{ '--sp-x': '50%', '--sp-y': '50%', '--sp-o': '0' } as React.CSSProperties}
+      onMouseMove={hasSpotlight ? (handleMouseMove as React.MouseEventHandler<HTMLButtonElement>) : undefined}
+      onMouseLeave={hasSpotlight ? handleMouseLeave : undefined}
       {...props}
     >
+      {hasSpotlight && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-200"
+          style={{
+            background: 'radial-gradient(80px at var(--sp-x) var(--sp-y), rgba(255,255,255,0.25), transparent 80%)',
+            opacity: 'var(--sp-o)' as string,
+          }}
+        />
+      )}
       {isLoading && <Loader2 className="animate-spin" />}
       {children}
     </Comp>

@@ -102,7 +102,7 @@ describe('GenerateForm', () => {
   it('shows custom duration input when Custom is selected', async () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
     await user.selectOptions(screen.getByLabelText('Duration'), 'custom');
-    expect(screen.getByLabelText(/custom duration/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/how long is the lesson/i)).toBeInTheDocument();
   });
 
   // ---- Teacher prompt ----
