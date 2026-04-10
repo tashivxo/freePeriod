@@ -3,10 +3,12 @@ import { ColorBendsBackground } from '@/components/animations/ColorBendsBackgrou
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <ColorBendsBackground />
-      <Navbar />
-      <main>{children}</main>
+      <div className="relative z-10 flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
   );
 }

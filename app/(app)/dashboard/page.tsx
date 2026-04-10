@@ -36,7 +36,9 @@ async function DashboardContent() {
       .limit(9),
   ]);
 
-  const firstName = profile?.name?.split(' ')[0] ?? 'there';
+  const authName = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? '') as string;
+  const nameSource = (profile?.name || authName).trim();
+  const firstName = nameSource.split(' ')[0] || 'there';
 
   return (
     <div className="relative">
@@ -51,7 +53,7 @@ async function DashboardContent() {
       {/* Quick generate */}
       <Link
         href="/generate"
-        className="mb-8 inline-flex items-center justify-center gap-2 rounded-xl bg-coral px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-coral/90 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2"
+        className="relative mb-8 inline-flex overflow-hidden items-center justify-center gap-2 rounded-xl bg-coral px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-coral/90 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 btn-shine"
       >
         <Plus className="h-5 w-5" />
         New Lesson Plan
