@@ -14,7 +14,6 @@ export function ColorBendsBackground() {
         colors={['#FF8BB0', '#F7C34B', '#FFFBF7']}
         speed={0.1}
         rotation={20}
-        transparent
         scale={1}
         frequency={0.8}
         warpStrength={0.7}

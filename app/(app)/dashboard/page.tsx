@@ -127,7 +127,7 @@ async function DashboardContent() {
           </p>
           <Link
             href="/generate"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2"
+            className="relative inline-flex overflow-hidden items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 btn-shine"
           >
             <Plus className="h-4 w-4" />
             Generate Lesson
