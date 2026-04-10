@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen } from 'lucide-react';
+import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/lib/theme';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
 import { ShinyText } from '@/components/ShinyText';
 import { Card, CardContent } from '@/components/ui/card';
+import { SpotlightCard } from '@/components/SpotlightCard';
 import dynamic from 'next/dynamic';
 
 const MugAnimation = dynamic(
@@ -49,7 +51,9 @@ const PERKS = [
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const [prefersReduced, setPrefersReduced] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -70,6 +74,17 @@ export default function HomePage() {
         opacity: [0, 1],
         duration: 600,
         delay: stagger(100),
+        easing: 'easeOutCubic',
+      });
+    }
+
+    // Toggle entrance after 1s delay
+    if (toggleRef.current) {
+      animate(toggleRef.current, {
+        translateY: [20, 0],
+        opacity: [0, 1],
+        duration: 600,
+        delay: 1000,
         easing: 'easeOutCubic',
       });
     }
@@ -253,20 +268,25 @@ export default function HomePage() {
             <p className="mt-2 font-body text-text-secondary">Built with your real workflow in mind.</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, description, color }) => (
-              <Card
+            {FEATURES.map(({ icon: Icon, title, description, color }, i) => (
+              <SpotlightCard
                 key={title}
-                data-feature
-                className="border-border/60 bg-surface dark:bg-card shadow-sm"
+                className="rounded-2xl"
+                spotlightColor={i === 1 ? 'rgba(247,195,75,0.15)' : 'rgba(255,139,176,0.15)'}
               >
-                <CardContent className="p-6">
-                  <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
-                  <p className="mt-2 font-body text-sm text-text-secondary leading-relaxed">{description}</p>
-                </CardContent>
-              </Card>
+                <Card
+                  data-feature
+                  className="border-border/60 bg-surface dark:bg-card shadow-sm transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <CardContent className="p-6">
+                    <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
+                    <p className="mt-2 font-body text-sm text-text-secondary leading-relaxed">{description}</p>
+                  </CardContent>
+                </Card>
+              </SpotlightCard>
             ))}
           </div>
         </section>
@@ -298,6 +318,18 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+
+      {/* Floating dark/light mode toggle */}
+      <button
+        ref={toggleRef}
+        aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 font-display font-semibold text-sm text-primary-foreground shadow-lg btn-shine overflow-hidden"
+        style={{ opacity: 0 }}
+      >
+        {resolvedTheme === 'dark' ? <Sun size={16} aria-hidden /> : <Moon size={16} aria-hidden />}
+        {resolvedTheme === 'dark' ? 'Try light mode' : 'Try dark mode'}
+      </button>
     </div>
   );
 }
