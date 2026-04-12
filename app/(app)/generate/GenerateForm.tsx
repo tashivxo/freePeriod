@@ -14,6 +14,12 @@ const GRADES = [
 
 const DURATION_PRESETS = [30, 45, 60, 90, 120] as const;
 
+const CURRICULA = [
+  'IB', 'AP', 'Common Core', 'GCSE', 'A-Level', 'Cambridge IGCSE',
+  'National Curriculum (England)', 'Australian Curriculum', 'CBSE (India)',
+  'CAPS (South Africa)', 'Edexcel', 'AQA', 'OCR',
+] as const;
+
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
 const TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx';
 
@@ -68,7 +74,15 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
   );
   const subject = subjectSelect === 'Other' ? customSubject : subjectSelect;
   const [grade, setGrade] = useState(defaults?.grade ?? '');
-  const [curriculum, setCurriculum] = useState(defaults?.curriculum ?? '');
+  const defaultIsPresetCurriculum = defaults?.curriculum
+    ? (CURRICULA as readonly string[]).includes(defaults.curriculum) : false;
+  const [curriculumSelect, setCurriculumSelect] = useState<string>(
+    defaultIsPresetCurriculum ? (defaults?.curriculum ?? '') : (defaults?.curriculum ? 'Other' : '')
+  );
+  const [customCurriculum, setCustomCurriculum] = useState<string>(
+    !defaultIsPresetCurriculum && defaults?.curriculum ? defaults.curriculum : ''
+  );
+  const curriculum = curriculumSelect === 'Other' ? customCurriculum : curriculumSelect;
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
@@ -275,11 +289,37 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
         </div>
 
         {/* Curriculum */}
-        <Input
-          label="Curriculum"
-          value={curriculum}
-          onChange={(e) => setCurriculum(e.target.value)}
-        />
+        <div>
+          <label
+            htmlFor="curriculum-select"
+            className="mb-1 block text-sm font-body font-medium text-text-secondary"
+          >
+            Curriculum
+          </label>
+          <Select value={curriculumSelect} onValueChange={setCurriculumSelect}>
+            <SelectTrigger
+              id="curriculum-select"
+              className="h-13 w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 font-body text-base text-text-primary transition-colors duration-150 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <SelectValue placeholder="Select curriculum (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {(CURRICULA as readonly string[]).map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+              <SelectItem value="Other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          {curriculumSelect === 'Other' && (
+            <div className="mt-2">
+              <Input
+                label="Enter curriculum"
+                value={customCurriculum}
+                onChange={(e) => setCustomCurriculum(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Duration */}
         <div>

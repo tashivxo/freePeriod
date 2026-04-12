@@ -150,7 +150,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/sign-up"
-              className="rounded-xl bg-coral px-4 py-2 text-sm font-body font-semibold text-white hover:bg-coral-dark transition-colors"
+              className="relative btn-shine overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-body font-semibold text-white hover:bg-coral-dark transition-colors"
             >
               Get started free
             </Link>
@@ -225,13 +225,13 @@ export default function HomePage() {
               >
                 <Link
                   href="/sign-up"
-                  className="inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
                 >
                   Start for free
                 </Link>
                 <Link
                   href="/sign-in"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
                 >
                   Sign in
                 </Link>
@@ -302,7 +302,7 @@ export default function HomePage() {
             </p>
             <Link
               href="/sign-up"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-coral px-8 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+              className="relative btn-shine overflow-hidden mt-6 inline-flex items-center gap-2 rounded-xl bg-coral px-8 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
             >
               Get started for free
             </Link>
