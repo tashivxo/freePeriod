@@ -34,6 +34,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up');
   const isOnboardingPage = pathname.startsWith('/onboarding');
+  const isSettingsPage = pathname.startsWith('/settings');
 
   // Unauthenticated users can only access auth pages and the home page
   if (!user && !isAuthPage && pathname !== '/') {
@@ -58,7 +59,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users who haven't completed onboarding
-  if (user && !isAuthPage && !isOnboardingPage && pathname !== '/') {
+  if (user && !isAuthPage && !isOnboardingPage && !isSettingsPage && pathname !== '/') {
     const { data } = await supabase
       .from('users')
       .select('onboarding_complete')

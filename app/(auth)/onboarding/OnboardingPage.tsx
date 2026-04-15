@@ -42,6 +42,7 @@ const CURRICULUM_SUGGESTIONS = [
   'IB',
   'Common Core',
   'Australian',
+  'UAE MOE',
 ] as const;
 
 export function OnboardingPage() {
@@ -284,10 +285,10 @@ function StepGrade({
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" className="w-full">
+        <Button onClick={onBack} variant="outline" className="flex-1">
           Back
         </Button>
-        <Button onClick={onNext} className="w-full" disabled={!grade}>
+        <Button onClick={onNext} className="flex-1" disabled={!grade}>
           Next
         </Button>
       </div>
@@ -346,12 +347,12 @@ function StepCurriculum({
       </div>
 
       <div className="flex gap-3">
-        <Button onClick={onBack} variant="outline" className="w-full">
+        <Button onClick={onBack} variant="outline" className="flex-1">
           Back
         </Button>
         <Button
           onClick={onFinish}
-          className="w-full"
+          className="flex-1"
           isLoading={isSubmitting}
           disabled={!curriculum.trim()}
         >

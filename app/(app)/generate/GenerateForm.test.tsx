@@ -43,7 +43,7 @@ const GRADES = [
   'Pre-K', 'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
 ];
 
-const defaults = { subject: 'Mathematics', grade: '9', curriculum: 'CAPS' };
+const defaults = { subject: 'Mathematics', grade: '9', curriculum: 'CAPS (South Africa)' };
 
 // --- Tests ---
 
@@ -81,7 +81,8 @@ describe('GenerateForm', () => {
 
   it('pre-fills curriculum from defaults', () => {
     render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
-    expect(screen.getByLabelText('Curriculum')).toHaveValue('CAPS');
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Curriculum').textContent?.trim()).toBe('CAPS (South Africa)');
   });
 
   // ---- Dropdowns ----
@@ -203,7 +204,7 @@ describe('GenerateForm', () => {
       expect.objectContaining({
         subject: 'Mathematics',
         grade: '9',
-        curriculum: 'CAPS',
+        curriculum: 'CAPS (South Africa)',
         duration: 60,
         teacherPrompt: '',
         curriculumDocPath: null,

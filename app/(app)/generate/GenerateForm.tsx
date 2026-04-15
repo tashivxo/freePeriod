@@ -17,7 +17,7 @@ const DURATION_PRESETS = [30, 45, 60, 90, 120] as const;
 const CURRICULA = [
   'IB', 'AP', 'Common Core', 'GCSE', 'A-Level', 'Cambridge IGCSE',
   'National Curriculum (England)', 'Australian Curriculum', 'CBSE (India)',
-  'CAPS (South Africa)', 'Edexcel', 'AQA', 'OCR',
+  'CAPS (South Africa)', 'UAE MOE', 'Edexcel', 'AQA', 'OCR',
 ] as const;
 
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
@@ -280,7 +280,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             >
               <SelectValue placeholder="Select grade" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent side="bottom" sideOffset={4}>
               {GRADES.map((g) => (
                 <SelectItem key={g} value={g}>{g}</SelectItem>
               ))}
@@ -303,7 +303,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             >
               <SelectValue placeholder="Select curriculum (optional)" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent side="bottom" sideOffset={4}>
               {(CURRICULA as readonly string[]).map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
@@ -336,7 +336,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             >
               <SelectValue placeholder="Select duration" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent side="bottom" sideOffset={4}>
               {DURATION_PRESETS.map((d) => (
                 <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
               ))}
