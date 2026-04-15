@@ -21,12 +21,12 @@ test.use({ storageState: AUTH_FILE });
 test.describe('BUG 1 — Settings accessible from navbar and by direct URL', () => {
   test('Settings navbar link navigates to /settings', async ({ page }) => {
     await page.goto('/dashboard');
-    // Wait for the page (and navbar) to fully settle before interacting
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const settingsLink = page.getByRole('link', { name: /settings/i }).first();
     await expect(settingsLink).toBeVisible();
     await settingsLink.click();
-    await expect(page).toHaveURL(/\/settings/);
+    // waitForURL handles navigation + any redirect chain cleanly
+    await page.waitForURL(/\/settings/, { timeout: 20000 });
     await expect(page.getByRole('heading', { name: /profile/i })).toBeVisible();
   });
 
@@ -44,12 +44,12 @@ test.describe('BUG 1 — Settings accessible from navbar and by direct URL', () 
 test.describe('BUG 3 — Generate form dropdowns open below trigger', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/generate');
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(600);
+    await page.waitForLoadState('networkidle');
   });
 
   test('Grade dropdown opens below its trigger', async ({ page }) => {
-    const gradeTrigger = page.getByLabel('Grade');
+    const gradeTrigger = page.getByRole('combobox', { name: /grade/i });
+    await expect(gradeTrigger).toBeVisible();
     const triggerBox = await gradeTrigger.boundingBox();
     expect(triggerBox).not.toBeNull();
 
@@ -58,17 +58,18 @@ test.describe('BUG 3 — Generate form dropdowns open below trigger', () => {
 
     const contentWrapper = page.locator('[data-radix-popper-content-wrapper]').first();
     await expect(contentWrapper).toBeVisible({ timeout: 5000 });
-    const contentBox = await contentWrapper.boundingBox();
-    expect(contentBox).not.toBeNull();
+    // Use evaluate() to get bounding rect — avoids Playwright/Radix popper boundingBox() stall
+    const contentBox = await contentWrapper.evaluate((el) => el.getBoundingClientRect());
 
     // Content top must be at or below trigger bottom (opens downward, not upward)
-    expect(contentBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
+    expect(contentBox.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
 
     await page.keyboard.press('Escape');
   });
 
   test('Duration dropdown opens below its trigger', async ({ page }) => {
-    const durationTrigger = page.getByLabel('Duration');
+    const durationTrigger = page.getByRole('combobox', { name: /duration/i });
+    await expect(durationTrigger).toBeVisible();
     const triggerBox = await durationTrigger.boundingBox();
     expect(triggerBox).not.toBeNull();
 
@@ -77,16 +78,17 @@ test.describe('BUG 3 — Generate form dropdowns open below trigger', () => {
 
     const contentWrapper = page.locator('[data-radix-popper-content-wrapper]').first();
     await expect(contentWrapper).toBeVisible({ timeout: 5000 });
-    const contentBox = await contentWrapper.boundingBox();
-    expect(contentBox).not.toBeNull();
+    const contentBox = await contentWrapper.evaluate((el) => el.getBoundingClientRect());
 
-    expect(contentBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
+    expect(contentBox.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
 
     await page.keyboard.press('Escape');
   });
 
   test('Curriculum dropdown opens below its trigger', async ({ page }) => {
-    const curriculumTrigger = page.getByLabel('Curriculum');
+    // Use ID to avoid strict mode violation — file upload input also has 'curriculum' aria-label
+    const curriculumTrigger = page.locator('#curriculum-select');
+    await expect(curriculumTrigger).toBeVisible();
     const triggerBox = await curriculumTrigger.boundingBox();
     expect(triggerBox).not.toBeNull();
 
@@ -95,10 +97,9 @@ test.describe('BUG 3 — Generate form dropdowns open below trigger', () => {
 
     const contentWrapper = page.locator('[data-radix-popper-content-wrapper]').first();
     await expect(contentWrapper).toBeVisible({ timeout: 5000 });
-    const contentBox = await contentWrapper.boundingBox();
-    expect(contentBox).not.toBeNull();
+    const contentBox = await contentWrapper.evaluate((el) => el.getBoundingClientRect());
 
-    expect(contentBox!.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
+    expect(contentBox.y).toBeGreaterThanOrEqual(triggerBox!.y + triggerBox!.height - 5);
 
     await page.keyboard.press('Escape');
   });
@@ -110,28 +111,17 @@ test.describe('BUG 3 — Generate form dropdowns open below trigger', () => {
 test.describe('BUG 4 — UAE MOE curriculum option present', () => {
   test('UAE MOE is listed in the Generate form curriculum dropdown', async ({ page }) => {
     await page.goto('/generate');
-    await page.waitForLoadState('load');
-    await page.waitForTimeout(500);
+    await page.waitForLoadState('networkidle');
 
-    // Open each combobox until we find the one containing UAE MOE
-    let found = false;
-    const comboboxCount = await page.getByRole('combobox').count();
+    // Target the curriculum combobox directly by ID — avoids iterating all comboboxes
+    const curriculumTrigger = page.locator('#curriculum-select');
+    await expect(curriculumTrigger).toBeVisible();
+    await curriculumTrigger.click();
 
-    for (let i = 0; i < comboboxCount; i++) {
-      await page.getByRole('combobox').nth(i).click();
-      await page.waitForTimeout(250);
+    const uaeOption = page.getByRole('option', { name: 'UAE MOE' });
+    await expect(uaeOption).toBeVisible({ timeout: 5000 });
 
-      const uaeOption = page.getByRole('option', { name: 'UAE MOE' });
-      if (await uaeOption.count() > 0 && await uaeOption.isVisible()) {
-        found = true;
-        await page.keyboard.press('Escape');
-        break;
-      }
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(150);
-    }
-
-    expect(found).toBe(true);
+    await page.keyboard.press('Escape');
   });
 });
 
