@@ -303,7 +303,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             >
               <SelectValue placeholder="Select curriculum (optional)" />
             </SelectTrigger>
-            <SelectContent side="bottom" sideOffset={4}>
+            <SelectContent side="bottom" sideOffset={4} avoidCollisions={false}>
               {(CURRICULA as readonly string[]).map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
@@ -336,7 +336,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             >
               <SelectValue placeholder="Select duration" />
             </SelectTrigger>
-            <SelectContent side="bottom" sideOffset={4}>
+            <SelectContent side="bottom" sideOffset={4} avoidCollisions={false}>
               {DURATION_PRESETS.map((d) => (
                 <SelectItem key={d} value={String(d)}>{d} min</SelectItem>
               ))}
