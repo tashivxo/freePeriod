@@ -158,8 +158,9 @@ async function canvasHasVisiblePixels(page: Page): Promise<boolean> {
         gl.UNSIGNED_BYTE,
         pixels,
       );
-      // pixels[3] is the alpha channel — > 0 means the shader wrote a pixel here
-      return pixels[3] > 0;
+      // Check any channel > 0 — covers both opaque (alpha=1) and premultiplied
+      // alpha modes where RGB channels carry the color data.
+      return pixels[0] > 0 || pixels[1] > 0 || pixels[2] > 0 || pixels[3] > 0;
     } catch {
       return false;
     }

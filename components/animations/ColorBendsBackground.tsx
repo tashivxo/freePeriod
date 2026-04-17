@@ -39,6 +39,7 @@ export function ColorBendsBackground() {
         mouseInfluence={0.25}
         parallax={0.2}
         noise={0.08}
+        transparent={false}
       />
     </div>
   );
