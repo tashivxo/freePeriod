@@ -161,7 +161,10 @@ export default function ColorBends({
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       powerPreference: 'high-performance',
-      alpha: true
+      alpha: true,
+      // Required so gl.readPixels() returns rendered pixels for integration tests.
+      // Without this the drawing buffer is cleared after each composite step.
+      preserveDrawingBuffer: true
     });
     rendererRef.current = renderer;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -175,8 +178,12 @@ export default function ColorBends({
     const clock = new THREE.Clock();
 
     const handleResize = () => {
-      const w = container.clientWidth || 1;
-      const h = container.clientHeight || 1;
+      // Fall back to window dimensions if the container hasn't been laid out
+      // yet (clientWidth/Height === 0). This prevents the canvas starting as
+      // a 1×1 pixel ghost that the ResizeObserver never resizes because the
+      // element's size never actually changes.
+      const w = container.clientWidth || window.innerWidth || 1;
+      const h = container.clientHeight || window.innerHeight || 1;
       renderer.setSize(w, h, false);
       material.uniforms.uCanvas.value.set(w, h);
     };
@@ -292,5 +299,5 @@ export default function ColorBends({
     };
   }, []);
 
-  return <div ref={containerRef} className={`color-bends-container ${className}`} style={style} />;
+  return <div ref={containerRef} className={`color-bends-container${className ? ` ${className}` : ''}`} style={style} />;
 }
