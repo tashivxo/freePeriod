@@ -138,12 +138,16 @@ test.describe('BUG 4 — UAE MOE curriculum option present', () => {
 /** Read the centre pixel from a WebGL canvas and return whether alpha > 0. */
 async function canvasHasVisiblePixels(page: Page): Promise<boolean> {
   return page.evaluate(() => {
-    const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement & { _threeGl?: WebGLRenderingContext } | null;
     if (!canvas) return false;
     try {
-      const gl = (
-        canvas.getContext('webgl2') ?? canvas.getContext('webgl')
-      ) as WebGLRenderingContext | null;
+      // Three.js already holds the WebGL context — a second getContext() call
+      // returns null. We expose renderer.getContext() on the canvas as _threeGl
+      // so Playwright can still call readPixels().
+      const gl: WebGLRenderingContext | null =
+        canvas._threeGl ??
+        (canvas.getContext('webgl2') as WebGLRenderingContext | null) ??
+        (canvas.getContext('webgl') as WebGLRenderingContext | null);
       if (!gl) return false;
       const pixels = new Uint8Array(4);
       gl.readPixels(

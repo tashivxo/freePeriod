@@ -173,6 +173,11 @@ export default function ColorBends({
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     renderer.domElement.style.display = 'block';
+    // Expose the renderer's gl context on the canvas element so that external
+    // consumers (e.g. Playwright pixel-check helpers) can call gl.readPixels()
+    // even though Three.js already holds the WebGL context and a second
+    // canvas.getContext('webgl') call would return null.
+    renderer.domElement._threeGl = renderer.getContext();
     container.appendChild(renderer.domElement);
 
     const clock = new THREE.Clock();
