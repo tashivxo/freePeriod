@@ -1,5 +1,5 @@
 import { Navbar } from '@/components/layout/Navbar';
-import { ColorBendsBackground } from '@/components/animations/ColorBendsBackground';
+import { ColorBendsBackground } from '@/components/backgrounds/ColorBendsWrapper';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
