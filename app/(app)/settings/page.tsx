@@ -28,9 +28,37 @@ async function SettingsContent() {
     .eq('id', authUser.id)
     .single();
 
-  if (!profile) redirect('/onboarding');
+  let resolvedProfile = profile;
+  if (!resolvedProfile) {
+    // Auto-provision profile row for users created before row-creation was implemented
+    const metaFullName = authUser.user_metadata?.full_name;
+    const metaName = authUser.user_metadata?.name;
+    const displayName =
+      (typeof metaFullName === 'string' ? metaFullName : null) ??
+      (typeof metaName === 'string' ? metaName : null) ??
+      authUser.email?.split('@')[0] ?? '';
 
-  return <SettingsClient user={profile as User} />;
+    const { data: newProfile, error: upsertError } = await supabase
+      .from('users')
+      .upsert(
+        {
+          id: authUser.id,
+          email: authUser.email ?? '',
+          name: displayName,
+          default_subject: null,
+          default_grade: null,
+          default_curriculum: null,
+        },
+        { onConflict: 'id' }
+      )
+      .select('*')
+      .single();
+
+    if (upsertError || !newProfile) redirect('/onboarding');
+    resolvedProfile = newProfile;
+  }
+
+  return <SettingsClient user={resolvedProfile as User} />;
 }
 
 export default function SettingsPage() {

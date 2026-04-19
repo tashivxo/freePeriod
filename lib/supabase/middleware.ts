@@ -66,6 +66,34 @@ export async function updateSession(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
+    if (!data) {
+      // Auto-provision profile row for users who signed up before row-creation was implemented
+      const metaFullName = user.user_metadata?.full_name;
+      const metaName = user.user_metadata?.name;
+      const displayName =
+        (typeof metaFullName === 'string' ? metaFullName : null) ??
+        (typeof metaName === 'string' ? metaName : null) ??
+        user.email?.split('@')[0] ?? '';
+      await supabase.from('users').upsert(
+        {
+          id: user.id,
+          email: user.email ?? '',
+          name: displayName,
+          default_subject: null,
+          default_grade: null,
+          default_curriculum: null,
+        },
+        { onConflict: 'id' }
+      );
+      const url = request.nextUrl.clone();
+      url.pathname = '/onboarding';
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
+    }
+
     if (data && !data.onboarding_complete) {
       const url = request.nextUrl.clone();
       url.pathname = '/onboarding';

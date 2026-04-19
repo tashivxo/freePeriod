@@ -45,6 +45,26 @@ export function SignInPage() {
       return;
     }
 
+    // Ensure profile row exists for users who signed up before row-creation was implemented
+    const { data: { user: signedInUser } } = await supabase.auth.getUser();
+    if (signedInUser) {
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', signedInUser.id)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from('users').insert({
+          id: signedInUser.id,
+          email,
+          name: signedInUser.user_metadata?.name ?? email.split('@')[0],
+          default_subject: null,
+          default_grade: null,
+          default_curriculum: null,
+        });
+      }
+    }
+
     router.refresh();
     router.push(searchParams.get('next') ?? '/dashboard');
   }
