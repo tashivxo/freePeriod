@@ -19,7 +19,7 @@ export function ColorBendsBackground() {
         height: "100vh"
       }}
     >
-      <ColorBends />
+      <ColorBends className="" style={{}} />
     </div>
   )
 }

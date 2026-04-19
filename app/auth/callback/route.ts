@@ -8,9 +8,37 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error, data: sessionData } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // Ensure public.users row exists (covers Google OAuth and other provider sign-ups)
+      if (sessionData.user) {
+        const { data: existingProfile } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', sessionData.user.id)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          const metaFullName = sessionData.user.user_metadata?.full_name;
+          const metaName = sessionData.user.user_metadata?.name;
+          const displayName =
+            (typeof metaFullName === 'string' ? metaFullName : null) ??
+            (typeof metaName === 'string' ? metaName : null) ??
+            sessionData.user.email?.split('@')[0] ??
+            '';
+
+          await supabase.from('users').insert({
+            id: sessionData.user.id,
+            email: sessionData.user.email ?? '',
+            name: displayName,
+            default_subject: null,
+            default_grade: null,
+            default_curriculum: null,
+          });
+        }
+      }
+
       const forwardedHost = request.headers.get('x-forwarded-host');
       const isLocalEnv = process.env.NODE_ENV === 'development';
 

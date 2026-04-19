@@ -38,7 +38,7 @@ export function SignUpPage() {
 
     setIsLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -50,6 +50,18 @@ export function SignUpPage() {
     if (error) {
       setServerError(error.message);
       return;
+    }
+
+    // Create profile row immediately if session is available (no email confirmation required)
+    if (authData.user && authData.session) {
+      await supabase.from('users').insert({
+        id: authData.user.id,
+        email,
+        name,
+        default_subject: null,
+        default_grade: null,
+        default_curriculum: null,
+      });
     }
 
     router.push('/dashboard');

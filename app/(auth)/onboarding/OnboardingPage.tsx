@@ -113,15 +113,28 @@ export function OnboardingPage() {
         subjects.push(customSubject.trim());
       }
 
+      const metaName = user.user_metadata?.name;
+      const metaFullName = user.user_metadata?.full_name;
+      const displayName =
+        (typeof metaName === 'string' ? metaName : null) ??
+        (typeof metaFullName === 'string' ? metaFullName : null) ??
+        user.email?.split('@')[0] ??
+        '';
+
       const { error: updateError } = await supabase
         .from('users')
-        .update({
-          default_subject: subjects.join(', '),
-          default_grade: grade,
-          default_curriculum: curriculum,
-          onboarding_complete: true,
-        })
-        .eq('id', user.id);
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? '',
+            name: displayName,
+            default_subject: subjects.join(', '),
+            default_grade: grade,
+            default_curriculum: curriculum,
+            onboarding_complete: true,
+          },
+          { onConflict: 'id' },
+        );
 
       if (updateError) {
         setError(updateError.message);
