@@ -128,6 +128,8 @@
   --text-primary: #1A1A2E;
   --text-secondary: #4B5563;
   --surface: #FFFFFF;
+  --color-background-elevated: #FFFFFF;
+  --color-primary-light: #FFB8D0;
 }
 
 .dark {
@@ -166,6 +168,8 @@
   --text-primary: #F0F4FF;
   --text-secondary: #B0BEC5;
   --surface: oklch(0.205 0 0);
+  --color-background-elevated: oklch(0.205 0 0);
+  --color-primary-light: #FFB8D0;
 }
 
 @keyframes shine {

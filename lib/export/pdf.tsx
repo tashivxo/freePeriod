@@ -9,6 +9,12 @@ import {
   renderToBuffer,
 } from '@react-pdf/renderer';
 import type { LessonPlan } from '@/types/database';
+import {
+  CORAL,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  BORDER,
+} from '@/lib/utils/brand-colors';
 
 Font.register({
   family: 'Inter',
@@ -17,10 +23,6 @@ Font.register({
     { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hiA.woff2', fontWeight: 700 },
   ],
 });
-
-const CORAL = '#FF8BB0';
-const TEXT_PRIMARY = '#1A1A2E';
-const TEXT_SECONDARY = '#6B7280';
 
 const styles = StyleSheet.create({
   page: {
@@ -44,7 +46,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: BORDER,
   },
   sectionHeading: {
     fontSize: 13,

@@ -3,12 +3,11 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS } from '@/lib/utils/subjects';
-import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
+import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { BlurText } from '@/components/BlurText';
-import type { DropdownItem } from '@/components/ui/animated-dropdown';
 import type { User } from '@/types/database';
 
 const SUBJECT_ITEMS: DropdownItem[] = [
@@ -99,6 +98,7 @@ export function SettingsClient({ user }: { user: User }) {
             </label>
             <Input
               id="default-grade"
+              label="Grade / Year Group"
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
               placeholder="e.g., 10, Year 8"
@@ -112,6 +112,7 @@ export function SettingsClient({ user }: { user: User }) {
             </label>
             <Input
               id="default-curriculum"
+              label="Curriculum"
               value={curriculum}
               onChange={(e) => setCurriculum(e.target.value)}
               placeholder="e.g., IB, AP, GCSE"

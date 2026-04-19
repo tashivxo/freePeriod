@@ -6,6 +6,7 @@ import { ChevronDown, Pencil, Check, X } from 'lucide-react';
 import type { LessonSection } from '@/types/database';
 import type { LessonSectionKey } from '@/types/lesson';
 import { Button } from '@/components/ui/Button';
+import { SUCCESS } from '@/lib/utils/brand-colors';
 
 type SectionCardProps = {
   sectionKey: LessonSectionKey;
@@ -98,12 +99,17 @@ export function SectionCard({ sectionKey, label, content, lessonId, onSave }: Se
       setIsEditing(false);
       setShowSaved(true);
 
-      // Brief green flash
+      // Brief green flash — read CSS vars at runtime so colors stay in sync with theme
       if (cardRef.current) {
         const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!prefersReduced) {
+          const successColor =
+            getComputedStyle(document.documentElement)
+              .getPropertyValue('--color-success')
+                .trim() || SUCCESS;
+          const endColor = getComputedStyle(cardRef.current).borderColor;
           animate(cardRef.current, {
-            borderColor: ['#10B981', '#e5e7eb'],
+            borderColor: [successColor, endColor],
             duration: 800,
             easing: 'easeOutQuad',
           });

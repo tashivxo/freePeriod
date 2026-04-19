@@ -37,34 +37,33 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
           {/* Mug body */}
           <path
             d="M6 7h10l-1.5 10H7.5L6 7z"
-            fill="#F7C34B"
-            stroke="#F7C34B"
             strokeWidth="0.5"
             strokeLinejoin="round"
+            style={{ fill: 'var(--color-mustard)', stroke: 'var(--color-mustard)' }}
           />
           {/* Mug handle */}
           <path
             d="M16 9.5c2 0 3 0.8 3 2s-1 2-3 2"
-            stroke="#F7C34B"
             strokeWidth="1.8"
             strokeLinecap="round"
             fill="none"
+            style={{ stroke: 'var(--color-mustard)' }}
           />
           {/* Steam left */}
           <path
             d="M9 5.5C9 4.5 10 4.5 10 3.5"
-            stroke="#F7C34B"
             strokeWidth="1.2"
             strokeLinecap="round"
             fill="none"
+            style={{ stroke: 'var(--color-mustard)' }}
           />
           {/* Steam right */}
           <path
             d="M12 5.5C12 4.5 13 4.5 13 3.5"
-            stroke="#F7C34B"
             strokeWidth="1.2"
             strokeLinecap="round"
             fill="none"
+            style={{ stroke: 'var(--color-mustard)' }}
           />
         </svg>
       </span>

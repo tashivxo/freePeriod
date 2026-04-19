@@ -1,0 +1,87 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "name": "FreePeriod Design Tokens",
+    "version": "1.0.0",
+    "description": "Three-layer design token system: primitive → semantic → component"
+  },
+
+  "primitive": {
+    "description": "Raw values. Never used directly in components.",
+    "color": {
+      "coral-100": { "value": "#FFE4EE", "type": "color" },
+      "coral-300": { "value": "#FFB8D0", "type": "color" },
+      "coral-500": { "value": "#FF8BB0", "type": "color" },
+      "coral-700": { "value": "#E5709A", "type": "color" },
+      "mustard-100": { "value": "#FEF3C7", "type": "color" },
+      "mustard-300": { "value": "#FADB8A", "type": "color" },
+      "mustard-500": { "value": "#F7C34B", "type": "color" },
+      "mustard-700": { "value": "#D4A52E", "type": "color" },
+      "neutral-0":   { "value": "#FFFFFF", "type": "color" },
+      "neutral-50":  { "value": "#FFFBF7", "type": "color" },
+      "neutral-100": { "value": "#F3F4F6", "type": "color" },
+      "neutral-200": { "value": "#E5E7EB", "type": "color" },
+      "neutral-400": { "value": "#9CA3AF", "type": "color" },
+      "neutral-500": { "value": "#6B7280", "type": "color" },
+      "neutral-600": { "value": "#4B5563", "type": "color" },
+      "neutral-900": { "value": "#1A1A2E", "type": "color" },
+      "green-500":   { "value": "#10B981", "type": "color" },
+      "red-500":     { "value": "#EF4444", "type": "color" }
+    }
+  },
+
+  "semantic": {
+    "description": "Purposeful aliases over primitives. Use these in components.",
+    "color": {
+      "primary":           { "value": "{primitive.color.coral-500}",   "type": "color", "css": "var(--color-coral)" },
+      "primary-light":     { "value": "{primitive.color.coral-300}",   "type": "color", "css": "var(--color-coral-light)" },
+      "primary-dark":      { "value": "{primitive.color.coral-700}",   "type": "color", "css": "var(--color-coral-dark)" },
+      "accent":            { "value": "{primitive.color.mustard-500}", "type": "color", "css": "var(--color-mustard)" },
+      "accent-light":      { "value": "{primitive.color.mustard-300}", "type": "color", "css": "var(--color-mustard-light)" },
+      "accent-dark":       { "value": "{primitive.color.mustard-700}", "type": "color", "css": "var(--color-mustard-dark)" },
+      "background":        { "value": "{primitive.color.neutral-50}",  "type": "color", "css": "var(--color-background)" },
+      "surface":           { "value": "{primitive.color.neutral-0}",   "type": "color", "css": "var(--surface)" },
+      "border":            { "value": "{primitive.color.neutral-200}", "type": "color", "css": "var(--color-border)" },
+      "text-primary":      { "value": "{primitive.color.neutral-900}", "type": "color", "css": "var(--text-primary)" },
+      "text-secondary":    { "value": "{primitive.color.neutral-500}", "type": "color", "css": "var(--text-secondary)" },
+      "success":           { "value": "{primitive.color.green-500}",   "type": "color", "css": "var(--color-success)" },
+      "error":             { "value": "{primitive.color.red-500}",     "type": "color", "css": "var(--color-error)" },
+      "focus-ring":        { "value": "{primitive.color.coral-500}",   "type": "color", "css": "var(--color-coral)" }
+    }
+  },
+
+  "component": {
+    "description": "Component-level tokens mapping semantic tokens to UI roles.",
+    "button": {
+      "primary-bg":     { "value": "{semantic.color.primary}",       "css": "bg-coral" },
+      "primary-text":   { "value": "{primitive.color.neutral-0}",    "css": "text-white" },
+      "primary-hover":  { "value": "{semantic.color.primary-dark}",  "css": "hover:bg-coral-dark" },
+      "outline-border": { "value": "{semantic.color.primary}",       "css": "border-coral" },
+      "outline-text":   { "value": "{semantic.color.primary}",       "css": "text-coral" },
+      "focus-ring":     { "value": "{semantic.color.focus-ring}",    "css": "ring-coral" }
+    },
+    "card": {
+      "bg":             { "value": "{semantic.color.surface}",       "css": "bg-surface" },
+      "border":         { "value": "{semantic.color.border}",        "css": "border-border" },
+      "success-flash":  { "value": "{semantic.color.success}",       "css": "var(--color-success)" }
+    },
+    "input": {
+      "bg":             { "value": "{semantic.color.background}",    "css": "bg-background" },
+      "border":         { "value": "{semantic.color.primary}",       "css": "border-coral/50" },
+      "focus-border":   { "value": "{semantic.color.primary}",       "css": "focus:border-coral" },
+      "text":           { "value": "{semantic.color.text-primary}",  "css": "text-text-primary" }
+    },
+    "nav": {
+      "bg":             { "value": "{semantic.color.background}",    "css": "bg-background/80" },
+      "border":         { "value": "{semantic.color.border}",        "css": "border-border/50" }
+    },
+    "badge-primary": {
+      "bg":             { "value": "{semantic.color.primary}",       "css": "bg-coral/10" },
+      "text":           { "value": "{semantic.color.primary}",       "css": "text-coral" }
+    },
+    "badge-accent": {
+      "bg":             { "value": "{semantic.color.accent}",        "css": "bg-mustard/20" },
+      "text":           { "value": "{semantic.color.accent-dark}",   "css": "text-mustard-dark" }
+    }
+  }
+}

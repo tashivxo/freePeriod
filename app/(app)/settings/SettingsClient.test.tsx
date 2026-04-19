@@ -1,39 +1,54 @@
+import React from 'react';
 import { render, screen, waitFor } from '@/lib/test-utils';
-import { userEvent } from '@testing-library/user-event';
 import { SettingsClient } from './SettingsClient';
 import type { User } from '@/types/database';
 
-const baseUser: User = {
-  id: 'user-1',
-  email: 'test@example.com',
-  name: 'Test User',
-  default_subject: null,
-  default_grade: null,
-  default_curriculum: null,
-  generation_count: 0,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
+const mockUpdate = jest.fn().mockReturnValue({
+  eq: jest.fn().mockResolvedValue({ error: null }),
+});
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     from: jest.fn(() => ({
-      update: jest.fn(() => ({
-        eq: jest.fn(() => Promise.resolve({ data: null, error: null })),
-      })),
+      update: mockUpdate,
     })),
   })),
 }));
 
-describe('SettingsClient', () => {
-  it('renders the settings form with subject dropdown', () => {
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+
+const baseUser: User = {
+  id: 'user-123',
+  email: 'teacher@example.com',
+  name: 'Ada Lovelace',
+  default_subject: null,
+  default_grade: null,
+  default_curriculum: null,
+  plan: 'free',
+  generation_count: 5,
+  generation_count_reset_at: null,
+  onboarding_complete: true,
+  created_at: '2024-01-01T00:00:00Z',
+};
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('SettingsClient — subject dropdown', () => {
+  it('renders subject dropdown button associated with its label', () => {
     render(<SettingsClient user={baseUser} />);
 
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByLabelText(/default subject/i)).toBeInTheDocument();
+    const trigger = screen.getByLabelText(/default subject/i);
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
   });
 
-  it('displays all subject options in the dropdown', async () => {
+  it('opens the listbox and shows subject options on trigger click', async () => {
     const { user } = render(<SettingsClient user={baseUser} />);
 
     const trigger = screen.getByLabelText(/default subject/i);

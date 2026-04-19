@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
 const SUBJECTS = [
   'Maths',
@@ -35,6 +35,11 @@ const GRADES = [
   '11',
   '12',
 ] as const;
+
+const GRADE_ITEMS: DropdownItem[] = (GRADES as readonly string[]).map((g) => ({
+  name: g === 'K' ? 'Kindergarten' : g === 'Pre-K' ? 'Pre-K' : `Grade ${g}`,
+  value: g,
+}));
 
 const CURRICULUM_SUGGESTIONS = [
   'CAPS',
@@ -280,21 +285,13 @@ function StepGrade({
         <label htmlFor="grade-select" className="mb-2 block text-sm font-medium text-text-secondary">
           Grade Level
         </label>
-        <Select value={grade} onValueChange={onGradeChange}>
-          <SelectTrigger
-            id="grade-select"
-            className="min-h-[44px] w-full rounded-xl border-2 border-text-secondary/30 bg-surface pl-4 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-          >
-            <SelectValue placeholder="Select a grade..." />
-          </SelectTrigger>
-          <SelectContent>
-            {GRADES.map((g) => (
-              <SelectItem key={g} value={g}>
-                {g === 'K' ? 'Kindergarten' : g === 'Pre-K' ? 'Pre-K' : `Grade ${g}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <AnimatedDropdown
+          id="grade-select"
+          text="Select a grade..."
+          items={GRADE_ITEMS}
+          selectedValue={grade}
+          onSelect={(item) => onGradeChange(item.value ?? item.name)}
+        />
       </div>
 
       <div className="flex gap-3">

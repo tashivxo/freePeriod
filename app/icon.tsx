@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 
 export const size = { width: 32, height: 32 };
 export const contentType = 'image/png';
@@ -11,7 +12,7 @@ export default function Icon() {
           width: 32,
           height: 32,
           borderRadius: 8,
-          background: 'linear-gradient(135deg, #FF8BB0 0%, #F7C34B 100%)',
+          background: `linear-gradient(135deg, ${CORAL} 0%, ${MUSTARD} 100%)`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LessonPlan } from '@/types/database';
 import { BlurText } from '@/components/BlurText';
+import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
@@ -71,17 +72,16 @@ export function HistoryClient() {
           />
         </div>
         {subjects.length > 1 && (
-          <select
-            value={subjectFilter}
-            onChange={(e) => setSubjectFilter(e.target.value)}
-            aria-label="Filter by subject"
-            className="rounded-xl border border-border bg-surface px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
-          >
-            <option value="">All subjects</option>
-            {subjects.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <AnimatedDropdown
+            text="All subjects"
+            items={[
+              { name: 'All subjects', value: '' } as DropdownItem,
+              ...subjects.map((s) => ({ name: s, value: s } as DropdownItem)),
+            ]}
+            selectedValue={subjectFilter || undefined}
+            onSelect={(item) => setSubjectFilter(item.value ?? '')}
+            className="min-w-[160px] flex-none w-auto"
+          />
         )}
       </div>
 

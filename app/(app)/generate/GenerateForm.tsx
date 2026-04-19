@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
+import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { SUBJECTS, GRADES } from '@/lib/utils/subjects';
-import { createClient } from '@/lib/supabase/client';
-import type { DropdownItem } from '@/components/ui/animated-dropdown';
+import { SUBJECTS } from '@/lib/utils/subjects';
+
+const GRADES = [
+  'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+  'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6',
+  'Year 7', 'Year 8', 'Year 9', 'Year 10', 'Year 11', 'Year 12', 'Year 13',
+] as const;
 
 const DURATION_PRESETS = [30, 45, 60, 90];
 
@@ -55,6 +59,15 @@ const DURATION_ITEMS: DropdownItem[] = [
   ...DURATION_PRESETS.map((d) => ({ name: `${d} min`, value: String(d) })),
   { name: 'Custom', value: 'custom' },
 ];
+
+const MODEL_ITEMS: DropdownItem[] = [
+  { name: 'Claude Opus (most capable)', value: 'claude-opus-4-6' },
+  { name: 'Claude Sonnet (balanced)', value: 'claude-sonnet-4-6' },
+  { name: 'Claude Haiku (fastest)', value: 'claude-haiku-4-5' },
+];
+
+const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
+const TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx';
 
 export interface GenerateFormProps {
   defaults?: {
@@ -256,16 +269,17 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             <label htmlFor="model-select" className="mb-2 block text-sm font-body font-medium text-text-secondary">
               AI Model
             </label>
-            <select
+            <AnimatedDropdown
               id="model-select"
-              value={modelPreference}
-              onChange={(e) => setModelPreference(e.target.value as 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5')}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
-            >
-              <option value="claude-opus-4-6">Claude Opus (most capable)</option>
-              <option value="claude-sonnet-4-6">Claude Sonnet (balanced)</option>
-              <option value="claude-haiku-4-5">Claude Haiku (fastest)</option>
-            </select>
+              text="Select model"
+              items={MODEL_ITEMS}
+              selectedValue={modelPreference}
+              onSelect={(item) =>
+                setModelPreference(
+                  item.value as 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5',
+                )
+              }
+            />
           </div>
         )}
 

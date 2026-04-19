@@ -118,51 +118,142 @@ export default function HomePage() {
   }, [prefersReduced]);
 
   return (
-    <>
-      <SoftAurora />
-      <main className="relative min-h-screen bg-background">
-        {/* Navbar */}
-        <nav className="relative z-50 mx-auto max-w-7xl px-4 py-4 md:py-6 flex items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-3">
-            <button
-              ref={toggleRef}
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              className="rounded-lg border border-border p-2 hover:bg-muted transition-colors"
-              aria-label="Toggle theme"
-            >
-              {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
+    <div className="relative min-h-screen overflow-x-hidden bg-background">
+      {/* Aurora background — hero area */}
+      {!prefersReduced && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[700px]" aria-hidden="true">
+          <SoftAurora
+            speed={0.4}
+            scale={1.5}
+            brightness={0.8}
+            color1={CORAL}
+            color2={MUSTARD}
+            noiseFrequency={2.5}
+            noiseAmplitude={1}
+            bandHeight={0.5}
+            bandSpread={1}
+            octaveDecay={0.1}
+            layerOffset={0}
+            colorSpeed={1}
+            enableMouseInteraction={true}
+            mouseInfluence={0.25}
+          />
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <Logo size="sm" />
+          <nav className="flex items-center gap-2">
             <Link
               href="/sign-in"
               className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral/90 transition-colors"
             >
               Sign In
             </Link>
-          </div>
-        </nav>
+          </nav>
+        </div>
+      </header>
 
+      <main className="relative">
         {/* Hero */}
-        <section ref={heroRef} className="relative z-10 mx-auto max-w-4xl px-4 py-12 md:py-20 text-center">
-          <h1 data-animate className="font-display text-4xl md:text-6xl font-bold text-text-primary mb-4">
-            <ShinyText text="Lesson plans" /> in seconds
-          </h1>
-          <p data-animate className="font-body text-lg text-text-secondary mb-8 max-w-2xl mx-auto">
-            Tired of hours spent planning? Let AI handle the heavy lifting. Generate structured, curriculum-aligned lesson plans tailored to your class in under a minute.
-          </p>
-          <div data-animate className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/sign-up"
-              className="relative inline-flex overflow-hidden items-center justify-center rounded-xl bg-coral px-8 py-3 text-base font-semibold text-white shadow-lg hover:shadow-xl transition-shadow btn-shine"
-            >
-              Get Started Free
-            </Link>
-            <Link
-              href="#features"
-              className="inline-flex items-center justify-center rounded-xl border border-border px-8 py-3 text-base font-semibold text-text-primary hover:bg-muted transition-colors"
-            >
-              Learn More
-            </Link>
+        <section className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-16">
+          <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
+            {/* Text */}
+            <div ref={heroRef} className="flex-1 text-center lg:text-left">
+              <div
+                data-animate
+                className="mb-4 inline-flex items-center gap-2 rounded-full bg-coral/10 px-4 py-1.5"
+                style={{ opacity: 0 }}
+              >
+                <Sparkles className="h-3.5 w-3.5 text-coral" />
+                <span className="text-xs font-body font-semibold text-coral">Powered by Claude AI</span>
+              </div>
+
+              <h1
+                data-animate
+                className="font-display text-5xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-6xl"
+                style={{ opacity: 0 }}
+              >
+                Lesson plans in{' '}
+                <span className="relative whitespace-nowrap text-coral">
+                  seconds,
+                  <svg
+                    className="absolute -bottom-1 left-0 w-full"
+                    viewBox="0 0 200 8"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M2 6 Q50 2 100 5 Q150 8 198 3"
+                      style={{ stroke: 'var(--color-coral)' }}
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      fill="none"
+                      opacity="0.6"
+                    />
+                  </svg>
+                </span>
+                {' '}not hours
+              </h1>
+
+              <p
+                data-animate
+                className="mt-6 font-body text-lg text-text-primary max-w-lg"
+                style={{ opacity: 0 }}
+              >
+                Upload your curriculum docs, describe what you need, and FreePeriod
+                generates a complete, structured lesson plan you can edit and export.
+              </p>
+
+              <ul data-animate className="mt-5 space-y-2" style={{ opacity: 0 }}>
+                {PERKS.map((perk) => (
+                  <li key={perk} className="flex items-center gap-2 justify-center lg:justify-start">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-coral" />
+                    <span className="text-sm font-body text-text-primary">{perk}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div
+                data-animate
+                className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"
+                style={{ opacity: 0 }}
+              >
+                <Link
+                  href="/sign-up"
+                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+                >
+                  Start for free
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+                >
+                  Sign in
+                </Link>
+              </div>
+
+              <div data-animate className="mt-6 flex items-center gap-4 justify-center lg:justify-start" style={{ opacity: 0 }}>
+                <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
+                  <Clock className="h-3.5 w-3.5" />
+                  Avg. 15 seconds to generate
+                </div>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Free to start
+                </div>
+              </div>
+            </div>
+
+            {/* Mug illustration */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <div className="relative flex h-48 w-48 items-center justify-center rounded-3xl bg-coral/10">
+                <MugAnimation />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -229,6 +320,6 @@ export default function HomePage() {
           </div>
         </footer>
       </main>
-    </>
+    </div>
   );
 }

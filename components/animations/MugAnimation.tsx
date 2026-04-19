@@ -72,37 +72,35 @@ export function MugAnimation() {
         ref={glowRef}
         cx="57" cy="73" r="42"
         fill="none"
-        stroke="#FF8BB0"
         strokeWidth="1.5"
         opacity="0.12"
-        style={{ willChange: 'transform, opacity' }}
+        style={{ stroke: 'var(--color-coral)', willChange: 'transform, opacity' }}
       />
       {/* Steam particles */}
-      <circle ref={steam1Ref} cx="38" cy="41" r="2.5" fill="#FF8BB0" opacity="0" />
-      <circle ref={steam2Ref} cx="47" cy="38" r="2" fill="#F7C34B" opacity="0" />
-      <circle ref={steam3Ref} cx="57" cy="36" r="2.5" fill="#FF8BB0" opacity="0" />
-      <circle ref={steam4Ref} cx="67" cy="38" r="2" fill="#F7C34B" opacity="0" />
-      <circle ref={steam5Ref} cx="76" cy="41" r="2.5" fill="#FF8BB0" opacity="0" />
+      <circle ref={steam1Ref} cx="38" cy="41" r="2.5" opacity="0" style={{ fill: 'var(--color-coral)' }} />
+      <circle ref={steam2Ref} cx="47" cy="38" r="2" opacity="0" style={{ fill: 'var(--color-mustard)' }} />
+      <circle ref={steam3Ref} cx="57" cy="36" r="2.5" opacity="0" style={{ fill: 'var(--color-coral)' }} />
+      <circle ref={steam4Ref} cx="67" cy="38" r="2" opacity="0" style={{ fill: 'var(--color-mustard)' }} />
+      <circle ref={steam5Ref} cx="76" cy="41" r="2.5" opacity="0" style={{ fill: 'var(--color-coral)' }} />
       {/* Mug body */}
-      <rect x="21" y="49" width="68" height="56" rx="8" fill="white" stroke="#FF8BB0" strokeWidth="2.5" />
+      <rect x="21" y="49" width="68" height="56" rx="8" strokeWidth="2.5" style={{ fill: 'white', stroke: 'var(--color-coral)' }} />
       {/* Liquid fill */}
-      <rect ref={liquidRef} x="26" y="58" width="58" height="41" rx="5" fill="#FF8BB0" opacity="0" />
+      <rect ref={liquidRef} x="26" y="58" width="58" height="41" rx="5" opacity="0" style={{ fill: 'var(--color-coral)' }} />
       {/* Mug rim */}
-      <rect x="19" y="44" width="72" height="9" rx="4.5" fill="white" stroke="#FF8BB0" strokeWidth="2.5" />
+      <rect x="19" y="44" width="72" height="9" rx="4.5" strokeWidth="2.5" style={{ fill: 'white', stroke: 'var(--color-coral)' }} />
       {/* Handle */}
       <path
         d="M89 62 Q106 62 106 77 Q106 93 89 93"
-        stroke="#FF8BB0"
         strokeWidth="2.5"
         fill="none"
         strokeLinecap="round"
+        style={{ stroke: 'var(--color-coral)' }}
       />
       {/* Heart */}
       <path
         ref={heartRef}
         d="M57 83 C46 77 38 66 38 58 C38 50 44 46 51 50 C53.5 51.5 55.5 53 57 55 C58.5 53 60.5 51.5 63 50 C70 46 76 50 76 58 C76 66 68 77 57 83 Z"
-        fill="#F7C34B"
-        style={{ transformBox: 'fill-box', transformOrigin: 'center', willChange: 'transform' }}
+        style={{ fill: 'var(--color-mustard)', transformBox: 'fill-box', transformOrigin: 'center', willChange: 'transform' }}
       />
     </svg>
   );

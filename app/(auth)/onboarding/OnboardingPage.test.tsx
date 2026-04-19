@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@/lib/test-utils';
 const mockUpdate = jest.fn().mockReturnValue({
   eq: jest.fn().mockResolvedValue({ error: null }),
 });
+const mockUpsert = jest.fn().mockResolvedValue({ error: null });
 const mockGetUser = jest.fn().mockResolvedValue({
   data: { user: { id: 'user-123' } },
   error: null,
@@ -14,6 +15,7 @@ jest.mock('@/lib/supabase/client', () => ({
     auth: { getUser: mockGetUser },
     from: jest.fn(() => ({
       update: mockUpdate,
+      upsert: mockUpsert,
     })),
   })),
 }));
@@ -49,6 +51,10 @@ const SUBJECTS = [
 describe('OnboardingPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Restore return values cleared by clearAllMocks
+    mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
+    mockUpsert.mockResolvedValue({ error: null });
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
   });
 
   it('renders step 1 heading', () => {
@@ -127,8 +133,7 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    // Radix Select: click trigger to open, then click the option
-    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByLabelText(/grade level/i));
     await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
@@ -147,8 +152,7 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    // Radix Select: click trigger to open, then click the option
-    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByLabelText(/grade level/i));
     await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
@@ -192,8 +196,7 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
-    // Radix Select: click trigger to open, then click the option
-    await user.click(screen.getByRole('combobox', { name: /grade level/i }));
+    await user.click(screen.getByLabelText(/grade level/i));
     await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
@@ -205,7 +208,7 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('button', { name: /finish/i }));
 
     await waitFor(() => {
-      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockUpsert).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
   });

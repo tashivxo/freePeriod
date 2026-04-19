@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -64,6 +64,7 @@
     "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
     "jest": "^30.3.0",
