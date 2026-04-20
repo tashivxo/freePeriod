@@ -1,6 +1,6 @@
 export const SUBJECTS = [
   'Mathematics',
-  'English Language Arts',
+  'English',
   'Science',
   'History',
   'Geography',
