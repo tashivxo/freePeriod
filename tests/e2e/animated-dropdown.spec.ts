@@ -72,3 +72,41 @@ test.describe('AnimatedDropdown — generate page', () => {
   });
 });
 
+test.describe('AnimatedDropdown — settings page', () => {
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+    await page.goto('/settings');
+  });
+
+  test('grade dropdown opens and selects a value', async ({ page }) => {
+    const gradeDropdown = page.locator('#default-grade');
+    await gradeDropdown.click();
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await page.getByRole('option', { name: 'Grade 10' }).click();
+    await expect(page.getByRole('listbox')).not.toBeVisible();
+    await expect(gradeDropdown).toContainText('Grade 10');
+  });
+
+  test('curriculum dropdown opens and contains UAE MOE', async ({ page }) => {
+    const curriculumDropdown = page.locator('#default-curriculum');
+    await curriculumDropdown.click();
+    await expect(page.getByRole('listbox')).toBeVisible();
+    await expect(page.getByRole('option', { name: 'UAE MOE' })).toBeVisible();
+  });
+
+  test('selecting UAE MOE closes dropdown and shows value', async ({ page }) => {
+    const curriculumDropdown = page.locator('#default-curriculum');
+    await curriculumDropdown.click();
+    await page.getByRole('option', { name: 'UAE MOE' }).click();
+    await expect(page.getByRole('listbox')).not.toBeVisible();
+    await expect(curriculumDropdown).toContainText('UAE MOE');
+  });
+
+  test('selecting Custom curriculum reveals text input', async ({ page }) => {
+    const curriculumDropdown = page.locator('#default-curriculum');
+    await curriculumDropdown.click();
+    await page.getByRole('option', { name: 'Custom' }).click();
+    await expect(page.getByLabel('Enter curriculum')).toBeVisible();
+  });
+});
+

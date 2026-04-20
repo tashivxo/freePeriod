@@ -4,51 +4,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
-
-const SUBJECTS = [
-  'Maths',
-  'English',
-  'Science',
-  'History',
-  'Geography',
-  'Art',
-  'Music',
-  'PE',
-  'ICT',
-  'Languages',
-] as const;
-
-const GRADES = [
-  'Pre-K',
-  'K',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '10',
-  '11',
-  '12',
-] as const;
-
-const GRADE_ITEMS: DropdownItem[] = (GRADES as readonly string[]).map((g) => ({
-  name: g === 'K' ? 'Kindergarten' : g === 'Pre-K' ? 'Pre-K' : `Grade ${g}`,
-  value: g,
-}));
-
-const CURRICULUM_SUGGESTIONS = [
-  'CAPS',
-  'UK National',
-  'IB',
-  'Common Core',
-  'Australian',
-  'UAE MOE',
-] as const;
+import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
+import { Input } from '@/components/ui/Input';
+import { SUBJECTS } from '@/lib/utils/subjects';
+import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 
 export function OnboardingPage() {
   const router = useRouter();
@@ -56,7 +16,8 @@ export function OnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [customSubject, setCustomSubject] = useState('');
   const [grade, setGrade] = useState('');
-  const [curriculum, setCurriculum] = useState('');
+  const [curriculumSelect, setCurriculumSelect] = useState('');
+  const [customCurriculum, setCustomCurriculum] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const stepContainerRef = useRef<HTMLDivElement>(null);
@@ -135,7 +96,7 @@ export function OnboardingPage() {
             name: displayName,
             default_subject: subjects.join(', '),
             default_grade: grade,
-            default_curriculum: curriculum,
+            default_curriculum: curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect,
             onboarding_complete: true,
           },
           { onConflict: 'id' },
@@ -152,7 +113,7 @@ export function OnboardingPage() {
       setError('Something went wrong. Please try again.');
       setIsSubmitting(false);
     }
-  }, [selectedSubjects, customSubject, grade, curriculum, router]);
+  }, [selectedSubjects, customSubject, grade, curriculumSelect, customCurriculum, router]);
 
   // Animate on mount
   useEffect(() => {
@@ -188,8 +149,10 @@ export function OnboardingPage() {
 
           {step === 3 && (
             <StepCurriculum
-              curriculum={curriculum}
-              onCurriculumChange={setCurriculum}
+              curriculumSelect={curriculumSelect}
+              onCurriculumSelectChange={setCurriculumSelect}
+              customCurriculum={customCurriculum}
+              onCustomCurriculumChange={setCustomCurriculum}
               onBack={handleBack}
               onFinish={handleFinish}
               isSubmitting={isSubmitting}
@@ -307,14 +270,18 @@ function StepGrade({
 }
 
 function StepCurriculum({
-  curriculum,
-  onCurriculumChange,
+  curriculumSelect,
+  onCurriculumSelectChange,
+  customCurriculum,
+  onCustomCurriculumChange,
   onBack,
   onFinish,
   isSubmitting,
 }: {
-  curriculum: string;
-  onCurriculumChange: (value: string) => void;
+  curriculumSelect: string;
+  onCurriculumSelectChange: (value: string) => void;
+  customCurriculum: string;
+  onCustomCurriculumChange: (value: string) => void;
   onBack: () => void;
   onFinish: () => void;
   isSubmitting: boolean;
@@ -325,35 +292,26 @@ function StepCurriculum({
         What curriculum?
       </h1>
 
-      <div className="mb-4 flex flex-wrap justify-center gap-2">
-        {CURRICULUM_SUGGESTIONS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => onCurriculumChange(c)}
-            className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-              curriculum === c
-                ? 'border-primary bg-primary text-white'
-                : 'border-border bg-background text-text-primary hover:border-coral'
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
       <div className="mb-6">
-        <label htmlFor="curriculum-input" className="mb-2 block text-sm font-medium text-text-secondary">
+        <label htmlFor="curriculum-select" className="mb-2 block text-sm font-medium text-text-secondary">
           Curriculum
         </label>
-        <input
-          id="curriculum-input"
-          type="text"
-          value={curriculum}
-          onChange={(e) => onCurriculumChange(e.target.value)}
-          placeholder="Or type your curriculum..."
-          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
+        <AnimatedDropdown
+          id="curriculum-select"
+          text="Select a curriculum..."
+          items={CURRICULUM_ITEMS}
+          selectedValue={curriculumSelect}
+          onSelect={(item) => onCurriculumSelectChange(item.value ?? item.name)}
         />
+        {curriculumSelect === 'Custom' && (
+          <div className="mt-3">
+            <Input
+              label="Enter curriculum"
+              value={customCurriculum}
+              onChange={(e) => onCustomCurriculumChange(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3">
@@ -364,7 +322,7 @@ function StepCurriculum({
           onClick={onFinish}
           className="flex-1"
           isLoading={isSubmitting}
-          disabled={!curriculum.trim()}
+          disabled={!curriculumSelect || (curriculumSelect === 'Custom' && !customCurriculum.trim())}
         >
           Finish
         </Button>

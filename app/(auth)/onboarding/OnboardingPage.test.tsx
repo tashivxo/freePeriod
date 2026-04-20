@@ -36,16 +36,12 @@ jest.mock('animejs', () => ({
 import { OnboardingPage } from './OnboardingPage';
 
 const SUBJECTS = [
-  'Maths',
+  'Mathematics',
   'English',
-  'Science',
   'History',
   'Geography',
   'Art',
   'Music',
-  'PE',
-  'ICT',
-  'Languages',
 ];
 
 describe('OnboardingPage', () => {
@@ -75,25 +71,25 @@ describe('OnboardingPage', () => {
 
   it('allows selecting multiple subject chips', async () => {
     const { user } = render(<OnboardingPage />);
-    const mathsChip = screen.getByRole('button', { name: /maths/i });
-    const scienceChip = screen.getByRole('button', { name: /science/i });
+    const mathChip = screen.getByRole('button', { name: /mathematics/i });
+    const historyChip = screen.getByRole('button', { name: /history/i });
 
-    await user.click(mathsChip);
-    await user.click(scienceChip);
+    await user.click(mathChip);
+    await user.click(historyChip);
 
-    expect(mathsChip).toHaveAttribute('aria-pressed', 'true');
-    expect(scienceChip).toHaveAttribute('aria-pressed', 'true');
+    expect(mathChip).toHaveAttribute('aria-pressed', 'true');
+    expect(historyChip).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('allows deselecting a subject chip', async () => {
     const { user } = render(<OnboardingPage />);
-    const mathsChip = screen.getByRole('button', { name: /maths/i });
+    const mathChip = screen.getByRole('button', { name: /mathematics/i });
 
-    await user.click(mathsChip);
-    expect(mathsChip).toHaveAttribute('aria-pressed', 'true');
+    await user.click(mathChip);
+    expect(mathChip).toHaveAttribute('aria-pressed', 'true');
 
-    await user.click(mathsChip);
-    expect(mathsChip).toHaveAttribute('aria-pressed', 'false');
+    await user.click(mathChip);
+    expect(mathChip).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('renders custom subject input', () => {
@@ -103,7 +99,7 @@ describe('OnboardingPage', () => {
 
   it('shows next button and navigates to step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -115,7 +111,7 @@ describe('OnboardingPage', () => {
 
   it('renders grade dropdown on step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -126,7 +122,7 @@ describe('OnboardingPage', () => {
   it('navigates from step 2 to step 3', async () => {
     const { user } = render(<OnboardingPage />);
     // Step 1: select subject
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Step 2: select grade
@@ -144,10 +140,10 @@ describe('OnboardingPage', () => {
     });
   });
 
-  it('renders curriculum suggestions on step 3', async () => {
+  it('renders curriculum AnimatedDropdown on step 3', async () => {
     const { user } = render(<OnboardingPage />);
     // Navigate to step 3
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
@@ -160,17 +156,21 @@ describe('OnboardingPage', () => {
       expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument();
     });
 
-    // Check suggestion buttons exist
-    for (const curriculum of ['CAPS', 'UK National', 'IB', 'Common Core', 'Australian']) {
-      expect(
-        screen.getByRole('button', { name: new RegExp(curriculum, 'i') }),
-      ).toBeInTheDocument();
-    }
+    // Step 3 uses AnimatedDropdown (not pill buttons)
+    const curriculumTrigger = screen.getByLabelText(/curriculum/i);
+    expect(curriculumTrigger).toHaveAttribute('aria-haspopup', 'listbox');
+
+    // Open dropdown and verify preset options including UAE MOE
+    await user.click(curriculumTrigger);
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'UAE MOE' })).toBeInTheDocument();
+    });
   });
 
   it('allows going back from step 2 to step 1', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -189,7 +189,7 @@ describe('OnboardingPage', () => {
     const { user } = render(<OnboardingPage />);
 
     // Step 1: select subjects
-    await user.click(screen.getByRole('button', { name: /maths/i }));
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Step 2: select grade
@@ -200,11 +200,15 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('option', { name: 'Grade 9' }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
-    // Step 3: enter curriculum and finish
+    // Step 3: select curriculum from dropdown and finish
     await waitFor(() => {
       expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument();
     });
-    await user.type(screen.getByLabelText(/curriculum/i), 'CAPS');
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: 'IB' }));
     await user.click(screen.getByRole('button', { name: /finish/i }));
 
     await waitFor(() => {
@@ -216,5 +220,44 @@ describe('OnboardingPage', () => {
   it('renders step indicators', () => {
     render(<OnboardingPage />);
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
+  });
+
+  it('selecting Custom curriculum reveals text input on step 3', async () => {
+    const { user } = render(<OnboardingPage />);
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/grade level/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Custom' })).toBeInTheDocument());
+    await user.click(screen.getByRole('option', { name: 'Custom' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/enter curriculum/i)).toBeInTheDocument();
+    });
+  });
+
+  it('Finish button is disabled until a curriculum is selected on step 3', async () => {
+    const { user } = render(<OnboardingPage />);
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/grade level/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /finish/i })).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /finish/i })).toBeDisabled();
+
+    // Select a curriculum
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+
+    expect(screen.getByRole('button', { name: /finish/i })).not.toBeDisabled();
   });
 });

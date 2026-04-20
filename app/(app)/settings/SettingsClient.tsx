@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS } from '@/lib/utils/subjects';
+import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { BlurText } from '@/components/BlurText';
+import { LogOut } from 'lucide-react';
 import type { User } from '@/types/database';
 
 const SUBJECT_ITEMS: DropdownItem[] = [
@@ -25,9 +29,20 @@ export function SettingsClient({ user }: { user: User }) {
     !initialSubjectIsPreset && user.default_subject ? user.default_subject : ''
   );
   const subject = subjectSelect === 'Custom' ? customSubject : subjectSelect;
-  const [grade, setGrade] = useState(user.default_grade ?? '');
-  const [curriculum, setCurriculum] = useState(user.default_curriculum ?? '');
+  const [gradeSelect, setGradeSelect] = useState<string>(user.default_grade ?? '');
+  const curriculaPreset = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
+  const initialCurriculumIsPreset = user.default_curriculum
+    ? curriculaPreset.includes(user.default_curriculum)
+    : false;
+  const [curriculumSelect, setCurriculumSelect] = useState<string>(
+    initialCurriculumIsPreset ? (user.default_curriculum ?? '') : (user.default_curriculum ? 'Custom' : '')
+  );
+  const [customCurriculum, setCustomCurriculum] = useState<string>(
+    !initialCurriculumIsPreset && user.default_curriculum ? user.default_curriculum : ''
+  );
+  const curriculum = curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect;
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
   const handleSave = async () => {
     setSaving(true);
@@ -37,7 +52,7 @@ export function SettingsClient({ user }: { user: User }) {
         .from('users')
         .update({
           default_subject: subject || null,
-          default_grade: grade || null,
+          default_grade: gradeSelect || null,
           default_curriculum: curriculum || null,
         })
         .eq('id', user.id);
@@ -96,12 +111,12 @@ export function SettingsClient({ user }: { user: User }) {
             <label htmlFor="default-grade" className="mb-2 block text-sm font-body font-medium text-text-secondary">
               Default Grade / Year Group
             </label>
-            <Input
+            <AnimatedDropdown
               id="default-grade"
-              label="Grade / Year Group"
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              placeholder="e.g., 10, Year 8"
+              text="Select grade"
+              items={GRADE_ITEMS}
+              selectedValue={gradeSelect}
+              onSelect={(item) => setGradeSelect(item.value ?? item.name)}
             />
           </div>
 
@@ -110,13 +125,22 @@ export function SettingsClient({ user }: { user: User }) {
             <label htmlFor="default-curriculum" className="mb-2 block text-sm font-body font-medium text-text-secondary">
               Default Curriculum
             </label>
-            <Input
+            <AnimatedDropdown
               id="default-curriculum"
-              label="Curriculum"
-              value={curriculum}
-              onChange={(e) => setCurriculum(e.target.value)}
-              placeholder="e.g., IB, AP, GCSE"
+              text="Select curriculum"
+              items={CURRICULUM_ITEMS}
+              selectedValue={curriculumSelect}
+              onSelect={(item) => setCurriculumSelect(item.value ?? item.name)}
             />
+            {curriculumSelect === 'Custom' && (
+              <div className="mt-3">
+                <Input
+                  label="Enter curriculum"
+                  value={customCurriculum}
+                  onChange={(e) => setCustomCurriculum(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Save Button */}
@@ -124,6 +148,23 @@ export function SettingsClient({ user }: { user: User }) {
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
         </div>
+      </div>
+
+      {/* Account */}
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
+        <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">Account</h2>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={async () => {
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            router.push('/sign-in');
+          }}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </Button>
       </div>
     </div>
   );

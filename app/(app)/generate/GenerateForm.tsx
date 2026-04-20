@@ -4,54 +4,13 @@ import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dr
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { SUBJECTS } from '@/lib/utils/subjects';
-
-const GRADES = [
-  'K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
-  'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5', 'Year 6',
-  'Year 7', 'Year 8', 'Year 9', 'Year 10', 'Year 11', 'Year 12', 'Year 13',
-] as const;
+import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 
 const DURATION_PRESETS = [30, 45, 60, 90];
 
-const CURRICULA = [
-  'IB',
-  'AP',
-  'Common Core',
-  'GCSE',
-  'A-Level',
-  'Cambridge IGCSE',
-  'National Curriculum (England)',
-  'Australian Curriculum',
-  'CBSE (India)',
-  'CAPS (South Africa)',
-  'UAE MOE',
-  'Edexcel',
-  'AQA',
-  'OCR',
-] as const;
-
-const GRADE_ITEMS: DropdownItem[] = GRADES.map((g) => ({ name: g, value: g }));
-
 const SUBJECT_ITEMS: DropdownItem[] = [
   ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),
-  { name: 'Custom', value: 'Custom' },
-];
-
-const CURRICULUM_ITEMS: DropdownItem[] = [
-  { name: 'IB', value: 'IB' },
-  { name: 'AP', value: 'AP' },
-  { name: 'Common Core', value: 'Common Core' },
-  { name: 'GCSE', value: 'GCSE' },
-  { name: 'A-Level', value: 'A-Level' },
-  { name: 'Cambridge IGCSE', value: 'Cambridge IGCSE' },
-  { name: 'National Curriculum (England)', value: 'National Curriculum (England)' },
-  { name: 'Australian Curriculum', value: 'Australian Curriculum' },
-  { name: 'CBSE (India)', value: 'CBSE (India)' },
-  { name: 'CAPS (South Africa)', value: 'CAPS (South Africa)' },
-  { name: 'UAE MOE', value: 'UAE MOE' },
-  { name: 'Edexcel', value: 'Edexcel' },
-  { name: 'AQA', value: 'AQA' },
-  { name: 'OCR', value: 'OCR' },
   { name: 'Custom', value: 'Custom' },
 ];
 
