@@ -20,10 +20,6 @@ const DURATION_ITEMS: DropdownItem[] = [
   { name: 'Custom', value: 'custom' },
 ];
 
-const MODEL_ITEMS: DropdownItem[] = [
-  { name: 'Claude Sonnet (balanced)', value: 'claude-sonnet-4-6' },
-];
-
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
 const TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx';
 
@@ -43,7 +39,6 @@ export interface GenerateFormData {
   curriculum: string;
   duration: number;
   teacherPrompt: string;
-  modelPreference?: 'claude-sonnet-4-6';
   curriculumDocPath: string | null;
   templatePath: string | null;
 }
@@ -72,7 +67,6 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
-  const [modelPreference, setModelPreference] = useState<'claude-sonnet-4-6'>('claude-sonnet-4-6');
   const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
   const [templatePath, setTemplatePath] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +87,6 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
         curriculum,
         duration: parseInt(durationSelect === 'custom' ? customDuration : durationSelect, 10),
         teacherPrompt,
-        modelPreference,
         curriculumDocPath,
         templatePath,
       };
@@ -242,24 +235,6 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           onUploadComplete={(p) => setTemplatePath(p)}
           onRemove={() => setTemplatePath(null)}
         />
-
-        {/* Model Selection (Pro only) */}
-        {userPlan === 'pro' && (
-          <div>
-            <label htmlFor="model-select" className="mb-2 block text-sm font-body font-medium text-text-secondary">
-              AI Model
-            </label>
-            <AnimatedDropdown
-              id="model-select"
-              text="Select model"
-              items={MODEL_ITEMS}
-              selectedValue={modelPreference}
-              onSelect={(item) =>
-                setModelPreference(item.value as 'claude-sonnet-4-6')
-              }
-            />
-          </div>
-        )}
 
         {/* Submit */}
         <Button

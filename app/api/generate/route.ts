@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   const claudeModel: AllowedModel =
     !isFreePlan && modelPreference && isAllowedModel(modelPreference)
       ? modelPreference
-      : 'claude-opus-4-6';
+      : 'claude-sonnet-4-6';
   const modelUsed = isFreePlan ? 'gemini-2.0-flash' : claudeModel;
 
   // Fetch parsed curriculum doc text if provided
