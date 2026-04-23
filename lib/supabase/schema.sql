@@ -49,6 +49,7 @@ create table public.lesson_plans (
   content jsonb not null default '{}'::jsonb,
   model_used text not null,
   token_count int not null default 0,
+  template_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

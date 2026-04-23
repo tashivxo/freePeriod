@@ -3,11 +3,12 @@ import { Plus } from 'lucide-react';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 
-const DURATION_PRESETS = [30, 45, 60, 90];
+const DURATION_PRESETS = [30, 45, 60, 90, 120];
 
 const SUBJECT_ITEMS: DropdownItem[] = [
   ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),
@@ -20,9 +21,7 @@ const DURATION_ITEMS: DropdownItem[] = [
 ];
 
 const MODEL_ITEMS: DropdownItem[] = [
-  { name: 'Claude Opus (most capable)', value: 'claude-opus-4-6' },
   { name: 'Claude Sonnet (balanced)', value: 'claude-sonnet-4-6' },
-  { name: 'Claude Haiku (fastest)', value: 'claude-haiku-4-5' },
 ];
 
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
@@ -42,9 +41,11 @@ export interface GenerateFormData {
   subject: string;
   grade: string;
   curriculum: string;
-  duration: string;
+  duration: number;
   teacherPrompt: string;
-  modelPreference?: 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5';
+  modelPreference?: 'claude-sonnet-4-6';
+  curriculumDocPath: string | null;
+  templatePath: string | null;
 }
 
 export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: GenerateFormProps) {
@@ -71,7 +72,9 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
-  const [modelPreference, setModelPreference] = useState<'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5'>('claude-opus-4-6');
+  const [modelPreference, setModelPreference] = useState<'claude-sonnet-4-6'>('claude-sonnet-4-6');
+  const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
+  const [templatePath, setTemplatePath] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,10 +90,12 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
       const formData: GenerateFormData = {
         subject,
         grade,
-        curriculum: durationSelect === 'custom' ? customDuration : curriculum,
-        duration: durationSelect === 'custom' ? customDuration : durationSelect,
+        curriculum,
+        duration: parseInt(durationSelect === 'custom' ? customDuration : durationSelect, 10),
         teacherPrompt,
         modelPreference,
+        curriculumDocPath,
+        templatePath,
       };
 
       if (onSubmit) {
@@ -106,7 +111,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
       onSubmit={handleSubmit}
       className="w-full max-w-3xl mx-auto rounded-2xl border border-border bg-surface/50 backdrop-blur p-6 md:p-8"
     >
-      <h2 className="font-display text-2xl font-bold text-text-primary mb-6">Create Lesson Plan</h2>
+      <h2 className="font-display text-2xl font-bold text-text-primary mb-6">Generate a Lesson</h2>
 
       <div className="space-y-5">
         {/* Subject */}
@@ -141,7 +146,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             htmlFor="grade-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Grade / Year Group
+            Grade
           </label>
           <AnimatedDropdown
             id="grade-select"
@@ -158,7 +163,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             htmlFor="curriculum-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Curriculum (optional)
+            Curriculum
           </label>
           <AnimatedDropdown
             id="curriculum-select"
@@ -184,7 +189,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             htmlFor="duration-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Lesson Duration
+            Duration
           </label>
           <AnimatedDropdown
             id="duration-select"
@@ -196,7 +201,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
           {durationSelect === 'custom' && (
             <div className="mt-2">
               <Input
-                label="Enter duration (minutes)"
+                label="How long is the lesson? (minutes)"
                 type="number"
                 value={customDuration}
                 onChange={(e) => setCustomDuration(e.target.value)}
@@ -211,7 +216,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             htmlFor="teacher-prompt"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Additional Instructions (optional)
+            Any specific focus or requirements? (optional)
           </label>
           <textarea
             id="teacher-prompt"
@@ -221,6 +226,22 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             className="w-full h-24 rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral resize-none"
           />
         </div>
+
+        {/* Upload Zones */}
+        <DocumentUploadZone
+          label="Upload curriculum document"
+          accept={CURRICULUM_DOC_ACCEPT}
+          uploadType="curriculum_doc"
+          onUploadComplete={(p) => setCurriculumDocPath(p)}
+          onRemove={() => setCurriculumDocPath(null)}
+        />
+        <DocumentUploadZone
+          label="Upload lesson plan template"
+          accept={TEMPLATE_ACCEPT}
+          uploadType="template"
+          onUploadComplete={(p) => setTemplatePath(p)}
+          onRemove={() => setTemplatePath(null)}
+        />
 
         {/* Model Selection (Pro only) */}
         {userPlan === 'pro' && (
@@ -234,9 +255,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
               items={MODEL_ITEMS}
               selectedValue={modelPreference}
               onSelect={(item) =>
-                setModelPreference(
-                  item.value as 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5',
-                )
+                setModelPreference(item.value as 'claude-sonnet-4-6')
               }
             />
           </div>
@@ -245,7 +264,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
         {/* Submit */}
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={!subject.trim() || isSubmitting}
           className="w-full mt-6"
         >
           {isSubmitting ? 'Generating...' : (
