@@ -219,9 +219,22 @@ export async function POST(request: NextRequest) {
           status?: number;
           error?: { type?: string; error?: { type?: string; message?: string } };
           message?: string;
+          cause?: unknown;
+          stack?: string;
         };
         const errType = sdkErr.error?.error?.type ?? sdkErr.error?.type;
         const errMessage = sdkErr.error?.error?.message ?? sdkErr.message ?? '';
+
+        // Always log full error details to Vercel/server logs for diagnosis
+        console.error('[generate] Error caught:', JSON.stringify({
+          errType,
+          status: sdkErr.status,
+          message: sdkErr.message,
+          cause: String(sdkErr.cause ?? ''),
+          stack: (err as Error)?.stack?.split('\n').slice(0, 8),
+          isFreePlan,
+          modelUsed,
+        }, null, 2));
 
         if (errType === 'overloaded_error') {
           send({ type: 'error', message: 'Claude is currently overloaded. Please try again in a moment.' });
@@ -231,9 +244,13 @@ export async function POST(request: NextRequest) {
           send({ type: 'error', message: 'Anthropic API credits are exhausted. Please add credits at console.anthropic.com.' });
         } else if (errType === 'invalid_request_error') {
           send({ type: 'error', message: 'Invalid request to Claude API. Please try again.' });
+        } else if (errMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY') || errMessage.toLowerCase().includes('api key')) {
+          send({ type: 'error', message: 'Generation API key is not configured on this deployment. Check Vercel environment variables.' });
         } else {
-          console.error('[generate] Unexpected error:', JSON.stringify(err));
-          send({ type: 'error', message: 'An unexpected error occurred during generation.' });
+          send({
+            type: 'error',
+            message: `An unexpected error occurred during generation. [${errType ?? (err as Error)?.name ?? 'Error'}${sdkErr.status ? `:${sdkErr.status}` : ''}]`,
+          });
         }
       } finally {
         controller.close();
