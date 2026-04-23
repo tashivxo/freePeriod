@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
 import { ArrowLeft, Download, Clock, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { contentToString, editTextToContent, stripHtml } from '@/lib/utils/lesson-content';
 import { SectionCard } from '@/components/lesson/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan, LessonSection } from '@/types/database';
@@ -34,6 +35,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState<'docx' | 'pdf' | null>(null);
   const [fillLoading, setFillLoading] = useState(false);
   const [showNoPdfFieldsDialog, setShowNoPdfFieldsDialog] = useState(false);
@@ -63,26 +65,36 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, []);
 
-  const handleSave = useCallback(
-    async (key: LessonSectionKey, value: unknown): Promise<boolean> => {
+  const debouncedSave = useMemo(() => {
+    function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
+      let timer: ReturnType<typeof setTimeout>;
+      return ((...args: Parameters<T>) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), ms);
+      }) as T;
+    }
+
+    return debounce(async (key: LessonSectionKey, html: string) => {
+      const stripped = stripHtml(html);
+      const value = editTextToContent(stripped, lesson.content[key]);
       const supabase = createClient();
       const updatedContent = { ...lesson.content, [key]: value };
-
       const { error } = await supabase
         .from('lesson_plans')
         .update({ content: updatedContent as LessonSection })
         .eq('id', lesson.id);
+      if (!error) {
+        setLesson((prev) => ({ ...prev, content: updatedContent as LessonSection }));
+      }
+    }, 30_000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id, lesson.content]);
 
-      if (error) return false;
-
-      setLesson((prev) => ({
-        ...prev,
-        content: updatedContent as LessonSection,
-      }));
-      return true;
-    },
-    [lesson],
-  );
+  useEffect(() => {
+    return () => {
+      // Nothing to flush — debounce timer will fire naturally or be GC'd on unmount
+    };
+  }, [debouncedSave]);
 
   const handleExport = useCallback(
     async (format: 'docx' | 'pdf') => {
@@ -250,13 +262,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       {/* Section cards */}
       <div ref={cardsRef} className="space-y-4">
         {SECTION_ORDER.filter((s) => s.key !== 'title').map((section) => (
-          <div key={section.key} className="section-card-wrapper">
+          <div key={section.key} className="section-card">
             <SectionCard
-              sectionKey={section.key}
-              label={section.label}
-              content={content[section.key]}
-              lessonId={lesson.id}
-              onSave={handleSave}
+              title={section.label}
+              content={contentToString(content[section.key])}
+              isEditing={editingKey === section.key}
+              onEdit={() => setEditingKey(section.key)}
+              onDone={() => setEditingKey(null)}
+              onChange={(html) => debouncedSave(section.key, html)}
             />
           </div>
         ))}
