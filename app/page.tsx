@@ -148,7 +148,7 @@ export default function HomePage() {
           <nav className="flex items-center gap-2">
             <Link
               href="/sign-in"
-              className="rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral/90 transition-colors"
+              className="relative btn-shine overflow-hidden rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors"
             >
               Sign In
             </Link>
@@ -290,7 +290,7 @@ export default function HomePage() {
 
         {/* Social Proof */}
         <section className="relative z-10 mx-auto max-w-4xl px-4 py-12 md:py-20">
-          <div className="rounded-2xl border border-border bg-surface/50 backdrop-blur p-8 md:p-12 text-center">
+          <SpotlightCard className="rounded-2xl border border-border bg-surface/50 backdrop-blur p-8 md:p-12 text-center hover:border-coral/50 transition-colors">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-6">
               Save Hours Every Week
             </h2>
@@ -304,11 +304,11 @@ export default function HomePage() {
             </div>
             <Link
               href="/sign-up"
-              className="inline-flex items-center justify-center rounded-xl bg-coral px-8 py-3 text-base font-semibold text-white hover:bg-coral/90 transition-colors"
+              className="relative btn-shine overflow-hidden inline-flex items-center justify-center rounded-xl bg-coral px-8 py-3 font-body text-base font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
             >
               Start Planning Smarter
             </Link>
-          </div>
+          </SpotlightCard>
         </section>
 
         {/* Footer */}
@@ -326,7 +326,7 @@ export default function HomePage() {
         ref={toggleRef}
         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-body text-sm font-medium text-text-primary shadow-md transition-colors hover:bg-muted dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+        className="fixed bottom-6 right-6 z-50 relative btn-shine overflow-hidden flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-body text-sm font-medium text-text-primary shadow-md transition-colors hover:bg-muted dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
         style={{ opacity: 0 }}
       >
         {resolvedTheme === 'dark' ? (
