@@ -238,8 +238,8 @@ export async function POST(request: NextRequest) {
 
         if (errType === 'overloaded_error') {
           send({ type: 'error', message: 'Claude is currently overloaded. Please try again in a moment.' });
-        } else if (sdkErr.status === 429) {
-          send({ type: 'error', message: 'Rate limit reached. Please wait a moment and try again.' });
+        } else if (sdkErr.status === 429 || errMessage.toLowerCase().includes('generation is busy') || errMessage.toLowerCase().includes('rate limit reached after retries')) {
+          send({ type: 'error', message: 'Generation is busy, please try again in a moment.' });
         } else if (errMessage.toLowerCase().includes('credit balance') || errMessage.toLowerCase().includes('insufficient')) {
           send({ type: 'error', message: 'Anthropic API credits are exhausted. Please add credits at console.anthropic.com.' });
         } else if (errType === 'invalid_request_error') {
