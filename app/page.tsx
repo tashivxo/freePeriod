@@ -320,6 +320,27 @@ export default function HomePage() {
           </div>
         </footer>
       </main>
+
+      {/* Floating dark mode toggle */}
+      <button
+        ref={toggleRef}
+        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-body text-sm font-medium text-text-primary shadow-md transition-colors hover:bg-muted dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+        style={{ opacity: 0 }}
+      >
+        {resolvedTheme === 'dark' ? (
+          <>
+            <Sun className="h-4 w-4" />
+            Try light mode
+          </>
+        ) : (
+          <>
+            <Moon className="h-4 w-4" />
+            Try dark mode
+          </>
+        )}
+      </button>
     </div>
   );
 }

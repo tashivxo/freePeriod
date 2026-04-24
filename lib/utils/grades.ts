@@ -37,7 +37,10 @@ export const GRADES = [
 export type Grade = (typeof GRADES)[number];
 
 function gradeLabel(g: string): string {
-  return g;
+  if (g === 'Pre-K') return 'Pre-K';
+  if (g === 'K') return 'Kindergarten';
+  if (/^Year \d+$/.test(g)) return g;
+  return `Grade ${g}`;
 }
 
 /** Dropdown items for grade selectors — human-readable labels, raw values. */

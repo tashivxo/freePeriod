@@ -7,7 +7,14 @@ jest.mock('@/lib/supabase/client', () => ({
       signInWithPassword: jest.fn().mockResolvedValue({ data: {}, error: null }),
       signInWithOtp: jest.fn().mockResolvedValue({ data: {}, error: null }),
       signInWithOAuth: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     },
+    from: jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+      insert: jest.fn().mockResolvedValue({ error: null }),
+    }),
   })),
 }));
 
@@ -90,7 +97,14 @@ describe('SignInPage', () => {
         signInWithPassword: mockSignIn,
         signInWithOtp: jest.fn(),
         signInWithOAuth: jest.fn(),
+        getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
+      from: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+        insert: jest.fn().mockResolvedValue({ error: null }),
+      }),
     });
 
     const { user } = render(<SignInPage />);
