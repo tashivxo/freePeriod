@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL ?? 'https://free-period.vercel.app';
+const VERCEL_BYPASS_TOKEN = process.env.VERCEL_BYPASS_TOKEN;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -14,6 +15,11 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    ...(VERCEL_BYPASS_TOKEN && {
+      extraHTTPHeaders: {
+        'x-vercel-protection-bypass': VERCEL_BYPASS_TOKEN,
+      },
+    }),
   },
   projects: [
     {

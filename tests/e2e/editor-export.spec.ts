@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Download } from '@playwright/test';
 
 test.describe('Editor and Export - Phase 3 Features', () => {
   test.beforeEach(async ({ page }) => {
@@ -171,9 +171,9 @@ test.describe('Editor and Export - Phase 3 Features', () => {
     }
   });
 
-  test('PDF download initiates without errors', async ({ page, context }) => {
+  test('PDF download initiates without errors', async ({ page }) => {
     // Listen for download events
-    const downloadPromise = context.waitForEvent('download');
+    const downloadPromise = page.waitForEvent('download');
     
     // Navigate to lesson view
     await page.goto('/dashboard');
@@ -192,7 +192,7 @@ test.describe('Editor and Export - Phase 3 Features', () => {
         
         try {
           await pdfButton.click();
-          const download = await downloadPromiseWithTimeout;
+          const download = await downloadPromiseWithTimeout as Download;
           expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
         } catch (e) {
           // Download might not happen in test environment, that's ok
@@ -202,9 +202,9 @@ test.describe('Editor and Export - Phase 3 Features', () => {
     }
   });
 
-  test('DOCX download initiates without errors', async ({ page, context }) => {
+  test('DOCX download initiates without errors', async ({ page }) => {
     // Listen for download events
-    const downloadPromise = context.waitForEvent('download');
+    const downloadPromise = page.waitForEvent('download');
     
     // Navigate to lesson view
     await page.goto('/dashboard');
@@ -223,7 +223,7 @@ test.describe('Editor and Export - Phase 3 Features', () => {
         
         try {
           await docxButton.click();
-          const download = await downloadPromiseWithTimeout;
+          const download = await downloadPromiseWithTimeout as Download;
           expect(download.suggestedFilename()).toMatch(/\.(docx|doc)$/i);
         } catch (e) {
           // Download might not happen in test environment, that's ok
