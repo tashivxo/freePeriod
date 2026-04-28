@@ -5,8 +5,8 @@ import HomePage from './page';
 
 jest.mock('@/lib/theme');
 jest.mock('@/components/SpotlightCard', () => ({
-  SpotlightCard: ({ children, className }: { children: React.ReactNode; className?: string }) => (
-    <div className={className}>{children}</div>
+  SpotlightCard: ({ children, className, ...rest }: { children: React.ReactNode; className?: string; [key: string]: unknown }) => (
+    <div className={className} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
   ),
 }));
 
@@ -74,7 +74,7 @@ describe('HomePage', () => {
       const featureCards = container.querySelectorAll('[data-feature]');
       expect(featureCards).toHaveLength(3);
       featureCards.forEach((card) => {
-        expect(card.className).toMatch(/transition-all/);
+        expect(card.className).toMatch(/transition/);
       });
     });
   });

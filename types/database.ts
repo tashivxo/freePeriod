@@ -69,6 +69,21 @@ export type Export = {
   created_at: string;
 }
 
+export type Subscription = {
+  id: string;
+  user_id: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_price_id: string | null;
+  plan: Plan;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+
 export type Database = {
   public: {
     Tables: {
@@ -102,6 +117,16 @@ export type Database = {
         Row: Export;
         Insert: Omit<Export, 'id' | 'created_at'> & { id?: string };
         Update: Partial<Omit<Export, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: Subscription;
+        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'cancel_at_period_end' | 'stripe_price_id'> & {
+          id?: string;
+          stripe_price_id?: string | null;
+          cancel_at_period_end?: boolean;
+        };
+        Update: Partial<Omit<Subscription, 'id' | 'user_id' | 'created_at'>>;
         Relationships: [];
       };
     };

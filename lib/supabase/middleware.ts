@@ -36,8 +36,9 @@ export async function updateSession(request: NextRequest) {
   const isOnboardingPage = pathname.startsWith('/onboarding');
   const isSettingsPage = pathname.startsWith('/settings');
 
-  // Unauthenticated users can only access auth pages and the home page
-  if (!user && !isAuthPage && pathname !== '/') {
+  // Unauthenticated users can only access auth pages, the home page, /pricing, and API routes
+  const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname.startsWith('/api/');
+  if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     const redirectResponse = NextResponse.redirect(url);
@@ -59,7 +60,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users who haven't completed onboarding
-  if (user && !isAuthPage && !isOnboardingPage && !isSettingsPage && pathname !== '/') {
+  if (user && !isAuthPage && !isOnboardingPage && !isSettingsPage && !isPublicPage) {
     const { data } = await supabase
       .from('users')
       .select('onboarding_complete')

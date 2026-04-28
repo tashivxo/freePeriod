@@ -6,15 +6,23 @@ import {
   View,
   StyleSheet,
   Font,
+  Svg,
+  Rect,
+  Path,
   renderToBuffer,
 } from '@react-pdf/renderer';
 import type { LessonPlan } from '@/types/database';
 import {
   CORAL,
+  MUSTARD,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   BORDER,
 } from '@/lib/utils/brand-colors';
+
+function strip(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
 
 Font.register({
   family: 'Inter',
@@ -61,6 +69,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
   paragraph: {
     marginBottom: 6,
   },
@@ -91,13 +105,25 @@ function Bullet({ text }: { text: string }) {
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bullet}>•</Text>
-      <Text style={styles.bulletText}>{text}</Text>
+      <Text style={styles.bulletText}>{strip(text)}</Text>
     </View>
   );
 }
 
 function Body({ children }: { children: string }) {
-  return <Text style={styles.paragraph}>{children}</Text>;
+  return <Text style={styles.paragraph}>{strip(children)}</Text>;
+}
+
+function MugLogo() {
+  return (
+    <View style={styles.logoRow}>
+      <Svg width={32} height={32} viewBox="0 0 24 24">
+        <Rect fill={CORAL} x="0" y="0" width="24" height="24" rx="5" />
+        <Path d="M6 7h10l-1.5 10H7.5L6 7z" stroke="white" strokeWidth="1.5" fill="none" />
+        <Path d="M16 9.5c2 0 3 0.8 3 2s-1 2-3 2" stroke={MUSTARD} strokeWidth="1.5" fill="none" />
+      </Svg>
+    </View>
+  );
 }
 
 function LessonDocument({ lesson }: { lesson: LessonPlan }) {
@@ -106,7 +132,8 @@ function LessonDocument({ lesson }: { lesson: LessonPlan }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>{content.title || lesson.title}</Text>
+        <MugLogo />
+        <Text style={styles.title}>{strip(content.title as string || lesson.title)}</Text>
         <Text style={styles.meta}>
           {lesson.subject} · {lesson.grade} · {lesson.duration_minutes} minutes
         </Text>

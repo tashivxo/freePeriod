@@ -12,6 +12,10 @@ import type { LessonPlan } from '@/types/database';
 const CORAL_HEX = 'FF8BB0';
 const TEXT_HEX = '1A1A2E';
 
+function strip(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
+}
+
 function heading2(text: string): Paragraph {
   return new Paragraph({
     heading: HeadingLevel.HEADING_2,
@@ -33,7 +37,7 @@ function bulletItem(text: string): Paragraph {
     bullet: { level: 0 },
     spacing: { after: 60 },
     children: [
-      new TextRun({ text, font: 'Calibri', size: 22, color: TEXT_HEX }),
+      new TextRun({ text: strip(text), font: 'Calibri', size: 22, color: TEXT_HEX }),
     ],
   });
 }
@@ -42,7 +46,7 @@ function bodyParagraph(text: string): Paragraph {
   return new Paragraph({
     spacing: { after: 120 },
     children: [
-      new TextRun({ text, font: 'Calibri', size: 22, color: TEXT_HEX }),
+      new TextRun({ text: strip(text), font: 'Calibri', size: 22, color: TEXT_HEX }),
     ],
   });
 }

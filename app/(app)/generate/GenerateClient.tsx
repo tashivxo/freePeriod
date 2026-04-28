@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
+import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
 import type { GenerateStreamEvent } from '@/types/lesson';
 
 type GenerateClientProps = {
@@ -19,6 +20,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const handleSubmit = useCallback(async (data: GenerateFormData) => {
@@ -37,6 +39,11 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
       });
 
       if (!response.ok) {
+        if (response.status === 402) {
+          setShowUpgrade(true);
+          setIsGenerating(false);
+          return;
+        }
         const errorBody = await response.json().catch(() => ({ error: 'Request failed' }));
         setEvents((prev) => [
           ...prev,
@@ -97,6 +104,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
       {isGenerating && (
         <GenerationScreen events={events} onComplete={handleComplete} />
       )}
+      <UpgradePrompt open={showUpgrade} onDismiss={() => setShowUpgrade(false)} />
     </>
   );
 }

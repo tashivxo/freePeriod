@@ -18,19 +18,28 @@ async function GeneratePageContent() {
   let userPlan: 'free' | 'pro' = 'free';
 
   if (user) {
-    const { data } = await supabase
-      .from('users')
-      .select('default_subject, default_grade, default_curriculum, plan')
-      .eq('id', user.id)
-      .single();
+    const [{ data: userData }, { data: subData }] = await Promise.all([
+      supabase
+        .from('users')
+        .select('default_subject, default_grade, default_curriculum')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('subscriptions')
+        .select('plan, status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .maybeSingle(),
+    ]);
 
-    if (data) {
-      userPlan = (data.plan ?? 'free') as 'free' | 'pro';
-      if (data.default_subject || data.default_grade || data.default_curriculum) {
+    userPlan = subData?.plan === 'pro' ? 'pro' : 'free';
+
+    if (userData) {
+      if (userData.default_subject || userData.default_grade || userData.default_curriculum) {
         defaults = {
-          subject: data.default_subject ?? '',
-          grade: data.default_grade ?? '',
-          curriculum: data.default_curriculum ?? '',
+          subject: userData.default_subject ?? '',
+          grade: userData.default_grade ?? '',
+          curriculum: userData.default_curriculum ?? '',
         };
       }
     }

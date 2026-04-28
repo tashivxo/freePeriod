@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from '@/lib/claude/prompts';
 import { generateWithGemini } from '@/lib/gemini/generate';
-import { isRateLimited, FREE_GENERATION_LIMIT } from '@/lib/ai/router';
+import { isRateLimited } from '@/lib/ai/router';
 import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
 import type { LessonSection } from '@/types/database';
 
@@ -35,22 +35,30 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Fetch user plan and generation count before processing the request
-  const { data: userRecord } = await supabase
-    .from('users')
-    .select('plan, generation_count')
-    .eq('id', user.id)
-    .single();
+  // Fetch subscription status (source of truth) and generation count in parallel
+  const [{ data: subData }, { data: userRecord }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
+    supabase
+      .from('users')
+      .select('generation_count')
+      .eq('id', user.id)
+      .single(),
+  ]);
 
-  const userPlan = (userRecord?.plan ?? 'free') as 'free' | 'pro';
+  const userPlan: 'free' | 'pro' = subData?.plan === 'pro' ? 'pro' : 'free';
   const generationCount = userRecord?.generation_count ?? 0;
 
   if (isRateLimited(userPlan, generationCount)) {
     return new Response(
       JSON.stringify({
-        error: `You've reached the free plan limit of ${FREE_GENERATION_LIMIT} lesson plans. Upgrade to Pro for unlimited generations.`,
+        error: 'Upgrade to Pro to generate more lesson plans.',
       }),
-      { status: 429, headers: { 'Content-Type': 'application/json' } },
+      { status: 402, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
   const claudeModel: AllowedModel =
     !isFreePlan && modelPreference && isAllowedModel(modelPreference)
       ? modelPreference
-      : 'claude-opus-4-6';
+      : 'claude-sonnet-4-6';
   const modelUsed = isFreePlan ? 'gemini-2.0-flash' : claudeModel;
 
   // Fetch parsed curriculum doc text if provided
@@ -219,21 +227,38 @@ export async function POST(request: NextRequest) {
           status?: number;
           error?: { type?: string; error?: { type?: string; message?: string } };
           message?: string;
+          cause?: unknown;
+          stack?: string;
         };
         const errType = sdkErr.error?.error?.type ?? sdkErr.error?.type;
         const errMessage = sdkErr.error?.error?.message ?? sdkErr.message ?? '';
 
+        // Always log full error details to Vercel/server logs for diagnosis
+        console.error('[generate] Error caught:', JSON.stringify({
+          errType,
+          status: sdkErr.status,
+          message: sdkErr.message,
+          cause: String(sdkErr.cause ?? ''),
+          stack: (err as Error)?.stack?.split('\n').slice(0, 8),
+          isFreePlan,
+          modelUsed,
+        }, null, 2));
+
         if (errType === 'overloaded_error') {
           send({ type: 'error', message: 'Claude is currently overloaded. Please try again in a moment.' });
-        } else if (sdkErr.status === 429) {
-          send({ type: 'error', message: 'Rate limit reached. Please wait a moment and try again.' });
+        } else if (sdkErr.status === 429 || errMessage.toLowerCase().includes('generation is busy') || errMessage.toLowerCase().includes('rate limit reached after retries')) {
+          send({ type: 'error', message: 'Generation is busy, please try again in a moment.' });
         } else if (errMessage.toLowerCase().includes('credit balance') || errMessage.toLowerCase().includes('insufficient')) {
           send({ type: 'error', message: 'Anthropic API credits are exhausted. Please add credits at console.anthropic.com.' });
         } else if (errType === 'invalid_request_error') {
           send({ type: 'error', message: 'Invalid request to Claude API. Please try again.' });
+        } else if (errMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY') || errMessage.toLowerCase().includes('api key')) {
+          send({ type: 'error', message: 'Generation API key is not configured on this deployment. Check Vercel environment variables.' });
         } else {
-          console.error('[generate] Unexpected error:', JSON.stringify(err));
-          send({ type: 'error', message: 'An unexpected error occurred during generation.' });
+          send({
+            type: 'error',
+            message: `An unexpected error occurred during generation. [${errType ?? (err as Error)?.name ?? 'Error'}${sdkErr.status ? `:${sdkErr.status}` : ''}]`,
+          });
         }
       } finally {
         controller.close();
