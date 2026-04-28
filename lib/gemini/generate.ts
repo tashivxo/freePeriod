@@ -40,12 +40,14 @@ export async function generateWithGemini(
   params: GenerateWithGeminiParams,
 ): Promise<GenerateWithGeminiResult> {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const modelName = 'gemini-2.0-flash';
+  console.log('[Gemini] Starting generation, model:', modelName, 'key present:', !!apiKey);
   if (!apiKey) {
     throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is not set');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: modelName });
 
   const systemInstruction = buildSystemPrompt(params.curriculumText);
   const userPrompt = buildUserPrompt({
@@ -77,6 +79,7 @@ export async function generateWithGemini(
       return { lessonContent, tokenCount };
     } catch (err) {
       lastError = err;
+      console.error('[Gemini] Error on attempt', attempt, ':', err instanceof Error ? err.message : err);
 
       if (isRateLimitError(err) && attempt < RATE_LIMIT_MAX_RETRIES) {
         const delay = RATE_LIMIT_RETRY_DELAY_MS * (attempt + 1);

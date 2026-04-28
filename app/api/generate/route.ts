@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from '@/lib/claude/prompts';
 import { generateWithGemini } from '@/lib/gemini/generate';
-import { isRateLimited, FREE_GENERATION_LIMIT } from '@/lib/ai/router';
+import { isRateLimited } from '@/lib/ai/router';
 import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
 import type { LessonSection } from '@/types/database';
 
@@ -35,22 +35,30 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Fetch user plan and generation count before processing the request
-  const { data: userRecord } = await supabase
-    .from('users')
-    .select('plan, generation_count')
-    .eq('id', user.id)
-    .single();
+  // Fetch subscription status (source of truth) and generation count in parallel
+  const [{ data: subData }, { data: userRecord }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
+    supabase
+      .from('users')
+      .select('generation_count')
+      .eq('id', user.id)
+      .single(),
+  ]);
 
-  const userPlan = (userRecord?.plan ?? 'free') as 'free' | 'pro';
+  const userPlan: 'free' | 'pro' = subData?.plan === 'pro' ? 'pro' : 'free';
   const generationCount = userRecord?.generation_count ?? 0;
 
   if (isRateLimited(userPlan, generationCount)) {
     return new Response(
       JSON.stringify({
-        error: `You've reached the free plan limit of ${FREE_GENERATION_LIMIT} lesson plans. Upgrade to Pro for unlimited generations.`,
+        error: 'Upgrade to Pro to generate more lesson plans.',
       }),
-      { status: 429, headers: { 'Content-Type': 'application/json' } },
+      { status: 402, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
