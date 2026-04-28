@@ -147,6 +147,12 @@ export default function HomePage() {
           <Logo size="sm" />
           <nav className="flex items-center gap-2">
             <Link
+              href="/pricing"
+              className="px-3 py-2 text-sm font-body text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Pricing
+            </Link>
+            <Link
               href="/sign-in"
               className="relative btn-shine overflow-hidden rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors"
             >
