@@ -321,7 +321,7 @@ export default function HomePage() {
         <footer className="relative z-10 border-t border-border bg-background py-8">
           <div className="mx-auto max-w-4xl px-4 text-center">
             <p className="font-body text-sm text-text-secondary">
-              © 2024 FreePeriod. Built for teachers, by teachers.
+              © 2026 FreePeriod. Built for teachers, by teachers.
             </p>
           </div>
         </footer>
@@ -332,7 +332,7 @@ export default function HomePage() {
         ref={toggleRef}
         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="fixed bottom-6 right-6 z-50 relative btn-shine overflow-hidden flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 font-body text-sm font-medium text-text-primary shadow-md transition-colors hover:bg-muted dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+        className="fixed bottom-6 right-6 z-50 btn-shine overflow-hidden flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral focus-visible:outline-offset-2 dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
         style={{ opacity: 0 }}
       >
         {resolvedTheme === 'dark' ? (
