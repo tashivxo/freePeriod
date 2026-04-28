@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // @ts-expect-error — stripe-js typings may lag behind the installed SDK version
-  apiVersion: '2025-05-28.basil',
-});
-
 export async function POST(request: NextRequest) {
+  // Lazy-init: avoids build-time crash when STRIPE_SECRET_KEY is not set in Vercel env
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    // @ts-expect-error — stripe-js typings may lag behind the installed SDK version
+    apiVersion: '2025-05-28.basil',
+  });
   const supabase = await createClient();
   const {
     data: { user },
