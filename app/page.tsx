@@ -263,11 +263,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Mug Animation */}
-        <section className="relative z-10 mx-auto max-w-5xl px-4 py-12 md:py-20">
-          <MugAnimation />
-        </section>
-
         {/* Features */}
         <section
           id="features"
