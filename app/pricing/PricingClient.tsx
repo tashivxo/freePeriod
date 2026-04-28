@@ -10,6 +10,7 @@ import { animate, stagger } from 'animejs';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import { MagicCard } from '@/components/ui/magic-card';
 import { Logo } from '@/components/ui/Logo';
+import { createClient } from '@/lib/supabase/client';
 
 const SoftAurora = dynamic(
   () => import('@/components/ui/SoftAurora/SoftAurora'),
@@ -144,6 +145,17 @@ export function PricingClient() {
     async (planId: string) => {
       setLoadingPlan(planId);
       try {
+        // Check auth client-side first — redirect unauthenticated users directly
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          router.push(`/sign-up?plan=${planId}`);
+          return;
+        }
+
         const res = await fetch(`/api/checkout?plan=${planId}`, {
           method: 'POST',
         });
