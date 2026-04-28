@@ -1,6 +1,8 @@
 export type UploadType = 'curriculum_doc' | 'template';
 export type ExportFormat = 'docx' | 'pdf' | 'xlsx';
-export type Plan = 'free' | 'pro';
+export type Plan = 'free' | 'pro' | 'pro_plus';
+export type BillingInterval = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired' | 'on_trial' | 'inactive';
 
 export type User = {
   id: string;
@@ -72,13 +74,16 @@ export type Export = {
 export type Subscription = {
   id: string;
   user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  stripe_price_id: string | null;
+  ls_subscription_id: string | null;
+  ls_customer_id: string | null;
+  ls_order_id: string | null;
+  ls_product_id: string | null;
+  ls_variant_id: string | null;
   plan: Plan;
-  status: string;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean;
+  billing_interval: BillingInterval | null;
+  status: SubscriptionStatus;
+  renews_at: string | null;
+  ends_at: string | null;
   created_at: string;
   updated_at: string;
 }
