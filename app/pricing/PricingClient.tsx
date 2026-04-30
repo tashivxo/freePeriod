@@ -102,7 +102,7 @@ export function PricingClient() {
   const [prefersReduced, setPrefersReduced] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
-  const toggleRef = useRef<HTMLButtonElement>(null);
+  const toggleRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme, setTheme } = useTheme();
 
   // Detect reduced motion
@@ -431,8 +431,12 @@ export function PricingClient() {
         </p>
       </main>
 
-      {/* Floating dark mode toggle */}
-      <div ref={toggleRef} className="fixed bottom-6 right-6 z-50" style={{ opacity: 0 }}>
+      {/* Floating dark mode toggle — wrapper owns fixed position; button owns relative for btn-shine */}
+      <div
+        ref={toggleRef}
+        className="fixed bottom-6 right-6 z-50"
+        style={{ opacity: 0 }}
+      >
         <button
           onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}

@@ -217,7 +217,8 @@ test.describe('Pricing page – colour scheme accessibility', () => {
           scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
         const toggle = page.getByRole('button', { name: label });
         await expect(toggle).toBeVisible();
-        // Wrapper div carries the fixed positioning
+        // 'fixed' lives on the wrapper div, not the button (fixed+relative on same element
+        // causes relative to win in Tailwind). Verify wrapper has the fixed class instead.
         const wrapper = toggle.locator('..');
         await expect(wrapper).toHaveClass(/fixed/);
       });
