@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { LucideIcon } from 'lucide-react';
-import { Check, Sparkles, Zap, BookOpen } from 'lucide-react';
+import { Check, Sparkles, Zap, BookOpen, Moon, Sun } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
+import { useTheme } from '@/lib/theme';
 import { MagicCard } from '@/components/ui/magic-card';
 import { Logo } from '@/components/ui/Logo';
 import { createClient } from '@/lib/supabase/client';
@@ -90,7 +91,7 @@ const PLANS: Plan[] = [
     ],
     cta: 'Start Pro+',
     ctaClass:
-      'bg-text-primary hover:bg-text-primary/90 text-white focus-visible:ring-2 focus-visible:ring-coral',
+      'bg-mustard hover:bg-mustard/90 text-[#1A1A2E] focus-visible:ring-2 focus-visible:ring-mustard',
   },
 ];
 
@@ -101,6 +102,8 @@ export function PricingClient() {
   const [prefersReduced, setPrefersReduced] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const { resolvedTheme, setTheme } = useTheme();
 
   // Detect reduced motion
   useEffect(() => {
@@ -138,6 +141,16 @@ export function PricingClient() {
         });
       }
     }, 400);
+
+    if (toggleRef.current) {
+      animate(toggleRef.current, {
+        translateY: [20, 0],
+        opacity: [0, 1],
+        duration: 600,
+        delay: 1000,
+        easing: 'easeOutCubic',
+      });
+    }
 
     return () => clearTimeout(timer);
   }, [prefersReduced]);
@@ -417,6 +430,27 @@ export function PricingClient() {
           All plans include a 30-day free trial. Cancel anytime. No hidden fees.
         </p>
       </main>
+
+      {/* Floating dark mode toggle */}
+      <button
+        ref={toggleRef}
+        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+        aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        className="fixed bottom-6 right-6 z-50 relative btn-shine overflow-hidden flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral focus-visible:outline-offset-2 dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+        style={{ opacity: 0 }}
+      >
+        {resolvedTheme === 'dark' ? (
+          <>
+            <Sun className="h-4 w-4" />
+            Try light mode
+          </>
+        ) : (
+          <>
+            <Moon className="h-4 w-4" />
+            Try dark mode
+          </>
+        )}
+      </button>
     </div>
   );
 }

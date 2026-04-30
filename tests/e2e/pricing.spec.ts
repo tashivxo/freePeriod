@@ -150,7 +150,7 @@ test.describe('Pricing page', () => {
 
   test('Pro plan features are listed', async ({ page }) => {
     await expect(page.getByText('Unlimited lesson plans')).toBeVisible();
-    await expect(page.getByText('Curriculum upload & OCR')).toBeVisible();
+    await expect(page.getByText('OCR text extraction')).toBeVisible();
   });
 
   test('Pro+ plan features are listed', async ({ page }) => {
@@ -162,7 +162,7 @@ test.describe('Pricing page', () => {
   test('trust footer text is visible', async ({ page }) => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(
-      page.getByText(/14-day free trial.*cancel anytime/i),
+      page.getByText(/30-day free trial.*cancel anytime/i),
     ).toBeVisible();
   });
 
@@ -190,6 +190,47 @@ test.describe('Pricing page', () => {
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
   });
+});
+
+// ── Colour scheme accessibility ───────────────────────────────────
+test.describe('Pricing page – colour scheme accessibility', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test.describe(`${scheme} mode`, () => {
+      test.use({ colorScheme: scheme });
+
+      test.beforeEach(async ({ page }) => {
+        await page.goto('/pricing');
+        await page.waitForTimeout(1200);
+      });
+
+      test(`Pro+ CTA uses mustard background in ${scheme} mode`, async ({ page }) => {
+        const plusCard = page.locator('[data-card]').nth(2);
+        const btn = plusCard.getByRole('button', { name: 'Start Pro+' });
+        await expect(btn).toBeVisible();
+        // Must use the fixed mustard colour — never the theme-adaptive text-primary
+        await expect(btn).toHaveClass(/bg-mustard/);
+        await expect(btn).not.toHaveClass(/bg-text-primary/);
+      });
+
+      test(`floating theme toggle is present in ${scheme} mode`, async ({ page }) => {
+        const label =
+          scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+        const toggle = page.getByRole('button', { name: label });
+        await expect(toggle).toBeVisible();
+        await expect(toggle).toHaveClass(/fixed/);
+      });
+
+      test(`page heading is visible in ${scheme} mode`, async ({ page }) => {
+        await expect(
+          page.getByRole('heading', { name: 'Plans for every classroom', level: 1 }),
+        ).toBeVisible();
+      });
+
+      test(`trust footer is visible in ${scheme} mode`, async ({ page }) => {
+        await expect(page.getByText(/30-day free trial/i)).toBeVisible();
+      });
+    });
+  }
 });
 
 // ── Landing page integration ──────────────────────────────────────
