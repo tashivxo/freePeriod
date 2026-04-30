@@ -217,7 +217,9 @@ test.describe('Pricing page – colour scheme accessibility', () => {
           scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
         const toggle = page.getByRole('button', { name: label });
         await expect(toggle).toBeVisible();
-        await expect(toggle).toHaveClass(/fixed/);
+        // Wrapper div carries the fixed positioning
+        const wrapper = toggle.locator('..');
+        await expect(wrapper).toHaveClass(/fixed/);
       });
 
       test(`page heading is visible in ${scheme} mode`, async ({ page }) => {
