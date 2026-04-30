@@ -40,10 +40,11 @@ const PLANS: Plan[] = [
     iconBg: 'bg-coral/10',
     priceMonthly: 0,
     priceAnnual: 0,
-    description: 'Perfect for trying out FreePeriod.',
+    description: 'Perfect for trying out FreePeriod. Get started with no commitment.',
     features: [
       '3 lesson plans per month',
-      'Gemini AI model',
+      'Gemini Flash model',
+      'PDF, DOCX, XLSX upload',
       'DOCX export',
       'Community support',
     ],
@@ -59,12 +60,12 @@ const PLANS: Plan[] = [
     iconBg: 'bg-coral/15',
     priceMonthly: 9,
     priceAnnual: 7,
-    description: 'For teachers who plan lessons every week.',
+    description: 'For teachers who plan lessons every week and need smarter AI.',
     features: [
       'Unlimited lesson plans',
-      'Claude AI (Sonnet)',
+      'Claude Sonnet model',
       'DOCX + PDF export',
-      'Curriculum upload & OCR',
+      'OCR text extraction',
       'Priority support',
     ],
     cta: 'Start Pro',
@@ -76,20 +77,20 @@ const PLANS: Plan[] = [
     id: 'pro_plus',
     name: 'Pro+',
     Icon: Zap,
-    iconBg: 'bg-[#1A1A2E]/10',
+    iconBg: 'bg-text-primary/10',
     priceMonthly: 12,
     priceAnnual: 10,
-    description: 'For power users and whole-school teams.',
+    description: 'For teachers who need automated lesson plans regularly.',
     features: [
       'Everything in Pro',
-      'Claude AI (Opus)',
+      'Claude Sonnet model',
       'Custom template filling',
       'Team plan sharing',
       'API access',
     ],
     cta: 'Start Pro+',
     ctaClass:
-      'bg-[#1A1A2E] hover:bg-[#0f0f1a] text-white focus-visible:ring-2 focus-visible:ring-[#1A1A2E]',
+      'bg-text-primary hover:bg-text-primary/90 text-white focus-visible:ring-2 focus-visible:ring-coral',
   },
 ];
 
@@ -214,7 +215,7 @@ export function PricingClient() {
             </Link>
             <Link
               href="/sign-in"
-              className="rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
+              className="relative btn-shine overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
             >
               Sign in
             </Link>
@@ -314,93 +315,97 @@ export function PricingClient() {
                   gradientColor={CORAL}
                   gradientOpacity={0.12}
                 >
-                  {/* Plan icon + name */}
-                  <div className="mb-4 flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${plan.iconBg}`}
-                    >
-                      <Icon size={20} className="text-coral" />
-                    </div>
-                    <h2 className="font-display text-xl font-bold text-text-primary">
-                      {plan.name}
-                    </h2>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-2">
-                    {price === 0 ? (
-                      <span className="font-display text-4xl font-bold text-text-primary">
-                        Free
-                      </span>
-                    ) : (
-                      <div className="flex items-end gap-1">
-                        <span className="font-display text-4xl font-bold text-text-primary">
-                          ${price}
-                        </span>
-                        <span className="mb-1 text-sm text-text-secondary">/mo</span>
+                  <div className="flex flex-col h-full">
+                    {/* Plan icon + name */}
+                    <div className="mb-4 flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl ${plan.iconBg}`}
+                      >
+                        <Icon size={20} className="text-coral" />
                       </div>
-                    )}
-                    {isAnnual && price > 0 && (
-                      <p className="mt-1 text-xs text-text-secondary">
-                        Billed as ${price * 12}/yr
-                      </p>
-                    )}
-                  </div>
+                      <h2 className="font-display text-xl font-bold text-text-primary">
+                        {plan.name}
+                      </h2>
+                    </div>
 
-                  <p className="mb-6 text-sm text-text-secondary">{plan.description}</p>
-
-                  {/* CTA */}
-                  {plan.href ? (
-                    <Link
-                      href={plan.href}
-                      className={`mb-6 flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none ${plan.ctaClass}`}
-                    >
-                      {plan.cta}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => handleCheckout(plan.id)}
-                      disabled={isLoading}
-                      className={`mb-6 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed ${plan.ctaClass}`}
-                    >
-                      {isLoading ? (
-                        <svg
-                          className="h-4 w-4 animate-spin"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          aria-hidden="true"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                      ) : null}
-                      {plan.cta}
-                    </button>
-                  )}
-
-                  {/* Features */}
-                  <ul className="space-y-2.5">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5">
-                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-coral/10">
-                          <Check size={12} className="text-coral" />
+                    {/* Price */}
+                    <div className="mb-2">
+                      {price === 0 ? (
+                        <span className="font-display text-4xl font-bold text-text-primary">
+                          Free
+                        </span>
+                      ) : (
+                        <div className="flex items-end gap-1">
+                          <span className="font-display text-4xl font-bold text-text-primary">
+                            ${price}
+                          </span>
+                          <span className="mb-1 text-sm text-text-secondary">/mo</span>
                         </div>
-                        <span className="text-sm text-text-secondary">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                      )}
+                      {isAnnual && price > 0 && (
+                        <p className="mt-1 text-xs text-text-secondary">
+                          Billed as ${price * 12}/yr
+                        </p>
+                      )}
+                    </div>
+
+                    <p className="mb-6 text-sm text-text-secondary">{plan.description}</p>
+
+                    {/* Features */}
+                    <ul className="space-y-2.5">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2.5">
+                          <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-coral/10">
+                            <Check size={12} className="text-coral" />
+                          </div>
+                          <span className="text-sm text-text-secondary">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* CTA */}
+                    <div className="mt-auto pt-6">
+                      {plan.href ? (
+                        <Link
+                          href={plan.href}
+                          className={`relative btn-shine overflow-hidden flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none ${plan.ctaClass}`}
+                        >
+                          {plan.cta}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => handleCheckout(plan.id)}
+                          disabled={isLoading}
+                          className={`relative btn-shine overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed ${plan.ctaClass}`}
+                        >
+                          {isLoading ? (
+                            <svg
+                              className="h-4 w-4 animate-spin"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                              />
+                            </svg>
+                          ) : null}
+                          {plan.cta}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </MagicCard>
               </div>
             );
@@ -409,7 +414,7 @@ export function PricingClient() {
 
         {/* Trust footer */}
         <p className="mt-12 text-center text-sm text-text-secondary">
-          All plans include a 14-day free trial. Cancel anytime. No hidden fees.
+          All plans include a 30-day free trial. Cancel anytime. No hidden fees.
         </p>
       </main>
     </div>

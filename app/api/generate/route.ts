@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from '@/lib/claude/prompts';
 import { generateWithGemini } from '@/lib/gemini/generate';
 import { isRateLimited } from '@/lib/ai/router';
+import { isTrialActive } from '@/lib/utils/trial';
 import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
 import type { LessonSection } from '@/types/database';
 
@@ -39,9 +40,8 @@ export async function POST(request: NextRequest) {
   const [{ data: subData }, { data: userRecord }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('plan, status')
+      .select('plan, status, trial_end')
       .eq('user_id', user.id)
-      .eq('status', 'active')
       .maybeSingle(),
     supabase
       .from('users')
@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
       .single(),
   ]);
 
-  const userPlan: 'free' | 'pro' = subData?.plan === 'pro' ? 'pro' : 'free';
+  const isTrial = subData?.status === 'trial' && isTrialActive(subData?.trial_end ?? null);
+  const isPaid = subData?.status === 'active' && (subData?.plan === 'pro' || subData?.plan === 'pro_plus');
+  const userPlan: 'free' | 'pro' = (isPaid || isTrial) ? 'pro' : 'free';
   const generationCount = userRecord?.generation_count ?? 0;
 
   if (isRateLimited(userPlan, generationCount)) {

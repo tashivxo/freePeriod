@@ -2,7 +2,7 @@ export type UploadType = 'curriculum_doc' | 'template';
 export type ExportFormat = 'docx' | 'pdf' | 'xlsx';
 export type Plan = 'free' | 'pro' | 'pro_plus';
 export type BillingInterval = 'monthly' | 'yearly';
-export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired' | 'on_trial' | 'inactive';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired' | 'on_trial' | 'inactive' | 'trial';
 
 export type User = {
   id: string;
@@ -74,16 +74,14 @@ export type Export = {
 export type Subscription = {
   id: string;
   user_id: string;
-  ls_subscription_id: string | null;
-  ls_customer_id: string | null;
-  ls_order_id: string | null;
-  ls_product_id: string | null;
-  ls_variant_id: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   plan: Plan;
-  billing_interval: BillingInterval | null;
   status: SubscriptionStatus;
-  renews_at: string | null;
-  ends_at: string | null;
+  current_period_end: string | null;
+  trial_start: string | null;
+  trial_end: string | null;
+  trial_used: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -126,10 +124,12 @@ export type Database = {
       };
       subscriptions: {
         Row: Subscription;
-        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'cancel_at_period_end' | 'stripe_price_id'> & {
+        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'trial_used' | 'stripe_customer_id' | 'stripe_subscription_id' | 'current_period_end'> & {
           id?: string;
-          stripe_price_id?: string | null;
-          cancel_at_period_end?: boolean;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          current_period_end?: string | null;
+          trial_used?: boolean;
         };
         Update: Partial<Omit<Subscription, 'id' | 'user_id' | 'created_at'>>;
         Relationships: [];

@@ -36,6 +36,22 @@ export async function GET(request: Request) {
             default_grade: null,
             default_curriculum: null,
           });
+
+          // Initialize 30-day trial subscription
+          const now = new Date();
+          const trialEnd = new Date(now);
+          trialEnd.setDate(trialEnd.getDate() + 30);
+          await supabase.from('subscriptions').upsert(
+            {
+              user_id: sessionData.user.id,
+              plan: 'free',
+              status: 'trial',
+              trial_start: now.toISOString(),
+              trial_end: trialEnd.toISOString(),
+              trial_used: false,
+            },
+            { onConflict: 'user_id' },
+          );
         }
       }
 
