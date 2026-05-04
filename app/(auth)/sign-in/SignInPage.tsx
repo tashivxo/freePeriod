@@ -37,7 +37,7 @@ export function SignInPage() {
     if (!validate()) return;
 
     setIsLoading(true);
-    const supabase = createClient({ auth: { persistSession: rememberMe } });
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
