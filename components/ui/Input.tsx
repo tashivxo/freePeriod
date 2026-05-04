@@ -1,14 +1,15 @@
 'use client';
 
-import { forwardRef, useState, type InputHTMLAttributes } from 'react';
+import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   error?: string;
+  endAdornment?: ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, id, className = '', onFocus, onBlur, ...props },
+  { label, error, id, className = '', onFocus, onBlur, endAdornment, ...props },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
@@ -26,11 +27,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-surface text-text-primary',
           'transition-colors duration-150 outline-none',
           'placeholder-transparent',
+          endAdornment ? 'pr-11' : '',
           error
             ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
             : 'border-text-secondary/30 focus:border-coral focus:ring-2 focus:ring-coral/20',
           'disabled:opacity-50 disabled:cursor-not-allowed',
-        ].join(' ')}
+        ].filter(Boolean).join(' ')}
         placeholder={label}
         onFocus={(e) => {
           setFocused(true);
@@ -54,6 +56,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       >
         {label}
       </label>
+      {endAdornment && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center z-10">
+          {endAdornment}
+        </div>
+      )}
       {error && (
         <p
           id={`${inputId}-error`}

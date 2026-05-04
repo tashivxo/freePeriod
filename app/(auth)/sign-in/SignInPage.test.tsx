@@ -1,4 +1,4 @@
-import { render, screen } from '@/lib/test-utils';
+import { render, screen, waitFor } from '@/lib/test-utils';
 
 // Mock the Supabase client module
 jest.mock('@/lib/supabase/client', () => ({
@@ -44,7 +44,7 @@ describe('SignInPage', () => {
   it('renders email and password inputs', () => {
     render(<SignInPage />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
   it('renders a sign-in submit button', () => {
@@ -109,7 +109,7 @@ describe('SignInPage', () => {
 
     const { user } = render(<SignInPage />);
     await user.type(screen.getByLabelText(/email/i), 'test@test.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(mockSignIn).toHaveBeenCalledWith({
@@ -134,7 +134,7 @@ describe('SignInPage', () => {
 
     const { user } = render(<SignInPage />);
     await user.type(screen.getByLabelText(/email/i), 'test@test.com');
-    await user.type(screen.getByLabelText(/password/i), 'wrongpassword');
+    await user.type(screen.getByLabelText('Password'), 'wrongpassword');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(
@@ -146,5 +146,55 @@ describe('SignInPage', () => {
     render(<SignInPage />);
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });
     expect(googleBtn.className).toContain('bg-primary');
+  });
+
+  it('renders eye toggle button with aria-label "Show password"', () => {
+    render(<SignInPage />);
+    expect(screen.getByRole('button', { name: /show password/i })).toBeInTheDocument();
+  });
+
+  it('clicking eye toggle changes password input type to text', async () => {
+    const { user } = render(<SignInPage />);
+    const passwordInput = screen.getByLabelText('Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: /show password/i }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+  });
+
+  it('renders forgot password link pointing to /forgot-password', () => {
+    render(<SignInPage />);
+    const link = screen.getByRole('link', { name: /forgot password/i });
+    expect(link).toHaveAttribute('href', '/forgot-password');
+  });
+
+  it('remember me checkbox is checked by default', () => {
+    render(<SignInPage />);
+    const checkbox = screen.getByRole('switch', { name: /remember me/i });
+    expect(checkbox).toBeChecked();
+  });
+
+  it('unchecking remember me passes persistSession false to createClient', async () => {
+    const { createClient } = jest.requireMock('@/lib/supabase/client');
+    createClient.mockReturnValue({
+      auth: {
+        signInWithPassword: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
+        signInWithOtp: jest.fn(),
+        signInWithOAuth: jest.fn(),
+        getUser: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
+      },
+      from: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        maybeSingle: jest.fn().mockResolvedValue({ data: { id: '1' }, error: null }),
+      }),
+    });
+    const { user } = render(<SignInPage />);
+    await user.click(screen.getByRole('switch', { name: /remember me/i }));
+    await user.type(screen.getByLabelText(/email/i), 'test@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await waitFor(() => {
+      expect(createClient).toHaveBeenCalledWith({ auth: { persistSession: false } });
+    });
   });
 });

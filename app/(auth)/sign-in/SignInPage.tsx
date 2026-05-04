@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -14,6 +16,8 @@ export function SignInPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +37,7 @@ export function SignInPage() {
     if (!validate()) return;
 
     setIsLoading(true);
-    const supabase = createClient();
+    const supabase = createClient({ auth: { persistSession: rememberMe } });
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -139,14 +143,50 @@ export function SignInPage() {
             error={errors.email}
             autoComplete="email"
           />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={errors.password}
-            autoComplete="current-password"
-          />
+          <div className="space-y-1">
+            <Input
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={errors.password}
+              autoComplete="current-password"
+              endAdornment={
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="text-text-secondary hover:text-text-primary transition-colors p-1"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
+            />
+            <div className="flex justify-end">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-text-secondary hover:text-coral transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Switch
+              id="remember-me"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(!!checked)}
+              className="data-checked:bg-coral"
+              aria-label="Remember me"
+            />
+            <label
+              htmlFor="remember-me"
+              className="text-sm text-text-secondary font-body cursor-pointer select-none"
+            >
+              Remember me
+            </label>
+          </div>
 
           <Button type="submit" className="w-full" isLoading={isLoading}>
             Sign in

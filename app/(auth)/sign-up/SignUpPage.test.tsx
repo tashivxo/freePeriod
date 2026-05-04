@@ -34,7 +34,7 @@ describe('SignUpPage', () => {
     render(<SignUpPage />);
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
   it('renders a sign-up submit button', () => {
@@ -71,7 +71,7 @@ describe('SignUpPage', () => {
     const { user } = render(<SignUpPage />);
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText(/password/i), '123');
+    await user.type(screen.getByLabelText('Password'), '123');
     await user.click(screen.getByRole('button', { name: /create account/i }));
     expect(
       screen.getByText(/password must be at least 8 characters/i),
@@ -91,7 +91,7 @@ describe('SignUpPage', () => {
     const { user } = render(<SignUpPage />);
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).toHaveBeenCalledWith({
@@ -119,7 +119,7 @@ describe('SignUpPage', () => {
     const { user } = render(<SignUpPage />);
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(
@@ -131,5 +131,18 @@ describe('SignUpPage', () => {
     render(<SignUpPage />);
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });
     expect(googleBtn.className).toContain('bg-primary');
+  });
+
+  it('renders eye toggle button with aria-label "Show password"', () => {
+    render(<SignUpPage />);
+    expect(screen.getByRole('button', { name: /show password/i })).toBeInTheDocument();
+  });
+
+  it('clicking eye toggle changes password input type from password to text', async () => {
+    const { user } = render(<SignUpPage />);
+    const passwordInput = screen.getByLabelText('Password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: /show password/i }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
   });
 });
