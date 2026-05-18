@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
-import { Nunito, Inter, Geist } from 'next/font/google';
+import { Roboto_Serif, Inter, Geist } from 'next/font/google';
 import { ThemeProvider } from '@/lib/theme';
 import './globals.css';
 import { cn } from "@/lib/utils";
@@ -8,11 +8,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
-const nunito = Nunito({
+const robotoSerif = Roboto_Serif({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-display',
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  weight: ['400', '500', '600', '700'],
 });
 
 const inter = Inter({
@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(nunito.variable, inter.variable, "font-sans", geist.variable)}>
+    <html lang="en" className={cn(robotoSerif.variable, inter.variable, "font-sans", geist.variable)}>
       <body><ThemeProvider><TooltipProvider>{children}</TooltipProvider></ThemeProvider><GrainOverlayClient /></body>
     </html>
   );
