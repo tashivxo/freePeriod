@@ -56,7 +56,7 @@ export function HistoryClient() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <BlurText as="h1" text="Lesson History" className="font-display text-3xl font-bold text-text-primary mb-6" />
+      <BlurText as="h1" text="Lesson Plan History" className="font-display text-3xl font-bold text-text-primary mb-6" />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

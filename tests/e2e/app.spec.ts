@@ -4,7 +4,7 @@ async function signIn(page: Page) {
   await page.context().clearCookies();
   await page.goto('/sign-in');
   await page.getByLabel('Email').fill('testteacher@mailinator.com');
-  await page.getByLabel('Password').fill('TestPass123!');
+  await page.locator('input#password').fill('TestPass123!');
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL('**/dashboard', { timeout: 10000 });
 }
@@ -84,11 +84,11 @@ test.describe('History page', () => {
   });
 
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('Lesson History — FreePeriod');
+    await expect(page).toHaveTitle('Lesson Plan History — FreePeriod');
   });
 
   test('renders heading and empty state for new account', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /lesson history/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /lesson plan history/i })).toBeVisible();
     await expect(page.getByText(/no lessons yet/i)).toBeVisible();
   });
 });

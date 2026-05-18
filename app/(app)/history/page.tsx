@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { HistoryClient } from './HistoryClient';
 
-export const metadata = { title: 'Lesson History — FreePeriod' };
+export const metadata = { title: 'Lesson Plan History — FreePeriod' };
 
 function HistorySkeleton() {
   return (

@@ -30,7 +30,7 @@ async function globalSetup(_config: FullConfig) {
 
   await page.getByLabel('Email').fill('testteacher@mailinator.com');
   await page.waitForSelector('input[id="password"]', { timeout: 15000 });
-  await page.getByLabel('Password').fill('TestPass123!');
+  await page.locator('input#password').fill('TestPass123!');
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL('**/dashboard', { timeout: 45000 });
 

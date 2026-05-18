@@ -4,7 +4,7 @@ async function signIn(page: Page) {
   await page.context().clearCookies();
   await page.goto('/sign-in');
   await page.getByLabel('Email').fill('testteacher@mailinator.com');
-  await page.getByLabel('Password').fill('TestPass123!');
+  await page.locator('input#password').fill('TestPass123!');
   await page.getByRole('button', { name: /sign in/i }).click();
   await page.waitForURL('**/dashboard', { timeout: 10000 });
 }

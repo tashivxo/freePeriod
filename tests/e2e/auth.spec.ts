@@ -14,7 +14,7 @@ test.describe('Sign-in page', () => {
     await expect(page.getByText('FreePeriod').first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.locator('input#password')).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 
@@ -30,7 +30,7 @@ test.describe('Sign-in page', () => {
 
   test('signs in with valid credentials and redirects to dashboard', async ({ page }) => {
     await page.getByLabel('Email').fill('testteacher@mailinator.com');
-    await page.getByLabel('Password').fill('TestPass123!');
+    await page.locator('input#password').fill('TestPass123!');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL('**/dashboard', { timeout: 10000 });
     await expect(page).toHaveURL(/dashboard/);
@@ -52,7 +52,7 @@ test.describe('Sign-up page', () => {
     await expect(page.getByRole('heading', { name: /create your account/i })).toBeVisible();
     await expect(page.getByLabel('Full Name')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
-    await expect(page.getByLabel('Password')).toBeVisible();
+    await expect(page.locator('input#password')).toBeVisible();
     await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
   });
 
@@ -74,7 +74,7 @@ test.describe('Auth guards', () => {
     await page.context().clearCookies();
     await page.goto('/sign-in');
     await page.getByLabel('Email').fill('testteacher@mailinator.com');
-    await page.getByLabel('Password').fill('TestPass123!');
+    await page.locator('input#password').fill('TestPass123!');
     await page.getByRole('button', { name: /sign in/i }).click();
     await page.waitForURL('**/dashboard', { timeout: 10000 });
     // Now try to visit sign-in again
