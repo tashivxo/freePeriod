@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import { GenerateClient } from './GenerateClient';
+import { GenerateClient } from '@/features/generate/components/GenerateClient';
 
 export const metadata: Metadata = {
   title: 'Generate — FreePeriod',

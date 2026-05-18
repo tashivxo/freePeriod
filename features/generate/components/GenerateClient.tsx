@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { GenerateForm, type GenerateFormData } from '@/features/generate/components/GenerateForm';
+import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
 import type { GenerateStreamEvent } from '@/types/lesson';
