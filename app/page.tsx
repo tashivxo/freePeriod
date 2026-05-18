@@ -6,9 +6,9 @@ import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen, Moon, Sun }
 import { useTheme } from '@/lib/theme';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
-import { ShinyText } from '@/components/ShinyText';
+import { ShinyText } from '@/components/ui/ShinyText';
 import { Card, CardContent } from '@/components/ui/card';
-import { SpotlightCard } from '@/components/SpotlightCard';
+import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import dynamic from 'next/dynamic';
 

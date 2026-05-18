@@ -6,7 +6,7 @@ import { Search, BookOpen, Clock, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LessonPlan } from '@/types';
-import { BlurText } from '@/components/BlurText';
+import { BlurText } from '@/components/ui/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;

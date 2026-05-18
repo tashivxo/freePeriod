@@ -10,7 +10,7 @@ import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dr
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { BlurText } from '@/components/BlurText';
+import { BlurText } from '@/components/ui/BlurText';
 import { LogOut } from 'lucide-react';
 import type { User } from '@/types/database';
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { BlurText } from '../BlurText';
+import { BlurText } from './BlurText';
 
 // Mock Framer Motion so animations don't break jsdom
 jest.mock('framer-motion', () => ({

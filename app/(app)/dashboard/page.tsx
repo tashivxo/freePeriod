@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BlurText } from '@/components/BlurText';
+import { BlurText } from '@/components/ui/BlurText';
 
 function DashboardSkeleton() {
   return (

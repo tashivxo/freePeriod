@@ -10,7 +10,7 @@ import { SectionCard } from '@/components/lesson/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan, LessonSection } from '@/types/database';
 import type { LessonSectionKey } from '@/types/lesson';
-import { BlurText } from '@/components/BlurText';
+import { BlurText } from '@/components/ui/BlurText';
 
 const SECTION_ORDER: { key: LessonSectionKey; label: string }[] = [
   { key: 'title', label: 'Title' },

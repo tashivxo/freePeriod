@@ -4,7 +4,7 @@ import { useTheme } from '@/lib/theme';
 import HomePage from './page';
 
 jest.mock('@/lib/theme');
-jest.mock('@/components/SpotlightCard', () => ({
+jest.mock('@/components/ui/SpotlightCard', () => ({
   SpotlightCard: ({ children, className, ...rest }: { children: React.ReactNode; className?: string; [key: string]: unknown }) => (
     <div className={className} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
   ),
