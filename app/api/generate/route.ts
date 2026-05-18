@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
-import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from '@/lib/claude/prompts';
-import { generateWithGemini } from '@/lib/gemini/generate';
-import { isRateLimited } from '@/lib/ai/router';
+import {
+  buildSystemPrompt,
+  buildUserPrompt,
+  generateWithGemini,
+  isRateLimited,
+  parseLessonContent,
+} from '@/lib/ai';
 import { isTrialActive } from '@/lib/utils/trial';
 import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
 import type { LessonSection } from '@/types/database';

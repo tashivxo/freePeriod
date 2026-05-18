@@ -1,4 +1,4 @@
-import { generateWithGemini } from './generate';
+import { generateWithGemini } from './gemini';
 
 // Full mock of @google/generative-ai
 const mockGenerateContent = jest.fn();
