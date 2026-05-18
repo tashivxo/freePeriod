@@ -13,6 +13,7 @@
 /test-results/
 /playwright-report/
 /.playwright-mcp/
+tests/e2e/.auth/
 landing-page.png
 
 # next.js
