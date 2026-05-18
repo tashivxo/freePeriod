@@ -32,7 +32,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: 'AI-Powered',
-    description: 'Claude generates plans tailored to your subject, year group and curriculum in seconds.',
+    description: 'FreePeriod AI generates plans tailored to your subject, year group and curriculum in seconds.',
     color: 'bg-mustard/20 text-mustard-dark',
   },
   {
@@ -174,7 +174,7 @@ export default function HomePage() {
                 style={{ opacity: 0 }}
               >
                 <Sparkles className="h-3.5 w-3.5 text-coral" />
-                <span className="text-xs font-body font-semibold text-coral">Powered by Claude AI</span>
+                <span className="text-xs font-body font-semibold text-coral">AI Powered</span>
               </div>
 
               <h1
