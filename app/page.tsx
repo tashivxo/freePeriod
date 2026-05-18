@@ -270,7 +270,7 @@ export default function HomePage() {
           className="relative z-10 mx-auto max-w-5xl px-4 py-12 md:py-20"
         >
           <h2 className="font-display text-3xl md:text-4xl font-bold text-text-primary text-center mb-12">
-            Why Teachers Love FreePeriod
+            <ShinyText text="Why Teachers Love FreePeriod" speed={4} />
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
             {FEATURES.map(({ icon: Icon, title, description, color }, idx) => (
@@ -293,7 +293,7 @@ export default function HomePage() {
         <section className="relative z-10 mx-auto max-w-4xl px-4 py-12 md:py-20">
           <SpotlightCard className="rounded-2xl border border-border bg-surface/50 backdrop-blur p-8 md:p-12 text-center hover:border-coral/50 transition-colors">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-6">
-              Save Hours Every Week
+              <ShinyText text="Save Hours Every Week" speed={4} />
             </h2>
             <div className="grid md:grid-cols-3 gap-6 mb-8">
               {PERKS.map((perk) => (
