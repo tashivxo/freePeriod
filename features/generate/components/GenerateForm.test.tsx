@@ -35,7 +35,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-import { GenerateForm } from './GenerateForm';
+import { GenerateForm } from '@/features/generate/components/GenerateForm';
 
 // --- Constants ---
 
