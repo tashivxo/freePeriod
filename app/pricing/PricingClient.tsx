@@ -119,26 +119,30 @@ export function PricingClient() {
     if (prefersReduced) return;
 
     if (headerRef.current) {
-      const targets = headerRef.current.querySelectorAll('[data-animate]');
-      animate(targets, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 600,
-        delay: stagger(100),
-        easing: 'easeOutCubic',
-      });
+      const targets = Array.from(headerRef.current.querySelectorAll('[data-animate]'));
+      if (targets.length > 0) {
+        animate(targets, {
+          translateY: [20, 0],
+          opacity: [0, 1],
+          duration: 600,
+          delay: stagger(100),
+          easing: 'easeOutCubic',
+        });
+      }
     }
 
     const timer = setTimeout(() => {
       if (cardsRef.current) {
-        const cards = cardsRef.current.querySelectorAll('[data-card]');
-        animate(cards, {
-          translateY: [24, 0],
-          opacity: [0, 1],
-          duration: 600,
-          delay: stagger(120),
-          easing: 'easeOutCubic',
-        });
+        const cards = Array.from(cardsRef.current.querySelectorAll('[data-card]'));
+        if (cards.length > 0) {
+          animate(cards, {
+            translateY: [24, 0],
+            opacity: [0, 1],
+            duration: 600,
+            delay: stagger(120),
+            easing: 'easeOutCubic',
+          });
+        }
       }
     }, 400);
 
