@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { BlurText } from '@/components/ui/BlurText';
 import { LogOut } from 'lucide-react';
-import type { User } from '@/types/database';
+import type { User } from '@/types';
 
 const SUBJECT_ITEMS: DropdownItem[] = [
   ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),

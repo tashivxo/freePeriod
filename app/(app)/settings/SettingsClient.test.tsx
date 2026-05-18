@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@/lib/test-utils';
 import { SettingsClient } from './SettingsClient';
-import type { User } from '@/types/database';
+import type { User } from '@/types';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 

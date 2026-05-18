@@ -7,7 +7,7 @@ import {
   AlignmentType,
   BorderStyle,
 } from 'docx';
-import type { LessonPlan } from '@/types/database';
+import type { LessonPlan } from '@/types';
 
 const CORAL_HEX = 'FF8BB0';
 const TEXT_HEX = '1A1A2E';

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { UploadType } from '@/types/database';
+import type { UploadType } from '@/types';
 
 interface UseFileUploadProps {
   bucket?: string;

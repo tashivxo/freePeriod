@@ -6,7 +6,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
 import { PDFDocument } from 'pdf-lib';
-import type { LessonSection } from '@/types/database';
+import type { LessonSection } from '@/types';
 
 function joinField(value: unknown): string {
   if (Array.isArray(value)) return value.join('\n');

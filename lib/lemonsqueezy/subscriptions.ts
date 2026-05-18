@@ -1,4 +1,4 @@
-import type { BillingInterval, Plan, SubscriptionStatus } from '@/types/database';
+import type { BillingInterval, Plan, SubscriptionStatus } from '@/types';
 
 export function getPlanFromVariantId(variantId: string): Plan {
   const proVariants = [

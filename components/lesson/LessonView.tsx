@@ -8,8 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { contentToString, editTextToContent, stripHtml } from '@/lib/utils/lesson-content';
 import { SectionCard } from '@/components/lesson/SectionCard';
 import { Button } from '@/components/ui/Button';
-import type { LessonPlan, LessonSection } from '@/types/database';
-import type { LessonSectionKey } from '@/types/lesson';
+import type { LessonPlan, LessonSection, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
 
 const SECTION_ORDER: { key: LessonSectionKey; label: string }[] = [

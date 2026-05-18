@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { SettingsClient } from './SettingsClient';
-import type { User } from '@/types/database';
+import type { User } from '@/types';
 
 export const metadata = { title: 'Settings — FreePeriod' };
 

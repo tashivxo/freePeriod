@@ -11,7 +11,7 @@ import {
   Path,
   renderToBuffer,
 } from '@react-pdf/renderer';
-import type { LessonPlan } from '@/types/database';
+import type { LessonPlan } from '@/types';
 import {
   CORAL,
   MUSTARD,
