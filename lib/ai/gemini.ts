@@ -41,7 +41,6 @@ export async function generateWithGemini(
 ): Promise<GenerateWithGeminiResult> {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   const modelName = 'gemini-2.0-flash';
-  console.log('[Gemini] Starting generation, model:', modelName, 'key present:', !!apiKey);
   if (!apiKey) {
     throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is not set');
   }

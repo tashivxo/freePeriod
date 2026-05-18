@@ -2,19 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Search, BookOpen, Clock, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
-import type { LessonPlan } from '@/types/database';
+import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
 export function HistoryClient() {
-  const router = useRouter();
   const [lessons, setLessons] = useState<LessonCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import type { GenerateStreamEvent, LessonSectionKey } from '@/types/lesson';
+import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
 
 const MugAnimation = dynamic(
   () => import('@/components/animations/MugAnimation').then((m) => m.MugAnimation),

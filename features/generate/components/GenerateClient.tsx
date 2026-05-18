@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
-import type { GenerateStreamEvent } from '@/types/lesson';
+import type { GenerateStreamEvent } from '@/types';
 
 type GenerateClientProps = {
   defaults?: {

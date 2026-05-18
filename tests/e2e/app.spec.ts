@@ -1,17 +1,10 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-async function signIn(page: Page) {
-  await page.context().clearCookies();
-  await page.goto('/sign-in');
-  await page.getByLabel('Email').fill('testteacher@mailinator.com');
-  await page.locator('input#password').fill('TestPass123!');
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL('**/dashboard', { timeout: 10000 });
-}
+test.use({ storageState: 'tests/e2e/.auth/user.json' });
 
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page);
+    await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
   });
 
   test('has correct page title', async ({ page }) => {
@@ -47,8 +40,7 @@ test.describe('Dashboard', () => {
 
 test.describe('Generate page', () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page);
-    await page.goto('/generate');
+    await page.goto('/generate', { waitUntil: 'domcontentloaded' });
   });
 
   test('has correct page title', async ({ page }) => {
@@ -79,8 +71,7 @@ test.describe('Generate page', () => {
 
 test.describe('History page', () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page);
-    await page.goto('/history');
+    await page.goto('/history', { waitUntil: 'domcontentloaded' });
   });
 
   test('has correct page title', async ({ page }) => {
@@ -95,8 +86,7 @@ test.describe('History page', () => {
 
 test.describe('Settings page', () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page);
-    await page.goto('/settings');
+    await page.goto('/settings', { waitUntil: 'domcontentloaded' });
   });
 
   test('has correct page title', async ({ page }) => {
