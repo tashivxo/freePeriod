@@ -1,4 +1,4 @@
-import type { LessonSection } from '@/types/database';
+import type { LessonSection } from '@/types';
 
 export function buildSystemPrompt(curriculumText?: string): string {
   let prompt = `You are an expert lesson planner with deep knowledge of curriculum standards and pedagogical best practices. Your task is to generate a comprehensive, structured lesson plan.

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from './claude';
-import type { LessonSection } from '@/types/database';
+import type { LessonSection } from '@/types';
 
 type GenerateWithGeminiParams = {
   subject: string;

@@ -9,8 +9,7 @@ import {
   parseLessonContent,
 } from '@/lib/ai';
 import { isTrialActive } from '@/lib/utils/trial';
-import type { GenerateRequest, GenerateStreamEvent } from '@/types/lesson';
-import type { LessonSection } from '@/types/database';
+import type { GenerateRequest, GenerateStreamEvent, LessonSection } from '@/types';
 
 const ALLOWED_MODELS = ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5'] as const;
 type AllowedModel = (typeof ALLOWED_MODELS)[number];
