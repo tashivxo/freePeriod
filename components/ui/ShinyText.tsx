@@ -24,7 +24,7 @@ export function ShinyText({
   className = '',
   speed = 3,
   delay = 0,
-  shineColor = 'rgba(255, 255, 255, 0.85)',
+  shineColor = 'var(--shiny-text-highlight)',
   color = 'currentColor',
   spread = 45,
   pauseOnHover = false,

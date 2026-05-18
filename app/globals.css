@@ -93,6 +93,7 @@
 }
 
 :root {
+  --shiny-text-highlight: rgba(255, 255, 255, 0.88);
   --background: oklch(0.993 0.012 83.6);
   --foreground: oklch(0.145 0.034 271);
   --card: oklch(1 0 0);
@@ -133,6 +134,7 @@
 }
 
 .dark {
+  --shiny-text-highlight: color-mix(in srgb, var(--color-mustard) 78%, white 22%);
   color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

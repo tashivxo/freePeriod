@@ -2,6 +2,27 @@ import { test, expect } from '@playwright/test';
 
 test.use({ storageState: 'tests/e2e/.auth/user.json' });
 
+test.describe('Landing page', () => {
+  test('keeps shiny section headings styled in dark mode', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('fp-theme', 'dark');
+    });
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    await expect.poll(async () => page.evaluate(() => document.documentElement.classList.contains('dark'))).toBe(true);
+
+    const heading = page.locator('.shiny-text-anim').filter({ hasText: 'Why Teachers Love FreePeriod' });
+    await expect(heading).toBeVisible();
+
+    const inlineStyle = await heading.getAttribute('style');
+
+    expect(inlineStyle).toContain('--shine-color:var(--shiny-text-highlight);');
+    expect(inlineStyle).toContain('linear-gradient(');
+    expect(inlineStyle).toContain('-webkit-text-fill-color:transparent;');
+  });
+});
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
