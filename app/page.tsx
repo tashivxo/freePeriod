@@ -69,14 +69,16 @@ export default function HomePage() {
 
     // Hero entrance
     if (heroRef.current) {
-      const targets = heroRef.current.querySelectorAll('[data-animate]');
-      animate(targets, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 600,
-        delay: stagger(100),
-        easing: 'easeOutCubic',
-      });
+      const targets = Array.from(heroRef.current.querySelectorAll('[data-animate]'));
+      if (targets.length > 0) {
+        animate(targets, {
+          translateY: [20, 0],
+          opacity: [0, 1],
+          duration: 600,
+          delay: stagger(100),
+          easing: 'easeOutCubic',
+        });
+      }
     }
 
     // Toggle entrance after 1s delay
@@ -95,14 +97,16 @@ export default function HomePage() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const cards = entry.target.querySelectorAll('[data-feature]');
-            animate(cards, {
-              translateY: [24, 0],
-              opacity: [0, 1],
-              duration: 600,
-              delay: stagger(80),
-              easing: 'easeOutCubic',
-            });
+            const cards = Array.from(entry.target.querySelectorAll('[data-feature]'));
+            if (cards.length > 0) {
+              animate(cards, {
+                translateY: [24, 0],
+                opacity: [0, 1],
+                duration: 600,
+                delay: stagger(80),
+                easing: 'easeOutCubic',
+              });
+            }
             observer.unobserve(entry.target);
           }
         });
