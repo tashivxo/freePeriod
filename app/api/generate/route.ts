@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     !isFreePlan && modelPreference && isAllowedModel(modelPreference)
       ? modelPreference
       : 'claude-sonnet-4-6';
-  const modelUsed = isFreePlan ? 'gemini-2.0-flash' : claudeModel;
+  const modelUsed = isFreePlan ? 'gemini-2.5-flash' : claudeModel;
 
   // Fetch parsed curriculum doc text if provided
   let curriculumText: string | undefined;
