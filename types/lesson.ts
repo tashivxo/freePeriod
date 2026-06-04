@@ -1,8 +1,10 @@
 export type LessonSectionKey =
   | 'title'
+  | 'essentialQuestion'
   | 'objectives'
   | 'successCriteria'
   | 'keyConcepts'
+  | 'vocabulary'
   | 'hook'
   | 'mainActivities'
   | 'guidedPractice'

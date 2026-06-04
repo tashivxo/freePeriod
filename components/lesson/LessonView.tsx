@@ -13,9 +13,11 @@ import { BlurText } from '@/components/ui/BlurText';
 
 const SECTION_ORDER: { key: LessonSectionKey; label: string }[] = [
   { key: 'title', label: 'Title' },
+  { key: 'essentialQuestion', label: 'Essential Question' },
   { key: 'objectives', label: 'Learning Objectives' },
   { key: 'successCriteria', label: 'Success Criteria' },
   { key: 'keyConcepts', label: 'Key Concepts' },
+  { key: 'vocabulary', label: 'New Vocabulary' },
   { key: 'hook', label: 'Hook Activity' },
   { key: 'mainActivities', label: 'Main Activities' },
   { key: 'guidedPractice', label: 'Guided Practice' },
@@ -75,7 +77,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
     return debounce(async (key: LessonSectionKey, html: string) => {
       const stripped = stripHtml(html);
-      const value = editTextToContent(stripped, lesson.content[key]);
+      const existingValue = lesson.content[key] ?? (key === 'vocabulary' ? [] : '');
+      const value = editTextToContent(stripped, existingValue);
       const supabase = createClient();
       const updatedContent = { ...lesson.content, [key]: value };
       const { error } = await supabase
@@ -194,7 +197,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             isLoading={exportLoading === 'docx'}
           >
             <Download className="h-4 w-4 mr-1" />
-            DOCX
+            Download DOCX
           </Button>
           <Button
             size="sm"
@@ -203,7 +206,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             isLoading={exportLoading === 'pdf'}
           >
             <Download className="h-4 w-4 mr-1" />
-            PDF
+            Download PDF
           </Button>
           {lesson.template_path && (
             <Button
@@ -213,7 +216,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               isLoading={fillLoading}
             >
               <Download className="h-4 w-4 mr-1" />
-              Filled Template
+              Download Filled Template
             </Button>
           )}
         </div>

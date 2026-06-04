@@ -14,12 +14,14 @@ function joinField(value: unknown): string {
   return '';
 }
 
-function buildTemplateData(content: LessonSection): Record<string, string> {
+export function buildTemplateData(content: LessonSection): Record<string, string> {
   return {
     title: joinField(content.title),
+    essentialQuestion: joinField(content.essentialQuestion),
     objectives: joinField(content.objectives),
     successCriteria: joinField(content.successCriteria),
     keyConcepts: joinField(content.keyConcepts),
+    vocabulary: joinField(content.vocabulary),
     hook: joinField(content.hook),
     mainActivities: joinField(content.mainActivities),
     guidedPractice: joinField(content.guidedPractice),

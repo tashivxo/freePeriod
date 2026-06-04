@@ -23,9 +23,11 @@ type GenerationScreenProps = {
 
 const SECTION_LABELS: Record<LessonSectionKey, string> = {
   title: 'Title',
+  essentialQuestion: 'Essential question',
   objectives: 'Learning objectives',
   successCriteria: 'Success criteria',
   keyConcepts: 'Key concepts',
+  vocabulary: 'New vocabulary',
   hook: 'Hook activity',
   mainActivities: 'Main activities',
   guidedPractice: 'Guided practice',
@@ -138,7 +140,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
 
         {receivedSections.length > 0 && !completeEvent && (
           <p className="text-xs text-text-secondary mt-4">
-            {receivedSections.length} of 12 sections ready
+            {receivedSections.length} of 14 sections ready
           </p>
         )}
 

@@ -6,6 +6,10 @@ import {
   HeadingLevel,
   AlignmentType,
   BorderStyle,
+  Table,
+  TableCell,
+  TableRow,
+  WidthType,
 } from 'docx';
 import type { LessonPlan } from '@/types';
 
@@ -14,6 +18,29 @@ const TEXT_HEX = '1A1A2E';
 
 function strip(html: string): string {
   return html.replace(/<[^>]*>/g, '');
+}
+
+function asList(value: string[] | undefined): string[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function textOrEmpty(value: string | undefined): string {
+  return value ?? '';
+}
+
+function metadataCell(label: string, value: string): TableCell {
+  return new TableCell({
+    width: { size: 50, type: WidthType.PERCENTAGE },
+    margins: { top: 100, bottom: 100, left: 120, right: 120 },
+    children: [
+      new Paragraph({
+        children: [
+          new TextRun({ text: `${label}: `, bold: true, font: 'Calibri', size: 20, color: TEXT_HEX }),
+          new TextRun({ text: value, font: 'Calibri', size: 20, color: TEXT_HEX }),
+        ],
+      }),
+    ],
+  });
 }
 
 function heading2(text: string): Paragraph {
@@ -69,7 +96,7 @@ function subHeading(text: string): Paragraph {
 
 export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
   const { content } = lesson;
-  const children: Paragraph[] = [];
+  const children: (Paragraph | Table)[] = [];
 
   // Title
   children.push(
@@ -93,68 +120,104 @@ export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 240 },
-      border: {
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
-      },
+      spacing: { after: 120 },
       children: [
         new TextRun({
-          text: `${lesson.subject} · ${lesson.grade} · ${lesson.duration_minutes} minutes`,
+          text: 'Formal Lesson Plan',
           font: 'Calibri',
-          size: 20,
+          size: 22,
           color: '6B7280',
           italics: true,
         }),
       ],
     }),
   );
+  children.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            metadataCell('Subject', lesson.subject),
+            metadataCell('Grade / Class', lesson.grade),
+          ],
+        }),
+        new TableRow({
+          children: [
+            metadataCell('Duration', `${lesson.duration_minutes} minutes`),
+            metadataCell('Curriculum', lesson.curriculum ?? 'Not specified'),
+          ],
+        }),
+      ],
+    }),
+  );
+  children.push(
+    new Paragraph({
+      spacing: { after: 200 },
+      border: {
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
+      },
+    }),
+  );
+
+  // Essential Question
+  if (content.essentialQuestion) {
+    children.push(heading2('Essential Question'));
+    children.push(bodyParagraph(content.essentialQuestion));
+  }
 
   // Objectives
   children.push(heading2('Learning Objectives'));
-  content.objectives.forEach((o) => children.push(bulletItem(o)));
+  asList(content.objectives).forEach((o) => children.push(bulletItem(o)));
 
   // Success Criteria
   children.push(heading2('Success Criteria'));
-  content.successCriteria.forEach((s) => children.push(bulletItem(s)));
+  asList(content.successCriteria).forEach((s) => children.push(bulletItem(s)));
 
   // Key Concepts
   children.push(heading2('Key Concepts'));
-  content.keyConcepts.forEach((k) => children.push(bulletItem(k)));
+  asList(content.keyConcepts).forEach((k) => children.push(bulletItem(k)));
+
+  // Vocabulary
+  if (content.vocabulary?.length) {
+    children.push(heading2('New Vocabulary'));
+    asList(content.vocabulary).forEach((v) => children.push(bulletItem(v)));
+  }
 
   // Hook
   children.push(heading2('Hook Activity'));
-  children.push(bodyParagraph(content.hook));
+  children.push(bodyParagraph(textOrEmpty(content.hook)));
 
   // Main Activities
   children.push(heading2('Main Activities'));
-  content.mainActivities.forEach((a) => children.push(bulletItem(a)));
+  asList(content.mainActivities).forEach((a) => children.push(bulletItem(a)));
 
   // Guided Practice
   children.push(heading2('Guided Practice'));
-  content.guidedPractice.forEach((g) => children.push(bulletItem(g)));
+  asList(content.guidedPractice).forEach((g) => children.push(bulletItem(g)));
 
   // Independent Practice
   children.push(heading2('Independent Practice'));
-  content.independentPractice.forEach((p) => children.push(bulletItem(p)));
+  asList(content.independentPractice).forEach((p) => children.push(bulletItem(p)));
 
   // Formative Assessment
   children.push(heading2('Formative Assessment'));
-  content.formativeAssessment.forEach((f) => children.push(bulletItem(f)));
+  asList(content.formativeAssessment).forEach((f) => children.push(bulletItem(f)));
 
   // Differentiation
   children.push(heading2('Differentiation'));
   children.push(subHeading('Support'));
-  content.differentiation.support.forEach((s) => children.push(bulletItem(s)));
+  asList(content.differentiation?.support).forEach((s) => children.push(bulletItem(s)));
   children.push(subHeading('Extension'));
-  content.differentiation.extension.forEach((e) => children.push(bulletItem(e)));
+  asList(content.differentiation?.extension).forEach((e) => children.push(bulletItem(e)));
 
   // Real-World Connections
   children.push(heading2('Real-World Connections'));
-  content.realWorldConnections.forEach((r) => children.push(bulletItem(r)));
+  asList(content.realWorldConnections).forEach((r) => children.push(bulletItem(r)));
 
   // Plenary
   children.push(heading2('Plenary'));
-  children.push(bodyParagraph(content.plenary));
+  children.push(bodyParagraph(textOrEmpty(content.plenary)));
 
   const doc = new Document({
     sections: [{ children }],

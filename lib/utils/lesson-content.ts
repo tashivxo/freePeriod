@@ -10,9 +10,10 @@
  * - object  → JSON pretty-printed
  */
 export function contentToString(value: unknown): string {
+  if (value == null) return '';
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return value.join('\n');
-  return JSON.stringify(value, null, 2);
+  return JSON.stringify(value, null, 2) ?? '';
 }
 
 /**

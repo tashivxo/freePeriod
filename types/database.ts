@@ -20,9 +20,11 @@ export type User = {
 
 export type LessonSection = {
   title: string;
+  essentialQuestion?: string;
   objectives: string[];
   successCriteria: string[];
   keyConcepts: string[];
+  vocabulary?: string[];
   hook: string;
   mainActivities: string[];
   guidedPractice: string[];

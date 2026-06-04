@@ -5,7 +5,6 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
   Svg,
   Rect,
   Path,
@@ -24,18 +23,18 @@ function strip(html: string): string {
   return html.replace(/<[^>]*>/g, '');
 }
 
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff2' },
-    { src: 'https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hiA.woff2', fontWeight: 700 },
-  ],
-});
+function asList(value: string[] | undefined): string[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function textOrEmpty(value: string | undefined): string {
+  return value ?? '';
+}
 
 const styles = StyleSheet.create({
   page: {
     padding: 48,
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 11,
     color: TEXT_PRIMARY,
     lineHeight: 1.5,
@@ -55,6 +54,31 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
+  },
+  metaGrid: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 12,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  metaCell: {
+    flex: 1,
+    padding: 6,
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
+    fontSize: 9,
+  },
+  metaCellLast: {
+    flex: 1,
+    padding: 6,
+    fontSize: 9,
+  },
+  metaLabel: {
+    fontWeight: 700,
   },
   sectionHeading: {
     fontSize: 13,
@@ -114,6 +138,15 @@ function Body({ children }: { children: string }) {
   return <Text style={styles.paragraph}>{strip(children)}</Text>;
 }
 
+function MetadataCell({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
+  return (
+    <Text style={isLast ? styles.metaCellLast : styles.metaCell}>
+      <Text style={styles.metaLabel}>{label}: </Text>
+      {value}
+    </Text>
+  );
+}
+
 function MugLogo() {
   return (
     <View style={styles.logoRow}>
@@ -134,45 +167,69 @@ function LessonDocument({ lesson }: { lesson: LessonPlan }) {
       <Page size="A4" style={styles.page}>
         <MugLogo />
         <Text style={styles.title}>{strip(content.title as string || lesson.title)}</Text>
-        <Text style={styles.meta}>
-          {lesson.subject} · {lesson.grade} · {lesson.duration_minutes} minutes
-        </Text>
+        <Text style={styles.meta}>Formal Lesson Plan</Text>
+        <View style={styles.metaGrid}>
+          <View style={styles.metaRow}>
+            <MetadataCell label="Subject" value={lesson.subject} />
+            <MetadataCell label="Grade / Class" value={lesson.grade} isLast />
+          </View>
+          <View>
+            <View style={{ flexDirection: 'row' }}>
+              <MetadataCell label="Duration" value={`${lesson.duration_minutes} minutes`} />
+              <MetadataCell label="Curriculum" value={lesson.curriculum ?? 'Not specified'} isLast />
+            </View>
+          </View>
+        </View>
+
+        {content.essentialQuestion ? (
+          <>
+            <Heading>Essential Question</Heading>
+            <Body>{content.essentialQuestion}</Body>
+          </>
+        ) : null}
 
         <Heading>Learning Objectives</Heading>
-        {content.objectives.map((o, i) => <Bullet key={i} text={o} />)}
+        {asList(content.objectives).map((o, i) => <Bullet key={i} text={o} />)}
 
         <Heading>Success Criteria</Heading>
-        {content.successCriteria.map((s, i) => <Bullet key={i} text={s} />)}
+        {asList(content.successCriteria).map((s, i) => <Bullet key={i} text={s} />)}
 
         <Heading>Key Concepts</Heading>
-        {content.keyConcepts.map((k, i) => <Bullet key={i} text={k} />)}
+        {asList(content.keyConcepts).map((k, i) => <Bullet key={i} text={k} />)}
+
+        {content.vocabulary?.length ? (
+          <>
+            <Heading>New Vocabulary</Heading>
+            {asList(content.vocabulary).map((v, i) => <Bullet key={i} text={v} />)}
+          </>
+        ) : null}
 
         <Heading>Hook Activity</Heading>
-        <Body>{content.hook}</Body>
+        <Body>{textOrEmpty(content.hook)}</Body>
 
         <Heading>Main Activities</Heading>
-        {content.mainActivities.map((a, i) => <Bullet key={i} text={a} />)}
+        {asList(content.mainActivities).map((a, i) => <Bullet key={i} text={a} />)}
 
         <Heading>Guided Practice</Heading>
-        {content.guidedPractice.map((g, i) => <Bullet key={i} text={g} />)}
+        {asList(content.guidedPractice).map((g, i) => <Bullet key={i} text={g} />)}
 
         <Heading>Independent Practice</Heading>
-        {content.independentPractice.map((p, i) => <Bullet key={i} text={p} />)}
+        {asList(content.independentPractice).map((p, i) => <Bullet key={i} text={p} />)}
 
         <Heading>Formative Assessment</Heading>
-        {content.formativeAssessment.map((f, i) => <Bullet key={i} text={f} />)}
+        {asList(content.formativeAssessment).map((f, i) => <Bullet key={i} text={f} />)}
 
         <Heading>Differentiation</Heading>
         <SubHeading>Support</SubHeading>
-        {content.differentiation.support.map((s, i) => <Bullet key={i} text={s} />)}
+        {asList(content.differentiation?.support).map((s, i) => <Bullet key={i} text={s} />)}
         <SubHeading>Extension</SubHeading>
-        {content.differentiation.extension.map((e, i) => <Bullet key={i} text={e} />)}
+        {asList(content.differentiation?.extension).map((e, i) => <Bullet key={i} text={e} />)}
 
         <Heading>Real-World Connections</Heading>
-        {content.realWorldConnections.map((r, i) => <Bullet key={i} text={r} />)}
+        {asList(content.realWorldConnections).map((r, i) => <Bullet key={i} text={r} />)}
 
         <Heading>Plenary</Heading>
-        <Body>{content.plenary}</Body>
+        <Body>{textOrEmpty(content.plenary)}</Body>
       </Page>
     </Document>
   );

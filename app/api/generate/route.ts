@@ -23,7 +23,7 @@ function encodeSSE(event: GenerateStreamEvent): string {
 }
 
 const SECTION_KEYS = [
-  'title', 'objectives', 'successCriteria', 'keyConcepts',
+  'title', 'essentialQuestion', 'objectives', 'successCriteria', 'keyConcepts', 'vocabulary',
   'hook', 'mainActivities', 'guidedPractice', 'independentPractice',
   'formativeAssessment', 'differentiation', 'realWorldConnections', 'plenary',
 ] as const;
@@ -191,26 +191,40 @@ export async function POST(request: NextRequest) {
         }
 
         const totalTokens = inputTokens + outputTokens;
+        const lessonPlanInsert = {
+          user_id: user.id,
+          title: lessonContent.title,
+          subject,
+          grade,
+          curriculum: curriculum || null,
+          duration_minutes: duration,
+          content: lessonContent as LessonSection,
+          model_used: modelUsed,
+          token_count: totalTokens,
+          template_path: templatePath ?? null,
+        };
 
         // Save lesson plan to database
         const { data: lessonPlan, error: insertError } = await supabase
           .from('lesson_plans')
-          .insert({
-            user_id: user.id,
-            title: lessonContent.title,
-            subject,
-            grade,
-            curriculum: curriculum || null,
-            duration_minutes: duration,
-            content: lessonContent as LessonSection,
-            model_used: modelUsed,
-            token_count: totalTokens,
-            template_path: templatePath || null,
-          })
+          .insert(lessonPlanInsert)
           .select('id')
           .single();
 
         if (insertError || !lessonPlan) {
+          console.error('[generate] Failed to save lesson plan', {
+            userId: user.id,
+            modelUsed,
+            insertError: insertError
+              ? {
+                  code: insertError.code,
+                  message: insertError.message,
+                  details: insertError.details,
+                  hint: insertError.hint,
+                }
+              : null,
+            lessonPlanReturned: Boolean(lessonPlan),
+          });
           send({ type: 'error', message: 'Failed to save lesson plan' });
           controller.close();
           return;
