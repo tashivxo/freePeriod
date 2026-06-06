@@ -1,6 +1,8 @@
 import {
+  AlignmentType,
   BorderStyle,
   Document,
+  LevelFormat,
   Packer,
   Paragraph,
   ShadingType,
@@ -17,6 +19,8 @@ const CONTENT_WIDTH = 9360;
 const HEADER_FILL = 'D9D9D9';
 const FONT = 'Calibri';
 const FONT_SIZE = 20;
+const BULLET_REF = 'lesson-plan-bullets';
+const CHECKMARK = '\u2713';
 
 const TABLE1_WIDTHS = [1615, 1692, 1131, 1640, 1640, 1642] as const;
 const TABLE1_TITLE_SPAN = 2;
@@ -28,6 +32,27 @@ const TABLE4_WIDTHS = [895, 3478, 1788, 1774, 1425] as const;
 const BORDER = { style: BorderStyle.SINGLE, size: 1, color: 'AAAAAA' };
 const CELL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 const CELL_MARGINS = { top: 80, bottom: 80, left: 120, right: 120 };
+
+const DOCUMENT_NUMBERING = {
+  config: [
+    {
+      reference: BULLET_REF,
+      levels: [
+        {
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: '\u2022',
+          alignment: AlignmentType.LEFT,
+          style: {
+            paragraph: {
+              indent: { left: 720, hanging: 360 },
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
 
 type ParsedActivity = {
   time: string;
@@ -53,7 +78,34 @@ function cellParagraph(text: string, bold = false): Paragraph {
   });
 }
 
-function multiParagraphCell(text: string, bold = false): Paragraph[] {
+function bulletParagraph(text: string): Paragraph {
+  return new Paragraph({
+    numbering: { reference: BULLET_REF, level: 0 },
+    spacing: { after: 60 },
+    children: [textRun(text)],
+  });
+}
+
+function bulletParagraphs(items: string[] | undefined): Paragraph[] {
+  if (!items?.length) return [cellParagraph('')];
+  return items.map((item) => bulletParagraph(item));
+}
+
+function checkboxParagraphs(items: string[], perLine = 2): Paragraph[] {
+  if (!items.length) return [cellParagraph('')];
+
+  const paragraphs: Paragraph[] = [];
+  for (let i = 0; i < items.length; i += perLine) {
+    const line = items
+      .slice(i, i + perLine)
+      .map((item) => `${CHECKMARK} ${stripHtmlTags(item)}`)
+      .join('   ');
+    paragraphs.push(cellParagraph(line));
+  }
+  return paragraphs;
+}
+
+function textParagraphs(text: string, bold = false): Paragraph[] {
   const lines = stripHtmlTags(text).split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) return [cellParagraph('', bold)];
   return lines.map((line) => cellParagraph(line, bold));
@@ -70,7 +122,7 @@ function makeCell(
 ): TableCell {
   const paragraphs = Array.isArray(content)
     ? content
-    : multiParagraphCell(content, options?.bold);
+    : textParagraphs(content, options?.bold);
 
   return new TableCell({
     borders: CELL_BORDERS,
@@ -96,7 +148,11 @@ function headerRow(label: string, columnWidths: readonly number[]): TableRow {
   });
 }
 
-function labelValueRow(label: string, value: string, columnWidths: readonly [number, number]): TableRow {
+function labelValueRow(
+  label: string,
+  value: string | Paragraph[],
+  columnWidths: readonly [number, number],
+): TableRow {
   return new TableRow({
     children: [
       makeCell(label, columnWidths[0], { bold: true }),
@@ -105,23 +161,25 @@ function labelValueRow(label: string, value: string, columnWidths: readonly [num
   });
 }
 
-function formatList(items: string[] | undefined): string {
-  if (!items?.length) return '';
-  return items.map((item) => `• ${stripHtmlTags(item)}`).join('\n');
-}
+function sectionWithBullets(
+  title: string,
+  items: string[] | undefined,
+  fallback: string,
+): Paragraph[] {
+  const paragraphs: Paragraph[] = [
+    new Paragraph({
+      spacing: { before: 120, after: 60 },
+      children: [textRun(title, true)],
+    }),
+  ];
 
-function formatCheckboxItems(items: string[], perLine = 2): string {
-  if (!items.length) return '';
-  const lines: string[] = [];
-  for (let i = 0; i < items.length; i += perLine) {
-    lines.push(
-      items
-        .slice(i, i + perLine)
-        .map((item) => `☑ ${stripHtmlTags(item)}`)
-        .join('   '),
-    );
+  if (items?.length) {
+    paragraphs.push(...bulletParagraphs(items));
+  } else {
+    paragraphs.push(cellParagraph(fallback));
   }
-  return lines.join('\n');
+
+  return paragraphs;
 }
 
 function extractField(text: string, labels: string[]): string {
@@ -212,20 +270,36 @@ function inferHigherOrderSkills(objectives: string[]): string[] {
   return [...new Set(skills)];
 }
 
-function formatDifferentiation(content: LessonSection): string {
+function differentiationParagraphs(content: LessonSection): Paragraph[] {
   const { differentiation } = content;
-  const support = differentiation?.support ?? [];
-  const extension = differentiation?.extension ?? [];
 
-  const sections = [
-    `[1] Working Towards Mastery:\n${formatList(support) || 'See differentiated scaffolds during activities.'}`,
-    `[2] Working at Mastery:\n${formatList(content.successCriteria) || 'Students meet lesson success criteria independently.'}`,
-    `[3] Mastery with Greater Depth:\n${formatList(extension) || 'Extension tasks provided for high-attaining learners.'}`,
-    `SEN:\n${formatList(support) || 'Additional scaffolding and check-ins during practice.'}`,
-    `G&T:\n${formatList(extension) || 'Extended analysis and creation tasks.'}`,
+  return [
+    ...sectionWithBullets(
+      '[1] Working Towards Mastery:',
+      differentiation?.support,
+      'See differentiated scaffolds during activities.',
+    ),
+    ...sectionWithBullets(
+      '[2] Working at Mastery:',
+      content.successCriteria,
+      'Students meet lesson success criteria independently.',
+    ),
+    ...sectionWithBullets(
+      '[3] Mastery with Greater Depth:',
+      differentiation?.extension,
+      'Extension tasks provided for high-attaining learners.',
+    ),
+    ...sectionWithBullets(
+      'SEN:',
+      differentiation?.support,
+      'Additional scaffolding and check-ins during practice.',
+    ),
+    ...sectionWithBullets(
+      'G&T:',
+      differentiation?.extension,
+      'Extended analysis and creation tasks.',
+    ),
   ];
-
-  return sections.join('\n\n');
 }
 
 function buildActivityRows(content: LessonSection): TableRow[] {
@@ -381,24 +455,24 @@ function buildCurriculumStandardsTable(lesson: LessonPlan): Table {
 function buildPlanningTable(content: LessonSection): Table {
   const rows: TableRow[] = [
     headerRow('Planning and Pedagogical Approach', TABLE3_WIDTHS),
-    labelValueRow('Learning Objectives', formatList(content.objectives), TABLE3_WIDTHS),
+    labelValueRow('Learning Objectives', bulletParagraphs(content.objectives), TABLE3_WIDTHS),
     labelValueRow('Essential Question', textOrBlank(content.essentialQuestion), TABLE3_WIDTHS),
-    labelValueRow('New Vocabulary', formatList(content.vocabulary), TABLE3_WIDTHS),
-    labelValueRow('Key Concepts', formatList(content.keyConcepts), TABLE3_WIDTHS),
+    labelValueRow('New Vocabulary', bulletParagraphs(content.vocabulary), TABLE3_WIDTHS),
+    labelValueRow('Key Concepts', bulletParagraphs(content.keyConcepts), TABLE3_WIDTHS),
     labelValueRow(
       'Teaching Strategies',
-      formatCheckboxItems(inferTeachingStrategies(content)),
+      checkboxParagraphs(inferTeachingStrategies(content)),
       TABLE3_WIDTHS,
     ),
     labelValueRow(
       'Formative Assessment Methods',
-      formatCheckboxItems(content.formativeAssessment.map(stripHtmlTags)),
+      checkboxParagraphs(content.formativeAssessment.map(stripHtmlTags)),
       TABLE3_WIDTHS,
     ),
-    labelValueRow('Adaptive Teaching / Differentiation', formatDifferentiation(content), TABLE3_WIDTHS),
+    labelValueRow('Adaptive Teaching / Differentiation', differentiationParagraphs(content), TABLE3_WIDTHS),
     labelValueRow(
       'Higher Order Thinking Skills',
-      formatCheckboxItems(inferHigherOrderSkills(content.objectives)),
+      checkboxParagraphs(inferHigherOrderSkills(content.objectives)),
       TABLE3_WIDTHS,
     ),
   ];
@@ -464,6 +538,14 @@ export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
   const { content } = lesson;
 
   const doc = new Document({
+    numbering: DOCUMENT_NUMBERING,
+    styles: {
+      default: {
+        document: {
+          run: { font: FONT, size: FONT_SIZE },
+        },
+      },
+    },
     sections: [
       {
         properties: {
@@ -485,9 +567,26 @@ export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
   return Buffer.from(await Packer.toBuffer(doc));
 }
 
+/** Formats checkmark lines for tests and previews (matches DOCX output). */
+export function formatCheckboxItems(items: string[], perLine = 2): string {
+  if (!items.length) return '';
+  const lines: string[] = [];
+  for (let i = 0; i < items.length; i += perLine) {
+    lines.push(
+      items
+        .slice(i, i + perLine)
+        .map((item) => `${CHECKMARK} ${stripHtmlTags(item)}`)
+        .join('   '),
+    );
+  }
+  return lines.join('\n');
+}
+
 export {
   parseActivityBlock,
-  formatCheckboxItems,
+  checkboxParagraphs,
   inferTeachingStrategies,
   inferHigherOrderSkills,
+  bulletParagraphs,
+  CHECKMARK,
 };

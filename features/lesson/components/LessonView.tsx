@@ -7,6 +7,7 @@ import { ArrowLeft, Download, Clock, BookOpen } from 'lucide-react';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { downloadBlob } from '@/lib/download-blob';
+import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/lib/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
@@ -73,12 +74,12 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
         if (!response.ok) return;
 
-        downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}.${format}`);
+        downloadBlob(await response.blob(), buildExportFilename(lesson.subject, format));
       } finally {
         setExportLoading(null);
       }
     },
-    [lesson.id, lesson.title],
+    [lesson.id, lesson.subject],
   );
 
   const handleFillTemplate = useCallback(async () => {

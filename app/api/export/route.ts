@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { buildExportFilename } from '@/lib/export/filename';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -29,21 +30,18 @@ export async function POST(request: NextRequest) {
 
   let buffer: Buffer;
   let contentType: string;
-  let extension: string;
 
   if (format === 'docx') {
     const { generateDocx } = await import('@/lib/export/docx');
     buffer = await generateDocx(lesson);
     contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    extension = 'docx';
   } else {
     const { generatePdf } = await import('@/lib/export/pdf');
     buffer = await generatePdf(lesson);
     contentType = 'application/pdf';
-    extension = 'pdf';
   }
 
-  const filename = `${lesson.title || 'lesson-plan'}.${extension}`;
+  const filename = buildExportFilename(lesson.subject, format as 'docx' | 'pdf');
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

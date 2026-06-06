@@ -61,8 +61,8 @@ describe('docx export', () => {
 
   it('formats checkbox lists for planning rows', () => {
     const formatted = formatCheckboxItems(['Exit ticket', 'Observations', 'Peer review'], 2);
-    expect(formatted).toContain('☑ Exit ticket');
-    expect(formatted).toContain('☑ Observations');
+    expect(formatted).toContain('✓ Exit ticket');
+    expect(formatted).toContain('✓ Observations');
   });
 
   it('infers teaching strategies from lesson content', () => {
