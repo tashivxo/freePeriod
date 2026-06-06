@@ -36,8 +36,19 @@ export async function POST(request: NextRequest) {
     buffer = await generateDocx(lesson);
     contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   } else {
-    const { generatePdf } = await import('@/lib/export/pdf');
-    buffer = await generatePdf(lesson);
+    const { generatePdfFromLesson, PdfConversionUnavailableError } = await import(
+      '@/lib/export/docx-to-pdf'
+    );
+
+    try {
+      buffer = await generatePdfFromLesson(lesson);
+    } catch (error) {
+      if (error instanceof PdfConversionUnavailableError) {
+        return NextResponse.json({ error: error.message }, { status: 503 });
+      }
+      throw error;
+    }
+
     contentType = 'application/pdf';
   }
 

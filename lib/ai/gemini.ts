@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from './claude';
 import type { LessonSection } from '@/types';
 
+export const GEMINI_FREE_MODEL = 'gemini-2.5-flash';
+
 type GenerateWithGeminiParams = {
   subject: string;
   grade: string;
@@ -40,13 +42,12 @@ export async function generateWithGemini(
   params: GenerateWithGeminiParams,
 ): Promise<GenerateWithGeminiResult> {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const modelName = 'gemini-2.5-flash';
   if (!apiKey) {
     throw new Error('GOOGLE_GENERATIVE_AI_API_KEY is not set');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const model = genAI.getGenerativeModel({ model: GEMINI_FREE_MODEL });
 
   const systemInstruction = buildSystemPrompt(params.curriculumText);
   const userPrompt = buildUserPrompt({

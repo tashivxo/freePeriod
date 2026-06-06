@@ -33,6 +33,9 @@ describe('Claude lesson prompt parsing', () => {
     expect(prompt).toContain('essentialQuestion');
     expect(prompt).toContain('vocabulary');
     expect(prompt).toContain('formal observation');
+    expect(prompt).toContain('Learner Activity & Success Criteria');
+    expect(prompt).toContain('Plain text only');
+    expect(prompt).toContain('2 to 4 short bullet points');
   });
 
   it('keeps curriculum guidance neutral across standards', () => {

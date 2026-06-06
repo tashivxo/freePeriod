@@ -4,8 +4,10 @@ import { TextEncoder, TextDecoder } from 'util';
 import { generateDocx } from '@/lib/export/docx';
 import {
   compareTableGridsToTemplate,
+  docxUsesFixedTableLayout,
   summarizeDocxStructure,
 } from '@/lib/export/docx-structure';
+import JSZip from 'jszip';
 import type { LessonPlan } from '@/types';
 
 Object.assign(globalThis, { TextEncoder, TextDecoder });
@@ -72,6 +74,14 @@ describe('docx tabular structure', () => {
     expect(summary.headers['Planning and Pedagogical Approach']).toBe(true);
     expect(summary.headers['Teacher Activity']).toBe(true);
     expect(summary.headers['Self-Reflection: Data-Informed Future Planning']).toBe(true);
+  });
+
+  it('uses fixed table layout on all five tables', async () => {
+    const buffer = await generateDocx(sampleLesson);
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file('word/document.xml')?.async('string');
+    expect(xml).toBeTruthy();
+    expect(docxUsesFixedTableLayout(xml!)).toBe(true);
   });
 
   it('matches observation template table grid layout', async () => {

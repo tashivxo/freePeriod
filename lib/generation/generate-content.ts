@@ -3,6 +3,7 @@ import {
   buildSystemPrompt,
   buildUserPrompt,
   generateWithGemini,
+  GEMINI_FREE_MODEL,
   parseLessonContent,
 } from '@/lib/ai';
 import type { LessonSection } from '@/types';
@@ -48,7 +49,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     !isFreePlan && modelPreference && isAllowedModel(modelPreference)
       ? modelPreference
       : 'claude-sonnet-4-6';
-  const modelUsed = isFreePlan ? 'gemini-2.5-flash' : claudeModel;
+  const modelUsed = isFreePlan ? GEMINI_FREE_MODEL : claudeModel;
 
   if (isFreePlan) {
     const geminiResult = await generateWithGemini({

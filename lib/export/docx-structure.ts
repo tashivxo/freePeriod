@@ -42,6 +42,12 @@ export function analyzeDocxTables(xml: string): DocxTableSummary[] {
   });
 }
 
+export function docxUsesFixedTableLayout(xml: string): boolean {
+  const tables = [...xml.matchAll(/<w:tbl>([\s\S]*?)<\/w:tbl>/g)];
+  if (tables.length === 0) return false;
+  return tables.every((match) => /<w:tblLayout w:type="fixed"/.test(match[1]));
+}
+
 export async function summarizeDocxStructure(buffer: Buffer): Promise<DocxStructureSummary> {
   const zip = await JSZip.loadAsync(buffer);
   const xml = await zip.file('word/document.xml')?.async('string');

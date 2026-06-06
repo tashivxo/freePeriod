@@ -8,12 +8,13 @@ import {
   ShadingType,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TextRun,
   WidthType,
 } from 'docx';
 import type { LessonPlan, LessonSection } from '@/types';
-import { stripHtmlTags } from '@/lib/export/lesson-document';
+import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
 
 const CONTENT_WIDTH = 9360;
 const HEADER_FILL = 'D9D9D9';
@@ -27,11 +28,12 @@ const TABLE1_TITLE_SPAN = 2;
 const TABLE1_TEACHER_SPAN = 2;
 const TABLE2_WIDTHS = [2340, 1755, 1755, 1755, 1755] as const;
 const TABLE3_WIDTHS = [2056, 7304] as const;
-const TABLE4_WIDTHS = [895, 3478, 1788, 1774, 1425] as const;
+const TABLE4_WIDTHS = [895, 3278, 1788, 1774, 1625] as const;
 
 const BORDER = { style: BorderStyle.SINGLE, size: 4, color: 'AAAAAA' };
 const CELL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 const CELL_MARGINS = { top: 80, bottom: 80, left: 120, right: 120 };
+const TABLE4_CELL_MARGINS = { top: 60, bottom: 60, left: 80, right: 80 };
 
 const DOCUMENT_NUMBERING = {
   config: [
@@ -62,9 +64,12 @@ type ParsedActivity = {
   resources: string;
 };
 
+const DEFAULT_RESOURCES = 'Whiteboard / projector, teacher-created handout';
+const MAX_CELL_BULLETS = 4;
+
 function textRun(text: string, bold = false): TextRun {
   return new TextRun({
-    text: stripHtmlTags(text),
+    text: prepareCellText(text),
     font: FONT,
     size: FONT_SIZE,
     bold,
@@ -98,15 +103,43 @@ function checkboxParagraphs(items: string[], perLine = 2): Paragraph[] {
   for (let i = 0; i < items.length; i += perLine) {
     const line = items
       .slice(i, i + perLine)
-      .map((item) => `${CHECKMARK} ${stripHtmlTags(item)}`)
+      .map((item) => `${CHECKMARK} ${prepareCellText(item)}`)
       .join('   ');
     paragraphs.push(cellParagraph(line));
   }
   return paragraphs;
 }
 
+function compactBulletParagraph(text: string): Paragraph {
+  return new Paragraph({
+    spacing: { after: 40 },
+    indent: { left: 180, hanging: 180 },
+    children: [textRun(`• ${text}`)],
+  });
+}
+
+function compactBulletParagraphs(items: string[], maxBullets = MAX_CELL_BULLETS): Paragraph[] {
+  if (!items.length) return [cellParagraph('')];
+  return items.slice(0, maxBullets).map((item) => compactBulletParagraph(item));
+}
+
+function cellContentParagraphs(text: string, maxBullets = MAX_CELL_BULLETS): Paragraph[] {
+  const cleaned = prepareCellText(text);
+  if (!cleaned) return [cellParagraph('')];
+
+  let lines = cleaned.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length === 1) {
+    lines = cleaned
+      .split(/(?<=[.;!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  return compactBulletParagraphs(lines, maxBullets);
+}
+
 function textParagraphs(text: string, bold = false): Paragraph[] {
-  const lines = stripHtmlTags(text).split('\n').filter((line) => line.trim().length > 0);
+  const lines = prepareCellText(text).split('\n').filter((line) => line.trim().length > 0);
   if (lines.length === 0) return [cellParagraph('', bold)];
   return lines.map((line) => cellParagraph(line, bold));
 }
@@ -115,10 +148,22 @@ function sumWidths(widths: readonly number[], start: number, count: number): num
   return widths.slice(start, start + count).reduce((total, width) => total + width, 0);
 }
 
+function createFixedTable(options: ConstructorParameters<typeof Table>[0]): Table {
+  return new Table({
+    ...options,
+    layout: TableLayoutType.FIXED,
+  });
+}
+
 function makeCell(
   content: string | Paragraph[],
   width: number,
-  options?: { bold?: boolean; shading?: boolean; columnSpan?: number },
+  options?: {
+    bold?: boolean;
+    shading?: boolean;
+    columnSpan?: number;
+    margins?: typeof CELL_MARGINS;
+  },
 ): TableCell {
   const paragraphs = Array.isArray(content)
     ? content
@@ -126,12 +171,37 @@ function makeCell(
 
   return new TableCell({
     borders: CELL_BORDERS,
-    margins: CELL_MARGINS,
+    margins: options?.margins ?? CELL_MARGINS,
     width: { size: width, type: WidthType.DXA },
     columnSpan: options?.columnSpan,
     shading: options?.shading
       ? { fill: HEADER_FILL, type: ShadingType.CLEAR }
       : undefined,
+    children: paragraphs,
+  });
+}
+
+function makeActivityCell(
+  content: string | Paragraph[],
+  width: number,
+  options?: { header?: boolean; plain?: boolean },
+): TableCell {
+  let paragraphs: Paragraph[];
+  if (Array.isArray(content)) {
+    paragraphs = content;
+  } else if (options?.header) {
+    paragraphs = [cellParagraph(content, true)];
+  } else if (options?.plain) {
+    paragraphs = [cellParagraph(content)];
+  } else {
+    paragraphs = cellContentParagraphs(content);
+  }
+
+  return new TableCell({
+    borders: CELL_BORDERS,
+    margins: TABLE4_CELL_MARGINS,
+    width: { size: width, type: WidthType.DXA },
+    shading: options?.header ? { fill: HEADER_FILL, type: ShadingType.CLEAR } : undefined,
     children: paragraphs,
   });
 }
@@ -184,8 +254,9 @@ function sectionWithBullets(
 
 function extractField(text: string, labels: string[]): string {
   for (const label of labels) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(
-      `\\*?${label}:\\*?\\s*([\\s\\S]*?)(?=\\*?(?:Teacher Action|Student Action|Learner Activity|Resources|Checks for Understanding|Scaffolding|Method|Evidence|Task|Expected Output|Success Criteria):|$)`,
+      `\\*?${escaped}:\\*?\\s*([\\s\\S]*?)(?=\\*?(?:Time|Teacher Action|Teacher Activity|Student Action|Learner Activity|Learner Activity & Success Criteria|Resources|Checks for Understanding|Formative Assessment|Scaffolding|Method|Evidence|Task|Expected Output|Success Criteria):|$)`,
       'i',
     );
     const match = text.match(regex);
@@ -195,22 +266,34 @@ function extractField(text: string, labels: string[]): string {
 }
 
 function parseActivityBlock(text: string, fallbackTime = ''): ParsedActivity {
-  const clean = stripHtmlTags(text);
+  const clean = prepareCellText(text);
+  const timeField = extractField(clean, ['Time']);
   const parenTime = clean.match(/\((\d+\s*(?:min(?:ute)?s?))\)/i);
   const inlineTime = clean.match(/(?:^|\s)(\d+\s*(?:min(?:ute)?s?))/i);
-  const time = parenTime?.[1] ?? inlineTime?.[1] ?? fallbackTime;
+  const time = timeField || parenTime?.[1] || inlineTime?.[1] || fallbackTime;
 
-  const teacher = extractField(clean, ['Teacher Action', 'Teacher Activity']);
-  const student = extractField(clean, ['Student Action', 'Learner Activity', 'Learner Activity & Success Criteria']);
+  const teacher = extractField(clean, ['Teacher Activity', 'Teacher Action']);
+  let learner = extractField(clean, [
+    'Learner Activity & Success Criteria',
+    'Student Action',
+    'Learner Activity',
+  ]);
   const resources = extractField(clean, ['Resources']);
-  const assessment = extractField(clean, ['Checks for Understanding', 'Formative Assessment']);
+  const assessment = extractField(clean, [
+    'Formative Assessment',
+    'Checks for Understanding',
+  ]);
   const successCriteria = extractField(clean, ['Success Criteria']);
+  const task = extractField(clean, ['Task', 'Expected Output']);
 
-  let learner = student;
-  if (successCriteria) {
+  if (successCriteria && !/\bi can\b/i.test(learner)) {
     learner = learner
-      ? `${learner}\n\nSuccess Criteria: ${successCriteria}`
-      : `Success Criteria: ${successCriteria}`;
+      ? `${learner}\n${successCriteria}`
+      : successCriteria;
+  }
+
+  if (!learner && task) {
+    learner = task;
   }
 
   if (!teacher && !learner) {
@@ -313,7 +396,7 @@ function buildActivityRows(content: LessonSection): TableRow[] {
           'Formative Assessment',
           'Resources',
         ];
-        return makeCell(labels[index], width, { bold: true, shading: true });
+        return makeActivityCell(labels[index], width, { header: true });
       }),
     }),
   ];
@@ -348,6 +431,11 @@ function buildActivityRows(content: LessonSection): TableRow[] {
         parsed.assessment ||
         formativePool[formativeIndex % Math.max(formativePool.length, 1)] ||
         '';
+      const learner =
+        parsed.learner ||
+        formatICanStatements(content.successCriteria) ||
+        'See lesson success criteria.';
+      const resources = parsed.resources.trim() || DEFAULT_RESOURCES;
 
       if (!parsed.assessment && formativePool.length > 0) {
         formativeIndex += 1;
@@ -356,11 +444,11 @@ function buildActivityRows(content: LessonSection): TableRow[] {
       rows.push(
         new TableRow({
           children: [
-            makeCell(parsed.time || phase.defaultTime, TABLE4_WIDTHS[0]),
-            makeCell(parsed.teacher || phase.label, TABLE4_WIDTHS[1]),
-            makeCell(parsed.learner, TABLE4_WIDTHS[2]),
-            makeCell(stripHtmlTags(formative), TABLE4_WIDTHS[3]),
-            makeCell(parsed.resources, TABLE4_WIDTHS[4]),
+            makeActivityCell(parsed.time || phase.defaultTime, TABLE4_WIDTHS[0], { plain: true }),
+            makeActivityCell(parsed.teacher || phase.label, TABLE4_WIDTHS[1]),
+            makeActivityCell(learner, TABLE4_WIDTHS[2]),
+            makeActivityCell(formative, TABLE4_WIDTHS[3]),
+            makeActivityCell(resources, TABLE4_WIDTHS[4]),
           ],
         }),
       );
@@ -376,7 +464,7 @@ function buildHeaderInfoTable(lesson: LessonPlan): Table {
   const titleWidth = sumWidths(TABLE1_WIDTHS, 0, TABLE1_TITLE_SPAN);
   const teacherWidth = sumWidths(TABLE1_WIDTHS, 4, TABLE1_TEACHER_SPAN);
 
-  return new Table({
+  return createFixedTable({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [...TABLE1_WIDTHS],
     rows: [
@@ -420,7 +508,7 @@ function buildHeaderInfoTable(lesson: LessonPlan): Table {
 }
 
 function buildCurriculumStandardsTable(lesson: LessonPlan): Table {
-  return new Table({
+  return createFixedTable({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [...TABLE2_WIDTHS],
     rows: [
@@ -466,7 +554,7 @@ function buildPlanningTable(content: LessonSection): Table {
     ),
     labelValueRow(
       'Formative Assessment Methods',
-      checkboxParagraphs(content.formativeAssessment.map(stripHtmlTags)),
+      checkboxParagraphs(content.formativeAssessment.map(prepareCellText)),
       TABLE3_WIDTHS,
     ),
     labelValueRow('Adaptive Teaching / Differentiation', differentiationParagraphs(content), TABLE3_WIDTHS),
@@ -477,7 +565,7 @@ function buildPlanningTable(content: LessonSection): Table {
     ),
   ];
 
-  return new Table({
+  return createFixedTable({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [...TABLE3_WIDTHS],
     rows,
@@ -485,7 +573,7 @@ function buildPlanningTable(content: LessonSection): Table {
 }
 
 function buildActivitiesTable(content: LessonSection): Table {
-  return new Table({
+  return createFixedTable({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [...TABLE4_WIDTHS],
     rows: buildActivityRows(content),
@@ -501,13 +589,13 @@ function buildSelfReflectionTable(content: LessonSection): Table {
     content.formativeAssessment.length > 0
       ? `Formative evidence from this lesson (${content.formativeAssessment
           .slice(0, 2)
-          .map(stripHtmlTags)
+          .map(prepareCellText)
           .join('; ')}) will inform grouping and re-teaching in the next lesson.`
       : '_________________________________________________________________________________________';
 
   const interventionHint =
     content.differentiation.support.length > 0 || content.differentiation.extension.length > 0
-      ? `Intervention: ${content.differentiation.support.map(stripHtmlTags).join(' ') || 'Targeted re-teaching as needed.'}\nAcceleration: ${content.differentiation.extension.map(stripHtmlTags).join(' ') || 'Extension tasks for high-attaining learners.'}`
+      ? `Intervention: ${content.differentiation.support.map(prepareCellText).join(' ') || 'Targeted re-teaching as needed.'}\nAcceleration: ${content.differentiation.extension.map(prepareCellText).join(' ') || 'Extension tasks for high-attaining learners.'}`
       : '_________________________________________________________________________________________';
 
   const reflectionContent: Paragraph[] = [
@@ -522,7 +610,7 @@ function buildSelfReflectionTable(content: LessonSection): Table {
     ...textParagraphs(interventionHint),
   ];
 
-  return new Table({
+  return createFixedTable({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [CONTENT_WIDTH],
     rows: [
@@ -535,7 +623,7 @@ function buildSelfReflectionTable(content: LessonSection): Table {
 }
 
 function textOrBlank(value: string | undefined): string {
-  return value?.trim() ? stripHtmlTags(value) : '';
+  return value?.trim() ? prepareCellText(value) : '';
 }
 
 export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
@@ -583,7 +671,7 @@ export function formatCheckboxItems(items: string[], perLine = 2): string {
     lines.push(
       items
         .slice(i, i + perLine)
-        .map((item) => `${CHECKMARK} ${stripHtmlTags(item)}`)
+        .map((item) => `${CHECKMARK} ${prepareCellText(item)}`)
         .join('   '),
     );
   }

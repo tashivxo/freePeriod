@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { GEMINI_FREE_MODEL } from '@/lib/ai/gemini';
 
 /**
  * GET /api/health
@@ -11,7 +12,7 @@ export async function GET() {
     status: 'ok',
     timestamp: new Date().toISOString(),
     generation: {
-      freePlanModel: 'gemini-2.0-flash',
+      freePlanModel: GEMINI_FREE_MODEL,
       freePlanEnvVar: 'GOOGLE_GENERATIVE_AI_API_KEY',
       proPlanModel: 'claude-sonnet-4-6 (default)',
       proPlanEnvVar: 'ANTHROPIC_API_KEY',

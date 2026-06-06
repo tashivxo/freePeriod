@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { GEMINI_FREE_MODEL } from '@/lib/ai/gemini';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { generateLessonContent } from '@/lib/generation/generate-content';
 import { mapGenerationError } from '@/lib/generation/map-error';
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      let modelUsed = isFreePlan ? 'gemini-2.5-flash' : 'claude-sonnet-4-6';
+      let modelUsed = isFreePlan ? GEMINI_FREE_MODEL : 'claude-sonnet-4-6';
 
       function send(event: GenerateStreamEvent) {
         controller.enqueue(encoder.encode(encodeSSE(event)));
