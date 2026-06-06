@@ -1,32 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
 import { ArrowLeft, Download, Clock, BookOpen } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { contentToString, editTextToContent, stripHtml } from '@/lib/utils/lesson-content';
-import { SectionCard } from '@/components/lesson/SectionCard';
+import { contentToString } from '@/lib/lesson/content';
+import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
+import { downloadBlob } from '@/lib/download-blob';
+import { useDebouncedLessonSave } from '@/lib/hooks/useDebouncedLessonSave';
+import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
-import type { LessonPlan, LessonSection, LessonSectionKey } from '@/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
-
-const SECTION_ORDER: { key: LessonSectionKey; label: string }[] = [
-  { key: 'title', label: 'Title' },
-  { key: 'essentialQuestion', label: 'Essential Question' },
-  { key: 'objectives', label: 'Learning Objectives' },
-  { key: 'successCriteria', label: 'Success Criteria' },
-  { key: 'keyConcepts', label: 'Key Concepts' },
-  { key: 'vocabulary', label: 'New Vocabulary' },
-  { key: 'hook', label: 'Hook Activity' },
-  { key: 'mainActivities', label: 'Main Activities' },
-  { key: 'guidedPractice', label: 'Guided Practice' },
-  { key: 'independentPractice', label: 'Independent Practice' },
-  { key: 'formativeAssessment', label: 'Formative Assessment' },
-  { key: 'differentiation', label: 'Differentiation' },
-  { key: 'realWorldConnections', label: 'Real-World Connections' },
-  { key: 'plenary', label: 'Plenary' },
-];
 
 type LessonViewProps = {
   lesson: LessonPlan;
@@ -41,7 +34,10 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [fillLoading, setFillLoading] = useState(false);
   const [showNoPdfFieldsDialog, setShowNoPdfFieldsDialog] = useState(false);
 
-  // Staggered reveal animation
+  const debouncedSave = useDebouncedLessonSave(lesson.id, lesson.content, (updatedContent) => {
+    setLesson((prev) => ({ ...prev, content: updatedContent }));
+  });
+
   useEffect(() => {
     if (!cardsRef.current) return;
 
@@ -50,7 +46,6 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
     if (prefersReduced) return;
 
-    // Hide before animating to prevent flash
     cards.forEach((el) => ((el as HTMLElement).style.opacity = '0'));
 
     animate(cards, {
@@ -66,38 +61,6 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, []);
 
-  const debouncedSave = useMemo(() => {
-    function debounce<T extends (...args: never[]) => void>(fn: T, ms: number): T {
-      let timer: ReturnType<typeof setTimeout>;
-      return ((...args: Parameters<T>) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn(...args), ms);
-      }) as T;
-    }
-
-    return debounce(async (key: LessonSectionKey, html: string) => {
-      const stripped = stripHtml(html);
-      const existingValue = lesson.content[key] ?? (key === 'vocabulary' ? [] : '');
-      const value = editTextToContent(stripped, existingValue);
-      const supabase = createClient();
-      const updatedContent = { ...lesson.content, [key]: value };
-      const { error } = await supabase
-        .from('lesson_plans')
-        .update({ content: updatedContent as LessonSection })
-        .eq('id', lesson.id);
-      if (!error) {
-        setLesson((prev) => ({ ...prev, content: updatedContent as LessonSection }));
-      }
-    }, 30_000);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lesson.id, lesson.content]);
-
-  useEffect(() => {
-    return () => {
-      // Nothing to flush — debounce timer will fire naturally or be GC'd on unmount
-    };
-  }, [debouncedSave]);
-
   const handleExport = useCallback(
     async (format: 'docx' | 'pdf') => {
       setExportLoading(format);
@@ -110,18 +73,12 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
         if (!response.ok) return;
 
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${lesson.title || 'lesson-plan'}.${format}`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}.${format}`);
       } finally {
         setExportLoading(null);
       }
     },
-    [lesson],
+    [lesson.id, lesson.title],
   );
 
   const handleFillTemplate = useCallback(async () => {
@@ -144,24 +101,17 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         return;
       }
 
-      const blob = await response.blob();
       const ext = lesson.template_path?.split('.').pop() ?? 'docx';
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${lesson.title || 'lesson-plan'}-filled.${ext}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
     } finally {
       setFillLoading(false);
     }
-  }, [lesson]);
+  }, [lesson.id, lesson.template_path, lesson.title]);
 
   const content = lesson.content;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      {/* Header */}
       <div className="mb-8">
         <button
           type="button"
@@ -188,7 +138,6 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           )}
         </div>
 
-        {/* Export buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
             size="sm"
@@ -222,48 +171,39 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         </div>
       </div>
 
-      {/* No PDF fields dialog */}
-      {showNoPdfFieldsDialog && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="noPdfFieldsTitle"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-        >
-          <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
-            <h2 id="noPdfFieldsTitle" className="font-display text-lg font-semibold text-text-primary mb-2">
-              No fillable fields found
-            </h2>
-            <p className="font-body text-sm text-text-secondary mb-6">
+      <Dialog open={showNoPdfFieldsDialog} onOpenChange={setShowNoPdfFieldsDialog}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>No fillable fields found</DialogTitle>
+            <DialogDescription>
               This PDF template doesn&apos;t contain any form fields. Would you like to generate
               a fresh DOCX export instead?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowNoPdfFieldsDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setShowNoPdfFieldsDialog(false);
-                  handleExport('docx');
-                }}
-                isLoading={exportLoading === 'docx'}
-              >
-                Generate DOCX
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="border-t-0 bg-transparent p-0 pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowNoPdfFieldsDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setShowNoPdfFieldsDialog(false);
+                void handleExport('docx');
+              }}
+              isLoading={exportLoading === 'docx'}
+            >
+              Generate DOCX
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Section cards */}
       <div ref={cardsRef} className="space-y-4">
-        {SECTION_ORDER.filter((s) => s.key !== 'title').map((section) => (
+        {LESSON_VIEW_SECTIONS.map((section) => (
           <div key={section.key} className="section-card">
             <SectionCard
               title={section.label}

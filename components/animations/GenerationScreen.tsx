@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { getSectionProgressLabel, LESSON_SECTION_COUNT } from '@/lib/lesson/sections';
 import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
 
 const MugAnimation = dynamic(
@@ -19,23 +20,6 @@ type StatusStep = {
 type GenerationScreenProps = {
   events: GenerateStreamEvent[];
   onComplete: (lessonId: string) => void;
-};
-
-const SECTION_LABELS: Record<LessonSectionKey, string> = {
-  title: 'Title',
-  essentialQuestion: 'Essential question',
-  objectives: 'Learning objectives',
-  successCriteria: 'Success criteria',
-  keyConcepts: 'Key concepts',
-  vocabulary: 'New vocabulary',
-  hook: 'Hook activity',
-  mainActivities: 'Main activities',
-  guidedPractice: 'Guided practice',
-  independentPractice: 'Independent practice',
-  formativeAssessment: 'Formative assessment',
-  differentiation: 'Differentiation strategies',
-  realWorldConnections: 'Real-world connections',
-  plenary: 'Plenary',
 };
 
 export function GenerationScreen({ events, onComplete }: GenerationScreenProps) {
@@ -66,7 +50,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
   // Add section progress
   if (receivedSections.length > 0) {
     statusSteps.push({
-      message: `Writing ${SECTION_LABELS[receivedSections[receivedSections.length - 1]]}…`,
+      message: `Writing ${getSectionProgressLabel(receivedSections[receivedSections.length - 1])}…`,
       done: false,
     });
   }
@@ -140,7 +124,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
 
         {receivedSections.length > 0 && !completeEvent && (
           <p className="text-xs text-text-secondary mt-4">
-            {receivedSections.length} of 14 sections ready
+            {receivedSections.length} of {LESSON_SECTION_COUNT} sections ready
           </p>
         )}
 

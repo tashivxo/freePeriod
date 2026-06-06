@@ -1,5 +1,3 @@
-import type { LessonSection } from '@/types';
-
 jest.mock('next/server', () => ({
   NextResponse: {
     json: jest.fn((body: unknown, init?: ResponseInit) => ({ body, init })),
@@ -25,16 +23,10 @@ jest.mock('pdf-lib', () => ({
   },
 }));
 
+import { buildTemplateData } from '@/lib/lesson/template-data';
 describe('template fill data', () => {
-  it('maps formal lesson fields to placeholders for uploaded templates', async () => {
-    const route = await import('./route');
-    const buildTemplateData = (route as {
-      buildTemplateData?: (content: LessonSection) => Record<string, string>;
-    }).buildTemplateData;
-
-    expect(buildTemplateData).toBeDefined();
-
-    const data = buildTemplateData?.({
+  it('maps formal lesson fields to placeholders for uploaded templates', () => {
+    const data = buildTemplateData({
       title: 'Story Elements',
       essentialQuestion: 'What makes a story feel real?',
       objectives: ['Identify elements'],

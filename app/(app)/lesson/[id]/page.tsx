@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { LessonView } from '@/components/lesson/LessonView';
+import { LessonView } from '@/features/lesson/components/LessonView';
 
 type Props = {
   params: Promise<{ id: string }>;

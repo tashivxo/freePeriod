@@ -6,37 +6,10 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
 import { PDFDocument } from 'pdf-lib';
+import { buildTemplateData } from '@/lib/lesson/template-data';
 import type { LessonSection } from '@/types';
 
-function joinField(value: unknown): string {
-  if (Array.isArray(value)) return value.join('\n');
-  if (typeof value === 'string') return value;
-  return '';
-}
-
-export function buildTemplateData(content: LessonSection): Record<string, string> {
-  return {
-    title: joinField(content.title),
-    essentialQuestion: joinField(content.essentialQuestion),
-    objectives: joinField(content.objectives),
-    successCriteria: joinField(content.successCriteria),
-    keyConcepts: joinField(content.keyConcepts),
-    vocabulary: joinField(content.vocabulary),
-    hook: joinField(content.hook),
-    mainActivities: joinField(content.mainActivities),
-    guidedPractice: joinField(content.guidedPractice),
-    independentPractice: joinField(content.independentPractice),
-    formativeAssessment: joinField(content.formativeAssessment),
-    differentiationSupport: Array.isArray(content.differentiation)
-      ? joinField(content.differentiation)
-      : joinField((content.differentiation as Record<string, unknown>)?.support),
-    differentiationExtension: Array.isArray(content.differentiation)
-      ? ''
-      : joinField((content.differentiation as Record<string, unknown>)?.extension),
-    realWorldConnections: joinField(content.realWorldConnections),
-    plenary: joinField(content.plenary),
-  };
-}
+export { buildTemplateData };
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();

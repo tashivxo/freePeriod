@@ -194,7 +194,7 @@ describe('SignInPage', () => {
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => {
-      expect(createClient).toHaveBeenCalledWith({ auth: { persistSession: false } });
+      expect(createClient).toHaveBeenCalledWith();
     });
   });
 });

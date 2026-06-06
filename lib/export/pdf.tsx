@@ -18,18 +18,11 @@ import {
   TEXT_SECONDARY,
   BORDER,
 } from '@/lib/utils/brand-colors';
-
-function strip(html: string): string {
-  return html.replace(/<[^>]*>/g, '');
-}
-
-function asList(value: string[] | undefined): string[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function textOrEmpty(value: string | undefined): string {
-  return value ?? '';
-}
+import {
+  buildExportBlocks,
+  stripHtmlTags,
+  type ExportBlock,
+} from '@/lib/export/lesson-document';
 
 const styles = StyleSheet.create({
   page: {
@@ -129,13 +122,13 @@ function Bullet({ text }: { text: string }) {
   return (
     <View style={styles.bulletRow}>
       <Text style={styles.bullet}>•</Text>
-      <Text style={styles.bulletText}>{strip(text)}</Text>
+      <Text style={styles.bulletText}>{stripHtmlTags(text)}</Text>
     </View>
   );
 }
 
 function Body({ children }: { children: string }) {
-  return <Text style={styles.paragraph}>{strip(children)}</Text>;
+  return <Text style={styles.paragraph}>{stripHtmlTags(children)}</Text>;
 }
 
 function MetadataCell({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
@@ -159,6 +152,36 @@ function MugLogo() {
   );
 }
 
+function ExportBlockView({ block }: { block: ExportBlock }) {
+  switch (block.type) {
+    case 'optional-text':
+    case 'text':
+      return (
+        <>
+          <Heading>{block.heading}</Heading>
+          <Body>{block.text}</Body>
+        </>
+      );
+    case 'list':
+      return (
+        <>
+          <Heading>{block.heading}</Heading>
+          {block.items.map((item, index) => <Bullet key={index} text={item} />)}
+        </>
+      );
+    case 'differentiation':
+      return (
+        <>
+          <Heading>{block.heading}</Heading>
+          <SubHeading>Support</SubHeading>
+          {block.support.map((item, index) => <Bullet key={`support-${index}`} text={item} />)}
+          <SubHeading>Extension</SubHeading>
+          {block.extension.map((item, index) => <Bullet key={`extension-${index}`} text={item} />)}
+        </>
+      );
+  }
+}
+
 function LessonDocument({ lesson }: { lesson: LessonPlan }) {
   const { content } = lesson;
 
@@ -166,7 +189,7 @@ function LessonDocument({ lesson }: { lesson: LessonPlan }) {
     <Document>
       <Page size="A4" style={styles.page}>
         <MugLogo />
-        <Text style={styles.title}>{strip(content.title as string || lesson.title)}</Text>
+        <Text style={styles.title}>{stripHtmlTags(content.title || lesson.title)}</Text>
         <Text style={styles.meta}>Formal Lesson Plan</Text>
         <View style={styles.metaGrid}>
           <View style={styles.metaRow}>
@@ -181,55 +204,9 @@ function LessonDocument({ lesson }: { lesson: LessonPlan }) {
           </View>
         </View>
 
-        {content.essentialQuestion ? (
-          <>
-            <Heading>Essential Question</Heading>
-            <Body>{content.essentialQuestion}</Body>
-          </>
-        ) : null}
-
-        <Heading>Learning Objectives</Heading>
-        {asList(content.objectives).map((o, i) => <Bullet key={i} text={o} />)}
-
-        <Heading>Success Criteria</Heading>
-        {asList(content.successCriteria).map((s, i) => <Bullet key={i} text={s} />)}
-
-        <Heading>Key Concepts</Heading>
-        {asList(content.keyConcepts).map((k, i) => <Bullet key={i} text={k} />)}
-
-        {content.vocabulary?.length ? (
-          <>
-            <Heading>New Vocabulary</Heading>
-            {asList(content.vocabulary).map((v, i) => <Bullet key={i} text={v} />)}
-          </>
-        ) : null}
-
-        <Heading>Hook Activity</Heading>
-        <Body>{textOrEmpty(content.hook)}</Body>
-
-        <Heading>Main Activities</Heading>
-        {asList(content.mainActivities).map((a, i) => <Bullet key={i} text={a} />)}
-
-        <Heading>Guided Practice</Heading>
-        {asList(content.guidedPractice).map((g, i) => <Bullet key={i} text={g} />)}
-
-        <Heading>Independent Practice</Heading>
-        {asList(content.independentPractice).map((p, i) => <Bullet key={i} text={p} />)}
-
-        <Heading>Formative Assessment</Heading>
-        {asList(content.formativeAssessment).map((f, i) => <Bullet key={i} text={f} />)}
-
-        <Heading>Differentiation</Heading>
-        <SubHeading>Support</SubHeading>
-        {asList(content.differentiation?.support).map((s, i) => <Bullet key={i} text={s} />)}
-        <SubHeading>Extension</SubHeading>
-        {asList(content.differentiation?.extension).map((e, i) => <Bullet key={i} text={e} />)}
-
-        <Heading>Real-World Connections</Heading>
-        {asList(content.realWorldConnections).map((r, i) => <Bullet key={i} text={r} />)}
-
-        <Heading>Plenary</Heading>
-        <Body>{textOrEmpty(content.plenary)}</Body>
+        {buildExportBlocks(content).map((block, index) => (
+          <ExportBlockView key={index} block={block} />
+        ))}
       </Page>
     </Document>
   );
