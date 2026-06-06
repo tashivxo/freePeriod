@@ -29,7 +29,7 @@ const TABLE2_WIDTHS = [2340, 1755, 1755, 1755, 1755] as const;
 const TABLE3_WIDTHS = [2056, 7304] as const;
 const TABLE4_WIDTHS = [895, 3478, 1788, 1774, 1425] as const;
 
-const BORDER = { style: BorderStyle.SINGLE, size: 1, color: 'AAAAAA' };
+const BORDER = { style: BorderStyle.SINGLE, size: 4, color: 'AAAAAA' };
 const CELL_BORDERS = { top: BORDER, bottom: BORDER, left: BORDER, right: BORDER };
 const CELL_MARGINS = { top: 80, bottom: 80, left: 120, right: 120 };
 
@@ -492,6 +492,10 @@ function buildActivitiesTable(content: LessonSection): Table {
   });
 }
 
+function tableSpacer(): Paragraph {
+  return new Paragraph({ spacing: { after: 120 }, children: [] });
+}
+
 function buildSelfReflectionTable(content: LessonSection): Table {
   const nextLessonHint =
     content.formativeAssessment.length > 0
@@ -506,26 +510,26 @@ function buildSelfReflectionTable(content: LessonSection): Table {
       ? `Intervention: ${content.differentiation.support.map(stripHtmlTags).join(' ') || 'Targeted re-teaching as needed.'}\nAcceleration: ${content.differentiation.extension.map(stripHtmlTags).join(' ') || 'Extension tasks for high-attaining learners.'}`
       : '_________________________________________________________________________________________';
 
+  const reflectionContent: Paragraph[] = [
+    cellParagraph('How has formative data from previous lesson(s) informed this lesson?', true),
+    cellParagraph('_________________________________________________________________________________________'),
+    cellParagraph(
+      'How will formative data from this lesson guide and inform planning for the next lesson(s)?',
+      true,
+    ),
+    ...textParagraphs(nextLessonHint),
+    cellParagraph('What intervention / acceleration is required based on this formative data?', true),
+    ...textParagraphs(interventionHint),
+  ];
+
   return new Table({
     width: { size: CONTENT_WIDTH, type: WidthType.DXA },
     columnWidths: [CONTENT_WIDTH],
     rows: [
       headerRow('Self-Reflection: Data-Informed Future Planning', [CONTENT_WIDTH]),
-      labelValueRow(
-        'How has formative data from previous lesson(s) informed this lesson?',
-        '_________________________________________________________________________________________',
-        TABLE3_WIDTHS,
-      ),
-      labelValueRow(
-        'How will formative data from this lesson guide and inform planning for the next lesson(s)?',
-        nextLessonHint,
-        TABLE3_WIDTHS,
-      ),
-      labelValueRow(
-        'What intervention / acceleration is required based on this formative data?',
-        interventionHint,
-        TABLE3_WIDTHS,
-      ),
+      new TableRow({
+        children: [makeCell(reflectionContent, CONTENT_WIDTH)],
+      }),
     ],
   });
 }
@@ -555,9 +559,13 @@ export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
         },
         children: [
           buildHeaderInfoTable(lesson),
+          tableSpacer(),
           buildCurriculumStandardsTable(lesson),
+          tableSpacer(),
           buildPlanningTable(content),
+          tableSpacer(),
           buildActivitiesTable(content),
+          tableSpacer(),
           buildSelfReflectionTable(content),
         ],
       },
