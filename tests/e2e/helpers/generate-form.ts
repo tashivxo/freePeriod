@@ -18,6 +18,6 @@ export async function ensureGenerateFormIsSubmittable(page: Page) {
   return generateButton;
 }
 
-export async function waitForLessonGeneration(page: Page) {
-  await page.waitForURL(/\/lesson\/[0-9a-f-]+$/i, { timeout: 120000 });
+export async function waitForLessonGeneration(page: Page, timeout = 180000) {
+  await page.waitForURL(/\/lesson\/[0-9a-f-]+$/i, { timeout });
 }

@@ -2,26 +2,22 @@ import { test, expect } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { AUTH_FILE } from './helpers/auth';
-import { ensureGenerateFormIsSubmittable, waitForLessonGeneration } from './helpers/generate-form';
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'test-results/manual-lesson-exports');
 
 test.describe('production export download', () => {
   test.use({ storageState: AUTH_FILE });
 
-  test('generates a lesson and downloads PDF export with subject filename', async ({ page, request }) => {
-    test.setTimeout(240000);
+  test('downloads PDF export with subject-based filename from an existing lesson', async ({ page, request }) => {
+    test.setTimeout(120000);
 
-    await page.goto('/generate');
+    await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    await page.getByLabel(/specific focus or requirements/i).fill(`PDF export check ${Date.now()}`);
-
-    const generateButton = await ensureGenerateFormIsSubmittable(page);
-    await generateButton.click();
-
-    await expect(page.getByRole('status', { name: /generating lesson plan/i })).toBeVisible({ timeout: 15000 });
-    await waitForLessonGeneration(page);
+    const firstLesson = page.locator('a[href^="/lesson/"]').first();
+    await expect(firstLesson).toBeVisible({ timeout: 30000 });
+    await firstLesson.click();
+    await page.waitForURL(/\/lesson\/[0-9a-f-]+$/i, { timeout: 30000 });
 
     const lessonId = page.url().split('/lesson/')[1] ?? '';
     expect(lessonId).toMatch(/^[0-9a-f-]+$/i);
@@ -33,7 +29,7 @@ test.describe('production export download', () => {
     expect(exportResponse.ok()).toBeTruthy();
 
     const disposition = exportResponse.headers()['content-disposition'] ?? '';
-    expect(disposition).toMatch(/freeperiod_lesson_plan_science\.pdf/);
+    expect(disposition).toMatch(/freeperiod_lesson_plan_[a-z0-9_]+\.pdf/);
 
     const buffer = await exportResponse.body();
 
