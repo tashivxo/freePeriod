@@ -38,7 +38,7 @@ const FEATURES = [
   {
     icon: Download,
     title: 'Export Anywhere',
-    description: 'Download as DOCX or PDF. Fill your own template. Edit inline before exporting.',
+    description: 'Download as DOCX. Fill your own template. Edit inline before exporting.',
     color: 'bg-coral/10 text-coral',
   },
 ] as const;

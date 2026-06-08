@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json() as { lessonId?: string; format?: string };
   const { lessonId, format } = body;
 
-  if (!lessonId || !format || !['docx', 'pdf'].includes(format)) {
+  if (!lessonId || format !== 'docx') {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
@@ -28,35 +28,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
   }
 
-  let buffer: Buffer;
-  let contentType: string;
-
-  if (format === 'docx') {
-    const { generateDocx } = await import('@/lib/export/docx');
-    buffer = await generateDocx(lesson);
-    contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-  } else {
-    const { generatePdfFromLesson, PdfConversionUnavailableError } = await import(
-      '@/lib/export/docx-to-pdf'
-    );
-
-    try {
-      buffer = await generatePdfFromLesson(lesson);
-    } catch (error) {
-      if (error instanceof PdfConversionUnavailableError) {
-        return NextResponse.json({ error: error.message }, { status: 503 });
-      }
-      throw error;
-    }
-
-    contentType = 'application/pdf';
-  }
-
-  const filename = buildExportFilename(lesson.subject, format as 'docx' | 'pdf');
+  const { generateDocx } = await import('@/lib/export/docx');
+  const buffer = await generateDocx(lesson);
+  const filename = buildExportFilename(lesson.subject);
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      'Content-Type': contentType,
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   });

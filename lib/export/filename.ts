@@ -1,5 +1,3 @@
-export type ExportFormat = 'docx' | 'pdf';
-
 export function subjectSlug(subject: string | null | undefined): string {
   if (!subject?.trim()) return 'generic';
 
@@ -12,9 +10,6 @@ export function subjectSlug(subject: string | null | undefined): string {
   return slug || 'generic';
 }
 
-export function buildExportFilename(
-  subject: string | null | undefined,
-  format: ExportFormat,
-): string {
-  return `freeperiod_lesson_plan_${subjectSlug(subject)}.${format}`;
+export function buildExportFilename(subject: string | null | undefined): string {
+  return `freeperiod_lesson_plan_${subjectSlug(subject)}.docx`;
 }

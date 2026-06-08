@@ -1,5 +1,5 @@
 export type UploadType = 'curriculum_doc' | 'template';
-export type ExportFormat = 'docx' | 'pdf' | 'xlsx';
+export type ExportFormat = 'docx' | 'xlsx';
 export type Plan = 'free' | 'pro' | 'pro_plus';
 export type BillingInterval = 'monthly' | 'yearly';
 export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired' | 'on_trial' | 'inactive' | 'trial';

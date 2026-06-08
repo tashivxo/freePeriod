@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
-import { PDFDocument } from 'pdf-lib';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import type { LessonSection } from '@/types';
 
@@ -113,38 +112,11 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // ---------- PDF ----------
   if (ext === 'pdf') {
-    const pdfDoc = await PDFDocument.load(templateBuffer);
-    const form = pdfDoc.getForm();
-    const fields = form.getFields();
-
-    if (fields.length === 0) {
-      return NextResponse.json({ status: 'no_fields', message: 'This PDF has no form fields to fill.' });
-    }
-
-    for (const field of fields) {
-      const fieldName = field.getName();
-      const value = templateData[fieldName];
-      if (value !== undefined) {
-        try {
-          const textField = form.getTextField(fieldName);
-          textField.setText(value);
-        } catch {
-          // Field type not supported or name mismatch — skip
-        }
-      }
-    }
-
-    form.flatten();
-    const pdfBytes = await pdfDoc.save();
-
-    return new NextResponse(Buffer.from(pdfBytes), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-      },
-    });
+    return NextResponse.json(
+      { error: 'PDF template download is not supported. Upload a DOCX or XLSX template instead.' },
+      { status: 400 },
+    );
   }
 
   return NextResponse.json({ error: 'Unsupported template format' }, { status: 400 });

@@ -11,14 +11,6 @@ import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/lib/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
 
@@ -31,9 +23,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [exportLoading, setExportLoading] = useState<'docx' | 'pdf' | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
   const [fillLoading, setFillLoading] = useState(false);
-  const [showNoPdfFieldsDialog, setShowNoPdfFieldsDialog] = useState(false);
 
   const debouncedSave = useDebouncedLessonSave(lesson.id, lesson.content, (updatedContent) => {
     setLesson((prev) => ({ ...prev, content: updatedContent }));
@@ -62,25 +53,22 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, []);
 
-  const handleExport = useCallback(
-    async (format: 'docx' | 'pdf') => {
-      setExportLoading(format);
-      try {
-        const response = await fetch('/api/export', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lessonId: lesson.id, format }),
-        });
+  const handleExport = useCallback(async () => {
+    setExportLoading(true);
+    try {
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
+      });
 
-        if (!response.ok) return;
+      if (!response.ok) return;
 
-        downloadBlob(await response.blob(), buildExportFilename(lesson.subject, format));
-      } finally {
-        setExportLoading(null);
-      }
-    },
-    [lesson.id, lesson.subject],
-  );
+      downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
+    } finally {
+      setExportLoading(false);
+    }
+  }, [lesson.id, lesson.subject]);
 
   const handleFillTemplate = useCallback(async () => {
     setFillLoading(true);
@@ -93,15 +81,6 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
       if (!response.ok) return;
 
-      const contentType = response.headers.get('content-type') ?? '';
-      if (contentType.includes('application/json')) {
-        const json = (await response.json()) as { status?: string };
-        if (json.status === 'no_fields') {
-          setShowNoPdfFieldsDialog(true);
-        }
-        return;
-      }
-
       const ext = lesson.template_path?.split('.').pop() ?? 'docx';
       downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
     } finally {
@@ -110,6 +89,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   }, [lesson.id, lesson.template_path, lesson.title]);
 
   const content = lesson.content;
+  const templateExt = lesson.template_path?.split('.').pop()?.toLowerCase() ?? '';
+  const canFillTemplate = templateExt === 'docx' || templateExt === 'xlsx' || templateExt === 'xls';
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -143,22 +124,13 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           <Button
             size="sm"
             variant="secondary"
-            onClick={() => handleExport('docx')}
-            isLoading={exportLoading === 'docx'}
+            onClick={() => void handleExport()}
+            isLoading={exportLoading}
           >
             <Download className="h-4 w-4 mr-1" />
             Download DOCX
           </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => handleExport('pdf')}
-            isLoading={exportLoading === 'pdf'}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Download PDF
-          </Button>
-          {lesson.template_path && (
+          {lesson.template_path && canFillTemplate && (
             <Button
               size="sm"
               variant="outline"
@@ -171,37 +143,6 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           )}
         </div>
       </div>
-
-      <Dialog open={showNoPdfFieldsDialog} onOpenChange={setShowNoPdfFieldsDialog}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>No fillable fields found</DialogTitle>
-            <DialogDescription>
-              This PDF template doesn&apos;t contain any form fields. Would you like to generate
-              a fresh DOCX export instead?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="border-t-0 bg-transparent p-0 pt-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowNoPdfFieldsDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setShowNoPdfFieldsDialog(false);
-                void handleExport('docx');
-              }}
-              isLoading={exportLoading === 'docx'}
-            >
-              Generate DOCX
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <div ref={cardsRef} className="space-y-4">
         {LESSON_VIEW_SECTIONS.map((section) => (

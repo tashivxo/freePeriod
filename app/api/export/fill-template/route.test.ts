@@ -17,12 +17,6 @@ jest.mock('xlsx', () => ({
   read: jest.fn(),
   write: jest.fn(),
 }));
-jest.mock('pdf-lib', () => ({
-  PDFDocument: {
-    load: jest.fn(),
-  },
-}));
-
 import { buildTemplateData } from '@/lib/lesson/template-data';
 describe('template fill data', () => {
   it('maps formal lesson fields to placeholders for uploaded templates', () => {

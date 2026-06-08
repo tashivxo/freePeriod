@@ -9,12 +9,9 @@ describe('export filename', () => {
   });
 
   it('builds freeperiod lesson plan filenames', () => {
-    expect(buildExportFilename('Science Chemistry', 'docx')).toBe(
+    expect(buildExportFilename('Science Chemistry')).toBe(
       'freeperiod_lesson_plan_science_chemistry.docx',
     );
-    expect(buildExportFilename('English Reading', 'pdf')).toBe(
-      'freeperiod_lesson_plan_english_reading.pdf',
-    );
-    expect(buildExportFilename(undefined, 'docx')).toBe('freeperiod_lesson_plan_generic.docx');
+    expect(buildExportFilename(undefined)).toBe('freeperiod_lesson_plan_generic.docx');
   });
 });

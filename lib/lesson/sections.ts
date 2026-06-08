@@ -6,7 +6,7 @@ export type LessonSectionDef = {
   label: string;
   /** Label shown during generation progress */
   progressLabel: string;
-  /** Heading in DOCX/PDF exports */
+  /** Heading in DOCX exports */
   exportHeading: string;
   /** Render as an editable section card (title is shown in the page header) */
   showInView: boolean;

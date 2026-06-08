@@ -65,7 +65,7 @@ const PLANS: Plan[] = [
     features: [
       'Unlimited lesson plans',
       'Claude Sonnet model',
-      'DOCX + PDF export',
+      'DOCX export',
       'OCR text extraction',
       'Priority support',
     ],
