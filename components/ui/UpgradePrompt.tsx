@@ -79,7 +79,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
                   'Unlimited lesson plan generations',
                   'Claude AI (smarter, more detailed plans)',
                   'Priority generation speed',
-                  'DOCX export and XLSX template filling',
+                  'DOCX export and filled-in template download',
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-2.5">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF8BB0]/15 text-[#FF8BB0]">

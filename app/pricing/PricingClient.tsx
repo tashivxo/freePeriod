@@ -85,7 +85,7 @@ const PLANS: Plan[] = [
     features: [
       'Everything in Pro',
       'Claude Sonnet model',
-      'Custom template filling',
+      'Filled-in template download',
       'Team plan sharing',
       'API access',
     ],

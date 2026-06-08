@@ -154,7 +154,7 @@ test.describe('Pricing page', () => {
   });
 
   test('Pro+ plan features are listed', async ({ page }) => {
-    await expect(page.getByText('Custom template filling')).toBeVisible();
+    await expect(page.getByText('Filled-in template download')).toBeVisible();
     await expect(page.getByText('API access')).toBeVisible();
   });
 

@@ -138,7 +138,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               isLoading={fillLoading}
             >
               <Download className="h-4 w-4 mr-1" />
-              Download Filled Template
+              Download filled-in template
             </Button>
           )}
         </div>
