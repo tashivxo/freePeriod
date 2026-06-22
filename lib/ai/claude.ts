@@ -92,7 +92,10 @@ export function buildUserPrompt(params: {
 export function parseLessonContent(text: string): LessonSection | null {
   try {
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const jsonSource = cleaned.startsWith('{') ? cleaned : cleaned.match(/\{[\s\S]*\}/)?.[0];
+    if (!jsonSource) return null;
+
+    const parsed = JSON.parse(jsonSource);
 
     if (!parsed.title || !parsed.objectives) return null;
 

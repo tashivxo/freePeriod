@@ -30,11 +30,17 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const isLocalDevTestRoute =
+    process.env.NODE_ENV === 'development' && pathname.startsWith('/test-paid-generation');
   const isAuthPage =
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up');
   const isOnboardingPage = pathname.startsWith('/onboarding');
   const isSettingsPage = pathname.startsWith('/settings');
+
+  if (isLocalDevTestRoute) {
+    return supabaseResponse;
+  }
 
   // Unauthenticated users can only access auth pages, the home page, /pricing, and API routes
   const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname.startsWith('/api/');

@@ -75,7 +75,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
 
   const messageStream = anthropic.messages.stream({
     model: claudeModel,
-    max_tokens: 4096,
+    max_tokens: 16384,
     thinking: { type: 'adaptive' },
     system: [
       {
@@ -87,14 +87,21 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     messages: [{ role: 'user', content: userPrompt }],
   });
 
-  let fullText = '';
-  messageStream.on('text', (text) => {
-    fullText += text;
-  });
-
   const finalMessage = await messageStream.finalMessage();
+  const fullText = finalMessage.content
+    .filter((block): block is Anthropic.Messages.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('\n')
+    .trim();
   const parsed = parseLessonContent(fullText);
   if (!parsed) {
+    console.error('[generateLessonContent] Failed to parse Claude response', {
+      model: claudeModel,
+      stopReason: finalMessage.stop_reason,
+      preview: fullText.slice(0, 500),
+      length: fullText.length,
+      outputTokens: finalMessage.usage.output_tokens,
+    });
     throw new Error('Failed to parse lesson plan from Claude response');
   }
 

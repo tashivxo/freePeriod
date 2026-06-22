@@ -1,0 +1,2 @@
+# Local-only dev routes — never deploy to Vercel
+app/test-paid-generation/
