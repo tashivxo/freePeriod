@@ -67,6 +67,17 @@ describe('SignUpPage', () => {
     expect(screen.getByText(/password is required/i)).toBeInTheDocument();
   });
 
+  it('requires accepting terms before sign-up', async () => {
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+    expect(
+      screen.getByText(/you must agree to the terms of service and privacy policy/i),
+    ).toBeInTheDocument();
+  });
+
   it('shows validation error for short password', async () => {
     const { user } = render(<SignUpPage />);
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
@@ -92,6 +103,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).toHaveBeenCalledWith({
@@ -120,6 +132,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(

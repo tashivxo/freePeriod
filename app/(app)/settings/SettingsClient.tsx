@@ -42,6 +42,10 @@ export function SettingsClient({ user }: { user: User }) {
   );
   const curriculum = curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect;
   const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const router = useRouter();
 
   const handleSave = async () => {
@@ -64,6 +68,27 @@ export function SettingsClient({ user }: { user: User }) {
       alert('Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm !== 'DELETE') return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      const res = await fetch('/api/user/delete', { method: 'POST' });
+      const data = (await res.json()) as { error?: string; graceDays?: number };
+      if (!res.ok) {
+        setDeleteError(data.error ?? 'Failed to delete account');
+        return;
+      }
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/sign-in?deleted=1');
+    } catch {
+      setDeleteError('Something went wrong. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -153,18 +178,68 @@ export function SettingsClient({ user }: { user: User }) {
       {/* Account */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">Account</h2>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={async () => {
-            const supabase = createClient();
-            await supabase.auth.signOut();
-            router.push('/sign-in');
-          }}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </Button>
+        <div className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              router.push('/sign-in');
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Button>
+
+          {!deleteOpen ? (
+            <Button
+              variant="outline"
+              className="w-full border-error/30 text-error hover:bg-error/5"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete account
+            </Button>
+          ) : (
+            <div className="rounded-xl border border-error/30 bg-error/5 p-4 space-y-3">
+              <p className="text-sm font-body text-text-secondary">
+                Your account will be deactivated immediately. Personal data is permanently deleted
+                after a 30-day grace period. Export any lesson plans you want to keep first.
+              </p>
+              <Input
+                label='Type "DELETE" to confirm'
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+              />
+              {deleteError && (
+                <p className="text-sm text-error" role="alert">
+                  {deleteError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 bg-error hover:bg-error/90 text-white"
+                  disabled={deleteConfirm !== 'DELETE' || deleting}
+                  onClick={handleDeleteAccount}
+                >
+                  {deleting ? 'Deleting...' : 'Confirm deletion'}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={deleting}
+                  onClick={() => {
+                    setDeleteOpen(false);
+                    setDeleteConfirm('');
+                    setDeleteError('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

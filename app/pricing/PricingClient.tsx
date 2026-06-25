@@ -11,6 +11,7 @@ import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import { useTheme } from '@/lib/theme';
 import { MagicCard } from '@/components/ui/magic-card';
 import { Logo } from '@/components/ui/Logo';
+import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { createClient } from '@/lib/supabase/client';
 
 const SoftAurora = dynamic(
@@ -434,6 +435,8 @@ export function PricingClient() {
           All plans include a 30-day free trial. Cancel anytime. No hidden fees.
         </p>
       </main>
+
+      <MarketingFooter />
 
       {/* Floating dark mode toggle — wrapper owns fixed position; button owns relative for btn-shine */}
       <div

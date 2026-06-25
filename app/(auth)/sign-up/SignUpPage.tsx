@@ -19,6 +19,7 @@ export function SignUpPage() {
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -29,8 +30,11 @@ export function SignUpPage() {
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
+    if (!acceptedTerms) {
+      setServerError('You must agree to the Terms of Service and Privacy Policy.');
+    }
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).length === 0 && acceptedTerms;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -75,7 +79,7 @@ export function SignUpPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly',
+        scopes: 'openid email profile',
       },
     });
   }
@@ -140,6 +144,28 @@ export function SignUpPage() {
             }
           />
 
+          <label className="flex items-start gap-3 text-sm font-body text-text-secondary">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => {
+                setAcceptedTerms(e.target.checked);
+                if (e.target.checked) setServerError('');
+              }}
+              className="mt-1 h-4 w-4 rounded border-border text-coral focus:ring-coral"
+            />
+            <span>
+              I agree to the{' '}
+              <Link href="/terms" className="text-coral font-semibold hover:underline" target="_blank">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="text-coral font-semibold hover:underline" target="_blank">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+
           <Button type="submit" className="w-full" isLoading={isLoading}>
             Create account
           </Button>
@@ -158,6 +184,18 @@ export function SignUpPage() {
         >
           Continue with Google
         </Button>
+
+        <p className="text-center text-xs font-body text-text-secondary">
+          By continuing with Google, you agree to our{' '}
+          <Link href="/terms" className="text-coral hover:underline">
+            Terms
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" className="text-coral hover:underline">
+            Privacy Policy
+          </Link>
+          .
+        </p>
 
         <p className="text-center text-sm font-body text-text-secondary">
           Already have an account?{' '}

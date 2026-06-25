@@ -42,8 +42,13 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Unauthenticated users can only access auth pages, the home page, /pricing, and API routes
-  const isPublicPage = pathname === '/' || pathname === '/pricing' || pathname.startsWith('/api/');
+  // Unauthenticated users can only access auth pages, marketing pages, and API routes
+  const isPublicPage =
+    pathname === '/' ||
+    pathname === '/pricing' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname.startsWith('/api/');
   if (!user && !isAuthPage && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
@@ -52,6 +57,27 @@ export async function updateSession(request: NextRequest) {
       redirectResponse.cookies.set(cookie.name, cookie.value);
     });
     return redirectResponse;
+  }
+
+  // Block accounts scheduled for deletion
+  if (user && !isPublicPage) {
+    const { data: deletionProfile } = await supabase
+      .from('users')
+      .select('deletion_scheduled_at')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (deletionProfile?.deletion_scheduled_at) {
+      await supabase.auth.signOut();
+      const url = request.nextUrl.clone();
+      url.pathname = '/sign-in';
+      url.searchParams.set('deleted', '1');
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
+    }
   }
 
   // Authenticated users should not see auth pages

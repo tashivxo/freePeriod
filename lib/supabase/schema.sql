@@ -18,6 +18,7 @@ create table public.users (
   generation_count int not null default 0,
   generation_count_reset_at timestamptz,
   onboarding_complete boolean not null default false,
+  deletion_scheduled_at timestamptz,
   created_at timestamptz not null default now()
 );
 

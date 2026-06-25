@@ -99,7 +99,7 @@ export function SignInPage() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly',
+        scopes: 'openid email profile',
       },
     });
   }

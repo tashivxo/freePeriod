@@ -15,6 +15,7 @@ export type User = {
   generation_count: number;
   generation_count_reset_at: string | null;
   onboarding_complete: boolean;
+  deletion_scheduled_at: string | null;
   created_at: string;
 }
 

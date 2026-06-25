@@ -6,6 +6,7 @@ import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen, Moon, Sun }
 import { useTheme } from '@/lib/theme';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
+import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { ShinyText } from '@/components/ui/ShinyText';
 import { Card, CardContent } from '@/components/ui/card';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
@@ -316,14 +317,9 @@ export default function HomePage() {
           </SpotlightCard>
         </section>
 
-        {/* Footer */}
-        <footer className="relative z-10 border-t border-border bg-background py-8">
-          <div className="mx-auto max-w-4xl px-4 text-center">
-            <p className="font-body text-sm text-text-secondary">
-              © 2026 FreePeriod. Built for teachers, by teachers.
-            </p>
-          </div>
-        </footer>
+        <div className="relative z-10">
+          <MarketingFooter />
+        </div>
       </main>
 
       {/* Floating dark mode toggle */}
