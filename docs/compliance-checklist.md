@@ -1,7 +1,7 @@
 # FreePeriod — Privacy & Terms Compliance Checklist
 
 Living checklist for privacy policy, terms of service, and related compliance work.  
-Last updated: 22 June 2026.
+Last updated: 25 June 2026.
 
 ---
 
@@ -14,26 +14,67 @@ Last updated: 22 June 2026.
 | Footer / sign-up links | Done |
 | Account deletion flow | Done (needs migration + cron) |
 | Legal config / env overrides | Done |
+| Build fix (`deletion_scheduled_at` type) | Done |
+| Contact email `info@freeperiod.co.za` | Config updated — mailbox still needed |
 | Lawyer review | Not done |
 | Production env + cron | Not done |
 
 ---
 
-## 1. Legal identity & contact details
+## Infrastructure (confirmed)
 
-These appear in both policies. Configure via `lib/legal/config.ts` or env vars.
+> Regions confirmed via Supabase / Vercel dashboards (June 2026). Re-verify if you move projects.
 
-- [ ] **Operator name** — set `LEGAL_OPERATOR_NAME` if you want a named operator (e.g. your full name). Default: `FreePeriod` trading name only.
-- [ ] **Contact email** — set `LEGAL_CONTACT_EMAIL` to a real, monitored inbox. Default: `hello@freeperiod.co.za`.
-  - [ ] Optional: set up `privacy@freeperiod.co.za` (forwarding to your inbox is fine).
-  - [ ] Optional: set up `support@freeperiod.co.za`.
-- [x] **Physical address** — `17 San Te Fe, Seaward Estates, Ballito, KwaZulu-Natal, South Africa` (in config; override with `LEGAL_PHYSICAL_ADDRESS` if needed).
-- [ ] **Company registration** — not required yet; add to policies when/if you incorporate (e.g. FreePeriod (Pty) Ltd + reg number).
-- [ ] **Effective date** — currently `22 June 2026` in `lib/legal/config.ts`; bump when you materially change policies.
+- [x] **Supabase region:** `eu-north-1` (Stockholm, EU) — disclose as EU data storage in privacy policy
+- [x] **Vercel region:** `iad1` (Washington DC, US East) — disclose as hosting/CDN in privacy policy
+- [ ] **Supabase project ref:** confirm active project in dashboard (refs may differ between envs)
 
 ---
 
-## 2. Privacy Policy (`/privacy`)
+## Legal identity & contact
+
+Configure via `lib/legal/config.ts` or env vars.
+
+- [ ] **Operator name** — set `LEGAL_OPERATOR_NAME` (e.g. your full name: "FreePeriod, operated by …")
+- [x] **Trading name:** FreePeriod
+- [x] **Physical address:** 17 San Te Fe, Seaward Estates, Ballito, KwaZulu-Natal, South Africa
+- [x] **Contact email in code:** `info@freeperiod.co.za` (default in `legalConfig`)
+- [ ] **Set up `info@freeperiod.co.za`** — create mailbox or forwarding to your personal inbox
+- [ ] **Registration number:** not yet incorporated — policy notes trading as FreePeriod
+
+---
+
+## Outstanding decisions (blocking final policy sign-off)
+
+- [x] **Data retention:** Option C — 30-day grace period (implemented in code + policies)
+- [ ] **Payment processor at launch** — pick and align policy + checkout:
+  - [x] Stripe (checkout still live in `app/api/checkout/route.ts`) — **current default in policies**
+  - [ ] Lemon Squeezy only (migration in progress — `lib/lemonsqueezy/`, migration `003_lemon_squeezy_subscriptions.sql`)
+  - [ ] Both during transition (update `legalConfig.paymentProcessor` and policy copy)
+- [ ] **Your full name** for the legal operator field (`LEGAL_OPERATOR_NAME`)
+
+---
+
+## Build & deployment
+
+### TypeScript fix (was blocking Vercel)
+
+**Failed deployment:** commit "privacy policy in progresss"  
+**Error:** `deletion_scheduled_at` required on `users` Insert type but missing from `.upsert()` calls.
+
+- [x] **Fixed:** `deletion_scheduled_at` marked optional on Insert in `types/database.ts`
+- [ ] **Verify:** run `npm run build` locally and redeploy to Vercel
+
+### Pre-deploy
+
+- [ ] `npm run build` passes
+- [ ] `/privacy` and `/terms` render on preview URL
+- [ ] Sign-up checkbox works
+- [ ] Settings delete-account flow tested on staging
+
+---
+
+## Privacy Policy (`/privacy`)
 
 ### Published & linked
 
@@ -41,225 +82,185 @@ These appear in both policies. Configure via `lib/legal/config.ts` or env vars.
 - [x] Content in `components/legal/PrivacyPolicyContent.tsx`
 - [x] Linked from `MarketingFooter` (home, pricing, legal pages)
 - [x] Linked from sign-up checkbox
-- [ ] Linked from sign-in page (optional — not required if sign-up covers new users)
-- [ ] Linked from app Settings (optional nice-to-have)
+- [ ] Optional: link from Settings account section
 
-### Content accuracy (verify against codebase)
+### Content accuracy
 
-- [x] Account data: email, name, auth credentials, profile preferences
-- [x] User content: lesson plans, uploads (PDF/DOCX/XLSX), parsed text, prompts
-- [x] Billing metadata via Stripe (no card storage on our servers)
-- [x] Third parties: Supabase, Anthropic, Google (Gemini + OAuth), Stripe, Vercel
-- [x] No marketing/analytics cookies at launch
-- [x] Essential auth cookies (Supabase session)
-- [x] 30-day account deletion grace period (Option C)
-- [x] POPIA + GDPR rights section
-- [x] Children / not directed at under-13s
-- [x] Cross-border transfers disclosure
-- [ ] **Supabase data region** — check Dashboard → Project Settings → General; set `LEGAL_DATA_REGION` env var and confirm policy wording matches (e.g. `United States (us-east-1)` or `EU (eu-west-1)`).
-- [ ] **Payment processor** — policy says Stripe. Update if/when you fully switch to Lemon Squeezy (`lib/legal/config.ts` → `paymentProcessor` + policy copy).
-- [ ] **Google OAuth** — policy reflects `openid email profile` only (Drive scope removed from code).
-
-### Review
-
-- [ ] Read full policy on staging/production URL
-- [ ] Sanity check with a lawyer (recommended before marketing to EU users at scale)
-- [ ] Fix any typos or business-specific gaps
+- [x] Account, profile, lesson plans, uploads, usage, billing, cookies
+- [x] Third parties: Supabase, Anthropic, Google, Stripe, Vercel
+- [x] Supabase `eu-north-1` + Vercel `iad1` regional disclosure
+- [x] International transfers (EU DB + US hosting/AI/payments)
+- [x] No marketing cookies at launch
+- [x] 30-day deletion grace (Option C)
+- [x] POPIA + GDPR rights
+- [x] Contact: `info@freeperiod.co.za`
+- [ ] Update if payment processor changes to Lemon Squeezy
+- [ ] Lawyer review
 
 ---
 
-## 3. Terms of Service (`/terms`)
+## Terms of Service (`/terms`)
 
 ### Published & linked
 
 - [x] Page at `app/terms/page.tsx`
 - [x] Content in `components/legal/TermsOfServiceContent.tsx`
-- [x] Linked from `MarketingFooter`
-- [x] Linked from sign-up checkbox (+ Google sign-up notice)
-- [ ] Linked from Settings (optional)
+- [x] Linked from footer + sign-up
+- [ ] Optional: link from Settings
 
 ### Content accuracy
 
-- [x] Service description (AI lesson planning, uploads, exports)
-- [x] Eligibility (18+, educators)
-- [x] Subscriptions: Free / Pro / Pro+ aligned with pricing page
+- [x] Service description, eligibility, accounts, subscriptions
+- [x] User content ownership + AI disclaimer
+- [x] Acceptable use, liability, SA governing law
 - [x] Stripe billing disclosure
-- [x] User content ownership + licence to process for the Service
-- [x] AI output disclaimer (draft only; teacher responsible)
-- [x] Acceptable use
-- [x] Account deletion (30-day grace)
-- [x] Limitation of liability & disclaimers
-- [x] Governing law: Republic of South Africa
+- [x] 30-day deletion grace
+- [x] Contact: `info@freeperiod.co.za`
 - [ ] Update billing section if switching to Lemon Squeezy
-- [ ] Confirm refund policy matches what you actually offer
-
-### Review
-
-- [ ] Read full terms on staging/production URL
-- [ ] Lawyer review (recommended)
+- [ ] Lawyer review
 
 ---
 
-## 4. In-app UX & consent
+## In-app consent
 
-- [x] Sign-up requires checkbox: “I agree to Terms and Privacy Policy”
-- [x] Google sign-up shows “By continuing with Google, you agree…”
-- [x] Footer links on marketing pages (home, pricing, legal)
-- [ ] Cookie consent banner — **not needed at launch** (no GA/Mixpanel). Revisit if you add analytics or ad trackers.
-- [ ] Email signup confirmation / welcome email mentioning policies (optional)
-- [ ] In-app “Privacy” link in Settings (optional)
+- [x] Sign-up checkbox: Terms + Privacy (required)
+- [x] Google sign-up: "By continuing with Google, you agree…"
+- [x] Footer links on marketing pages
+- [ ] Cookie consent banner — **not needed** (no analytics/marketing cookies)
+- [ ] Optional: policies link in Settings
 
 ---
 
-## 5. Data subject rights & account deletion
+## Account deletion flow
 
 ### Implemented
 
 - [x] `POST /api/user/delete` — schedules deletion, cancels Stripe sub, bans auth user
 - [x] Settings UI: Delete account + type `DELETE` to confirm
-- [x] `deletion_scheduled_at` on `users` table (migration `004_account_deletion.sql`)
+- [x] `deletion_scheduled_at` column — migration `supabase/migrations/004_account_deletion.sql`
 - [x] Middleware blocks accounts with scheduled deletion
-- [x] `GET /api/cron/purge-deletions` — hard-deletes due accounts (storage + auth user)
-- [x] 30-day grace period in `lib/legal/config.ts`
+- [x] `GET /api/cron/purge-deletions` — hard-deletes after grace period
+- [x] 30-day grace in `lib/legal/config.ts`
 
 ### Still to do
 
-- [ ] **Run migration** `supabase/migrations/004_account_deletion.sql` in Supabase SQL editor
-- [ ] Set `CRON_SECRET` in Vercel / `.env.local`
-- [ ] Schedule daily cron to hit `/api/cron/purge-deletions` with `Authorization: Bearer <CRON_SECRET>`
-- [ ] Test full deletion flow on staging:
-  - [ ] User with lesson plans + uploads
-  - [ ] User with active Stripe subscription
-  - [ ] User cannot sign in after deletion request
-  - [ ] Data purged after grace period (or manually trigger cron)
-- [ ] Document process for **immediate deletion** requests (email to contact address)
-- [ ] Document process for **data export** requests before deletion (user can export DOCX from app; formal SAR process via email)
-- [ ] Email notification when deletion is requested (not implemented yet — optional)
+- [ ] **Run migration** `004_account_deletion.sql` in production Supabase
+- [ ] Set `CRON_SECRET` in Vercel
+- [ ] Schedule daily cron → `/api/cron/purge-deletions` with `Authorization: Bearer <CRON_SECRET>`
+- [ ] End-to-end test: user with uploads + active Stripe subscription
+- [ ] Process for immediate deletion requests (email to `info@freeperiod.co.za`)
+- [ ] Optional: confirmation email on deletion request
 
 ---
 
-## 6. Environment variables
-
-Add to `.env.local` and Vercel production/preview as needed.
+## Environment variables
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `LEGAL_OPERATOR_NAME` | Optional | Named operator on policies |
-| `LEGAL_CONTACT_EMAIL` | Recommended | Privacy/legal contact email |
-| `LEGAL_PHYSICAL_ADDRESS` | Optional | Override address in policies |
-| `LEGAL_DATA_REGION` | Recommended | Supabase hosting region for privacy disclosure |
-| `NEXT_PUBLIC_APP_URL` | Yes | Canonical site URL in policies |
+| `LEGAL_CONTACT_EMAIL` | Recommended | Default: `info@freeperiod.co.za` |
+| `LEGAL_PHYSICAL_ADDRESS` | Optional | Override address |
+| `LEGAL_SUPABASE_REGION` | Optional | Default: eu-north-1 (Stockholm, EU) |
+| `LEGAL_VERCEL_REGION` | Optional | Default: iad1 (Washington DC, US) |
+| `LEGAL_DATA_REGION` | Optional | Override combined transfers text |
+| `NEXT_PUBLIC_APP_URL` | Yes | Canonical site URL |
 | `CRON_SECRET` | Yes (for purge) | Protects deletion purge endpoint |
 
-See `.env.local.example` for comments.
+See `.env.local.example`.
 
 ---
 
-## 7. Third-party & processor disclosures
+## Third-party processors
 
-Ensure privacy policy stays in sync if any of these change.
+| Processor | Purpose | Data location | Policy |
+|-----------|---------|---------------|--------|
+| Supabase | Auth, DB, file storage | eu-north-1 (EU) | Named + region |
+| Anthropic | Claude (paid generation) | US | Named |
+| Google | Gemini (free) + OAuth | US | Named |
+| Stripe | Checkout / subscriptions | US | Named (default) |
+| Lemon Squeezy | Checkout (migration) | US | Update when live |
+| Vercel | Hosting, CDN, logs | iad1 (US) | Named + region |
 
-| Processor | Data shared | Policy section |
-|-----------|-------------|----------------|
-| Supabase | Auth, DB, file storage | §4 AI and third-party processors |
-| Anthropic | Lesson prompts + curriculum text (paid plans) | §4 |
-| Google | Gemini (free tier); OAuth profile (sign-in) | §4 |
-| Stripe | Payment processing, subscription metadata | §2 Payment; §4 |
-| Vercel | Hosting, server logs | §4 |
-
-- [ ] Confirm Supabase DPA / processor terms accepted in Supabase dashboard
-- [ ] Confirm Anthropic API terms allow your use case
-- [ ] Confirm Google Cloud / Gemini terms
-- [ ] Confirm Stripe terms + privacy policy link in your checkout flow
-- [ ] When migrating to Lemon Squeezy: update checkout, webhooks, DB columns, policies, and this checklist
+- [ ] Confirm Supabase DPA / processor terms in dashboard
+- [ ] Confirm Anthropic + Google API terms
+- [ ] Confirm Stripe terms; update if switching to Lemon Squeezy
 
 ---
 
-## 8. OAuth & permissions
+## Google OAuth
 
-- [x] Removed unused `drive.readonly` Google scope from sign-in and sign-up
-- [ ] In Google Cloud Console: remove Drive API scope from OAuth consent screen if it was added
-- [ ] Verify OAuth consent screen lists only: email, profile, openid
+- [x] Removed unused `drive.readonly` scope from sign-in and sign-up
+- [ ] Google Cloud Console: remove Drive scope from OAuth consent screen if added
+- [ ] Verify consent screen lists only: email, profile, openid
 
 ---
 
-## 9. Security & POPIA conditions (policy claims)
-
-Policy states reasonable measures — ensure reality matches:
+## POPIA security (Condition 7)
 
 - [x] HTTPS (Vercel)
 - [x] Supabase RLS on user tables
-- [x] Private storage bucket for uploads
-- [ ] Service role key only on server (never exposed to client)
-- [ ] Regular review of who has Supabase / Vercel / Stripe dashboard access
-- [ ] Incident response plan if breach occurs (notify users + regulator where required)
+- [x] Private `uploads` storage bucket
+- [ ] Service role key server-only (never in client)
+- [ ] Access control on Supabase / Vercel / Stripe dashboards
+- [ ] Breach notification plan (POPIA)
 
 ---
 
-## 10. App store & distribution (when applicable)
+## App store (when applicable)
 
-### Apple App Store
-
-- [ ] Privacy Policy URL: `https://freeperiod.co.za/privacy`
-- [ ] App Privacy “nutrition labels” — match data types in §2 of privacy policy
-- [ ] Terms URL if required for subscriptions
-
-### Google Play
-
-- [ ] Privacy Policy URL in Play Console
-- [ ] Data safety form aligned with privacy policy
-
-### Web launch
-
-- [x] Policies live at public URLs (no auth required)
-- [ ] URLs submitted anywhere you list the product (Product Hunt, directories, etc.)
+- [ ] Apple: Privacy Policy URL `https://freeperiod.co.za/privacy`
+- [ ] Apple: Privacy nutrition labels match policy
+- [ ] Google Play: Privacy URL + Data safety form
 
 ---
 
-## 11. Ongoing maintenance
+## File reference
 
-- [ ] Review policies when you add: analytics, new AI providers, new data fields, mobile app, team features, API access
-- [ ] Bump `effectiveDate` and notify users for material changes
-- [ ] Keep `docs/compliance-checklist.md` updated when implementation changes
-- [ ] Annual compliance skim (POPIA Information Regulator guidance, GDPR if EU users grow)
-
----
-
-## 12. File reference
-
-| File | Purpose |
-|------|---------|
-| `lib/legal/config.ts` | Central legal constants + env overrides |
-| `components/legal/PrivacyPolicyContent.tsx` | Privacy Policy body |
-| `components/legal/TermsOfServiceContent.tsx` | Terms of Service body |
-| `components/legal/LegalDocumentShell.tsx` | Shared legal page layout |
-| `components/legal/MarketingFooter.tsx` | Footer with policy links |
-| `app/privacy/page.tsx` | Privacy route |
-| `app/terms/page.tsx` | Terms route |
-| `app/api/user/delete/route.ts` | Account deletion API |
-| `app/api/cron/purge-deletions/route.ts` | Scheduled purge cron |
-| `lib/account/delete-user.ts` | Deletion + purge logic |
-| `supabase/migrations/004_account_deletion.sql` | `deletion_scheduled_at` column |
-| `lib/supabase/middleware.ts` | Public routes + blocked deleted accounts |
+```
+lib/legal/config.ts                    — legal constants + env overrides
+components/legal/PrivacyPolicyContent.tsx
+components/legal/TermsOfServiceContent.tsx
+components/legal/LegalDocumentShell.tsx
+components/legal/MarketingFooter.tsx
+app/privacy/page.tsx
+app/terms/page.tsx
+app/api/user/delete/route.ts
+app/api/cron/purge-deletions/route.ts
+lib/account/delete-user.ts
+supabase/migrations/004_account_deletion.sql
+types/database.ts                      — User + deletion_scheduled_at types
+docs/compliance-checklist.md           — this file
+```
 
 ---
 
-## 13. Pre-launch gate (minimum)
+## Pre-launch gate (minimum)
 
-Before linking policies in marketing or app stores:
+1. [x] Build error fixed (`deletion_scheduled_at` Insert type)
+2. [ ] `npm run build` passes + Vercel deploy green
+3. [ ] Operator name set (`LEGAL_OPERATOR_NAME`)
+4. [x] Data retention: Option C (30-day grace)
+5. [ ] Payment processor confirmed in policy vs checkout
+6. [ ] `info@freeperiod.co.za` receiving email
+7. [x] `/privacy` and `/terms` implemented
+8. [x] Footer + sign-up consent
+9. [x] Google Drive OAuth scope removed from code
+10. [ ] Migration `004` applied in production
+11. [ ] Deletion cron scheduled
+12. [ ] Lawyer review (recommended)
 
-1. [ ] Migration `004` applied in production Supabase
-2. [ ] `LEGAL_CONTACT_EMAIL` points to a monitored inbox
-3. [ ] `LEGAL_DATA_REGION` set correctly
-4. [ ] Deletion flow tested end-to-end on staging
-5. [ ] Cron purge scheduled with `CRON_SECRET`
-6. [ ] Policies reviewed at `https://freeperiod.co.za/privacy` and `/terms`
-7. [ ] Lawyer review (strongly recommended; not a substitute for this checklist)
+---
+
+## Ongoing maintenance
+
+- [ ] Update policies when adding analytics, new AI providers, or mobile app
+- [ ] Bump `effectiveDate` in `lib/legal/config.ts` for material changes
+- [ ] Annual compliance skim (POPIA; GDPR Art. 27 if EU users grow)
 
 ---
 
 ## Notes
 
-- Policies are **drafts tailored to the codebase**, not legal advice.
-- Primary law: **POPIA** (South Africa). Also consider **GDPR** (EU users) and **CCPA** (California) as audience grows.
-- Default retention: **Option C** — 30-day soft delete, then permanent purge.
+- Policies are codebase-tailored drafts, not legal advice.
+- Primary law: **POPIA** (South Africa). Also **GDPR** (EU users) and **CCPA** (California) as audience grows.
+- **Data residency:** user content in Supabase EU (`eu-north-1`); app execution/logs on Vercel US (`iad1`); AI and payments largely US.

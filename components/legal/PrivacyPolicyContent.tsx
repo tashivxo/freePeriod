@@ -123,7 +123,7 @@ export function PrivacyPolicyContent() {
         <ul>
           <li>
             <strong>Supabase</strong> — authentication, database, and private file storage for your
-            uploads and account data
+            uploads and account data (hosted in {legalConfig.supabaseRegion})
           </li>
           <li>
             <strong>Anthropic</strong> — processes lesson prompts and curriculum context to generate
@@ -139,7 +139,8 @@ export function PrivacyPolicyContent() {
             details are handled by {paymentProcessor}, not stored by us
           </li>
           <li>
-            <strong>Vercel</strong> — application hosting and infrastructure logs
+            <strong>Vercel</strong> — application hosting, CDN, and infrastructure logs (hosted in{' '}
+            {legalConfig.vercelRegion})
           </li>
         </ul>
         <p>
