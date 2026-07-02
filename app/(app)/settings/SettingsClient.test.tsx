@@ -39,6 +39,15 @@ const baseUser: User = {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+describe('SettingsClient — legal links', () => {
+  it('links to privacy policy and terms of service', () => {
+    render(<SettingsClient user={baseUser} />);
+
+    expect(screen.getByRole('link', { name: /privacy policy/i })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: /terms of service/i })).toHaveAttribute('href', '/terms');
+  });
+});
+
 describe('SettingsClient — subject dropdown', () => {
   it('renders subject dropdown button associated with its label', () => {
     render(<SettingsClient user={baseUser} />);

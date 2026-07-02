@@ -1,7 +1,7 @@
 # FreePeriod — Privacy & Terms Compliance Checklist
 
 Living checklist for privacy policy, terms of service, and related compliance work.  
-Last updated: 25 June 2026.
+Last updated: 2 July 2026.
 
 ---
 
@@ -15,7 +15,9 @@ Last updated: 25 June 2026.
 | Account deletion flow | Done (needs migration + cron) |
 | Legal config / env overrides | Done |
 | Build fix (`deletion_scheduled_at` type) | Done |
-| Contact email `info@freeperiod.co.za` | Config updated — mailbox still needed |
+| Contact email `janiestribe@gmail.com` | Done (upgrade to `info@freeperiod.co.za` when profitable) |
+| Operator name Jayandree Govender | Done (default in `legalConfig`) |
+| Settings → policy links | Done |
 | Lawyer review | Not done |
 | Production env + cron | Not done |
 
@@ -35,11 +37,11 @@ Last updated: 25 June 2026.
 
 Configure via `lib/legal/config.ts` or env vars.
 
-- [ ] **Operator name** — set `LEGAL_OPERATOR_NAME` (e.g. your full name: "FreePeriod, operated by …")
+- [x] **Operator name:** Jayandree Govender (`LEGAL_OPERATOR_NAME` default in `lib/legal/config.ts`)
 - [x] **Trading name:** FreePeriod
 - [x] **Physical address:** 17 San Te Fe, Seaward Estates, Ballito, KwaZulu-Natal, South Africa
-- [x] **Contact email in code:** `info@freeperiod.co.za` (default in `legalConfig`)
-- [ ] **Set up `info@freeperiod.co.za`** — create mailbox or forwarding to your personal inbox
+- [x] **Contact email in code:** `janiestribe@gmail.com` (default in `legalConfig`)
+- [ ] **Professional email later:** `info@freeperiod.co.za` when the app is profitable — update `LEGAL_CONTACT_EMAIL` and policy copy
 - [ ] **Registration number:** not yet incorporated — policy notes trading as FreePeriod
 
 ---
@@ -47,11 +49,19 @@ Configure via `lib/legal/config.ts` or env vars.
 ## Outstanding decisions (blocking final policy sign-off)
 
 - [x] **Data retention:** Option C — 30-day grace period (implemented in code + policies)
-- [ ] **Payment processor at launch** — pick and align policy + checkout:
+- [x] **Operator name:** Jayandree Govender
+- [ ] **Payment processor at launch** — target Lemon Squeezy; Stripe still live in checkout until migration completes:
+  - [ ] **Lemon Squeezy (preferred)** — migration in progress (`lib/lemonsqueezy/`, migration `003_lemon_squeezy_subscriptions.sql`)
   - [x] Stripe (checkout still live in `app/api/checkout/route.ts`) — **current default in policies**
-  - [ ] Lemon Squeezy only (migration in progress — `lib/lemonsqueezy/`, migration `003_lemon_squeezy_subscriptions.sql`)
-  - [ ] Both during transition (update `legalConfig.paymentProcessor` and policy copy)
-- [ ] **Your full name** for the legal operator field (`LEGAL_OPERATOR_NAME`)
+  - [ ] Update `legalConfig.paymentProcessor` and policy copy when Lemon Squeezy goes live
+- [ ] **When can you submit to Lemon Squeezy?** You can apply **now** — stores start in test mode so you can configure products and run test checkouts before approval. To accept real payments:
+  1. Click **Activate your store** in the Lemon Squeezy dashboard sidebar
+  2. Complete the business questionnaire (describe FreePeriod as SaaS / subscription software for teachers)
+  3. Verify identity with government-issued ID ([docs](https://docs.lemonsqueezy.com/help/getting-started/verify-your-identity))
+  4. Have live `/privacy` and `/terms` URLs on your domain (required for review)
+  5. Wait for store approval — Lemon Squeezy quotes **2–3 business days**; plan **1–2 weeks** before launch in case of delays ([activate store docs](https://docs.lemonsqueezy.com/help/getting-started/activate-your-store))
+  - SaaS with subscriptions is typically approved; prohibited categories are physical goods and most offline services
+  - **Recommendation:** submit activation **before** pre-launch gate item 5; keep Stripe as fallback until Lemon Squeezy is approved and wired to checkout
 
 ---
 
@@ -82,7 +92,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [x] Content in `components/legal/PrivacyPolicyContent.tsx`
 - [x] Linked from `MarketingFooter` (home, pricing, legal pages)
 - [x] Linked from sign-up checkbox
-- [ ] Optional: link from Settings account section
+- [x] Optional: link from Settings account section — **Legal** card with Privacy Policy + Terms links (`SettingsClient.tsx`)
 
 ### Content accuracy
 
@@ -93,7 +103,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [x] No marketing cookies at launch
 - [x] 30-day deletion grace (Option C)
 - [x] POPIA + GDPR rights
-- [x] Contact: `info@freeperiod.co.za`
+- [x] Contact: `janiestribe@gmail.com`
 - [ ] Update if payment processor changes to Lemon Squeezy
 - [ ] Lawyer review
 
@@ -106,7 +116,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [x] Page at `app/terms/page.tsx`
 - [x] Content in `components/legal/TermsOfServiceContent.tsx`
 - [x] Linked from footer + sign-up
-- [ ] Optional: link from Settings
+- [x] Optional: link from Settings — **Legal** section with Privacy Policy + Terms
 
 ### Content accuracy
 
@@ -115,7 +125,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [x] Acceptable use, liability, SA governing law
 - [x] Stripe billing disclosure
 - [x] 30-day deletion grace
-- [x] Contact: `info@freeperiod.co.za`
+- [x] Contact: `janiestribe@gmail.com`
 - [ ] Update billing section if switching to Lemon Squeezy
 - [ ] Lawyer review
 
@@ -127,7 +137,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [x] Google sign-up: "By continuing with Google, you agree…"
 - [x] Footer links on marketing pages
 - [ ] Cookie consent banner — **not needed** (no analytics/marketing cookies)
-- [ ] Optional: policies link in Settings
+- [x] Policies link in Settings — **Legal** section
 
 ---
 
@@ -148,7 +158,7 @@ Configure via `lib/legal/config.ts` or env vars.
 - [ ] Set `CRON_SECRET` in Vercel
 - [ ] Schedule daily cron → `/api/cron/purge-deletions` with `Authorization: Bearer <CRON_SECRET>`
 - [ ] End-to-end test: user with uploads + active Stripe subscription
-- [ ] Process for immediate deletion requests (email to `info@freeperiod.co.za`)
+- [ ] Process for immediate deletion requests (email to `janiestribe@gmail.com`)
 - [ ] Optional: confirmation email on deletion request
 
 ---
@@ -157,8 +167,8 @@ Configure via `lib/legal/config.ts` or env vars.
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `LEGAL_OPERATOR_NAME` | Optional | Named operator on policies |
-| `LEGAL_CONTACT_EMAIL` | Recommended | Default: `info@freeperiod.co.za` |
+| `LEGAL_OPERATOR_NAME` | Optional | Default: Jayandree Govender |
+| `LEGAL_CONTACT_EMAIL` | Recommended | Default: `janiestribe@gmail.com` |
 | `LEGAL_PHYSICAL_ADDRESS` | Optional | Override address |
 | `LEGAL_SUPABASE_REGION` | Optional | Default: eu-north-1 (Stockholm, EU) |
 | `LEGAL_VERCEL_REGION` | Optional | Default: iad1 (Washington DC, US) |
@@ -238,10 +248,10 @@ docs/compliance-checklist.md           — this file
 
 1. [x] Build error fixed (`deletion_scheduled_at` Insert type)
 2. [ ] `npm run build` passes + Vercel deploy green
-3. [ ] Operator name set (`LEGAL_OPERATOR_NAME`)
+3. [x] Operator name set (Jayandree Govender)
 4. [x] Data retention: Option C (30-day grace)
 5. [ ] Payment processor confirmed in policy vs checkout
-6. [ ] `info@freeperiod.co.za` receiving email
+6. [x] Contact email active (`janiestribe@gmail.com`; upgrade to professional domain later)
 7. [x] `/privacy` and `/terms` implemented
 8. [x] Footer + sign-up consent
 9. [x] Google Drive OAuth scope removed from code

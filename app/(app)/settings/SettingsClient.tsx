@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS } from '@/lib/utils/subjects';
@@ -240,6 +241,32 @@ export function SettingsClient({ user }: { user: User }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Legal */}
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
+        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">Legal</h2>
+        <p className="mb-4 text-sm font-body text-text-secondary">
+          How we handle your data and the rules for using FreePeriod.
+        </p>
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+          <Link
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-coral font-medium hover:underline"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-coral font-medium hover:underline"
+          >
+            Terms of Service
+          </Link>
+        </nav>
       </div>
     </div>
   );
