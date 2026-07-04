@@ -166,6 +166,23 @@ export function SignInPage() {
               <Link
                 href="/forgot-password"
                 className="text-xs text-text-secondary hover:text-coral transition-colors"
+                onClick={() => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
+                    body: JSON.stringify({
+                      sessionId: '5467ae',
+                      runId: 'post-fix',
+                      hypothesisId: 'C',
+                      location: 'SignInPage.tsx:forgot-password-click',
+                      message: 'Forgot password link clicked',
+                      data: { href: '/forgot-password' },
+                      timestamp: Date.now(),
+                    }),
+                  }).catch(() => {});
+                  // #endregion
+                }}
               >
                 Forgot password?
               </Link>

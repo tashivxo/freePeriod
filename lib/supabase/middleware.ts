@@ -35,8 +35,38 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage =
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up');
+  // Password recovery must stay reachable without a session (forgot) and with a
+  // recovery session (update), and must not be forced through onboarding.
+  const isPasswordRecoveryPage =
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/update-password');
   const isOnboardingPage = pathname.startsWith('/onboarding');
   const isSettingsPage = pathname.startsWith('/settings');
+
+  // #region agent log
+  if (isPasswordRecoveryPage || pathname.startsWith('/sign-in')) {
+    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
+      body: JSON.stringify({
+        sessionId: '5467ae',
+        runId: 'post-fix',
+        hypothesisId: 'A',
+        location: 'lib/supabase/middleware.ts:entry',
+        message: 'middleware auth gate evaluation',
+        data: {
+          pathname,
+          hasUser: !!user,
+          isAuthPage,
+          isPasswordRecoveryPage,
+          isOnboardingPage,
+          isSettingsPage,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }
+  // #endregion
 
   if (isLocalDevTestRoute) {
     return supabaseResponse;
@@ -49,7 +79,28 @@ export async function updateSession(request: NextRequest) {
     pathname === '/privacy' ||
     pathname === '/terms' ||
     pathname.startsWith('/api/');
-  if (!user && !isAuthPage && !isPublicPage) {
+  if (!user && !isAuthPage && !isPasswordRecoveryPage && !isPublicPage) {
+    // #region agent log
+    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
+      body: JSON.stringify({
+        sessionId: '5467ae',
+        runId: 'post-fix',
+        hypothesisId: 'A',
+        location: 'lib/supabase/middleware.ts:unauth-redirect',
+        message: 'redirecting unauthenticated user to sign-in',
+        data: {
+          pathname,
+          isAuthPage,
+          isPasswordRecoveryPage,
+          isPublicPage,
+          redirectTo: '/sign-in',
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     const redirectResponse = NextResponse.redirect(url);
@@ -92,7 +143,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users who haven't completed onboarding
-  if (user && !isAuthPage && !isOnboardingPage && !isSettingsPage && !isPublicPage) {
+  if (
+    user &&
+    !isAuthPage &&
+    !isPasswordRecoveryPage &&
+    !isOnboardingPage &&
+    !isSettingsPage &&
+    !isPublicPage
+  ) {
     const { data } = await supabase
       .from('users')
       .select('onboarding_complete')

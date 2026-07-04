@@ -28,6 +28,12 @@ test.describe('Sign-in page', () => {
     await expect(page).toHaveURL('/sign-up');
   });
 
+  test('"Forgot password?" link navigates to /forgot-password', async ({ page }) => {
+    await page.getByRole('link', { name: /forgot password/i }).click();
+    await expect(page).toHaveURL('/forgot-password');
+    await expect(page.getByRole('heading', { name: /recover password/i })).toBeVisible();
+  });
+
   test('signs in with valid credentials and redirects to dashboard', async ({ page }) => {
     await page.getByLabel('Email').fill('testteacher@mailinator.com');
     await page.locator('input#password').fill('TestPass123!');
