@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
@@ -8,24 +8,6 @@ import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
 
 export function ForgotPasswordPage() {
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
-      body: JSON.stringify({
-        sessionId: '5467ae',
-        runId: 'post-fix',
-        hypothesisId: 'E',
-        location: 'ForgotPasswordPage.tsx:mount',
-        message: 'ForgotPasswordPage mounted',
-        data: { path: typeof window !== 'undefined' ? window.location.pathname : 'ssr' },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, []);
-  // #endregion
-
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [serverError, setServerError] = useState('');
