@@ -34,6 +34,12 @@ test.describe('Sign-in page', () => {
     await expect(page.getByRole('heading', { name: /recover password/i })).toBeVisible();
   });
 
+  test('landing page with recovery params forwards to auth callback', async ({ page }) => {
+    await page.goto('/?token_hash=e2e-test&type=recovery');
+    await expect(page).toHaveURL(/\/auth\/callback\?.*token_hash=e2e-test/);
+    await expect(page).toHaveURL(/next=%2Fupdate-password|next=\/update-password/);
+  });
+
   test('signs in with valid credentials and redirects to dashboard', async ({ page }) => {
     await page.getByLabel('Email').fill('testteacher@mailinator.com');
     await page.locator('input#password').fill('TestPass123!');

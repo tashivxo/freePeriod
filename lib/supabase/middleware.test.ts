@@ -45,6 +45,27 @@ describe('updateSession password recovery routes', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('allows unauthenticated access to /auth/callback for email recovery', async () => {
+    const response = await updateSession(
+      requestFor('/auth/callback?code=test-code&next=/update-password'),
+    );
+
+    expect(response.status).not.toBe(307);
+    expect(response.status).not.toBe(308);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('forwards recovery params from landing page to auth callback', async () => {
+    const response = await updateSession(
+      requestFor('/?token_hash=recovery-hash&type=recovery'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?token_hash=recovery-hash&type=recovery&next=%2Fupdate-password',
+    );
+  });
+
   it('still redirects unauthenticated users away from protected routes', async () => {
     const response = await updateSession(requestFor('/dashboard'));
 

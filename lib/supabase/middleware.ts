@@ -32,6 +32,20 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isLocalDevTestRoute =
     process.env.NODE_ENV === 'development' && pathname.startsWith('/test-paid-generation');
+
+  // Supabase may fall back to Site URL (/) with recovery params when redirect URL
+  // isn't allowlisted — forward to the shared auth callback handler.
+  const tokenHash = request.nextUrl.searchParams.get('token_hash');
+  const otpType = request.nextUrl.searchParams.get('type');
+  if (pathname === '/' && tokenHash && otpType === 'recovery') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/callback';
+    if (!url.searchParams.get('next')) {
+      url.searchParams.set('next', '/update-password');
+    }
+    return NextResponse.redirect(url);
+  }
+
   const isAuthPage =
     pathname.startsWith('/sign-in') ||
     pathname.startsWith('/sign-up');
@@ -40,33 +54,9 @@ export async function updateSession(request: NextRequest) {
   const isPasswordRecoveryPage =
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/update-password');
+  const isAuthCallbackPage = pathname.startsWith('/auth/callback');
   const isOnboardingPage = pathname.startsWith('/onboarding');
   const isSettingsPage = pathname.startsWith('/settings');
-
-  // #region agent log
-  if (isPasswordRecoveryPage || pathname.startsWith('/sign-in')) {
-    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
-      body: JSON.stringify({
-        sessionId: '5467ae',
-        runId: 'post-fix',
-        hypothesisId: 'A',
-        location: 'lib/supabase/middleware.ts:entry',
-        message: 'middleware auth gate evaluation',
-        data: {
-          pathname,
-          hasUser: !!user,
-          isAuthPage,
-          isPasswordRecoveryPage,
-          isOnboardingPage,
-          isSettingsPage,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }
-  // #endregion
 
   if (isLocalDevTestRoute) {
     return supabaseResponse;
@@ -79,28 +69,7 @@ export async function updateSession(request: NextRequest) {
     pathname === '/privacy' ||
     pathname === '/terms' ||
     pathname.startsWith('/api/');
-  if (!user && !isAuthPage && !isPasswordRecoveryPage && !isPublicPage) {
-    // #region agent log
-    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '5467ae' },
-      body: JSON.stringify({
-        sessionId: '5467ae',
-        runId: 'post-fix',
-        hypothesisId: 'A',
-        location: 'lib/supabase/middleware.ts:unauth-redirect',
-        message: 'redirecting unauthenticated user to sign-in',
-        data: {
-          pathname,
-          isAuthPage,
-          isPasswordRecoveryPage,
-          isPublicPage,
-          redirectTo: '/sign-in',
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+  if (!user && !isAuthPage && !isPasswordRecoveryPage && !isAuthCallbackPage && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     const redirectResponse = NextResponse.redirect(url);
