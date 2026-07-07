@@ -6,7 +6,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
 import { buildTemplateData } from '@/lib/lesson/template-data';
-import type { LessonSection } from '@/types';
+import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
+import type { LessonPlan, LessonSection } from '@/types';
 
 export { buildTemplateData };
 
@@ -63,13 +64,29 @@ export async function POST(request: NextRequest) {
 
   // ---------- DOCX ----------
   if (ext === 'docx') {
-    const filled = await createReport({
-      template: templateBuffer,
-      data: templateData,
-      failFast: false,
-    });
+    const JSZip = (await import('jszip')).default;
+    const zip = await JSZip.loadAsync(templateBuffer);
+    const xml = (await zip.file('word/document.xml')?.async('string')) ?? '';
+    const cmdDelimCount = (xml.match(/\+\+\+/g) || []).length;
 
-    return new NextResponse(Buffer.from(filled), {
+    let filledBuffer: Buffer;
+
+    if (cmdDelimCount > 0) {
+      // Template authored with docx-templates command syntax (e.g. +++INS field+++)
+      filledBuffer = Buffer.from(
+        await createReport({ template: templateBuffer, data: templateData, failFast: false }),
+      );
+    } else {
+      // Plain form-style template (labels in table cells, blank cells for values) —
+      // fill by matching known field labels to the adjacent empty cell.
+      const result = await fillGenericDocxTemplate(templateBuffer, {
+        title: lesson.title,
+        content: lesson.content as LessonSection,
+      } as LessonPlan);
+      filledBuffer = result.buffer;
+    }
+
+    return new NextResponse(filledBuffer, {
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
