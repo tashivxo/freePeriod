@@ -1,9 +1,14 @@
 import { ImageResponse } from 'next/og';
+import { BACKGROUND } from '@/lib/utils/brand-colors';
+import { getPictogramDataUri } from '@/lib/brand/pictogram-data-uri';
 
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
 export default function AppleIcon() {
+  const pictogram = getPictogramDataUri();
+  const markSize = 135;
+
   return new ImageResponse(
     (
       <div
@@ -13,18 +18,15 @@ export default function AppleIcon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-          borderRadius: 6,
-          fontFamily: 'serif',
-          fontSize: 90,
-          fontWeight: 700,
-          color: '#ffffff',
-          letterSpacing: '-0.5px',
+          background: BACKGROUND,
         }}
       >
-        <div>
-          fp
-        </div>
+        <img
+          src={pictogram}
+          width={markSize}
+          height={markSize}
+          style={{ borderRadius: '50%', objectFit: 'cover' }}
+        />
       </div>
     ),
     { ...size }
