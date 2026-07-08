@@ -46,6 +46,45 @@
 
 ---
 
+## Logo
+
+### Primary mark
+
+The **coloured pictogram** (clock face + steaming mug) is the primary brand mark.
+
+| Asset | Path |
+|-------|------|
+| Runtime PNG | `public/brand/pictogram.png` |
+| Design source | `assets/Free Period Coloured Pictogram.png` |
+
+### Lockup
+
+Default header lockup: pictogram (left) + **FreePeriod** wordmark (right), rendered by `components/ui/Logo.tsx`.
+
+- Image: circular crop (`rounded-full object-cover`)
+- Text: `font-display font-extrabold text-text-primary`
+- Gap: `gap-2` (8 px minimum clear space)
+
+### Sizes
+
+| Context | `size` prop | Image |
+|---------|-------------|-------|
+| Navbar, legal, pricing | `sm` | 28×28 px |
+| Forgot password | `md` | 36×36 px |
+| Auth sign-in/up | `lg` | 48×48 px |
+
+### Do not
+
+- Stretch the mark non-uniformly
+- Add drop shadows to the pictogram
+- Place the lockup on backgrounds without sufficient contrast
+
+### Metadata icons
+
+Favicon, Apple touch icon, and Open Graph image all use the same pictogram asset via `lib/brand/pictogram-data-uri.ts`.
+
+---
+
 ## Using Colors in Code
 
 ### ✅ Preferred — Tailwind utilities
