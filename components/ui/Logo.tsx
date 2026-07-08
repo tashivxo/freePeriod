@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface LogoProps {
@@ -9,66 +10,26 @@ interface LogoProps {
 }
 
 const sizeMap = {
-  sm: { pill: 'h-7 w-7', icon: 14, text: 'text-base' },
-  md: { pill: 'h-9 w-9', icon: 18, text: 'text-xl' },
-  lg: { pill: 'h-12 w-12', icon: 24, text: 'text-3xl' },
-};
+  sm: { px: 28, text: 'text-base' },
+  md: { px: 36, text: 'text-xl' },
+  lg: { px: 48, text: 'text-3xl' },
+} as const;
 
 export function Logo({ size = 'md', showText = true, className }: LogoProps) {
   const s = sizeMap[size];
 
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
-      {/* Coral pill with mustard mug */}
-      <span
-        className={cn(
-          'inline-flex items-center justify-center rounded-xl bg-coral flex-shrink-0',
-          s.pill
-        )}
-        aria-hidden="true"
-      >
-        <svg
-          width={s.icon}
-          height={s.icon}
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Mug body */}
-          <path
-            d="M6 7h10l-1.5 10H7.5L6 7z"
-            strokeWidth="0.5"
-            strokeLinejoin="round"
-            style={{ fill: 'var(--color-mustard)', stroke: 'var(--color-mustard)' }}
-          />
-          {/* Mug handle */}
-          <path
-            d="M16 9.5c2 0 3 0.8 3 2s-1 2-3 2"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            fill="none"
-            style={{ stroke: 'var(--color-mustard)' }}
-          />
-          {/* Steam left */}
-          <path
-            d="M9 5.5C9 4.5 10 4.5 10 3.5"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            fill="none"
-            style={{ stroke: 'var(--color-mustard)' }}
-          />
-          {/* Steam right */}
-          <path
-            d="M12 5.5C12 4.5 13 4.5 13 3.5"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            fill="none"
-            style={{ stroke: 'var(--color-mustard)' }}
-          />
-        </svg>
-      </span>
+      <Image
+        src="/brand/pictogram.png"
+        alt={showText ? '' : 'FreePeriod'}
+        aria-hidden={showText ? true : undefined}
+        width={s.px}
+        height={s.px}
+        className="flex-shrink-0 rounded-full object-cover"
+        priority={size === 'lg'}
+      />
 
-      {/* Brand name */}
       {showText && (
         <span
           className={cn(
