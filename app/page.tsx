@@ -2,19 +2,18 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { PenLine, Download, Sparkles, CheckCircle2, Clock, BookOpen, Moon, Sun } from 'lucide-react';
+import { PenLine, Download, Sparkles, Clock, BookOpen, Moon, Sun, FileText } from 'lucide-react';
 import { useTheme } from '@/lib/theme';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { ShinyText } from '@/components/ui/ShinyText';
-import { Card, CardContent } from '@/components/ui/card';
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import dynamic from 'next/dynamic';
 
-const MugAnimation = dynamic(
-  () => import('@/components/animations/MugAnimation').then((m) => m.MugAnimation),
+const HeroPictogram = dynamic(
+  () => import('@/components/animations/HeroPictogram').then((m) => m.HeroPictogram),
   { ssr: false }
 );
 
@@ -23,17 +22,19 @@ const SoftAurora = dynamic(
   { ssr: false }
 );
 
-const FEATURES = [
-  {
-    icon: PenLine,
-    title: 'Structured Plans',
-    description: '12 sections covering objectives, activities, differentiation and assessment, every time.',
-    color: 'bg-coral/10 text-coral',
-  },
+const LEAD_FEATURE = {
+  icon: PenLine,
+  title: 'Structured Plans',
+  description:
+    'Twelve sections covering objectives, activities, differentiation, and assessment — consistent structure you can trust every time.',
+  color: 'bg-coral/10 text-coral',
+} as const;
+
+const SUPPORTING_FEATURES = [
   {
     icon: Sparkles,
     title: 'AI-Powered',
-    description: 'FreePeriod AI generates plans tailored to your subject, year group and curriculum in seconds.',
+    description: 'Tailored to your subject, year group, and curriculum in seconds.',
     color: 'bg-mustard/20 text-mustard-dark',
   },
   {
@@ -44,11 +45,20 @@ const FEATURES = [
   },
 ] as const;
 
-const PERKS = [
-  'No more Sunday planning marathons',
-  'Differentiation built in, every time',
-  'Works with any subject or year group',
-];
+const CONVERSION_POINTS = [
+  {
+    icon: FileText,
+    text: '12 structured sections in every plan',
+  },
+  {
+    icon: PenLine,
+    text: 'Edit before you export',
+  },
+  {
+    icon: BookOpen,
+    text: 'Free to start. No credit',
+  },
+] as const;
 
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -68,7 +78,6 @@ export default function HomePage() {
   useEffect(() => {
     if (prefersReduced) return;
 
-    // Hero entrance
     if (heroRef.current) {
       const targets = Array.from(heroRef.current.querySelectorAll('[data-animate]'));
       if (targets.length > 0) {
@@ -82,7 +91,6 @@ export default function HomePage() {
       }
     }
 
-    // Toggle entrance after 1s delay
     if (toggleRef.current) {
       animate(toggleRef.current, {
         translateY: [20, 0],
@@ -93,7 +101,6 @@ export default function HomePage() {
       });
     }
 
-    // Features on scroll
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -122,9 +129,10 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [prefersReduced]);
 
+  const LeadIcon = LEAD_FEATURE.icon;
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-background">
-      {/* Aurora background — hero area */}
       {!prefersReduced && (
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[700px]" aria-hidden="true">
           <SoftAurora
@@ -146,45 +154,33 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Logo size="sm" />
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="px-3 py-2 text-sm font-body text-text-secondary hover:text-text-primary transition-colors"
+              className="px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
             >
               Pricing
             </Link>
             <Link
               href="/sign-in"
-              className="relative btn-shine overflow-hidden rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors"
+              className="relative btn-shine overflow-hidden rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
             >
-              Sign In
+              Sign in
             </Link>
           </nav>
         </div>
       </header>
 
       <main className="relative">
-        {/* Hero */}
-        <section className="relative z-10 mx-auto max-w-5xl px-6 pt-20 pb-16">
-          <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
-            {/* Text */}
+        <section className="relative z-10 mx-auto max-w-5xl px-6 pt-14 pb-12 sm:pt-16 lg:pt-20 lg:pb-14">
+          <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-14">
             <div ref={heroRef} className="flex-1 text-center lg:text-left">
-              <div
-                data-animate
-                className="mb-4 inline-flex items-center gap-2 rounded-full bg-coral/10 px-4 py-1.5"
-                style={{ opacity: 0 }}
-              >
-                <Sparkles className="h-3.5 w-3.5 text-coral" />
-                <span className="text-xs font-body font-semibold text-coral">AI Powered</span>
-              </div>
-
               <h1
                 data-animate
-                className="font-display text-5xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-6xl"
+                className="font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.02em] text-text-primary sm:text-5xl lg:text-[3.25rem]"
                 style={{ opacity: 0 }}
               >
                 Lesson plans in{' '}
@@ -205,48 +201,43 @@ export default function HomePage() {
                       opacity="0.6"
                     />
                   </svg>
-                </span>
-                {' '}not hours
+                </span>{' '}
+                not hours
               </h1>
 
               <p
                 data-animate
-                className="mt-6 font-body text-lg text-text-primary max-w-lg"
+                className="mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg"
                 style={{ opacity: 0 }}
               >
                 Upload your curriculum docs, describe what you need, and FreePeriod
                 generates a complete, structured lesson plan you can edit and export.
               </p>
 
-              <ul data-animate className="mt-5 space-y-2" style={{ opacity: 0 }}>
-                {PERKS.map((perk) => (
-                  <li key={perk} className="flex items-center gap-2 justify-center lg:justify-start">
-                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-coral" />
-                    <span className="text-sm font-body text-text-primary">{perk}</span>
-                  </li>
-                ))}
-              </ul>
-
               <div
                 data-animate
-                className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start"
+                className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start"
                 style={{ opacity: 0 }}
               >
                 <Link
                   href="/sign-up"
-                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl bg-coral px-6 py-3 font-body font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+                  className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl bg-coral px-6 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
                 >
                   Start for free
                 </Link>
                 <Link
                   href="/sign-in"
-                  className="relative btn-shine overflow-hidden inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3 font-body font-medium text-text-primary hover:bg-muted transition-colors dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+                  className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl border border-border bg-surface px-6 py-3 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                 >
                   Sign in
                 </Link>
               </div>
 
-              <div data-animate className="mt-6 flex items-center gap-4 justify-center lg:justify-start" style={{ opacity: 0 }}>
+              <div
+                data-animate
+                className="mt-5 flex items-center justify-center gap-4 lg:justify-start"
+                style={{ opacity: 0 }}
+              >
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <Clock className="h-3.5 w-3.5" />
                   Avg. 15 seconds to generate
@@ -259,60 +250,92 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Mug illustration */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <div className="relative flex h-48 w-48 items-center justify-center rounded-3xl bg-coral/10">
-                <MugAnimation />
-              </div>
+            <div className="flex flex-shrink-0 items-center justify-center">
+              <HeroPictogram />
             </div>
           </div>
         </section>
 
-        {/* Features */}
         <section
           id="features"
           ref={featuresRef}
-          className="relative z-10 mx-auto max-w-5xl px-4 py-12 md:py-20"
+          className="relative z-10 mx-auto max-w-5xl px-6 py-16 md:py-20"
         >
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-text-primary text-center mb-12">
-            <ShinyText text="Why Teachers Love FreePeriod" speed={4} />
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {FEATURES.map(({ icon: Icon, title, description, color }, idx) => (
+          <div className="mb-10 text-center md:mb-12">
+            <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary md:text-4xl">
+              <ShinyText text="Why Teachers Love FreePeriod" speed={4} />
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base">
+              Structure you can trust, speed when you need it.
+            </p>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2 lg:grid-rows-2 lg:gap-6">
+            <SpotlightCard
+              data-feature
+              className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-7 backdrop-blur transition-colors hover:border-coral/50 lg:row-span-2 lg:p-9"
+            >
+              <div className={`mb-5 inline-flex rounded-xl p-3.5 ${LEAD_FEATURE.color}`}>
+                <LeadIcon className="h-7 w-7" />
+              </div>
+              <h3 className="mb-3 font-display text-2xl font-semibold text-text-primary">
+                {LEAD_FEATURE.title}
+              </h3>
+              <p className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base">
+                {LEAD_FEATURE.description}
+              </p>
+            </SpotlightCard>
+
+            {SUPPORTING_FEATURES.map(({ icon: Icon, title, description, color }) => (
               <SpotlightCard
-                key={idx}
+                key={title}
                 data-feature
-                className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 backdrop-blur p-6 md:p-8 hover:border-coral/50 transition-colors"
+                className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur transition-colors hover:border-coral/50 md:p-7"
               >
-                <div className={`inline-flex p-3 rounded-xl ${color} mb-4`}>
-                  <Icon className="h-6 w-6" />
+                <div className={`mb-4 inline-flex rounded-xl p-3 ${color}`}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <h3 className="font-display text-xl font-semibold text-text-primary mb-2">{title}</h3>
-                <p className="font-body text-text-secondary text-sm">{description}</p>
+                <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{title}</h3>
+                <p className="font-body text-sm leading-relaxed text-text-secondary">{description}</p>
               </SpotlightCard>
             ))}
           </div>
         </section>
 
-        {/* Social Proof */}
-        <section className="relative z-10 mx-auto max-w-4xl px-4 py-12 md:py-20">
-          <SpotlightCard className="rounded-2xl border border-border bg-surface/50 backdrop-blur p-8 md:p-12 text-center hover:border-coral/50 transition-colors">
-            <h2 className="font-display text-2xl md:text-3xl font-bold text-text-primary mb-6">
-              <ShinyText text="Save Hours Every Week" speed={4} />
+        <section className="relative z-10 mx-auto max-w-4xl px-6 py-16 md:py-20">
+          <SpotlightCard className="rounded-2xl border border-border bg-surface/50 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
+              Ready to reclaim your evenings?
             </h2>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              {PERKS.map((perk) => (
-                <div key={perk} className="flex flex-col items-center gap-2">
-                  <CheckCircle2 className="h-6 w-6 text-coral" />
-                  <p className="font-body text-text-secondary">{perk}</p>
-                </div>
-              ))}
+            <p className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base">
+              Join teachers who plan faster without sacrificing structure.
+            </p>
+
+            <div className="mx-auto mt-8 max-w-xl border-t border-border pt-8">
+              <h3 className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl">
+                Your plan, your way
+              </h3>
+              <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base">
+                Start from scratch, or send your template and AI fills it in.
+              </p>
             </div>
+
+            <ul className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
+              {CONVERSION_POINTS.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex flex-col items-center gap-2 px-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/10">
+                    <Icon className="h-5 w-5 text-coral" />
+                  </div>
+                  <p className="font-body text-sm leading-snug text-text-secondary">{text}</p>
+                </li>
+              ))}
+            </ul>
+
             <Link
               href="/sign-up"
-              className="relative btn-shine overflow-hidden inline-flex items-center justify-center rounded-xl bg-coral px-8 py-3 font-body text-base font-semibold text-white shadow-sm hover:bg-coral-dark transition-colors"
+              className="relative btn-shine mt-8 inline-flex min-h-[44px] items-center justify-center overflow-hidden rounded-xl bg-coral px-8 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
             >
-              Start Planning Smarter
+              Start for free
             </Link>
           </SpotlightCard>
         </section>
@@ -322,12 +345,11 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* Floating dark mode toggle */}
       <button
         ref={toggleRef}
         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="fixed bottom-6 right-6 z-50 btn-shine overflow-hidden flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral focus-visible:outline-offset-2 dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
+        className="fixed bottom-6 right-6 z-50 btn-shine flex min-h-[44px] items-center gap-2 overflow-hidden rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
         style={{ opacity: 0 }}
       >
         {resolvedTheme === 'dark' ? (

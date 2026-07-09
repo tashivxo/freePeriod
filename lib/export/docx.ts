@@ -545,6 +545,18 @@ function buildPlanningTable(content: LessonSection): Table {
     headerRow('Planning and Pedagogical Approach', TABLE3_WIDTHS),
     labelValueRow('Learning Objectives', bulletParagraphs(content.objectives), TABLE3_WIDTHS),
     labelValueRow('Essential Question', textOrBlank(content.essentialQuestion), TABLE3_WIDTHS),
+    labelValueRow('Prior Knowledge', bulletParagraphs(content.priorKnowledge), TABLE3_WIDTHS),
+    labelValueRow(
+      'Performance Expectations',
+      bulletParagraphs(content.performanceExpectations),
+      TABLE3_WIDTHS,
+    ),
+    labelValueRow('Possible Misconceptions', bulletParagraphs(content.misconceptions), TABLE3_WIDTHS),
+    labelValueRow(
+      'Science & Engineering Practices',
+      bulletParagraphs(content.sciencePractices),
+      TABLE3_WIDTHS,
+    ),
     labelValueRow('New Vocabulary', bulletParagraphs(content.vocabulary), TABLE3_WIDTHS),
     labelValueRow('Key Concepts', bulletParagraphs(content.keyConcepts), TABLE3_WIDTHS),
     labelValueRow(

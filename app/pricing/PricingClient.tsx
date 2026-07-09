@@ -50,7 +50,7 @@ const PLANS: Plan[] = [
       'DOCX export',
       'Community support',
     ],
-    cta: 'Get started free',
+    cta: 'Start for free',
     ctaClass:
       'border border-coral text-coral hover:bg-coral/10 focus-visible:ring-2 focus-visible:ring-coral',
     href: '/sign-up',
@@ -256,7 +256,7 @@ export function PricingClient() {
           <h1
             data-animate
             style={{ opacity: 0 }}
-            className="font-display text-4xl font-bold tracking-tight text-text-primary sm:text-5xl"
+            className="font-display text-4xl font-extrabold leading-[1.1] tracking-[-0.02em] text-text-primary sm:text-5xl"
           >
             Plans for every classroom
           </h1>
@@ -264,7 +264,7 @@ export function PricingClient() {
           <p
             data-animate
             style={{ opacity: 0 }}
-            className="mx-auto mt-4 max-w-xl text-lg text-text-secondary"
+            className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg"
           >
             Start free, upgrade when you&apos;re ready. No credit card required.
           </p>

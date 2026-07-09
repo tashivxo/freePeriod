@@ -107,20 +107,20 @@ export function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-4 text-center">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <Logo size="lg" />
           <div>
-            <h1 className="text-2xl font-display font-bold text-text-primary">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
               Welcome back
             </h1>
-            <p className="mt-1 font-body text-sm text-text-secondary">
+            <p className="mt-1.5 font-body text-sm leading-relaxed text-text-secondary">
               Sign in to continue planning lessons
             </p>
           </div>
         </div>
 
         <Card className="border-border/60 shadow-sm">
-          <CardContent className="p-6 space-y-5">
+          <CardContent className="space-y-5 p-6">
 
         {serverError && (
           <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">

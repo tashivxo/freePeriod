@@ -24,6 +24,10 @@ export type LessonSection = {
   essentialQuestion?: string;
   objectives: string[];
   successCriteria: string[];
+  priorKnowledge?: string[];
+  performanceExpectations?: string[];
+  misconceptions?: string[];
+  sciencePractices?: string[];
   keyConcepts: string[];
   vocabulary?: string[];
   hook: string;

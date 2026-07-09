@@ -69,8 +69,6 @@ function isSubHeaderLine(line: string): boolean {
 function buildParagraphsXml(referencePara: string, text: string): string {
   const rPrMatch = referencePara.match(/<w:rPr>[\s\S]*?<\/w:rPr>/);
   const baseRPr = rPrMatch ? rPrMatch[0] : '';
-  // Strip any existing bold tags before re-adding, so we never emit duplicate
-  // <w:b/>/<w:bCs/> elements (which can trigger a "repair" prompt in Word).
   const baseRPrNoBold = baseRPr.replace(/<w:b\s*\/>/g, '').replace(/<w:bCs\s*\/>/g, '');
   const boldRPr = baseRPrNoBold
     ? baseRPrNoBold.replace('<w:rPr>', '<w:rPr><w:b/><w:bCs/>')
@@ -87,10 +85,70 @@ function buildParagraphsXml(referencePara: string, text: string): string {
     .map((line) => {
       const trimmed = line.trim();
       if (!trimmed) return `<w:p>${pPrXml}</w:p>`;
-      const rPrToUse = isSubHeaderLine(trimmed) ? boldRPr : baseRPr;
-      return `<w:p>${pPrXml}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(trimmed)}</w:t></w:r></w:p>`;
+      const isBoldLine = trimmed.startsWith('>>');
+      const content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
+      const rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPr;
+      return `<w:p>${pPrXml}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(content)}</w:t></w:r></w:p>`;
     })
     .join('');
+}
+
+function replaceCellParagraphs(cellXml: string, text: string): string {
+  const paraMatch = cellXml.match(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/);
+  if (!paraMatch) return cellXml;
+
+  const paragraphsXml = buildParagraphsXml(paraMatch[0], text);
+  const withoutParas = cellXml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, '');
+  return withoutParas.replace('</w:tc>', `${paragraphsXml}</w:tc>`);
+}
+
+function isCheckboxValueCell(cellXml: string): boolean {
+  return /please highlight all that apply/i.test(cellPlainText(cellXml));
+}
+
+function splitCheckboxOptions(body: string): string[] {
+  if (/\d-\s*/.test(body)) {
+    return body.split(/,\s*(?=\d-)/).map((part) => part.trim()).filter(Boolean);
+  }
+  if (body.includes('/')) {
+    return body.split(/\s*\/\s*/).map((part) => part.trim()).filter(Boolean);
+  }
+  return body.split(/,\s*/).map((part) => part.trim()).filter(Boolean);
+}
+
+function optionIsSelected(option: string, selections: string[]): boolean {
+  const normalizedOption = option.replace(/^\d-\s*/, '').trim().toLowerCase();
+  return selections.some((selection) => {
+    const normalizedSelection = selection.trim().toLowerCase();
+    if (!normalizedSelection) return false;
+    if (
+      normalizedOption.includes(normalizedSelection) ||
+      normalizedSelection.includes(normalizedOption)
+    ) {
+      return true;
+    }
+    const keywords = normalizedSelection.split(/\s+/).filter((word) => word.length > 4);
+    return keywords.length > 0 && keywords.filter((word) => normalizedOption.includes(word)).length >= 2;
+  });
+}
+
+function highlightCheckboxCell(cellXml: string, selections: string[]): string {
+  if (!isCheckboxValueCell(cellXml) || selections.length === 0) return cellXml;
+
+  const plain = cellPlainText(cellXml);
+  const prefixMatch = plain.match(/^(Please highlight all that apply:?\s*)/i);
+  if (!prefixMatch) return cellXml;
+
+  const prefix = prefixMatch[1].trim();
+  const body = plain.slice(prefixMatch[1].length);
+  const separator = body.includes('/') && !/\d-\s/.test(body) ? ' / ' : ', ';
+  const options = splitCheckboxOptions(body);
+  const lines = [
+    prefix,
+    ...options.map((option) => (optionIsSelected(option, selections) ? `>>${option}` : option)),
+  ];
+
+  return replaceCellParagraphs(cellXml, lines.join('\n'));
 }
 
 /** Injects text into an (empty) table cell by replacing its first paragraph with one
@@ -118,6 +176,232 @@ function appendParagraphsToCell(cellXml: string, text: string): string {
   return cellXml.replace(/<\/w:tc>$/, `${paragraphsXml}</w:tc>`);
 }
 
+function inferHigherOrderThinking(objectives: string[]): string[] {
+  const text = objectives.join(' ').toLowerCase();
+  const skills: string[] = [];
+  if (/analy/.test(text)) skills.push('Analysis');
+  if (/evaluat/.test(text)) skills.push('Evaluation');
+  if (/compar|connect/.test(text)) skills.push('Making connections');
+  if (/conclud|explain|justif/.test(text)) skills.push('Drawing conclusions', 'Constructing explanation');
+  if (/argu|debate|defend/.test(text)) skills.push('Arguing a position');
+  if (/creat|design|construct/.test(text)) skills.push('Creating');
+  if (/hypothes/.test(text)) skills.push('Hypothesis generation');
+  if (/reason/.test(text)) skills.push('Reasoning');
+  if (skills.length === 0) {
+    return ['Analysis', 'Evaluation', 'Making connections'];
+  }
+  return [...new Set(skills)];
+}
+
+const SEP_OPTIONS = [
+  'Asking Questions and Defining Problems',
+  'Developing and Using Models',
+  'Planning and Carrying Out Investigations',
+  'Analyzing and Interpreting Data',
+  'Using Mathematics and Computational Thinking',
+  'Constructing Explanations and Designing Solutions',
+  'Engaging in Argument from Evidence',
+  'Obtaining, Evaluating, and Communicating Information',
+];
+
+const SCIENTIFIC_METHOD_OPTIONS = [
+  'Make an observation',
+  'Ask a research question',
+  'Gather background information and do research',
+  'Formulate a hypothesis',
+  'Make a prediction',
+  'Plan the experiment (Design the investigation and identify variables)',
+  'Conduct the experiment',
+  'Collect and record data',
+  'Analyze, interpret, and evaluate data',
+  'Draw conclusion based on evidence',
+  'Communicate findings and results',
+  'Reflect and propose next steps or further investigations',
+];
+
+const TWENTY_FIRST_CENTURY_OPTIONS = [
+  'Critical thinking',
+  'creativity',
+  'Collaboration',
+  'Communication',
+  'Adaptability and flexibility',
+  'Creative thinking',
+  'Innovation',
+  'Productivity',
+  'Accountability',
+  'Leadership',
+  'Responsibility',
+];
+
+const CROSS_CURRICULAR_OPTIONS = [
+  'Digital Literacy',
+  'Numeracy',
+  'Sustainability',
+  'Literacy',
+  'AI',
+  'Social Studies',
+];
+
+const SEATING_OPTIONS = [
+  'Individual',
+  'Pairs',
+  'Groups (same level)',
+  'Groups (mixed levels)',
+  'Workstations (rotations)',
+  'Flexible',
+  'U-shape',
+];
+
+function lessonTextBlob(lesson: LessonPlan): string {
+  return JSON.stringify(lesson.content).toLowerCase();
+}
+
+function matchOptionsFromBlob(options: string[], blob: string, extraTerms: string[] = []): string[] {
+  const terms = [...options, ...extraTerms];
+  return options.filter((option) => {
+    const keywords = option.toLowerCase().split(/\s+/).filter((word) => word.length > 4);
+    if (keywords.length === 0) return false;
+    const hits = keywords.filter((word) => blob.includes(word)).length;
+    return hits >= Math.min(2, keywords.length);
+  });
+}
+
+function matchSepSelections(lesson: LessonPlan): string[] {
+  const c = lesson.content;
+  const explicit = (c.sciencePractices ?? []).map((item) => item.replace(/^\d+\s*[-.)]?\s*/, ''));
+  const blob = lessonTextBlob(lesson);
+  const matched = matchOptionsFromBlob(SEP_OPTIONS, blob, explicit);
+  if (matched.length > 0) return matched;
+  return ['Developing and Using Models', 'Planning and Carrying Out Investigations'];
+}
+
+function matchScientificMethodSelections(lesson: LessonPlan): string[] {
+  const blob = lessonTextBlob(lesson);
+  const matched = matchOptionsFromBlob(SCIENTIFIC_METHOD_OPTIONS, blob);
+  if (matched.length > 0) return matched;
+  return [
+    'Make an observation',
+    'Ask a research question',
+    'Collect and record data',
+    'Analyze, interpret, and evaluate data',
+    'Draw conclusion based on evidence',
+  ];
+}
+
+function matchTwentyFirstCenturySelections(lesson: LessonPlan): string[] {
+  const blob = lessonTextBlob(lesson);
+  const matched = matchOptionsFromBlob(TWENTY_FIRST_CENTURY_OPTIONS, blob);
+  if (matched.length > 0) return matched;
+  return ['Critical thinking', 'Collaboration', 'Communication'];
+}
+
+function matchCrossCurricularSelections(lesson: LessonPlan): string[] {
+  const blob = lessonTextBlob(lesson);
+  const matched = matchOptionsFromBlob(CROSS_CURRICULAR_OPTIONS, blob);
+  if (matched.length > 0) return matched;
+  if (/science|math|literacy|digital|ai/.test(blob)) {
+    return ['Literacy', 'Numeracy'];
+  }
+  return ['Literacy'];
+}
+
+function matchSeatingSelections(lesson: LessonPlan): string[] {
+  const blob = lessonTextBlob(lesson);
+  const matched: string[] = [];
+  if (/individual|independent|worksheet/.test(blob)) matched.push('Individual');
+  if (/pair|partner/.test(blob)) matched.push('Pairs');
+  if (/group/.test(blob)) matched.push('Groups (mixed levels)');
+  if (/station|rotate|rotation/.test(blob)) matched.push('Workstations (rotations)');
+  if (matched.length > 0) return matched;
+  return ['Pairs', 'Groups (mixed levels)'];
+}
+
+function deriveFiveEPhases(content: LessonPlan['content']): string {
+  const phases: string[] = [];
+  if (content.hook) phases.push('Engage');
+  if (content.mainActivities.length > 0) phases.push('Explore');
+  if (content.mainActivities.length > 1 || content.guidedPractice.length > 0) phases.push('Explain');
+  if (content.independentPractice.length > 0 || content.guidedPractice.length > 0) {
+    phases.push('Elaborate');
+  }
+  if (content.plenary) phases.push('Evaluate');
+  return [...new Set(phases)].join(' / ');
+}
+
+function formatAssessmentBlock(content: LessonPlan['content']): string {
+  const items = content.formativeAssessment ?? [];
+  return [
+    'Performance task:',
+    items[0] ?? 'Students demonstrate understanding through a structured performance task linked to lesson objectives.',
+    'Writing activities:',
+    items[1] ?? items[0] ?? 'Short written response explaining key concepts using lesson vocabulary.',
+    'Quizzes:',
+    items[2] ?? 'Exit ticket or short quiz checking core concepts and vocabulary.',
+  ].join('\n');
+}
+
+function formatHomework(content: LessonPlan['content']): string {
+  if (content.independentPractice.length > 0) {
+    return joinBlocks(content.independentPractice);
+  }
+  return 'Complete a short reflection or practice task reinforcing the lesson objectives and vocabulary.';
+}
+
+function formatStemProject(content: LessonPlan['content']): string {
+  if (content.realWorldConnections.length > 0) {
+    return joinBullets(content.realWorldConnections);
+  }
+  return 'Optional extension: design a simple model or investigation connected to the lesson phenomenon.';
+}
+
+type CheckboxFieldConfig = {
+  labels: string[];
+  getSelections: (lesson: LessonPlan) => string[];
+};
+
+const CHECKBOX_FIELDS: CheckboxFieldConfig[] = [
+  {
+    labels: [
+      'Module Science & Engineering Practices (SEPs',
+      'Module Science & Engineering Practices (SEPs)',
+      'Science & Engineering Practices',
+    ],
+    getSelections: matchSepSelections,
+  },
+  {
+    labels: ['Steps of the Scientific Methods', 'Steps of the Scientific Method'],
+    getSelections: matchScientificMethodSelections,
+  },
+  {
+    labels: ['Higher-Order Thinking Focus', 'Higher Order Thinking Focus', 'Higher-Order Thinking'],
+    getSelections: (lesson) => inferHigherOrderThinking(lesson.content.objectives),
+  },
+  {
+    labels: ['21st Century Skills / Global Competencies', '21st Century Skills', 'Global Competencies'],
+    getSelections: matchTwentyFirstCenturySelections,
+  },
+  {
+    labels: ['Cross-Curricular Connections'],
+    getSelections: matchCrossCurricularSelections,
+  },
+  {
+    labels: ['Seating Arrangements'],
+    getSelections: matchSeatingSelections,
+  },
+];
+
+function getCheckboxSelections(label: string, lesson: LessonPlan): string[] | null {
+  const config = CHECKBOX_FIELDS.find((field) =>
+    field.labels.some((candidate) => normalizeLabel(candidate) === label),
+  );
+  return config ? config.getSelections(lesson) : null;
+}
+
+const ALWAYS_APPEND_LABELS = new Set([
+  normalizeLabel('5E Model Phase(e.g. Engage/ Explore/ Explain/ Elaborate/ Evaluate)'),
+  normalizeLabel('AssessmentPerformance task:Writing activities:Quizzes:'),
+]);
+
 /** Maps normalized label text (as found in a template's table cells) to lesson content. */
 function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   const c = lesson.content;
@@ -137,9 +421,27 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   );
   set(['Success Criteria', 'Success Criteria(s)'], joinBullets(c.successCriteria));
   set(
-    ['Module Performance Expectations (PEs)', 'Performance Expectations', 'Key Concepts'],
-    joinBullets(c.keyConcepts),
+    ['Module Performance Expectations (PEs)', 'Performance Expectations', 'PEs'],
+    joinBullets(c.performanceExpectations),
   );
+  set(
+    ['Module Prior Knowledge', 'Prior Knowledge', 'Previous Knowledge', 'Background Knowledge'],
+    joinBullets(c.priorKnowledge),
+  );
+  set(
+    ['Lesson Possible Misconception(s)', 'Possible Misconceptions', 'Common Misconceptions'],
+    joinBullets(c.misconceptions),
+  );
+  set(
+    [
+      'Module Science & Engineering Practices (SEPs',
+      'Module Science & Engineering Practices (SEPs)',
+      'Science & Engineering Practices',
+      'Science and Engineering Practices',
+    ],
+    joinBullets(c.sciencePractices),
+  );
+  set(['Key Concepts'], joinBullets(c.keyConcepts));
   set(
     ['Lesson Key Vocabulary', 'Key Vocabulary', 'New Vocabulary', 'Vocabulary'],
     joinBullets(c.vocabulary),
@@ -168,10 +470,17 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   set(['G&T', 'Gifted & Talented (G&T)'], joinBullets(c.differentiation?.extension));
   set(['Plenary', 'Evaluate', 'Exit Ticket', 'Closure'], c.plenary);
   set(['Materials', 'Resources'], DEFAULT_RESOURCES);
+  set(['Real World Connections', 'UAE Links'], joinBullets(c.realWorldConnections));
   set(
-    ['Real World Connections', 'Cross-Curricular Connections', 'UAE Links'],
-    joinBullets(c.realWorldConnections),
+    ['5E Model Phase(e.g. Engage/ Explore/ Explain/ Elaborate/ Evaluate)', '5E Model Phase'],
+    deriveFiveEPhases(c),
   );
+  set(
+    ['AssessmentPerformance task:Writing activities:Quizzes:', 'Assessment'],
+    formatAssessmentBlock(c),
+  );
+  set(['Homework'], formatHomework(c));
+  set(['STEM Project'], formatStemProject(c));
 
   return map;
 }
@@ -211,8 +520,26 @@ export async function fillGenericDocxTemplate(
       let changed = false;
 
       for (let i = 0; i < cellsXml.length; i++) {
+        const checkboxSelections = getCheckboxSelections(cellsLabel[i], lesson);
+        const valueCell = cellsXml[i + 1];
+        if (checkboxSelections && valueCell && isCheckboxValueCell(valueCell)) {
+          cellsXml[i + 1] = highlightCheckboxCell(valueCell, checkboxSelections);
+          changed = true;
+          filledCount += 1;
+          matchedLabels.push(cellsLabel[i]);
+          continue;
+        }
+
         const mapped = labelMap.get(cellsLabel[i]);
         if (!mapped) continue;
+
+        if (ALWAYS_APPEND_LABELS.has(cellsLabel[i])) {
+          cellsXml[i] = appendParagraphsToCell(cellsXml[i], mapped);
+          changed = true;
+          filledCount += 1;
+          matchedLabels.push(cellsLabel[i]);
+          continue;
+        }
 
         const nextCell = cellsXml[i + 1];
         const nextIsEmptyValueCell =
@@ -257,4 +584,11 @@ export async function fillGenericDocxTemplate(
   return { buffer, filledCount, matchedLabels };
 }
 
-export { buildFieldMap, normalizeLabel, cellPlainText };
+export {
+  buildFieldMap,
+  normalizeLabel,
+  cellPlainText,
+  inferHigherOrderThinking,
+  highlightCheckboxCell,
+  getCheckboxSelections,
+};

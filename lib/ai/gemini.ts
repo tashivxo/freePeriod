@@ -1,5 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from './claude';
+import {
+  finalizeLessonContent,
+  parsePlanningFieldPatch,
+} from './lesson-content-quality';
 import type { LessonSection } from '@/types';
 
 export const GEMINI_FREE_MODEL = 'gemini-2.5-flash';
@@ -74,9 +78,23 @@ export async function generateWithGemini(
         throw new Error('Failed to parse lesson plan from Gemini response');
       }
 
+      const finalizedContent = await finalizeLessonContent(lessonContent, {
+        title: lessonContent.title,
+        retry: async (retryPrompt) => {
+          const retryResult = await model.generateContent({
+            systemInstruction,
+            contents: [
+              { role: 'user', parts: [{ text: userPrompt }] },
+              { role: 'user', parts: [{ text: retryPrompt }] },
+            ],
+          });
+          return parsePlanningFieldPatch(retryResult.response.text());
+        },
+      });
+
       const tokenCount = result.response.usageMetadata?.totalTokenCount ?? 0;
 
-      return { lessonContent, tokenCount };
+      return { lessonContent: finalizedContent, tokenCount };
     } catch (err) {
       lastError = err;
       console.error('[Gemini] Error on attempt', attempt, ':', err instanceof Error ? err.message : err);

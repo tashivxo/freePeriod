@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       filledBuffer = result.buffer;
     }
 
-    return new NextResponse(filledBuffer, {
+    return new NextResponse(new Uint8Array(filledBuffer), {
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     const out = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-    return new NextResponse(out, {
+    return new NextResponse(new Uint8Array(out), {
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

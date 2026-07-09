@@ -6,6 +6,10 @@ import {
   GEMINI_FREE_MODEL,
   parseLessonContent,
 } from '@/lib/ai';
+import {
+  finalizeLessonContent,
+  parsePlanningFieldPatch,
+} from '@/lib/ai/lesson-content-quality';
 import type { LessonSection } from '@/types';
 
 const ALLOWED_MODELS = ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5'] as const;
@@ -105,8 +109,30 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     throw new Error('Failed to parse lesson plan from Claude response');
   }
 
+  const lessonContent = await finalizeLessonContent(parsed, {
+    title: parsed.title,
+    retry: async (retryPrompt) => {
+      const retryMessage = await anthropic.messages.create({
+        model: claudeModel,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: userPrompt },
+          { role: 'assistant', content: fullText },
+          { role: 'user', content: retryPrompt },
+        ],
+      });
+      const retryText = retryMessage.content
+        .filter((block): block is Anthropic.Messages.TextBlock => block.type === 'text')
+        .map((block) => block.text)
+        .join('\n')
+        .trim();
+      return parsePlanningFieldPatch(retryText);
+    },
+  });
+
   return {
-    lessonContent: parsed,
+    lessonContent,
     inputTokens: finalMessage.usage.input_tokens,
     outputTokens: finalMessage.usage.output_tokens,
     modelUsed,

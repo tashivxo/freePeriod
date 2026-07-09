@@ -135,14 +135,19 @@ const styles = StyleSheet.create({
 
 ## Typography
 
+Single sans family across the product — headings, body, buttons, and app UI share one tuned stack.
+
 | Role | Font | Weight | Tailwind class |
 |------|------|--------|----------------|
-| Display / Headings | Nunito | 700–900 | `font-display` |
-| Body / UI text | Inter | 400–600 | `font-body` |
+| Display / Headings | Manrope | 700–800 | `font-display` |
+| Body / UI text | Manrope | 400–600 | `font-body` |
+
+Loaded via `next/font/google` in `app/layout.tsx` as `--font-manrope`.
 
 CSS variables:
-- `var(--font-display)` → Nunito
-- `var(--font-body)` → Inter
+- `var(--font-display)` → Manrope
+- `var(--font-body)` → Manrope
+- `var(--font-sans)` → Manrope
 
 ---
 
