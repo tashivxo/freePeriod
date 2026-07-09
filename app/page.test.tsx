@@ -1,9 +1,13 @@
-import { render, screen } from '@/lib/test-utils';
+import { render, screen, waitFor } from '@/lib/test-utils';
 import userEvent from '@testing-library/user-event';
 import { useTheme } from '@/lib/theme';
 import HomePage from './page';
 
 jest.mock('@/lib/theme');
+jest.mock('@/components/backgrounds/CtaIridescenceBackground', () => ({
+  CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
+    prefersReduced ? null : <div data-testid="cta-iridescence" aria-hidden="true" />,
+}));
 jest.mock('@/components/ui/SpotlightCard', () => ({
   SpotlightCard: ({ children, className, ...rest }: { children: React.ReactNode; className?: string; [key: string]: unknown }) => (
     <div className={className} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
@@ -65,6 +69,33 @@ describe('HomePage', () => {
       render(<HomePage />);
       const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
       expect(toggle.className).toMatch(/fixed/);
+    });
+  });
+
+  describe('CTA iridescence background', () => {
+    it('renders iridescence behind CTA when motion is allowed', async () => {
+      render(<HomePage />);
+      await waitFor(() => {
+        expect(screen.getByTestId('cta-iridescence')).toBeInTheDocument();
+      });
+    });
+
+    it('hides iridescence when reduced motion is preferred', async () => {
+      window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }));
+
+      render(<HomePage />);
+      await waitFor(() => {
+        expect(screen.queryByTestId('cta-iridescence')).not.toBeInTheDocument();
+      });
     });
   });
 

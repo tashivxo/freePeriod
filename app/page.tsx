@@ -22,6 +22,14 @@ const SoftAurora = dynamic(
   { ssr: false }
 );
 
+const CtaIridescenceBackground = dynamic(
+  () =>
+    import('@/components/backgrounds/CtaIridescenceBackground').then(
+      (m) => m.CtaIridescenceBackground
+    ),
+  { ssr: false }
+);
+
 const LEAD_FEATURE = {
   icon: PenLine,
   title: 'Structured Plans',
@@ -302,8 +310,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative z-10 mx-auto max-w-4xl px-6 py-16 md:py-20">
-          <SpotlightCard className="rounded-2xl border border-border bg-surface/50 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
+        <section className="relative z-10 mx-auto max-w-4xl overflow-hidden px-6 py-16 md:py-20">
+          <CtaIridescenceBackground prefersReduced={prefersReduced} />
+          <SpotlightCard className="relative rounded-2xl border border-border bg-surface/80 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
             <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
               Ready to reclaim your evenings?
             </h2>
