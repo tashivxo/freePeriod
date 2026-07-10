@@ -17,7 +17,7 @@ export function CtaIridescenceBackground({ prefersReduced }: CtaIridescenceBackg
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute left-1/2 top-1/2 h-[min(1080px,140vw)] w-[min(1080px,140vw)] -translate-x-1/2 -translate-y-1/2 opacity-35 blur-[1px] dark:opacity-25"
+      className="pointer-events-none absolute inset-x-0 top-1/2 h-[min(1080px,100vh)] w-full -translate-y-1/2 opacity-35 blur-[1px] dark:opacity-25"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,139,176,0.18),transparent_68%)]" />
       <Iridescence

@@ -310,9 +310,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="relative z-10 mx-auto max-w-4xl overflow-hidden px-6 py-16 md:py-20">
+        <section className="relative z-10 overflow-hidden py-16 md:py-20">
           <CtaIridescenceBackground prefersReduced={prefersReduced} />
-          <SpotlightCard className="relative rounded-2xl border border-border bg-surface/80 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
+          <div className="relative z-10 mx-auto max-w-4xl px-6">
+            <SpotlightCard className="relative rounded-2xl border border-border bg-surface/80 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
             <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
               Ready to reclaim your evenings?
             </h2>
@@ -347,6 +348,7 @@ export default function HomePage() {
               Start for free
             </Link>
           </SpotlightCard>
+          </div>
         </section>
 
         <div className="relative z-10">
