@@ -1,16 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { HeroPictogram } from '@/components/animations/HeroPictogram';
 import { getSectionProgressLabel, LESSON_SECTION_COUNT } from '@/lib/lesson/sections';
 import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
-
-const MugAnimation = dynamic(
-  () => import('@/components/animations/MugAnimation').then((m) => m.MugAnimation),
-  { ssr: false },
-);
 
 type StatusStep = {
   message: string;
@@ -103,9 +98,16 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
       aria-live="polite"
       aria-label="Generating lesson plan"
     >
-      <MugAnimation />
+      <HeroPictogram />
 
-      <div ref={stepsRef} className="mt-8 max-w-sm space-y-3 text-center">
+      <div ref={stepsRef} className="mt-10 max-w-sm space-y-3 text-center">
+        {statusSteps.length === 0 && !errorMessage && (
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="font-medium text-text-primary">Generating your lesson plan…</span>
+          </div>
+        )}
+
         {statusSteps.map((step, i) => (
           <div
             key={i}

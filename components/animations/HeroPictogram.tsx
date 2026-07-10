@@ -44,6 +44,7 @@ export function HeroPictogram() {
       className="relative flex h-44 w-44 items-center justify-center sm:h-48 sm:w-48"
       style={{ opacity: 0, willChange: 'transform, opacity' }}
       aria-hidden="true"
+      data-testid="animated-logo"
     >
       <div className="absolute inset-0 rounded-full bg-coral/10" />
       <div
