@@ -1,10 +1,10 @@
 import { render, screen } from '@/lib/test-utils';
-import { useZenMode } from '@/lib/zen-mode';
+import { useZenMode } from '@/providers/zen-mode';
 import { ColorBendsBackground } from './ColorBendsWrapper';
 
 jest.mock('next/dynamic', () => () => () => <div data-testid="color-bends" />);
 
-jest.mock('@/lib/zen-mode', () => ({
+jest.mock('@/providers/zen-mode', () => ({
   useZenMode: jest.fn(),
 }));
 

@@ -8,7 +8,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Check, Sparkles, Zap, BookOpen, Moon, Sun } from 'lucide-react';
 import { animate, stagger } from 'animejs';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
-import { useTheme } from '@/lib/theme';
+import { useTheme } from '@/providers/theme';
 import { MagicCard } from '@/components/ui/magic-card';
 import { Logo } from '@/components/ui/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
@@ -175,9 +175,12 @@ export function PricingClient() {
           return;
         }
 
-        const res = await fetch(`/api/checkout?plan=${planId}`, {
-          method: 'POST',
-        });
+        const res = await fetch(
+          `/api/checkout?plan=${planId}&interval=${isAnnual ? 'yearly' : 'monthly'}`,
+          {
+            method: 'POST',
+          },
+        );
 
         if (res.status === 401) {
           router.push(`/sign-up?plan=${planId}`);
@@ -192,7 +195,7 @@ export function PricingClient() {
         setLoadingPlan(null);
       }
     },
-    [router],
+    [router, isAnnual],
   );
 
   return (

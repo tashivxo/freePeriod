@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from '@/lib/test-utils';
 import userEvent from '@testing-library/user-event';
-import { useTheme } from '@/lib/theme';
+import { useTheme } from '@/providers/theme';
 import HomePage from './page';
 
-jest.mock('@/lib/theme');
+jest.mock('@/providers/theme');
 jest.mock('@/components/backgrounds/CtaIridescenceBackground', () => ({
   CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
     prefersReduced ? null : <div data-testid="cta-iridescence" aria-hidden="true" />,

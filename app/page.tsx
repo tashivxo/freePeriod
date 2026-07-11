@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { PenLine, Download, Sparkles, Clock, BookOpen, Moon, Sun, FileText } from 'lucide-react';
-import { useTheme } from '@/lib/theme';
+import { useTheme } from '@/providers/theme';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';

@@ -1,14 +1,14 @@
 import React from 'react';
 import { render, screen, waitFor } from '@/lib/test-utils';
 import { SettingsClient } from './SettingsClient';
-import { useZenMode } from '@/lib/zen-mode';
+import { useZenMode } from '@/providers/zen-mode';
 import type { User } from '@/types';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockSetZenMode = jest.fn();
 
-jest.mock('@/lib/zen-mode', () => ({
+jest.mock('@/providers/zen-mode', () => ({
   useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: mockSetZenMode })),
 }));
 
@@ -41,6 +41,7 @@ const baseUser: User = {
   generation_count: 5,
   generation_count_reset_at: null,
   onboarding_complete: true,
+  deletion_scheduled_at: null,
   created_at: '2024-01-01T00:00:00Z',
 };
 

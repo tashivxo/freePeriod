@@ -1,36 +1,32 @@
-import Stripe from 'stripe';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { legalConfig } from '@/lib/legal/config';
 
 const UPLOADS_BUCKET = 'uploads';
 
-function getStripe(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) return null;
-  return new Stripe(key, {
-    // @ts-expect-error — stripe-js typings may lag behind the installed SDK version
-    apiVersion: '2025-05-28.basil',
-  });
-}
-
-async function cancelStripeSubscription(userId: string): Promise<void> {
-  const stripe = getStripe();
-  if (!stripe) return;
+async function cancelLemonSqueezySubscription(userId: string): Promise<void> {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
+  if (!apiKey) return;
 
   const admin = createAdminClient();
   const { data: subscription } = await admin
     .from('subscriptions')
-    .select('stripe_subscription_id')
+    .select('ls_subscription_id')
     .eq('user_id', userId)
     .maybeSingle();
 
-  const subscriptionId = subscription?.stripe_subscription_id;
+  const subscriptionId = subscription?.ls_subscription_id;
   if (!subscriptionId) return;
 
   try {
-    await stripe.subscriptions.cancel(subscriptionId);
+    await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/vnd.api+json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
   } catch {
-    // Subscription may already be cancelled in Stripe
+    // Subscription may already be cancelled in Lemon Squeezy
   }
 }
 
@@ -107,7 +103,7 @@ export async function scheduleAccountDeletion(userId: string): Promise<ScheduleD
   const purgeAt = new Date();
   purgeAt.setDate(purgeAt.getDate() + graceDays);
 
-  await cancelStripeSubscription(userId);
+  await cancelLemonSqueezySubscription(userId);
 
   const { error: updateError } = await admin
     .from('users')

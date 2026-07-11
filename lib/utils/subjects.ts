@@ -1,3 +1,9 @@
+import type { DropdownItem } from '@/components/ui/animated-dropdown';
+
+/**
+ * Canonical list of supported subjects.
+ * This is the single source of truth — shared across GenerateForm, Onboarding, and Settings.
+ */
 export const SUBJECTS = [
   'Mathematics',
   'English',
@@ -20,3 +26,9 @@ export const SUBJECTS = [
 ] as const;
 
 export type Subject = (typeof SUBJECTS)[number];
+
+/** Dropdown items for subject selectors — includes "Custom" at the end. */
+export const SUBJECT_ITEMS: DropdownItem[] = [
+  ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),
+  { name: 'Custom', value: 'Custom' },
+];

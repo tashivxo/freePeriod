@@ -2,7 +2,7 @@
 
 import { useEffect, useId } from 'react';
 import { X, Upload } from 'lucide-react';
-import { useFileUpload } from '@/lib/hooks/useFileUpload';
+import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import type { UploadType } from '@/types';
 

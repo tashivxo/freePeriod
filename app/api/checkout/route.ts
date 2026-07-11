@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { createClient } from '@/lib/supabase/server';
+import { createCheckoutUrl } from '@/lib/lemonsqueezy/checkout';
+import type { BillingInterval, Plan } from '@/types';
+
+const PAID_PLANS = new Set<Plan>(['pro', 'pro_plus']);
+const BILLING_INTERVALS = new Set<BillingInterval>(['monthly', 'yearly']);
 
 export async function POST(request: NextRequest) {
-  // Lazy-init: avoids build-time crash when STRIPE_SECRET_KEY is not set in Vercel env
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    // @ts-expect-error — stripe-js typings may lag behind the installed SDK version
-    apiVersion: '2025-05-28.basil',
-  });
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,19 +17,27 @@ export async function POST(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const plan = searchParams.get('plan') ?? 'pro';
-  const priceId =
-    plan === 'pro_plus'
-      ? process.env.STRIPE_PRICE_ID_PRO_PLUS!
-      : process.env.STRIPE_PRICE_ID_PRO!;
+  const plan = (searchParams.get('plan') ?? 'pro') as Plan;
+  const interval = (searchParams.get('interval') ?? 'monthly') as BillingInterval;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { user_id: user.id },
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?upgraded=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
-  });
+  if (!PAID_PLANS.has(plan)) {
+    return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+  }
 
-  return NextResponse.json({ url: session.url });
+  if (!BILLING_INTERVALS.has(interval)) {
+    return NextResponse.json({ error: 'Invalid billing interval' }, { status: 400 });
+  }
+
+  try {
+    const url = await createCheckoutUrl({
+      plan: plan as 'pro' | 'pro_plus',
+      interval,
+      userId: user.id,
+      email: user.email,
+    });
+    return NextResponse.json({ url });
+  } catch (err) {
+    console.error('[checkout]', err);
+    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+  }
 }

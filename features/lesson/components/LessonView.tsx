@@ -8,7 +8,7 @@ import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { downloadBlob } from '@/lib/download-blob';
 import { buildExportFilename } from '@/lib/export/filename';
-import { useDebouncedLessonSave } from '@/lib/hooks/useDebouncedLessonSave';
+import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';

@@ -4,13 +4,14 @@
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router), TypeScript (strict mode)
+- **Framework**: Next.js 16 (App Router), TypeScript (strict mode)
 - **Styling**: Tailwind CSS with custom brand tokens
 - **Database/Auth/Storage**: Supabase (`@supabase/ssr` for client and server helpers)
-- **AI**: Anthropic SDK (`@anthropic-ai/sdk`) — Claude API
-- **Animation**: anime.js (sole animation library — never use Framer Motion or CSS-only transitions)
+- **AI**: Anthropic SDK + Google Gemini (`lib/ai/`)
+- **Billing**: Lemon Squeezy (`lib/lemonsqueezy/`)
+- **Animation**: anime.js primary; `motion/react` only in shadcn registry components (e.g. magic-card)
 - **Icons**: Lucide React (`lucide-react`)
-- **Fonts**: Nunito (display/headings), Inter (body) — via `next/font/google`
+- **Fonts**: Manrope — via `next/font/google`
 - **Export**: `docx` (DOCX), `@react-pdf/renderer` (PDF), `xlsx`/SheetJS (XLSX), `pdf-lib` (PDF form fill), `docx-templates` (DOCX template fill)
 - **OCR**: Tesseract.js (server-side only)
 - **Testing**: Jest + React Testing Library + @testing-library/user-event
@@ -36,23 +37,32 @@ Success:           #10B981
 ## Folder Structure
 
 ```
-app/                          # Next.js App Router routes
+app/                          # Next.js App Router routes (thin shells)
   (auth)/                     # Auth route group (sign-in, sign-up, onboarding)
   (app)/                      # Authenticated route group (dashboard, generate, lesson, settings)
-  api/                        # API routes (generate, parse-document, export)
+  api/                        # API routes (generate, parse-document, export, checkout)
 components/
   ui/                         # Reusable UI primitives (Button, Input, Card, Modal)
   animations/                 # anime.js wrappers (dynamically imported via next/dynamic)
-  lesson/                     # Lesson-specific components (SectionCard, LessonGrid)
-  forms/                      # Form components (GenerateForm, OnboardingForm)
-  layout/                     # Layout components (Navbar, Sidebar, Footer)
+  backgrounds/                # WebGL / ambient backgrounds
+  forms/                      # Shared form widgets (DocumentUploadZone)
+  layout/                     # Layout components (Navbar)
+features/                     # Domain-specific smart components
+  generate/                   # GenerateForm, GenerateClient
+  lesson/                     # LessonEditor, LessonView, SectionCard
+  history/                    # HistoryClient
+  billing/                    # PricingClient
+providers/                    # React context providers (theme, zen-mode)
+hooks/                        # Custom React hooks
 lib/
-  supabase/                   # Supabase client/server/middleware helpers
-  claude/                     # Claude API generation, prompts, template parsing
-  ocr/                        # Tesseract.js OCR wrapper
-  export/                     # DOCX, PDF, XLSX, template-fill logic
+  ai/                         # Claude/Gemini generation, prompts, quality checks
+  supabase/                   # Supabase client/server/proxy session helpers
+  lemonsqueezy/               # Checkout + subscription webhook mapping
+  export/                     # DOCX and template-fill logic
+  forms/                      # Shared form state helpers (usePresetField)
   utils/                      # Shared utilities
 types/                        # TypeScript type definitions
+proxy.ts                      # Next.js 16 request proxy (auth redirects)
 ```
 
 ## Code Style

@@ -4,46 +4,26 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { SUBJECTS } from '@/lib/utils/subjects';
+import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
+import { usePresetField } from '@/lib/forms/usePresetField';
+import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/BlurText';
-import { useZenMode } from '@/lib/zen-mode';
+import { useZenMode } from '@/providers/zen-mode';
 import { LogOut } from 'lucide-react';
 import type { User } from '@/types';
 
-const SUBJECT_ITEMS: DropdownItem[] = [
-  ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),
-  { name: 'Custom', value: 'Custom' },
-];
+const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
 
 export function SettingsClient({ user }: { user: User }) {
-  const subjectsPreset = SUBJECTS as readonly string[];
-  const initialSubjectIsPreset = user.default_subject ? subjectsPreset.includes(user.default_subject) : false;
-  const [subjectSelect, setSubjectSelect] = useState<string>(
-    initialSubjectIsPreset ? (user.default_subject ?? '') : (user.default_subject ? 'Custom' : '')
-  );
-  const [customSubject, setCustomSubject] = useState<string>(
-    !initialSubjectIsPreset && user.default_subject ? user.default_subject : ''
-  );
-  const subject = subjectSelect === 'Custom' ? customSubject : subjectSelect;
+  const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
+  const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
   const [gradeSelect, setGradeSelect] = useState<string>(user.default_grade ?? '');
-  const curriculaPreset = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
-  const initialCurriculumIsPreset = user.default_curriculum
-    ? curriculaPreset.includes(user.default_curriculum)
-    : false;
-  const [curriculumSelect, setCurriculumSelect] = useState<string>(
-    initialCurriculumIsPreset ? (user.default_curriculum ?? '') : (user.default_curriculum ? 'Custom' : '')
-  );
-  const [customCurriculum, setCustomCurriculum] = useState<string>(
-    !initialCurriculumIsPreset && user.default_curriculum ? user.default_curriculum : ''
-  );
-  const curriculum = curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect;
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -59,9 +39,9 @@ export function SettingsClient({ user }: { user: User }) {
       const { error } = await supabase
         .from('users')
         .update({
-          default_subject: subject || null,
+          default_subject: subjectField.value || null,
           default_grade: gradeSelect || null,
-          default_curriculum: curriculum || null,
+          default_curriculum: curriculumField.value || null,
         })
         .eq('id', user.id);
 
@@ -142,15 +122,15 @@ export function SettingsClient({ user }: { user: User }) {
               id="default-subject"
               text="Select subject"
               items={SUBJECT_ITEMS}
-              selectedValue={subjectSelect}
-              onSelect={(item) => setSubjectSelect(item.value ?? item.name)}
+              selectedValue={subjectField.select}
+              onSelect={(item) => subjectField.setSelect(item.value ?? item.name)}
             />
-            {subjectSelect === 'Custom' && (
+            {subjectField.isCustom && (
               <div className="mt-3">
                 <Input
                   label="Enter subject"
-                  value={customSubject}
-                  onChange={(e) => setCustomSubject(e.target.value)}
+                  value={subjectField.custom}
+                  onChange={(e) => subjectField.setCustom(e.target.value)}
                 />
               </div>
             )}
@@ -179,15 +159,15 @@ export function SettingsClient({ user }: { user: User }) {
               id="default-curriculum"
               text="Select curriculum"
               items={CURRICULUM_ITEMS}
-              selectedValue={curriculumSelect}
-              onSelect={(item) => setCurriculumSelect(item.value ?? item.name)}
+              selectedValue={curriculumField.select}
+              onSelect={(item) => curriculumField.setSelect(item.value ?? item.name)}
             />
-            {curriculumSelect === 'Custom' && (
+            {curriculumField.isCustom && (
               <div className="mt-3">
                 <Input
                   label="Enter curriculum"
-                  value={customCurriculum}
-                  onChange={(e) => setCustomCurriculum(e.target.value)}
+                  value={curriculumField.custom}
+                  onChange={(e) => curriculumField.setCustom(e.target.value)}
                 />
               </div>
             )}

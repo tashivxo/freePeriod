@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
+import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
-import { SUBJECTS } from '@/lib/utils/subjects';
+import { usePresetField } from '@/lib/forms/usePresetField';
+import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 
 const DURATION_PRESETS = [30, 45, 60, 90, 120];
 
-const SUBJECT_ITEMS: DropdownItem[] = [
-  ...(SUBJECTS as readonly string[]).map((s) => ({ name: s, value: s })),
-  { name: 'Custom', value: 'Custom' },
-];
-
-const DURATION_ITEMS: DropdownItem[] = [
+const DURATION_ITEMS = [
   ...DURATION_PRESETS.map((d) => ({ name: `${d} min`, value: String(d) })),
   { name: 'Custom', value: 'custom' },
 ];
@@ -44,26 +40,9 @@ export interface GenerateFormData {
 }
 
 export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: GenerateFormProps) {
-  const subjectsPreset = SUBJECTS as readonly string[];
-  const defaultIsPreset = defaults?.subject ? subjectsPreset.includes(defaults.subject) : false;
-  const [subjectSelect, setSubjectSelect] = useState<string>(
-    defaultIsPreset ? (defaults?.subject ?? '') : (defaults?.subject ? 'Custom' : '')
-  );
-  const [customSubject, setCustomSubject] = useState<string>(
-    !defaultIsPreset && defaults?.subject ? defaults.subject : ''
-  );
-  const subject = subjectSelect === 'Custom' ? customSubject : subjectSelect;
+  const subjectField = usePresetField(defaults?.subject, SUBJECTS as readonly string[]);
+  const curriculumField = usePresetField(defaults?.curriculum, CURRICULA as readonly string[]);
   const [grade, setGrade] = useState(defaults?.grade ?? '');
-  const defaultIsPresetCurriculum = defaults?.curriculum
-    ? (CURRICULA as readonly string[]).includes(defaults.curriculum)
-    : false;
-  const [curriculumSelect, setCurriculumSelect] = useState<string>(
-    defaultIsPresetCurriculum ? (defaults?.curriculum ?? '') : (defaults?.curriculum ? 'Custom' : '')
-  );
-  const [customCurriculum, setCustomCurriculum] = useState<string>(
-    !defaultIsPresetCurriculum && defaults?.curriculum ? defaults.curriculum : ''
-  );
-  const curriculum = curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect;
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
@@ -74,7 +53,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subject.trim() || !grade.trim()) {
+    if (!subjectField.value.trim() || !grade.trim()) {
       alert('Please select subject and grade');
       return;
     }
@@ -82,9 +61,9 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
     setIsSubmitting(true);
     try {
       const formData: GenerateFormData = {
-        subject,
+        subject: subjectField.value,
         grade,
-        curriculum,
+        curriculum: curriculumField.value,
         duration: parseInt(durationSelect === 'custom' ? customDuration : durationSelect, 10),
         teacherPrompt,
         curriculumDocPath,
@@ -119,15 +98,15 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             id="subject-select"
             text="Select subject"
             items={SUBJECT_ITEMS}
-            selectedValue={subjectSelect}
-            onSelect={(item) => setSubjectSelect(item.value ?? item.name)}
+            selectedValue={subjectField.select}
+            onSelect={(item) => subjectField.setSelect(item.value ?? item.name)}
           />
-          {subjectSelect === 'Custom' && (
+          {subjectField.isCustom && (
             <div className="mt-2">
               <Input
                 label="Enter subject"
-                value={customSubject}
-                onChange={(e) => setCustomSubject(e.target.value)}
+                value={subjectField.custom}
+                onChange={(e) => subjectField.setCustom(e.target.value)}
               />
             </div>
           )}
@@ -162,15 +141,15 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
             id="curriculum-select"
             text="Select curriculum (optional)"
             items={CURRICULUM_ITEMS}
-            selectedValue={curriculumSelect}
-            onSelect={(item) => setCurriculumSelect(item.value ?? item.name)}
+            selectedValue={curriculumField.select}
+            onSelect={(item) => curriculumField.setSelect(item.value ?? item.name)}
           />
-          {curriculumSelect === 'Custom' && (
+          {curriculumField.isCustom && (
             <div className="mt-2">
               <Input
                 label="Enter curriculum"
-                value={customCurriculum}
-                onChange={(e) => setCustomCurriculum(e.target.value)}
+                value={curriculumField.custom}
+                onChange={(e) => curriculumField.setCustom(e.target.value)}
               />
             </div>
           )}
@@ -239,7 +218,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
         {/* Submit */}
         <Button
           type="submit"
-          disabled={!subject.trim() || isSubmitting}
+          disabled={!subjectField.value.trim() || isSubmitting}
           className="w-full mt-6"
         >
           {isSubmitting ? 'Generating...' : (

@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useZenMode } from "@/lib/zen-mode"
+import { useZenMode } from "@/providers/zen-mode"
 
 const ColorBends = dynamic(
   () => import("./ColorBends"),

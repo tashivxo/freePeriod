@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useTheme } from '@/lib/theme';
+import { useTheme } from '@/providers/theme';
 
 const Waves = dynamic(() => import('@/components/ui/Waves/Waves'), { ssr: false });
 

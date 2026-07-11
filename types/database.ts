@@ -81,11 +81,16 @@ export type Export = {
 export type Subscription = {
   id: string;
   user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
+  ls_subscription_id: string | null;
+  ls_customer_id: string | null;
+  ls_order_id: string | null;
+  ls_product_id: string | null;
+  ls_variant_id: string | null;
   plan: Plan;
   status: SubscriptionStatus;
-  current_period_end: string | null;
+  billing_interval: BillingInterval | null;
+  renews_at: string | null;
+  ends_at: string | null;
   trial_start: string | null;
   trial_end: string | null;
   trial_used: boolean;
@@ -132,11 +137,21 @@ export type Database = {
       };
       subscriptions: {
         Row: Subscription;
-        Insert: Omit<Subscription, 'id' | 'created_at' | 'updated_at' | 'trial_used' | 'stripe_customer_id' | 'stripe_subscription_id' | 'current_period_end'> & {
+        Insert: {
           id?: string;
-          stripe_customer_id?: string | null;
-          stripe_subscription_id?: string | null;
-          current_period_end?: string | null;
+          user_id: string;
+          ls_subscription_id?: string | null;
+          ls_customer_id?: string | null;
+          ls_order_id?: string | null;
+          ls_product_id?: string | null;
+          ls_variant_id?: string | null;
+          plan?: Plan;
+          status?: SubscriptionStatus;
+          billing_interval?: BillingInterval | null;
+          renews_at?: string | null;
+          ends_at?: string | null;
+          trial_start?: string | null;
+          trial_end?: string | null;
           trial_used?: boolean;
         };
         Update: Partial<Omit<Subscription, 'id' | 'user_id' | 'created_at'>>;
