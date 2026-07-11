@@ -18,7 +18,16 @@ function decodeXmlEntities(text: string): string {
 }
 
 function cellPlainText(cellXml: string): string {
-  return decodeXmlEntities(cellXml.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+  const withLineBreaks = cellXml
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<w:br\s*\/?>/g, '\n')
+    .replace(/<\/w:tc>/g, '\n');
+  const decoded = decodeXmlEntities(withLineBreaks.replace(/<[^>]+>/g, ''));
+  return decoded
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
 }
 
 function normalizeLabel(text: string): string {
@@ -87,7 +96,7 @@ function buildParagraphsXml(referencePara: string, text: string): string {
       if (!trimmed) return `<w:p>${pPrXml}</w:p>`;
       const isBoldLine = trimmed.startsWith('>>');
       const content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
-      const rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPr;
+      const rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPrNoBold;
       return `<w:p>${pPrXml}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(content)}</w:t></w:r></w:p>`;
     })
     .join('');
@@ -107,13 +116,37 @@ function isCheckboxValueCell(cellXml: string): boolean {
 }
 
 function splitCheckboxOptions(body: string): string[] {
-  if (/\d-\s*/.test(body)) {
-    return body.split(/,\s*(?=\d-)/).map((part) => part.trim()).filter(Boolean);
+  const lines = body.split('\n').map((line) => line.trim()).filter(Boolean);
+  const options: string[] = [];
+
+  for (const line of lines) {
+    if (line.toLowerCase().startsWith('if ‘other’') || line.toLowerCase().startsWith('if "other"')) {
+      options.push(line);
+      continue;
+    }
+
+    if (/\d-\s*/.test(line)) {
+      const parts = line.split(/,\s*(?=\d+[\s\-/])/).map((p) => p.trim()).filter(Boolean);
+      options.push(...parts);
+      continue;
+    }
+
+    if (line.includes('/')) {
+      const parts = line.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+      options.push(...parts);
+      continue;
+    }
+
+    if (line.includes(',')) {
+      const parts = line.split(/,\s*/).map((p) => p.trim()).filter(Boolean);
+      options.push(...parts);
+      continue;
+    }
+
+    options.push(line);
   }
-  if (body.includes('/')) {
-    return body.split(/\s*\/\s*/).map((part) => part.trim()).filter(Boolean);
-  }
-  return body.split(/,\s*/).map((part) => part.trim()).filter(Boolean);
+
+  return options;
 }
 
 function optionIsSelected(option: string, selections: string[]): boolean {

@@ -1,5 +1,4 @@
 import { ImageResponse } from 'next/og';
-import { BACKGROUND } from '@/lib/utils/brand-colors';
 import { getPictogramDataUri } from '@/lib/brand/pictogram-data-uri';
 
 export const size = { width: 32, height: 32 };
@@ -7,7 +6,6 @@ export const contentType = 'image/png';
 
 export default function Icon() {
   const pictogram = getPictogramDataUri();
-  const markSize = 26;
 
   return new ImageResponse(
     (
@@ -18,13 +16,13 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: BACKGROUND,
+          background: 'transparent',
         }}
       >
         <img
           src={pictogram}
-          width={markSize}
-          height={markSize}
+          width={32}
+          height={32}
           style={{ borderRadius: '50%', objectFit: 'cover' }}
         />
       </div>
