@@ -271,7 +271,7 @@ export default function HomePage() {
         >
           <div className="mb-10 text-center md:mb-12">
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary md:text-4xl">
-              <ShinyText text="Why Teachers Love FreePeriod" speed={4} />
+              <ShinyText text="Why Teachers Love FreePeriod" speed={8} />
             </h2>
             <p className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base">
               Structure you can trust, speed when you need it.
