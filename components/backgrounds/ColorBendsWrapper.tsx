@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { useZenMode } from "@/lib/zen-mode"
 
 const ColorBends = dynamic(
   () => import("./ColorBends"),
@@ -8,6 +9,10 @@ const ColorBends = dynamic(
 )
 
 export function ColorBendsBackground() {
+  const { zenMode } = useZenMode()
+
+  if (zenMode) return null
+
   return (
     <div 
       style={{ 

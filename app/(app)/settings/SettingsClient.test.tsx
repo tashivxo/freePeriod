@@ -1,9 +1,16 @@
 import React from 'react';
 import { render, screen, waitFor } from '@/lib/test-utils';
 import { SettingsClient } from './SettingsClient';
+import { useZenMode } from '@/lib/zen-mode';
 import type { User } from '@/types';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
+
+const mockSetZenMode = jest.fn();
+
+jest.mock('@/lib/zen-mode', () => ({
+  useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: mockSetZenMode })),
+}));
 
 const mockUpdate = jest.fn().mockReturnValue({
   eq: jest.fn().mockResolvedValue({ error: null }),
@@ -108,5 +115,29 @@ describe('SettingsClient — subject dropdown', () => {
 
     expect(screen.getByLabelText(/default subject/i).textContent?.trim()).toBe('Custom');
     expect(screen.getByPlaceholderText(/enter subject/i)).toHaveValue('Yoga');
+  });
+});
+
+describe('SettingsClient — zen mode', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useZenMode as jest.Mock).mockReturnValue({ zenMode: false, setZenMode: mockSetZenMode });
+  });
+
+  it('renders zen mode switch with description', () => {
+    render(<SettingsClient user={baseUser} />);
+
+    expect(screen.getByRole('switch', { name: /zen mode/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/are our colorful backgrounds too much for you\? try zen mode/i),
+    ).toBeInTheDocument();
+  });
+
+  it('toggling zen mode switch calls setZenMode(true)', async () => {
+    const { user } = render(<SettingsClient user={baseUser} />);
+
+    await user.click(screen.getByRole('switch', { name: /zen mode/i }));
+
+    expect(mockSetZenMode).toHaveBeenCalledWith(true);
   });
 });

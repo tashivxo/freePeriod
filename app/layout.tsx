@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
 import { Manrope } from 'next/font/google';
 import { ThemeProvider } from '@/lib/theme';
+import { ZenModeProvider } from '@/lib/zen-mode';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -29,7 +30,9 @@ export default function RootLayout({
     <html lang="en" className={cn(manrope.variable)}>
       <body>
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <ZenModeProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </ZenModeProvider>
         </ThemeProvider>
         <GrainOverlayClient />
       </body>

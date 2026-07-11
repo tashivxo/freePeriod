@@ -11,7 +11,9 @@ import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dr
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/BlurText';
+import { useZenMode } from '@/lib/zen-mode';
 import { LogOut } from 'lucide-react';
 import type { User } from '@/types';
 
@@ -48,6 +50,7 @@ export function SettingsClient({ user }: { user: User }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const router = useRouter();
+  const { zenMode, setZenMode } = useZenMode();
 
   const handleSave = async () => {
     setSaving(true);
@@ -103,6 +106,27 @@ export function SettingsClient({ user }: { user: User }) {
             className="font-display text-2xl font-bold text-text-primary"
           />
           <ThemeToggle />
+        </div>
+
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-4">
+          <div className="min-w-0">
+            <label
+              htmlFor="zen-mode"
+              className="block text-sm font-body font-medium text-text-primary"
+            >
+              Zen Mode
+            </label>
+            <p className="mt-1 text-sm font-body text-text-secondary">
+              Are our colorful backgrounds too much for you? Try Zen Mode.
+            </p>
+          </div>
+          <Switch
+            id="zen-mode"
+            checked={zenMode}
+            onCheckedChange={(checked) => setZenMode(!!checked)}
+            className="data-checked:bg-coral shrink-0"
+            aria-label="Zen Mode"
+          />
         </div>
 
         <div className="space-y-6">
