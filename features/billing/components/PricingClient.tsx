@@ -62,9 +62,9 @@ const PLANS: Plan[] = [
     iconBg: 'bg-coral/15',
     priceMonthly: 9,
     priceAnnual: 7,
-    description: 'For teachers who plan lessons every week and need smarter AI.',
+    description: 'For teachers who plan every week — up to 20 AI lesson plans a month with smarter AI.',
     features: [
-      'Unlimited lesson plans',
+      '20 lesson plans per month',
       'Claude Sonnet model',
       'DOCX export',
       'OCR text extraction',
@@ -82,8 +82,9 @@ const PLANS: Plan[] = [
     iconBg: 'bg-text-primary/10',
     priceMonthly: 12,
     priceAnnual: 10,
-    description: 'For teachers who need automated lesson plans regularly.',
+    description: 'For teachers who plan every day — unlimited lesson plans, no monthly cap.',
     features: [
+      'Unlimited lesson plans',
       'Everything in Pro',
       'Claude Sonnet model',
       'Filled-in template download',
