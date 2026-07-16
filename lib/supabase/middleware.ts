@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { isSafeInternalPath } from '@/lib/auth/safe-redirect';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -39,16 +40,25 @@ export async function updateSession(request: NextRequest) {
     const code = request.nextUrl.searchParams.get('code');
     const tokenHash = request.nextUrl.searchParams.get('token_hash');
     const otpType = request.nextUrl.searchParams.get('type');
-    const isPkceFallback = Boolean(code);
+    const existingNext = request.nextUrl.searchParams.get('next');
     const isRecoveryFallback = Boolean(tokenHash && otpType === 'recovery');
+    const isPkceFallback = Boolean(code);
 
-    if (isPkceFallback || isRecoveryFallback) {
+    if (isRecoveryFallback || isPkceFallback) {
       const url = new URL('/auth/callback', request.nextUrl.origin);
       if (code) url.searchParams.set('code', code);
       if (tokenHash) url.searchParams.set('token_hash', tokenHash);
       if (otpType) url.searchParams.set('type', otpType);
-      const existingNext = request.nextUrl.searchParams.get('next');
-      url.searchParams.set('next', existingNext ?? '/update-password');
+      if (isRecoveryFallback) {
+        url.searchParams.set(
+          'next',
+          existingNext && isSafeInternalPath(existingNext)
+            ? existingNext
+            : '/update-password',
+        );
+      } else if (existingNext && isSafeInternalPath(existingNext)) {
+        url.searchParams.set('next', existingNext);
+      }
       return NextResponse.redirect(url);
     }
   }
