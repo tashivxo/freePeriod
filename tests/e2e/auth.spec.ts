@@ -35,9 +35,19 @@ test.describe('Sign-in page', () => {
   });
 
   test('landing page with recovery params forwards to auth callback', async ({ page }) => {
+    const callbackRequest = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return (
+        url.pathname === '/auth/callback' &&
+        url.searchParams.get('token_hash') === 'e2e-test' &&
+        url.searchParams.get('type') === 'recovery' &&
+        url.searchParams.get('next') === '/update-password'
+      );
+    });
+
     await page.goto('/?token_hash=e2e-test&type=recovery');
-    await expect(page).toHaveURL(/\/auth\/callback\?.*token_hash=e2e-test/);
-    await expect(page).toHaveURL(/next=%2Fupdate-password|next=\/update-password/);
+    await callbackRequest;
+    await expect(page).toHaveURL(/sign-in\?error=auth_callback_failed/);
   });
 
   test('signs in with valid credentials and redirects to dashboard', async ({ page }) => {
