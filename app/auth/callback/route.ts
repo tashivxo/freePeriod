@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import type { EmailOtpType, User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
+function isSafeInternalPath(path: string): boolean {
+  return path.startsWith('/') && !path.startsWith('//');
+}
+
+function resolveNext(
+  nextParam: string | null,
+  options: { hasCode: boolean; type: EmailOtpType | null },
+): string {
+  if (nextParam && isSafeInternalPath(nextParam)) {
+    return nextParam;
+  }
+  if (options.hasCode || options.type === 'recovery') {
+    return '/update-password';
+  }
+  return '/dashboard';
+}
+
 function redirectTo(request: Request, next: string) {
   const { origin } = new URL(request.url);
   const forwardedHost = request.headers.get('x-forwarded-host');
@@ -67,9 +84,7 @@ export async function GET(request: Request) {
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
   const nextParam = searchParams.get('next');
-  const next =
-    nextParam ??
-    (type === 'recovery' ? '/update-password' : '/dashboard');
+  const next = resolveNext(nextParam, { hasCode: Boolean(code), type });
 
   const supabase = await createClient();
 

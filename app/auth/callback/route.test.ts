@@ -55,6 +55,23 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
   });
 
+  it('defaults PKCE code callback to /update-password when next is absent', async () => {
+    const response = await GET(callbackRequest('?code=pkce-code'));
+
+    expect(mockExchangeCodeForSession).toHaveBeenCalledWith('pkce-code');
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
+  });
+
+  it('rejects unsafe next and falls back to /update-password for PKCE code', async () => {
+    const response = await GET(
+      callbackRequest('?code=pkce-code&next=//evil.example'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
+  });
+
   it('redirects recovery token_hash flow to /update-password by default', async () => {
     const response = await GET(
       callbackRequest('?token_hash=recovery-hash&type=recovery'),
@@ -71,6 +88,15 @@ describe('GET /auth/callback', () => {
   it('redirects recovery token_hash flow to explicit next param', async () => {
     const response = await GET(
       callbackRequest('?token_hash=recovery-hash&type=recovery&next=/update-password'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
+  });
+
+  it('rejects unsafe next and falls back to /update-password for recovery', async () => {
+    const response = await GET(
+      callbackRequest('?token_hash=recovery-hash&type=recovery&next=https://evil.example'),
     );
 
     expect(response.status).toBe(307);

@@ -33,17 +33,24 @@ export async function updateSession(request: NextRequest) {
   const isLocalDevTestRoute =
     process.env.NODE_ENV === 'development' && pathname.startsWith('/test-paid-generation');
 
-  // Supabase may fall back to Site URL (/) with recovery params when redirect URL
-  // isn't allowlisted — forward to the shared auth callback handler.
-  const tokenHash = request.nextUrl.searchParams.get('token_hash');
-  const otpType = request.nextUrl.searchParams.get('type');
-  if (pathname === '/' && tokenHash && otpType === 'recovery') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/callback';
-    if (!url.searchParams.get('next')) {
-      url.searchParams.set('next', '/update-password');
+  // Supabase may fall back to Site URL (/) with auth params when redirect URL
+  // isn't allowlisted — forward only those params to the shared auth callback handler.
+  if (pathname === '/') {
+    const code = request.nextUrl.searchParams.get('code');
+    const tokenHash = request.nextUrl.searchParams.get('token_hash');
+    const otpType = request.nextUrl.searchParams.get('type');
+    const isPkceFallback = Boolean(code);
+    const isRecoveryFallback = Boolean(tokenHash && otpType === 'recovery');
+
+    if (isPkceFallback || isRecoveryFallback) {
+      const url = new URL('/auth/callback', request.nextUrl.origin);
+      if (code) url.searchParams.set('code', code);
+      if (tokenHash) url.searchParams.set('token_hash', tokenHash);
+      if (otpType) url.searchParams.set('type', otpType);
+      const existingNext = request.nextUrl.searchParams.get('next');
+      url.searchParams.set('next', existingNext ?? '/update-password');
+      return NextResponse.redirect(url);
     }
-    return NextResponse.redirect(url);
   }
 
   const isAuthPage =
