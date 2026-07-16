@@ -66,6 +66,37 @@ describe('updateSession password recovery routes', () => {
     );
   });
 
+  it('forwards PKCE code from landing page to auth callback', async () => {
+    const response = await updateSession(requestFor('/?code=pkce-code'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?code=pkce-code&next=%2Fupdate-password',
+    );
+  });
+
+  it('preserves explicit next when forwarding landing-page auth params', async () => {
+    const response = await updateSession(
+      requestFor('/?code=pkce-code&next=%2Fdashboard'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?code=pkce-code&next=%2Fdashboard',
+    );
+  });
+
+  it('does not forward unrelated homepage query params', async () => {
+    const response = await updateSession(
+      requestFor('/?code=pkce-code&utm_source=email&ref=home'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?code=pkce-code&next=%2Fupdate-password',
+    );
+  });
+
   it('still redirects unauthenticated users away from protected routes', async () => {
     const response = await updateSession(requestFor('/dashboard'));
 
