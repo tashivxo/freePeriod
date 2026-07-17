@@ -1,4 +1,6 @@
 import { render, screen, waitFor } from '@/lib/test-utils';
+import { act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 // Mock the Supabase client module
 const mockUpdate = jest.fn().mockReturnValue({
@@ -47,10 +49,15 @@ const SUBJECTS = [
 describe('OnboardingPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     // Restore return values cleared by clearAllMocks
     mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
     mockUpsert.mockResolvedValue({ error: null });
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('renders step 1 heading', () => {
@@ -217,9 +224,30 @@ describe('OnboardingPage', () => {
     });
   });
 
-  it('renders step indicators', () => {
+  it('renders logo and supporting line above the card', () => {
     render(<OnboardingPage />);
-    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    expect(screen.getByText('FreePeriod')).toBeInTheDocument();
+    expect(screen.getByText(/set up your teaching profile/i)).toBeInTheDocument();
+  });
+
+  it('renders a 3-segment progress indicator for step 1', () => {
+    render(<OnboardingPage />);
+    const progress = screen.getByRole('progressbar', { name: /step 1 of 3/i });
+    expect(progress).toHaveAttribute('aria-valuenow', '1');
+    expect(progress).toHaveAttribute('aria-valuemax', '3');
+  });
+
+  it('updates progress indicator when advancing to step 2', async () => {
+    const { user } = render(<OnboardingPage />);
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('progressbar', { name: /step 2 of 3/i })).toHaveAttribute(
+        'aria-valuenow',
+        '2',
+      );
+    });
   });
 
   it('selecting Custom curriculum reveals text input on step 3', async () => {
@@ -239,6 +267,85 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/enter curriculum/i)).toBeInTheDocument();
     });
+  });
+
+  it('shows finish errors inside the card above actions', async () => {
+    mockUpsert.mockResolvedValueOnce({ error: { message: 'Database error' } });
+    const { user } = render(<OnboardingPage />);
+
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/grade level/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Database error');
+    expect(alert.compareDocumentPosition(screen.getByRole('button', { name: /finish/i }))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('shows saving then redirecting feedback on successful finish', async () => {
+    const { user } = render(<OnboardingPage />);
+
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/grade level/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /redirecting/i })).toBeInTheDocument();
+      expect(screen.getByText(/redirecting to your dashboard/i)).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('shows dashboard fallback link if redirect stalls', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    render(<OnboardingPage />);
+
+    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/grade level/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByRole('link', { name: /go to dashboard/i })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
   });
 
   it('Finish button is disabled until a curriculum is selected on step 3', async () => {
