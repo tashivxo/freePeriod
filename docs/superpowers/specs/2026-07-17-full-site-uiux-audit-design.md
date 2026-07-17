@@ -280,14 +280,14 @@ Priority = severity × frequency_weight. Tie-break: more pillars first, then low
 
 ## Writing-plans handoff
 
-After the user approves this completed backlog:
+Implementation-ready synthesis lives in:
+
+**[`2026-07-17-full-site-uiux-audit-implementation-backlog.md`](./2026-07-17-full-site-uiux-audit-implementation-backlog.md)**
+
+That doc merges findings into 22 work items (W-*), assigns owners/files, phases P0–P3 with effort (~33.5d), dependencies, and a writing-plans checklist. After you approve it:
 
 1. Invoke **writing-plans** only (no other implementation skills).
-2. Propose phased plans grouped by priority bands, e.g.:
-   - **P0 (priority ≥12):** conversion-breaking and trapped states (UX-01–UX-08, UI-01, TYP-01–02)
-   - **P1 (priority 8–11):** generate/auth recovery, pricing trust, hit-area clusters
-   - **P2 (priority 4–7):** consistency, tokens, legal TOC, polish
-   - **P3 (priority ≤3):** low-severity token/a11y polish
+2. Prefer one plan per phase (or per owner cluster within a phase).
 3. Each plan task must preserve motion (refine-only notes from the inventory).
 4. No code until a plan is approved and the user explicitly starts implementation.
 
@@ -296,8 +296,9 @@ After the user approves this completed backlog:
 1. Methodology design approved — done
 2. User reviews written methodology — done
 3. Start gate before Pass 1–3 — done (orchestrated audit)
-4. **User reviews this completed findings backlog** — waiting
-5. Invoke writing-plans for implementation — after backlog approval
+4. User reviews completed findings backlog — done
+5. **User reviews implementation backlog synthesis** — waiting
+6. Invoke writing-plans for implementation — after synthesis approval
 
 ## Success criteria
 
