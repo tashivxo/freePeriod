@@ -146,6 +146,7 @@ test.describe('Pricing page', () => {
   test('Free plan features are listed', async ({ page }) => {
     await expect(page.getByText('3 lesson plans per month')).toBeVisible();
     await expect(page.getByText('DOCX export')).toBeVisible();
+    await expect(page.getByText('Filled-in template download')).toBeVisible();
   });
 
   test('Pro plan features are listed', async ({ page }) => {
@@ -154,8 +155,7 @@ test.describe('Pricing page', () => {
   });
 
   test('Pro+ plan features are listed', async ({ page }) => {
-    await expect(page.getByText('Filled-in template download')).toBeVisible();
-    await expect(page.getByText('API access')).toBeVisible();
+    await expect(page.getByText('Everything in Pro')).toBeVisible();
   });
 
   // ── Trust footer ─────────────────────────────────────────────────

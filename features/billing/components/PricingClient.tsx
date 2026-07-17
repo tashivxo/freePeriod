@@ -48,6 +48,7 @@ const PLANS: Plan[] = [
       'Gemini Flash model',
       'PDF, DOCX, XLSX upload',
       'DOCX export',
+      'Filled-in template download',
       'Community support',
     ],
     cta: 'Start for free',
@@ -62,15 +63,14 @@ const PLANS: Plan[] = [
     iconBg: 'bg-coral/15',
     priceMonthly: 9,
     priceAnnual: 7,
-    description: 'For teachers who plan every week — up to 20 AI lesson plans a month with smarter AI.',
+    description:
+      'For teachers who plan every week, up to 20 AI lesson plans a month with smarter AI.',
     features: [
       '20 lesson plans per month',
-      'Claude Sonnet model',
       'DOCX export',
       'OCR text extraction',
       'Priority support',
-    ],
-    cta: 'Start Pro',
+    ],    cta: 'Start Pro',
     ctaClass:
       'bg-coral hover:bg-coral-dark text-white focus-visible:ring-2 focus-visible:ring-coral',
     featured: true,
@@ -82,16 +82,9 @@ const PLANS: Plan[] = [
     iconBg: 'bg-text-primary/10',
     priceMonthly: 12,
     priceAnnual: 10,
-    description: 'For teachers who plan every day — unlimited lesson plans, no monthly cap.',
-    features: [
-      'Unlimited lesson plans',
-      'Everything in Pro',
-      'Claude Sonnet model',
-      'Filled-in template download',
-      'Team plan sharing',
-      'API access',
-    ],
-    cta: 'Start Pro+',
+    description:
+      'For teachers who plan every day, unlimited lesson plans with no monthly cap.',
+    features: ['Unlimited lesson plans', 'Everything in Pro'],    cta: 'Start Pro+',
     ctaClass:
       'bg-mustard hover:bg-mustard/90 text-[#1A1A2E] focus-visible:ring-2 focus-visible:ring-mustard',
   },
@@ -248,15 +241,6 @@ export function PricingClient() {
       <main className="relative mx-auto max-w-5xl px-6 pb-24 pt-16">
         {/* Hero section */}
         <div ref={headerRef} className="mb-16 text-center">
-          <div
-            data-animate
-            style={{ opacity: 0 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full bg-coral/10 px-4 py-1.5 text-sm font-semibold text-coral"
-          >
-            <Sparkles size={14} />
-            Simple, honest pricing
-          </div>
-
           <h1
             data-animate
             style={{ opacity: 0 }}

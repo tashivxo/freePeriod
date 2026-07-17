@@ -11,8 +11,8 @@ export const legalConfig = {
   effectiveDate: '22 June 2026',
   /** Days after deletion request before permanent purge (Option C). */
   accountDeletionGraceDays: 30,
-  /** Primary payment processor at launch (checkout uses Stripe). */
-  paymentProcessor: 'Stripe',
+  /** Primary payment processor (checkout uses Lemon Squeezy). */
+  paymentProcessor: 'Lemon Squeezy',
   /** Supabase project database region (confirmed: eu-north-1). */
   supabaseRegion:
     process.env.LEGAL_SUPABASE_REGION ?? 'eu-north-1 (Stockholm, European Union)',
@@ -24,7 +24,7 @@ export const legalConfig = {
    */
   dataHostingRegion:
     process.env.LEGAL_DATA_REGION ??
-    'Supabase database and file storage in eu-north-1 (Stockholm, EU); application hosting on Vercel in iad1 (Washington DC, US); AI providers (Anthropic, Google) and payment processing (Stripe) in the United States',
+    'Supabase database and file storage in eu-north-1 (Stockholm, EU); application hosting on Vercel in iad1 (Washington DC, US); AI providers (Anthropic, Google) and payment processing (Lemon Squeezy) in the United States',
 } as const;
 
 export function operatorLabel(): string {
