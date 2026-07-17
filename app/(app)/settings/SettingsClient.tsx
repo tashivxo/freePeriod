@@ -10,12 +10,13 @@ import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { Button, buttonVariants } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
-import { LogOut } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ExternalLink, LogOut } from 'lucide-react';
 import type { User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
@@ -25,10 +26,33 @@ type SaveStatus = {
   message: string;
 };
 
-export function SettingsClient({ user }: { user: User }) {
+type DefaultsSnapshot = {
+  subject: string;
+  grade: string;
+  curriculum: string;
+};
+
+export type SettingsClientProps = {
+  user: User;
+  email: string;
+  planLabel: string;
+  manageSubscriptionUrl?: string | null;
+};
+
+export function SettingsClient({
+  user,
+  email,
+  planLabel,
+  manageSubscriptionUrl = null,
+}: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
   const [gradeSelect, setGradeSelect] = useState<string>(user.default_grade ?? '');
+  const [savedDefaults, setSavedDefaults] = useState<DefaultsSnapshot>({
+    subject: user.default_subject ?? '',
+    grade: user.default_grade ?? '',
+    curriculum: user.default_curriculum ?? '',
+  });
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -38,6 +62,11 @@ export function SettingsClient({ user }: { user: User }) {
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
 
+  const isDirty =
+    subjectField.value !== savedDefaults.subject ||
+    gradeSelect !== savedDefaults.grade ||
+    curriculumField.value !== savedDefaults.curriculum;
+
   useEffect(() => {
     if (saveStatus?.tone !== 'success') return;
     const timer = window.setTimeout(() => setSaveStatus(null), 4000);
@@ -45,20 +74,27 @@ export function SettingsClient({ user }: { user: User }) {
   }, [saveStatus]);
 
   const handleSave = async () => {
+    if (!isDirty) return;
     setSaving(true);
     setSaveStatus(null);
     try {
       const supabase = await createClient();
+      const nextDefaults: DefaultsSnapshot = {
+        subject: subjectField.value,
+        grade: gradeSelect,
+        curriculum: curriculumField.value,
+      };
       const { error } = await supabase
         .from('users')
         .update({
-          default_subject: subjectField.value || null,
-          default_grade: gradeSelect || null,
-          default_curriculum: curriculumField.value || null,
+          default_subject: nextDefaults.subject || null,
+          default_grade: nextDefaults.grade || null,
+          default_curriculum: nextDefaults.curriculum || null,
         })
         .eq('id', user.id);
 
       if (error) throw error;
+      setSavedDefaults(nextDefaults);
       setSaveStatus({ tone: 'success', message: 'Settings saved!' });
     } catch (err) {
       console.error(err);
@@ -189,7 +225,7 @@ export function SettingsClient({ user }: { user: User }) {
           {/* Save Button */}
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={!isDirty || saving}
             isLoading={saving}
             className="w-full mt-6"
           >
@@ -213,7 +249,28 @@ export function SettingsClient({ user }: { user: User }) {
       {/* Account */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">Account</h2>
+        <dl className="mb-4 space-y-3 rounded-xl border border-border bg-background p-4">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <dt className="text-sm font-body font-medium text-text-secondary">Email</dt>
+            <dd className="truncate text-sm font-body text-text-primary">{email}</dd>
+          </div>
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+            <dt className="text-sm font-body font-medium text-text-secondary">Plan</dt>
+            <dd className="text-sm font-body text-text-primary">{planLabel}</dd>
+          </div>
+        </dl>
         <div className="space-y-3">
+          {manageSubscriptionUrl && (
+            <a
+              href={manageSubscriptionUrl}
+              rel="noopener noreferrer"
+              className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Manage subscription
+            </a>
+          )}
+
           <Button
             variant="outline"
             className="w-full"
@@ -286,16 +343,12 @@ export function SettingsClient({ user }: { user: User }) {
         <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
           <Link
             href="/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-coral font-medium hover:underline"
           >
             Privacy Policy
           </Link>
           <Link
             href="/terms"
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-coral font-medium hover:underline"
           >
             Terms of Service

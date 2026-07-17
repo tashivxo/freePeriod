@@ -45,20 +45,69 @@ const baseUser: User = {
   created_at: '2024-01-01T00:00:00Z',
 };
 
+const defaultProps = {
+  user: baseUser,
+  email: baseUser.email,
+  planLabel: 'Free',
+  manageSubscriptionUrl: null as string | null,
+};
+
+async function changeSubjectToScience(user: Awaited<ReturnType<typeof render>>['user']) {
+  const trigger = screen.getByLabelText(/default subject/i);
+  await user.click(trigger);
+  await user.click(screen.getByRole('option', { name: 'Science' }));
+  await waitFor(() => {
+    expect(screen.getByLabelText(/default subject/i).textContent?.trim()).toBe('Science');
+  });
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe('SettingsClient — legal links', () => {
-  it('links to privacy policy and terms of service', () => {
-    render(<SettingsClient user={baseUser} />);
+describe('SettingsClient — account context', () => {
+  it('shows read-only email and plan', () => {
+    render(<SettingsClient {...defaultProps} planLabel="Pro" />);
 
-    expect(screen.getByRole('link', { name: /privacy policy/i })).toHaveAttribute('href', '/privacy');
-    expect(screen.getByRole('link', { name: /terms of service/i })).toHaveAttribute('href', '/terms');
+    expect(screen.getByText('teacher@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Pro')).toBeInTheDocument();
+  });
+
+  it('does not show manage subscription when portal URL is missing', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    expect(screen.queryByRole('link', { name: /manage subscription/i })).not.toBeInTheDocument();
+  });
+
+  it('shows manage subscription when portal URL is available', () => {
+    render(
+      <SettingsClient
+        {...defaultProps}
+        planLabel="Pro"
+        manageSubscriptionUrl="https://example.lemonsqueezy.com/billing"
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /manage subscription/i });
+    expect(link).toHaveAttribute('href', 'https://example.lemonsqueezy.com/billing');
+  });
+});
+
+describe('SettingsClient — legal links', () => {
+  it('links to privacy policy and terms of service in the same tab', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const privacy = screen.getByRole('link', { name: /privacy policy/i });
+    const terms = screen.getByRole('link', { name: /terms of service/i });
+
+    expect(privacy).toHaveAttribute('href', '/privacy');
+    expect(terms).toHaveAttribute('href', '/terms');
+    expect(privacy).not.toHaveAttribute('target');
+    expect(terms).not.toHaveAttribute('target');
   });
 });
 
 describe('SettingsClient — subject dropdown', () => {
   it('renders subject dropdown button associated with its label', () => {
-    render(<SettingsClient user={baseUser} />);
+    render(<SettingsClient {...defaultProps} />);
 
     const trigger = screen.getByLabelText(/default subject/i);
     expect(trigger).toBeInTheDocument();
@@ -66,7 +115,7 @@ describe('SettingsClient — subject dropdown', () => {
   });
 
   it('opens the listbox and shows subject options on trigger click', async () => {
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
     const trigger = screen.getByLabelText(/default subject/i);
     await user.click(trigger);
@@ -80,19 +129,13 @@ describe('SettingsClient — subject dropdown', () => {
   });
 
   it('selecting a subject updates the displayed value', async () => {
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
-    const trigger = screen.getByLabelText(/default subject/i);
-    await user.click(trigger);
-    await user.click(screen.getByRole('option', { name: 'Science' }));
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/default subject/i).textContent?.trim()).toBe('Science');
-    });
+    await changeSubjectToScience(user);
   });
 
   it('shows custom subject input when Custom is selected', async () => {
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
     const trigger = screen.getByLabelText(/default subject/i);
     await user.click(trigger);
@@ -105,14 +148,14 @@ describe('SettingsClient — subject dropdown', () => {
 
   it('pre-fills subject from user defaults (preset)', () => {
     const userWithSubject: User = { ...baseUser, default_subject: 'History' };
-    render(<SettingsClient user={userWithSubject} />);
+    render(<SettingsClient {...defaultProps} user={userWithSubject} />);
 
     expect(screen.getByLabelText(/default subject/i).textContent?.trim()).toBe('History');
   });
 
   it('pre-fills Custom + custom input when default_subject is not a preset', () => {
     const userWithCustom: User = { ...baseUser, default_subject: 'Yoga' };
-    render(<SettingsClient user={userWithCustom} />);
+    render(<SettingsClient {...defaultProps} user={userWithCustom} />);
 
     expect(screen.getByLabelText(/default subject/i).textContent?.trim()).toBe('Custom');
     expect(screen.getByPlaceholderText(/enter subject/i)).toHaveValue('Yoga');
@@ -126,7 +169,7 @@ describe('SettingsClient — zen mode', () => {
   });
 
   it('renders zen mode switch with description', () => {
-    render(<SettingsClient user={baseUser} />);
+    render(<SettingsClient {...defaultProps} />);
 
     expect(screen.getByRole('switch', { name: /zen mode/i })).toBeInTheDocument();
     expect(
@@ -135,11 +178,43 @@ describe('SettingsClient — zen mode', () => {
   });
 
   it('toggling zen mode switch calls setZenMode(true)', async () => {
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
     await user.click(screen.getByRole('switch', { name: /zen mode/i }));
 
     expect(mockSetZenMode).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('SettingsClient — dirty save', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+  });
+
+  it('disables Save until a field changes', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    expect(screen.getByRole('button', { name: /save settings/i })).toBeDisabled();
+  });
+
+  it('enables Save after a field changes, then disables again after successful save', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const saveButton = screen.getByRole('button', { name: /save settings/i });
+    expect(saveButton).toBeDisabled();
+
+    await changeSubjectToScience(user);
+    expect(saveButton).toBeEnabled();
+
+    await user.click(saveButton);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/settings saved/i);
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /save settings/i })).toBeDisabled();
+    });
   });
 });
 
@@ -152,8 +227,9 @@ describe('SettingsClient — save feedback', () => {
   });
 
   it('shows an inline success status after saving', async () => {
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
+    await changeSubjectToScience(user);
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(/settings saved/i);
@@ -163,8 +239,9 @@ describe('SettingsClient — save feedback', () => {
     mockUpdate.mockReturnValue({
       eq: jest.fn().mockResolvedValue({ error: { message: 'db error' } }),
     });
-    const { user } = render(<SettingsClient user={baseUser} />);
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
+    await changeSubjectToScience(user);
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent(/failed to save settings/i);
