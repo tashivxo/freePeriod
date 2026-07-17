@@ -146,4 +146,11 @@ flowchart TD
 
 ## Next step
 
-After you approve this backlog, invoke **writing-plans** for phased implementation plans (one plan per phase or per owner cluster). No code until a plan is approved and you explicitly start it.
+Implementation plans are ready:
+
+- Index: [`../plans/2026-07-17-uiux-audit-plans-index.md`](../plans/2026-07-17-uiux-audit-plans-index.md)
+- P0: [`../plans/2026-07-17-uiux-audit-p0.md`](../plans/2026-07-17-uiux-audit-p0.md)
+- P1: [`../plans/2026-07-17-uiux-audit-p1.md`](../plans/2026-07-17-uiux-audit-p1.md)
+- P2–P3: [`../plans/2026-07-17-uiux-audit-p2-p3.md`](../plans/2026-07-17-uiux-audit-p2-p3.md)
+
+No application code until the user explicitly starts a phase (recommended: P0) via subagent-driven or inline execution.

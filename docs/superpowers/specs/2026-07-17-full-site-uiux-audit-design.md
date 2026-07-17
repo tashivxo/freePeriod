@@ -297,8 +297,9 @@ That doc merges findings into 22 work items (W-*), assigns owners/files, phases 
 2. User reviews written methodology — done
 3. Start gate before Pass 1–3 — done (orchestrated audit)
 4. User reviews completed findings backlog — done
-5. **User reviews implementation backlog synthesis** — waiting
-6. Invoke writing-plans for implementation — after synthesis approval
+5. **User reviews implementation backlog synthesis** — done
+6. Writing-plans for P0 / P1 / P2–P3 — done (see `docs/superpowers/plans/2026-07-17-uiux-audit-plans-index.md`)
+7. **User starts a phase** — waiting (no code until then)
 
 ## Success criteria
 
