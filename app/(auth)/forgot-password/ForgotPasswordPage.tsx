@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/Logo';
+
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -13,15 +16,21 @@ export function ForgotPasswordPage() {
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [cooldown]);
+
+  const sendResetLink = useCallback(async () => {
     setEmailError('');
     setServerError('');
 
     if (!email.trim()) {
       setEmailError('Email is required');
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -33,46 +42,72 @@ export function ForgotPasswordPage() {
 
     if (error) {
       setServerError(error.message);
-      return;
+      return false;
     }
 
     setSubmitted(true);
+    setCooldown(RESEND_COOLDOWN_SECONDS);
+    return true;
+  }, [email]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await sendResetLink();
+  }
+
+  async function handleResend() {
+    if (cooldown > 0 || isLoading) return;
+    await sendResetLink();
   }
 
   return (
-    <section className="flex min-h-screen items-center justify-center bg-background px-4 py-16 md:py-32">
-      <div className="m-auto h-fit w-full max-w-sm overflow-hidden rounded-2xl border border-border shadow-md shadow-zinc-950/5">
-
-        {/* Main card body */}
-        <div className="bg-surface -m-px rounded-2xl border border-border/60 p-8 pb-6">
-
-          {/* Logo + heading */}
+    <div className="flex min-h-screen items-center justify-center bg-background/80 px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <Link href="/" aria-label="FreePeriod home">
+            <Logo size="lg" />
+          </Link>
           <div>
-            <Link href="/" aria-label="go home">
-              <Logo size="md" />
-            </Link>
-            <h1 className="mt-4 mb-1 text-xl font-display font-semibold text-text-primary">
-              Recover Password
+            <h1 className="font-display text-2xl font-bold tracking-tight text-text-primary">
+              Recover password
             </h1>
-            <p className="font-body text-sm text-text-secondary">
+            <p className="mt-1.5 font-body text-sm leading-relaxed text-text-secondary">
               Enter your email to receive a reset link
             </p>
           </div>
+        </div>
 
-          {serverError && (
-            <div role="alert" className="mt-4 p-3 rounded-xl bg-error/10 text-error text-sm text-center">
-              {serverError}
-            </div>
-          )}
-
-          {submitted ? (
-            <div className="mt-6 space-y-4">
-              <div role="status" className="p-3 rounded-xl bg-success/10 text-success text-sm text-center">
-                Check your inbox — we&apos;ve sent a reset link to <strong>{email}</strong>
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="space-y-5 p-6">
+            {serverError && (
+              <div role="alert" className="rounded-xl bg-error/10 p-3 text-center text-sm text-error">
+                {serverError}
               </div>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-6">
+            )}
+
+            {submitted ? (
+              <div className="space-y-4">
+                <div
+                  role="status"
+                  className="rounded-xl bg-success/10 p-3 text-center text-sm text-success"
+                >
+                  Check your inbox — we&apos;ve sent a reset link to <strong>{email}</strong>
+                </div>
+                <p className="text-center font-body text-sm text-text-secondary">
+                  Didn&apos;t get it? Check your spam folder, then resend if needed.
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={handleResend}
+                  isLoading={isLoading}
+                  disabled={cooldown > 0}
+                >
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend reset link'}
+                </Button>
+              </div>
+            ) : (
               <form onSubmit={handleSubmit} noValidate className="space-y-4">
                 <Input
                   label="Email"
@@ -86,25 +121,17 @@ export function ForgotPasswordPage() {
                   Send Reset Link
                 </Button>
               </form>
+            )}
 
-              <p className="font-body text-center text-sm text-text-secondary">
-                We&apos;ll send you a link to reset your password.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer strip */}
-        <div className="px-8 py-4">
-          <p className="font-body text-center text-sm text-text-secondary">
-            Remembered your password?{' '}
-            <Link href="/sign-in" className="text-coral font-semibold hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </div>
-
+            <p className="text-center font-body text-sm text-text-secondary">
+              Remembered your password?{' '}
+              <Link href="/sign-in" className="font-semibold text-coral hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
-    </section>
+    </div>
   );
 }

@@ -16,6 +16,7 @@ jest.mock('@/lib/supabase/client', () => ({
 describe('ForgotPasswordPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
     mockResetPasswordForEmail.mockResolvedValue({ data: {}, error: null });
   });
 
@@ -61,12 +62,14 @@ describe('ForgotPasswordPage', () => {
     });
   });
 
-  it('shows success state after submit', async () => {
+  it('shows success state with spam guidance and cooldown resend', async () => {
     const user = userEvent.setup();
     render(<ForgotPasswordPage />);
     await user.type(screen.getByLabelText(/email/i), 'teacher@school.com');
     await user.click(screen.getByRole('button', { name: /send reset link/i }));
     expect(await screen.findByRole('status')).toHaveTextContent(/check your inbox/i);
+    expect(screen.getByText(/spam folder/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /resend in \d+s/i })).toBeDisabled();
   });
 
   it('shows server error on failure', async () => {
