@@ -190,6 +190,36 @@ describe('GenerateForm', () => {
     expect(screen.getByRole('button', { name: /generate/i })).toBeEnabled();
   });
 
+  it('shows inline grade error and does not submit when grade is missing', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^subject$/i));
+    await user.click(screen.getByRole('option', { name: 'Science' }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/please select a grade/i);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('shows inline duration error when custom duration is empty', async () => {
+    const { user } = render(
+      <GenerateForm onSubmit={onSubmit} defaults={defaults} />,
+    );
+
+    await user.click(screen.getByLabelText(/^duration$/i));
+    await user.click(screen.getByRole('option', { name: 'Custom' }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter a duration between/i);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('uses text-base on the teacher prompt textarea', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByLabelText(/any specific focus or requirements/i)).toHaveClass(
+      'text-base',
+    );
+  });
+
   it('calls onSubmit with form data when Generate is clicked', async () => {
     const { user } = render(
       <GenerateForm onSubmit={onSubmit} defaults={defaults} />,

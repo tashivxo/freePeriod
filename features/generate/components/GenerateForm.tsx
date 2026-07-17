@@ -10,6 +10,8 @@ import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 
 const DURATION_PRESETS = [30, 45, 60, 90, 120];
+const CUSTOM_DURATION_MIN = 1;
+const CUSTOM_DURATION_MAX = 300;
 
 const DURATION_ITEMS = [
   ...DURATION_PRESETS.map((d) => ({ name: `${d} min`, value: String(d) })),
@@ -18,6 +20,12 @@ const DURATION_ITEMS = [
 
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
 const TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx';
+
+type FieldErrors = {
+  subject?: string;
+  grade?: string;
+  duration?: string;
+};
 
 export interface GenerateFormProps {
   defaults?: {
@@ -41,6 +49,15 @@ export interface GenerateFormData {
   templatePath: string | null;
 }
 
+function parseCustomDuration(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed)) return null;
+  if (parsed < CUSTOM_DURATION_MIN || parsed > CUSTOM_DURATION_MAX) return null;
+  return parsed;
+}
+
 export function GenerateForm({
   defaults,
   userPlan = 'free',
@@ -56,24 +73,44 @@ export function GenerateForm({
   const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
   const [templatePath, setTemplatePath] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const busy = isGenerating || isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subjectField.value.trim() || !grade.trim()) {
-      alert('Please select subject and grade');
+    const nextErrors: FieldErrors = {};
+    if (!subjectField.value.trim()) {
+      nextErrors.subject = 'Please select a subject';
+    }
+    if (!grade.trim()) {
+      nextErrors.grade = 'Please select a grade';
+    }
+
+    let duration = Number.parseInt(durationSelect, 10);
+    if (durationSelect === 'custom') {
+      const custom = parseCustomDuration(customDuration);
+      if (custom === null) {
+        nextErrors.duration = `Enter a duration between ${CUSTOM_DURATION_MIN} and ${CUSTOM_DURATION_MAX} minutes`;
+      } else {
+        duration = custom;
+      }
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
 
+    setErrors({});
     setIsSubmitting(true);
     try {
       const formData: GenerateFormData = {
         subject: subjectField.value,
         grade,
         curriculum: curriculumField.value,
-        duration: parseInt(durationSelect === 'custom' ? customDuration : durationSelect, 10),
+        duration,
         teacherPrompt,
         curriculumDocPath,
         templatePath,
@@ -108,16 +145,28 @@ export function GenerateForm({
             text="Select subject"
             items={SUBJECT_ITEMS}
             selectedValue={subjectField.select}
-            onSelect={(item) => subjectField.setSelect(item.value ?? item.name)}
+            onSelect={(item) => {
+              subjectField.setSelect(item.value ?? item.name);
+              setErrors((prev) => ({ ...prev, subject: undefined }));
+            }}
           />
           {subjectField.isCustom && (
             <div className="mt-2">
               <Input
                 label="Enter subject"
                 value={subjectField.custom}
-                onChange={(e) => subjectField.setCustom(e.target.value)}
+                onChange={(e) => {
+                  subjectField.setCustom(e.target.value);
+                  setErrors((prev) => ({ ...prev, subject: undefined }));
+                }}
+                error={errors.subject}
               />
             </div>
+          )}
+          {!subjectField.isCustom && errors.subject && (
+            <p className="mt-1 text-sm text-error" role="alert">
+              {errors.subject}
+            </p>
           )}
         </div>
 
@@ -134,8 +183,16 @@ export function GenerateForm({
             text="Select grade"
             items={GRADE_ITEMS}
             selectedValue={grade}
-            onSelect={(item) => setGrade(item.value ?? item.name)}
+            onSelect={(item) => {
+              setGrade(item.value ?? item.name);
+              setErrors((prev) => ({ ...prev, grade: undefined }));
+            }}
           />
+          {errors.grade && (
+            <p className="mt-1 text-sm text-error" role="alert">
+              {errors.grade}
+            </p>
+          )}
         </div>
 
         {/* Curriculum */}
@@ -177,17 +234,31 @@ export function GenerateForm({
             text="Select duration"
             items={DURATION_ITEMS}
             selectedValue={durationSelect}
-            onSelect={(item) => setDurationSelect(item.value ?? String(item.name))}
+            onSelect={(item) => {
+              setDurationSelect(item.value ?? String(item.name));
+              setErrors((prev) => ({ ...prev, duration: undefined }));
+            }}
           />
           {durationSelect === 'custom' && (
             <div className="mt-2">
               <Input
                 label="How long is the lesson? (minutes)"
                 type="number"
+                min={CUSTOM_DURATION_MIN}
+                max={CUSTOM_DURATION_MAX}
                 value={customDuration}
-                onChange={(e) => setCustomDuration(e.target.value)}
+                onChange={(e) => {
+                  setCustomDuration(e.target.value);
+                  setErrors((prev) => ({ ...prev, duration: undefined }));
+                }}
+                error={errors.duration}
               />
             </div>
+          )}
+          {durationSelect !== 'custom' && errors.duration && (
+            <p className="mt-1 text-sm text-error" role="alert">
+              {errors.duration}
+            </p>
           )}
         </div>
 
@@ -204,7 +275,7 @@ export function GenerateForm({
             value={teacherPrompt}
             onChange={(e) => setTeacherPrompt(e.target.value)}
             placeholder="E.g. Include hands-on activities, emphasize critical thinking..."
-            className="w-full h-24 rounded-xl border border-border bg-background px-3 py-2 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral resize-none"
+            className="w-full h-24 rounded-xl border border-border bg-background px-3 py-2 text-base font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral resize-none"
           />
         </div>
 

@@ -142,3 +142,31 @@ describe('SettingsClient — zen mode', () => {
     expect(mockSetZenMode).toHaveBeenCalledWith(true);
   });
 });
+
+describe('SettingsClient — save feedback', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+  });
+
+  it('shows an inline success status after saving', async () => {
+    const { user } = render(<SettingsClient user={baseUser} />);
+
+    await user.click(screen.getByRole('button', { name: /save settings/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/settings saved/i);
+  });
+
+  it('shows an inline error status when save fails', async () => {
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: { message: 'db error' } }),
+    });
+    const { user } = render(<SettingsClient user={baseUser} />);
+
+    await user.click(screen.getByRole('button', { name: /save settings/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/failed to save settings/i);
+  });
+});

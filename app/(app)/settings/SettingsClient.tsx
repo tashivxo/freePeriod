@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -20,11 +20,17 @@ import type { User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
 
+type SaveStatus = {
+  tone: 'success' | 'error';
+  message: string;
+};
+
 export function SettingsClient({ user }: { user: User }) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
   const [gradeSelect, setGradeSelect] = useState<string>(user.default_grade ?? '');
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -32,8 +38,15 @@ export function SettingsClient({ user }: { user: User }) {
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
 
+  useEffect(() => {
+    if (saveStatus?.tone !== 'success') return;
+    const timer = window.setTimeout(() => setSaveStatus(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [saveStatus]);
+
   const handleSave = async () => {
     setSaving(true);
+    setSaveStatus(null);
     try {
       const supabase = await createClient();
       const { error } = await supabase
@@ -46,10 +59,10 @@ export function SettingsClient({ user }: { user: User }) {
         .eq('id', user.id);
 
       if (error) throw error;
-      alert('Settings saved!');
+      setSaveStatus({ tone: 'success', message: 'Settings saved!' });
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings');
+      setSaveStatus({ tone: 'error', message: 'Failed to save settings' });
     } finally {
       setSaving(false);
     }
@@ -174,9 +187,26 @@ export function SettingsClient({ user }: { user: User }) {
           </div>
 
           {/* Save Button */}
-          <Button onClick={handleSave} disabled={saving} className="w-full mt-6">
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            isLoading={saving}
+            className="w-full mt-6"
+          >
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
+          {saveStatus && (
+            <div
+              role="status"
+              className={`mt-3 rounded-xl p-3 text-sm font-body text-center ${
+                saveStatus.tone === 'success'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-error/10 text-error'
+              }`}
+            >
+              {saveStatus.message}
+            </div>
+          )}
         </div>
       </div>
 
