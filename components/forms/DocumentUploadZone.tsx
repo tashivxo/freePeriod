@@ -74,7 +74,7 @@ export function DocumentUploadZone({
               aria-hidden="true"
             />
             <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              {isUploading ? 'Uploading…' : 'Click or drag to upload'}
+              {isUploading ? 'Uploading…' : 'Click to upload'}
             </span>
             <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               {accept.split(',').join(', ')}
