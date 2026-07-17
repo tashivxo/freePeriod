@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { useEffect, useState } from "react"
 import { useZenMode } from "@/providers/zen-mode"
 
 const ColorBends = dynamic(
@@ -8,10 +9,24 @@ const ColorBends = dynamic(
   { ssr: false }
 )
 
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+}
+
 export function ColorBendsBackground() {
   const { zenMode } = useZenMode()
+  const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion)
 
-  if (zenMode) return null
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    setPrefersReduced(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
+
+  if (zenMode || prefersReduced) return null
 
   return (
     <div 

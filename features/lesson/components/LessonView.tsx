@@ -13,6 +13,7 @@ import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
+import { useZenMode } from '@/providers/zen-mode';
 
 type LessonViewProps = {
   lesson: LessonPlan;
@@ -20,6 +21,7 @@ type LessonViewProps = {
 
 export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
+  const { zenMode } = useZenMode();
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     const cards = Array.from(cardsRef.current.children);
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (prefersReduced) return;
+    if (prefersReduced || zenMode) return;
 
     cards.forEach((el) => ((el as HTMLElement).style.opacity = '0'));
 
@@ -51,7 +53,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     return () => {
       cards.forEach((el) => remove(el));
     };
-  }, []);
+  }, [zenMode]);
 
   const handleExport = useCallback(async () => {
     setExportLoading(true);

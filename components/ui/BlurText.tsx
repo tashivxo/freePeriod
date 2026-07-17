@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useZenMode } from '@/providers/zen-mode';
 
 interface BlurTextProps {
   text: string;
@@ -22,12 +23,13 @@ export function BlurText({
   duration = 0.4,
 }: BlurTextProps) {
   const prefersReduced = useReducedMotion();
+  const { zenMode } = useZenMode();
   const words = text.split(' ');
 
   // Wrap element — use a span so we can spread aria-label
   const Wrapper = Tag as React.ElementType;
 
-  if (prefersReduced) {
+  if (prefersReduced || zenMode) {
     return <Wrapper className={className}>{text}</Wrapper>;
   }
 

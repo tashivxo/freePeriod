@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { HeroPictogram } from '@/components/animations/HeroPictogram';
 import { getSectionProgressLabel, LESSON_SECTION_COUNT } from '@/lib/lesson/sections';
 import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
+
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 type StatusStep = {
   message: string;
@@ -21,6 +26,15 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
   const containerRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const hasCompletedRef = useRef(false);
+  const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Derive status steps from events
   const statusSteps: StatusStep[] = [];
@@ -59,7 +73,6 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
 
   // Entrance animation
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced || !containerRef.current) return;
 
     animate(containerRef.current, {
@@ -71,11 +84,10 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
     return () => {
       if (containerRef.current) remove(containerRef.current);
     };
-  }, []);
+  }, [prefersReduced]);
 
   // Animate new steps
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced || !stepsRef.current) return;
 
     const lastChild = stepsRef.current.lastElementChild;
@@ -87,13 +99,13 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
         easing: 'easeOutQuad',
       });
     }
-  }, [statusSteps.length]);
+  }, [statusSteps.length, prefersReduced]);
 
   return (
     <div
       ref={containerRef}
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
-      style={{ opacity: 0 }}
+      style={{ opacity: prefersReduced ? 1 : 0 }}
       role="status"
       aria-live="polite"
       aria-label="Generating lesson plan"

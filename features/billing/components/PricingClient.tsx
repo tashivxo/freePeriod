@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -91,11 +91,25 @@ const PLANS: Plan[] = [
   },
 ];
 
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export function PricingClient() {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
   const { resolvedTheme, setTheme } = useTheme();
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const handleCheckout = useCallback(
     async (planId: string) => {
@@ -138,6 +152,7 @@ export function PricingClient() {
   return (
     <div className="relative min-h-screen bg-background font-body">
       {/* Background aurora */}
+      {!prefersReduced && (
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[600px]"
         aria-hidden="true"
@@ -159,6 +174,7 @@ export function PricingClient() {
           mouseInfluence={0}
         />
       </div>
+      )}
 
       {/* Public header */}
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">

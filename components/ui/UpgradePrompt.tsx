@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Zap, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
+import { useZenMode } from '@/providers/zen-mode';
+
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 type UpgradePromptProps = {
   open: boolean;
@@ -13,13 +19,22 @@ type UpgradePromptProps = {
 
 export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
   const router = useRouter();
+  const { zenMode } = useZenMode();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
+    if (prefersReduced || zenMode) return;
 
     import('animejs').then((mod) => {
       const el = containerRef.current;
@@ -31,7 +46,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
         easing: 'easeOutCubic',
       });
     });
-  }, [open]);
+  }, [open, prefersReduced, zenMode]);
 
   function handleUpgrade() {
     onDismiss();
@@ -47,7 +62,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
           className="max-w-md border-0 bg-[#FFFBF7] p-0 shadow-xl"
           onInteractOutside={onDismiss}
         >
-          <div ref={containerRef} style={{ opacity: open ? undefined : 0 }}>
+          <div ref={containerRef} style={{ opacity: open && !prefersReduced && !zenMode ? undefined : open ? 1 : 0 }}>
             {/* Header */}
             <div className="relative flex flex-col items-center gap-3 rounded-t-xl bg-gradient-to-br from-[#FF8BB0]/20 to-[#F7C34B]/10 px-6 pt-8 pb-6">
               <button

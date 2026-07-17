@@ -1,9 +1,12 @@
+'use client';
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useZenMode } from "@/providers/zen-mode"
 
 const SPOTLIGHT_VARIANTS = new Set(['default', 'outline', 'secondary'])
 
@@ -59,7 +62,22 @@ function Button({
   }) {
   const Comp = asChild ? Slot.Root : "button"
   const spotlightRef = React.useRef<HTMLButtonElement>(null)
-  const hasSpotlight = !asChild && SPOTLIGHT_VARIANTS.has(variant ?? 'default')
+  const { zenMode } = useZenMode()
+  const [prefersReduced, setPrefersReduced] = React.useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setPrefersReduced(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  const motionDisabled = prefersReduced || zenMode
+  const hasSpotlight = !asChild && SPOTLIGHT_VARIANTS.has(variant ?? 'default') && !motionDisabled
 
   function handleMouseMove(e: React.MouseEvent<HTMLButtonElement>) {
     const el = spotlightRef.current

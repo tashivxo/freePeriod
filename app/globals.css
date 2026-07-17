@@ -188,22 +188,24 @@
   to { transform: translateX(320%) skewX(-15deg); }
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .btn-shine {
-    overflow: hidden;
-  }
-  .btn-shine::after {
-    content: '';
-    position: absolute;
-    top: -20%;
-    left: 0;
-    height: 140%;
-    width: 35%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
-    transform: translateX(-200%) skewX(-15deg);
-    pointer-events: none;
-  }
-  .btn-shine:hover::after {
-    animation: shine 0.55s ease-in-out forwards;
+@media (prefers-reduced-motion: no-preference) {
+  @media (hover: hover) and (pointer: fine) {
+    .btn-shine {
+      overflow: hidden;
+    }
+    .btn-shine::after {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 0;
+      height: 140%;
+      width: 35%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+      transform: translateX(-200%) skewX(-15deg);
+      pointer-events: none;
+    }
+    .btn-shine:hover::after {
+      animation: shine 0.55s ease-in-out forwards;
+    }
   }
 }

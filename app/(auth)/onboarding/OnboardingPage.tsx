@@ -21,10 +21,28 @@ export function OnboardingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const stepContainerRef = useRef<HTMLDivElement>(null);
+  const [prefersReduced, setPrefersReduced] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReduced(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const animateStep = useCallback(async (direction: 'forward' | 'back') => {
     const container = stepContainerRef.current;
     if (!container) return;
+
+    if (prefersReduced) {
+      container.style.opacity = '1';
+      container.style.transform = 'translateX(0)';
+      return;
+    }
 
     try {
       const { animate } = await import('animejs');
@@ -38,7 +56,7 @@ export function OnboardingPage() {
     } catch {
       // Animation library unavailable — continue silently
     }
-  }, []);
+  }, [prefersReduced]);
 
   const toggleSubject = useCallback((subject: string) => {
     setSelectedSubjects((prev) =>

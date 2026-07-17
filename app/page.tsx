@@ -68,12 +68,18 @@ const CONVERSION_POINTS = [
   },
 ] as const;
 
+function getPrefersReducedMotion(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const [prefersReduced, setPrefersReduced] = useState(false);
+  const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
   const { resolvedTheme, setTheme } = useTheme();
+  const hiddenUntilAnimated = prefersReduced ? 1 : 0;
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -189,7 +195,7 @@ export default function HomePage() {
               <h1
                 data-animate
                 className="font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.02em] text-text-primary sm:text-5xl lg:text-[3.25rem]"
-                style={{ opacity: 0 }}
+                style={{ opacity: hiddenUntilAnimated }}
               >
                 Lesson plans in{' '}
                 <span className="relative whitespace-nowrap text-coral">
@@ -216,7 +222,7 @@ export default function HomePage() {
               <p
                 data-animate
                 className="mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg"
-                style={{ opacity: 0 }}
+                style={{ opacity: hiddenUntilAnimated }}
               >
                 Upload your curriculum docs, describe what you need, and FreePeriod
                 generates a complete, structured lesson plan you can edit and export.
@@ -225,7 +231,7 @@ export default function HomePage() {
               <div
                 data-animate
                 className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start"
-                style={{ opacity: 0 }}
+                style={{ opacity: hiddenUntilAnimated }}
               >
                 <Link
                   href="/sign-up"
@@ -244,7 +250,7 @@ export default function HomePage() {
               <div
                 data-animate
                 className="mt-5 flex items-center justify-center gap-4 lg:justify-start"
-                style={{ opacity: 0 }}
+                style={{ opacity: hiddenUntilAnimated }}
               >
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <Clock className="h-3.5 w-3.5" />
@@ -361,7 +367,7 @@ export default function HomePage() {
         onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
         aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         className="fixed bottom-6 right-6 z-50 btn-shine flex min-h-[44px] items-center gap-2 overflow-hidden rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
-        style={{ opacity: 0 }}
+        style={{ opacity: hiddenUntilAnimated }}
       >
         {resolvedTheme === 'dark' ? (
           <>
