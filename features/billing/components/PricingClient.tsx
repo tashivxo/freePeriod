@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { LucideIcon } from 'lucide-react';
 import { Check, Sparkles, Zap, BookOpen, Moon, Sun } from 'lucide-react';
-import { animate, stagger } from 'animejs';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import { useTheme } from '@/providers/theme';
 import { MagicCard } from '@/components/ui/magic-card';
@@ -66,11 +65,12 @@ const PLANS: Plan[] = [
     description:
       'For teachers who plan every week, up to 20 AI lesson plans a month with smarter AI.',
     features: [
+      'Everything in Free',
       '20 lesson plans per month',
-      'DOCX export',
       'OCR text extraction',
       'Priority support',
-    ],    cta: 'Start Pro',
+    ],
+    cta: 'Start Pro',
     ctaClass:
       'bg-coral hover:bg-coral-dark text-white focus-visible:ring-2 focus-visible:ring-coral',
     featured: true,
@@ -84,7 +84,8 @@ const PLANS: Plan[] = [
     priceAnnual: 10,
     description:
       'For teachers who plan every day, unlimited lesson plans with no monthly cap.',
-    features: ['Unlimited lesson plans', 'Everything in Pro'],    cta: 'Start Pro+',
+    features: ['Unlimited lesson plans', 'Everything in Pro'],
+    cta: 'Start Pro+',
     ctaClass:
       'bg-mustard hover:bg-mustard/90 text-[#1A1A2E] focus-visible:ring-2 focus-visible:ring-mustard',
   },
@@ -94,65 +95,7 @@ export function PricingClient() {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [prefersReduced, setPrefersReduced] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const toggleRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme, setTheme } = useTheme();
-
-  // Detect reduced motion
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReduced(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
-  // Entrance animations
-  useEffect(() => {
-    if (prefersReduced) return;
-
-    if (headerRef.current) {
-      const targets = Array.from(headerRef.current.querySelectorAll('[data-animate]'));
-      if (targets.length > 0) {
-        animate(targets, {
-          translateY: [20, 0],
-          opacity: [0, 1],
-          duration: 600,
-          delay: stagger(100),
-          easing: 'easeOutCubic',
-        });
-      }
-    }
-
-    const timer = setTimeout(() => {
-      if (cardsRef.current) {
-        const cards = Array.from(cardsRef.current.querySelectorAll('[data-card]'));
-        if (cards.length > 0) {
-          animate(cards, {
-            translateY: [24, 0],
-            opacity: [0, 1],
-            duration: 600,
-            delay: stagger(120),
-            easing: 'easeOutCubic',
-          });
-        }
-      }
-    }, 400);
-
-    if (toggleRef.current) {
-      animate(toggleRef.current, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 600,
-        delay: 1000,
-        easing: 'easeOutCubic',
-      });
-    }
-
-    return () => clearTimeout(timer);
-  }, [prefersReduced]);
 
   const handleCheckout = useCallback(
     async (planId: string) => {
@@ -240,18 +183,14 @@ export function PricingClient() {
 
       <main className="relative mx-auto max-w-5xl px-6 pb-24 pt-16">
         {/* Hero section */}
-        <div ref={headerRef} className="mb-16 text-center">
+        <div className="mb-16 text-center">
           <h1
-            data-animate
-            style={{ opacity: 0 }}
             className="font-display text-4xl font-extrabold leading-[1.1] tracking-[-0.02em] text-text-primary sm:text-5xl"
           >
             Plans for every classroom
           </h1>
 
           <p
-            data-animate
-            style={{ opacity: 0 }}
             className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg"
           >
             Start free, upgrade when you&apos;re ready. No credit card required.
@@ -259,8 +198,6 @@ export function PricingClient() {
 
           {/* Billing toggle */}
           <div
-            data-animate
-            style={{ opacity: 0 }}
             className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-surface p-1.5 shadow-sm ring-1 ring-border/50"
           >
             <button
@@ -293,7 +230,6 @@ export function PricingClient() {
 
         {/* Pricing cards */}
         <div
-          ref={cardsRef}
           className="grid grid-cols-1 gap-6 sm:grid-cols-3"
         >
           {PLANS.map((plan) => {
@@ -304,8 +240,6 @@ export function PricingClient() {
             return (
               <div
                 key={plan.id}
-                data-card
-                style={{ opacity: 0 }}
                 className={`relative ${plan.featured ? 'ring-2 ring-coral rounded-2xl' : ''}`}
               >
                 {plan.featured && (
@@ -427,11 +361,7 @@ export function PricingClient() {
       <MarketingFooter />
 
       {/* Floating dark mode toggle — wrapper owns fixed position; button owns relative for btn-shine */}
-      <div
-        ref={toggleRef}
-        className="fixed bottom-6 right-6 z-50"
-        style={{ opacity: 0 }}
-      >
+      <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}

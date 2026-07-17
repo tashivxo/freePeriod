@@ -3,8 +3,6 @@ import { test, expect } from '@playwright/test';
 test.describe('Pricing page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/pricing');
-    // Allow anime.js entrance animations to complete
-    await page.waitForTimeout(1200);
   });
 
   // ── Page metadata ───────────────────────────────────────────────
@@ -111,8 +109,8 @@ test.describe('Pricing page', () => {
   });
 
   // ── CTA buttons ───────────────────────────────────────────────────
-  test('"Get started free" is a link to /sign-up', async ({ page }) => {
-    const link = page.getByRole('link', { name: 'Get started free' });
+  test('"Start for free" is a link to /sign-up', async ({ page }) => {
+    const link = page.getByRole('link', { name: 'Start for free' });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', '/sign-up');
   });
@@ -150,11 +148,13 @@ test.describe('Pricing page', () => {
   });
 
   test('Pro plan features are listed', async ({ page }) => {
+    await expect(page.getByText('Everything in Free')).toBeVisible();
     await expect(page.getByText('20 lesson plans per month')).toBeVisible();
     await expect(page.getByText('OCR text extraction')).toBeVisible();
   });
 
   test('Pro+ plan features are listed', async ({ page }) => {
+    await expect(page.getByText('Unlimited lesson plans')).toBeVisible();
     await expect(page.getByText('Everything in Pro')).toBeVisible();
   });
 
@@ -179,7 +179,7 @@ test.describe('Pricing page', () => {
 
   test('all CTAs meet minimum 44px touch target height', async ({ page }) => {
     const ctaSelectors = [
-      page.getByRole('link', { name: 'Get started free' }),
+      page.getByRole('link', { name: 'Start for free' }),
       page.getByRole('button', { name: 'Start Pro', exact: true }),
       page.getByRole('button', { name: 'Start Pro+', exact: true }),
     ];
@@ -200,7 +200,6 @@ test.describe('Pricing page – colour scheme accessibility', () => {
 
       test.beforeEach(async ({ page }) => {
         await page.goto('/pricing');
-        await page.waitForTimeout(1200);
       });
 
       test(`Pro+ CTA uses mustard background in ${scheme} mode`, async ({ page }) => {
