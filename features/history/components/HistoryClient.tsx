@@ -125,7 +125,7 @@ export function HistoryClient() {
               <button
                 type="button"
                 onClick={() => setDeleteId(lesson.id)}
-                className="absolute top-3 right-3 p-2.5 rounded text-text-secondary/40 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="absolute top-3 right-3 flex min-h-11 min-w-11 items-center justify-center rounded text-text-secondary/40 hover:text-red-500 transition-colors opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 [@media(pointer:coarse)]:opacity-100"
                 aria-label={`Delete ${lesson.title}`}
               >
                 <Trash2 className="h-4 w-4" />
