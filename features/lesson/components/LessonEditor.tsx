@@ -16,6 +16,7 @@ import {
 type LessonEditorProps = {
   content: string;
   onChange: (html: string) => void;
+  onBlur?: () => void;
 };
 
 type ToolbarButtonProps = {
@@ -48,12 +49,15 @@ function ToolbarButton({ onClick, isActive, ariaLabel, disabled, children }: Too
   );
 }
 
-export function LessonEditor({ content, onChange }: LessonEditorProps) {
+export function LessonEditor({ content, onChange, onBlur }: LessonEditorProps) {
   const editor = useEditor({
     extensions: [StarterKit, Typography],
     content,
     onUpdate({ editor: e }) {
       onChange(e.getHTML());
+    },
+    onBlur: () => {
+      onBlur?.();
     },
   });
 
@@ -127,7 +131,7 @@ export function LessonEditor({ content, onChange }: LessonEditorProps) {
       {/* Editor */}
       <EditorContent
         editor={editor}
-        className="prose prose-sm max-w-none px-4 py-3 min-h-[120px] focus-within:outline-none
+        className="prose prose-base sm:prose-sm max-w-none px-4 py-3 min-h-[120px] focus-within:outline-none
           [&_.ProseMirror]:outline-none
           [&_.ProseMirror]:text-[var(--color-text-primary)]
           [&_.ProseMirror_p]:my-1

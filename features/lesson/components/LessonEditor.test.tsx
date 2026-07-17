@@ -66,8 +66,8 @@ jest.mock('@tiptap/react', () => ({
       return mockEditor;
     },
   ),
-  EditorContent: jest.fn(({ editor: _editor }: { editor: typeof mockEditor | null }) => (
-    <div data-testid="editor-content" />
+  EditorContent: jest.fn(({ className }: { className?: string }) => (
+    <div data-testid="editor-content" className={className} />
   )),
 }));
 
@@ -87,6 +87,11 @@ describe('LessonEditor', () => {
   it('renders the editor content area', () => {
     render(<LessonEditor content="initial content" onChange={() => {}} />);
     expect(screen.getByTestId('editor-content')).toBeInTheDocument();
+  });
+
+  it('uses mobile-readable prose sizing', () => {
+    render(<LessonEditor content="initial content" onChange={() => {}} />);
+    expect(screen.getByTestId('editor-content')).toHaveClass('prose-base', 'sm:prose-sm');
   });
 
   it('calls onChange when the editor updates', () => {

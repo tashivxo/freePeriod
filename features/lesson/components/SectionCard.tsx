@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { animate } from 'animejs';
 import { ChevronDown, Pencil, Check } from 'lucide-react';
@@ -19,6 +19,7 @@ type SectionCardProps = {
   onEdit: () => void;
   onDone: () => void;
   onChange: (html: string) => void;
+  autosaveFlashNonce?: number;
 };
 
 export function SectionCard({
@@ -28,12 +29,12 @@ export function SectionCard({
   onEdit,
   onDone,
   onChange,
+  autosaveFlashNonce,
 }: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Brief green border flash when a save completes (triggered externally via isEditing → false)
-  const flashSaved = () => {
+  const flashSaved = useCallback(() => {
     if (!cardRef.current) return;
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) return;
@@ -46,7 +47,12 @@ export function SectionCard({
       duration: 800,
       easing: 'easeOutQuad',
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    if (autosaveFlashNonce == null) return;
+    flashSaved();
+  }, [autosaveFlashNonce, flashSaved]);
 
   const handleDone = () => {
     onDone();

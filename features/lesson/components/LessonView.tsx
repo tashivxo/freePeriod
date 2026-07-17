@@ -11,13 +11,22 @@ import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
-import type { LessonPlan } from '@/types';
+import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 
 type LessonViewProps = {
   lesson: LessonPlan;
 };
+
+async function readExportError(response: Response, fallback: string): Promise<string> {
+  try {
+    const data = (await response.json()) as { error?: string };
+    return data.error ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
@@ -27,10 +36,19 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [fillLoading, setFillLoading] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
+    Partial<Record<LessonSectionKey, number>>
+  >({});
 
-  const debouncedSave = useDebouncedLessonSave(lesson.id, lesson.content, (updatedContent) => {
-    setLesson((prev) => ({ ...prev, content: updatedContent }));
-  });
+  const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
+    lesson.id,
+    lesson.content,
+    (updatedContent, key) => {
+      setLesson((prev) => ({ ...prev, content: updatedContent }));
+      setAutosaveFlashBySection((prev) => ({ ...prev, [key]: Date.now() }));
+    },
+  );
 
   useEffect(() => {
     if (!cardsRef.current) return;
@@ -57,6 +75,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
   const handleExport = useCallback(async () => {
     setExportLoading(true);
+    setExportError(null);
     try {
       const response = await fetch('/api/export', {
         method: 'POST',
@@ -64,9 +83,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        setExportError(await readExportError(response, 'Failed to export lesson'));
+        return;
+      }
 
       downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
+    } catch {
+      setExportError('Failed to export lesson. Check your connection and try again.');
     } finally {
       setExportLoading(false);
     }
@@ -74,6 +98,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
   const handleFillTemplate = useCallback(async () => {
     setFillLoading(true);
+    setExportError(null);
     try {
       const response = await fetch('/api/export/fill-template', {
         method: 'POST',
@@ -81,10 +106,15 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         body: JSON.stringify({ lessonId: lesson.id }),
       });
 
-      if (!response.ok) return;
+      if (!response.ok) {
+        setExportError(await readExportError(response, 'Failed to export filled template'));
+        return;
+      }
 
       const ext = lesson.template_path?.split('.').pop() ?? 'docx';
       downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
+    } catch {
+      setExportError('Failed to export filled template. Check your connection and try again.');
     } finally {
       setFillLoading(false);
     }
@@ -100,7 +130,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         <button
           type="button"
           onClick={() => router.push('/dashboard')}
-          className="inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
+          className="min-h-11 inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -119,6 +149,21 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </span>
           {lesson.curriculum && (
             <span>{lesson.curriculum}</span>
+          )}
+          {saveStatus === 'saving' && (
+            <span role="status" className="text-text-secondary">
+              Saving…
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span role="status" className="text-success">
+              Saved
+            </span>
+          )}
+          {saveStatus === 'error' && saveError && (
+            <span role="status" className="text-error">
+              {saveError}
+            </span>
           )}
         </div>
 
@@ -144,6 +189,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             </Button>
           )}
         </div>
+        {exportError ? (
+          <p role="alert" className="mt-3 text-sm font-medium text-error">
+            {exportError}
+          </p>
+        ) : null}
       </div>
 
       <div ref={cardsRef} className="space-y-4">
@@ -156,6 +206,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               onEdit={() => setEditingKey(section.key)}
               onDone={() => setEditingKey(null)}
               onChange={(html) => debouncedSave(section.key, html)}
+              autosaveFlashNonce={autosaveFlashBySection[section.key]}
             />
           </div>
         ))}
