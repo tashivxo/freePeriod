@@ -23,7 +23,7 @@ export function MarketingFooter() {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
               >
                 {link.label}
               </a>
@@ -31,7 +31,7 @@ export function MarketingFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
               >
                 {link.label}
               </Link>

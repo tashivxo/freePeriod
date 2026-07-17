@@ -183,13 +183,13 @@ export function PricingClient() {
           <nav className="flex items-center gap-2">
             <Link
               href="/"
-              className="px-3 py-2 text-sm font-body text-text-secondary hover:text-text-primary transition-colors"
+              className="inline-flex min-h-11 items-center px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
             >
               Home
             </Link>
             <Link
               href="/sign-in"
-              className="relative btn-shine overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white hover:bg-coral-dark transition-colors min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
+              className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
             >
               Sign in
             </Link>

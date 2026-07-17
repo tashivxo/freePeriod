@@ -64,7 +64,7 @@ const CONVERSION_POINTS = [
   },
   {
     icon: BookOpen,
-    text: 'Free to start. No credit',
+    text: 'Free to start. No credit card required.',
   },
 ] as const;
 
@@ -174,13 +174,13 @@ export default function HomePage() {
           <nav className="flex items-center gap-2">
             <Link
               href="/pricing"
-              className="px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
+              className="inline-flex min-h-11 items-center px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
             >
               Pricing
             </Link>
             <Link
               href="/sign-in"
-              className="relative btn-shine overflow-hidden rounded-lg bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark"
+              className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
             >
               Sign in
             </Link>
