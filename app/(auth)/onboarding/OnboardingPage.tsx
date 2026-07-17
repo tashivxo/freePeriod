@@ -139,7 +139,7 @@ export function OnboardingPage() {
   }, [animateStep]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background/80 px-4">
       <div className="w-full max-w-lg">
         <p className="mb-6 text-center text-sm text-text-secondary">
           {step} / 3
