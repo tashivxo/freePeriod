@@ -150,7 +150,7 @@ test.describe('Pricing page', () => {
   });
 
   test('Pro plan features are listed', async ({ page }) => {
-    await expect(page.getByText('Unlimited lesson plans')).toBeVisible();
+    await expect(page.getByText('20 lesson plans per month')).toBeVisible();
     await expect(page.getByText('OCR text extraction')).toBeVisible();
   });
 
