@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { HeroPictogram } from '@/components/animations/HeroPictogram';
+import { Button } from '@/components/ui/Button';
 import { getSectionProgressLabel, LESSON_SECTION_COUNT } from '@/lib/lesson/sections';
 import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
 
@@ -20,9 +21,18 @@ type StatusStep = {
 type GenerationScreenProps = {
   events: GenerateStreamEvent[];
   onComplete: (lessonId: string) => void;
+  onCancel?: () => void;
+  onRetry?: () => void;
+  onBackToForm?: () => void;
 };
 
-export function GenerationScreen({ events, onComplete }: GenerationScreenProps) {
+export function GenerationScreen({
+  events,
+  onComplete,
+  onCancel,
+  onRetry,
+  onBackToForm,
+}: GenerationScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const hasCompletedRef = useRef(false);
@@ -57,7 +67,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
   }
 
   // Add section progress
-  if (receivedSections.length > 0) {
+  if (receivedSections.length > 0 && !errorMessage) {
     statusSteps.push({
       message: `Writing ${getSectionProgressLabel(receivedSections[receivedSections.length - 1])}…`,
       done: false,
@@ -109,7 +119,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
       style={{ opacity: prefersReduced ? 1 : 0 }}
       role="status"
       aria-live="polite"
-      aria-label="Generating lesson plan"
+      aria-label={errorMessage ? 'Generation failed' : 'Generating lesson plan'}
     >
       <HeroPictogram />
 
@@ -137,7 +147,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
           </div>
         ))}
 
-        {receivedSections.length > 0 && !completeEvent && (
+        {receivedSections.length > 0 && !completeEvent && !errorMessage && (
           <p className="text-xs text-text-secondary mt-4">
             {receivedSections.length} of {LESSON_SECTION_COUNT} sections ready
           </p>
@@ -150,9 +160,31 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
         )}
 
         {errorMessage && (
-          <p className="text-sm text-error mt-4">{errorMessage}</p>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-error">{errorMessage}</p>
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+              {onRetry && (
+                <Button type="button" onClick={onRetry}>
+                  Try again
+                </Button>
+              )}
+              {onBackToForm && (
+                <Button type="button" variant="outline" onClick={onBackToForm}>
+                  Back to form
+                </Button>
+              )}
+            </div>
+          </div>
         )}
       </div>
+
+      {!errorMessage && !completeEvent && onCancel && (
+        <div className="mt-8">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancel generation
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

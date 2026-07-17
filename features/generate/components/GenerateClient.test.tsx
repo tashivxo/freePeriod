@@ -134,4 +134,125 @@ describe('GenerateClient', () => {
       expect(mockPush).toHaveBeenCalledWith('/lesson/lesson-xyz');
     });
   });
+
+  it('surfaces HTTP errors with recovery CTAs instead of a stuck overlay', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Server exploded' }),
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Server exploded')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /back to form/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /back to form/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', { name: /generation failed|generating lesson plan/i }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('cancels in-flight generation and restores the form', async () => {
+    let rejectFetch: ((reason?: unknown) => void) | undefined;
+    (global.fetch as jest.Mock).mockImplementation(
+      (_url: string, init?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          rejectFetch = reject;
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'));
+          });
+        }),
+    );
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: /generating lesson plan/i }),
+      ).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /cancel generation/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', { name: /generating lesson plan/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('heading', { name: /generate a lesson/i })).toBeInTheDocument();
+    expect(rejectFetch).toBeDefined();
+  });
+
+  it('shows UpgradePrompt on 402 without trapping the overlay', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({ error: 'Quota exceeded' }),
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('status', { name: /generating lesson plan/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /upgrade to pro/i })).toBeInTheDocument();
+    });
+  });
+
+  it('surfaces stream errors with Try again recovery', async () => {
+    const toBytes = (value: string) => Uint8Array.from(value, (char) => char.charCodeAt(0));
+    const chunks = [
+      'data: {"type":"status","message":"Starting generation…"}\n\n',
+      'data: {"type":"error","message":"Model overloaded"}\n\n',
+    ];
+    let chunkIndex = 0;
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (chunkIndex < chunks.length) {
+              return { done: false, value: toBytes(chunks[chunkIndex++]) };
+            }
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Model overloaded')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /try again/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+  });
 });

@@ -7,6 +7,8 @@ import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
 import type { GenerateStreamEvent } from '@/types';
 
+type GenerationPhase = 'idle' | 'generating' | 'error';
+
 type GenerateClientProps = {
   defaults?: {
     subject: string;
@@ -18,17 +20,37 @@ type GenerateClientProps = {
 
 export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps) {
   const router = useRouter();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const lastFormDataRef = useRef<GenerateFormData | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const handleSubmit = useCallback(async (data: GenerateFormData) => {
-    setIsGenerating(true);
+  const isGenerating = phase === 'generating';
+  const showOverlay = phase === 'generating' || phase === 'error';
+
+  const returnToForm = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setPhase('idle');
     setEvents([]);
+  }, []);
+
+  const handleSubmit = useCallback(async (data: GenerateFormData) => {
+    lastFormDataRef.current = data;
+    abortRef.current?.abort();
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    setPhase('generating');
+    setEvents([]);
+
+    const surfaceError = (message: string) => {
+      setEvents([{ type: 'error', message }]);
+      setPhase('error');
+      abortRef.current = null;
+    };
 
     try {
       const response = await fetch('/api/generate', {
@@ -41,25 +63,25 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
       if (!response.ok) {
         if (response.status === 402) {
           setShowUpgrade(true);
-          setIsGenerating(false);
+          setPhase('idle');
+          setEvents([]);
+          abortRef.current = null;
           return;
         }
         const errorBody = await response.json().catch(() => ({ error: 'Request failed' }));
-        setEvents((prev) => [
-          ...prev,
-          { type: 'error', message: errorBody.error ?? 'Request failed' },
-        ]);
+        surfaceError(errorBody.error ?? 'Request failed');
         return;
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        setEvents((prev) => [...prev, { type: 'error', message: 'No response stream' }]);
+        surfaceError('No response stream');
         return;
       }
 
       const decoder = new TextDecoder();
       let buffer = '';
+      let terminalError = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -77,19 +99,38 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
           try {
             const event = JSON.parse(json) as GenerateStreamEvent;
             setEvents((prev) => [...prev, event]);
+            if (event.type === 'error') {
+              terminalError = true;
+              setPhase('error');
+              abortRef.current = null;
+            }
           } catch {
             // Skip malformed lines
           }
         }
+
+        if (terminalError) break;
+      }
+
+      if (!terminalError && abortRef.current === controller) {
+        abortRef.current = null;
       }
     } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      setEvents((prev) => [
-        ...prev,
-        { type: 'error', message: 'Connection lost. Please try again.' },
-      ]);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return;
+      }
+      surfaceError('Connection lost. Please try again.');
     }
   }, []);
+
+  const handleRetry = useCallback(() => {
+    const data = lastFormDataRef.current;
+    if (data) {
+      void handleSubmit(data);
+    } else {
+      returnToForm();
+    }
+  }, [handleSubmit, returnToForm]);
 
   const handleComplete = useCallback(
     (lessonId: string) => {
@@ -100,9 +141,20 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
 
   return (
     <>
-      <GenerateForm defaults={defaults} userPlan={plan} onSubmit={handleSubmit} />
-      {isGenerating && (
-        <GenerationScreen events={events} onComplete={handleComplete} />
+      <GenerateForm
+        defaults={defaults}
+        userPlan={plan}
+        onSubmit={handleSubmit}
+        isGenerating={isGenerating}
+      />
+      {showOverlay && (
+        <GenerationScreen
+          events={events}
+          onComplete={handleComplete}
+          onCancel={returnToForm}
+          onRetry={handleRetry}
+          onBackToForm={returnToForm}
+        />
       )}
       <UpgradePrompt open={showUpgrade} onDismiss={() => setShowUpgrade(false)} />
     </>

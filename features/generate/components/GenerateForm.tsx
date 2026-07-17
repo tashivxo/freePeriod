@@ -26,7 +26,9 @@ export interface GenerateFormProps {
     curriculum?: string;
   };
   userPlan?: 'free' | 'pro';
-  onSubmit?: (data: GenerateFormData) => void;
+  onSubmit?: (data: GenerateFormData) => void | Promise<void>;
+  /** Parent-owned busy flag (overlay lifecycle). Prefer over local submit flicker. */
+  isGenerating?: boolean;
 }
 
 export interface GenerateFormData {
@@ -39,7 +41,12 @@ export interface GenerateFormData {
   templatePath: string | null;
 }
 
-export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: GenerateFormProps) {
+export function GenerateForm({
+  defaults,
+  userPlan = 'free',
+  onSubmit,
+  isGenerating = false,
+}: GenerateFormProps) {
   const subjectField = usePresetField(defaults?.subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(defaults?.curriculum, CURRICULA as readonly string[]);
   const [grade, setGrade] = useState(defaults?.grade ?? '');
@@ -49,6 +56,8 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
   const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
   const [templatePath, setTemplatePath] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const busy = isGenerating || isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +80,7 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
       };
 
       if (onSubmit) {
-        onSubmit(formData);
+        await onSubmit(formData);
       }
     } finally {
       setIsSubmitting(false);
@@ -218,10 +227,11 @@ export function GenerateForm({ defaults, userPlan = 'free', onSubmit }: Generate
         {/* Submit */}
         <Button
           type="submit"
-          disabled={!subjectField.value.trim() || isSubmitting}
+          disabled={!subjectField.value.trim() || busy}
+          isLoading={busy}
           className="w-full mt-6"
         >
-          {isSubmitting ? 'Generating...' : (
+          {busy ? 'Generating...' : (
             <>
               <Plus className="h-5 w-5 mr-2" />
               Generate Lesson Plan

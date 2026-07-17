@@ -209,4 +209,36 @@ describe('GenerateForm', () => {
       }),
     );
   });
+
+  it('awaits async onSubmit before clearing local submitting state', async () => {
+    let resolveSubmit: (() => void) | undefined;
+    const pendingSubmit = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+
+    const { user } = render(
+      <GenerateForm onSubmit={pendingSubmit} defaults={defaults} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+
+    resolveSubmit?.();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /generate lesson plan/i })).toBeEnabled();
+    });
+  });
+
+  it('stays busy when parent isGenerating is true', () => {
+    render(
+      <GenerateForm onSubmit={onSubmit} defaults={defaults} isGenerating />,
+    );
+
+    expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+  });
 });
