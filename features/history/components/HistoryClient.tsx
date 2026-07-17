@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, BookOpen, Clock, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
@@ -13,13 +14,18 @@ type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'durat
 
 export function HistoryClient() {
   const [lessons, setLessons] = useState<LessonCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchLessons = useCallback(async () => {
-    setLoading(true);
     const supabase = createClient();
     let query = supabase
       .from('lesson_plans')
@@ -29,14 +35,14 @@ export function HistoryClient() {
     if (subjectFilter) {
       query = query.eq('subject', subjectFilter);
     }
-    if (search) {
-      query = query.ilike('title', `%${search}%`);
+    if (debouncedSearch) {
+      query = query.ilike('title', `%${debouncedSearch}%`);
     }
 
     const { data } = await query;
     setLessons(data ?? []);
-    setLoading(false);
-  }, [search, subjectFilter]);
+    setInitialLoading(false);
+  }, [debouncedSearch, subjectFilter]);
 
   useEffect(() => {
     fetchLessons();
@@ -50,6 +56,7 @@ export function HistoryClient() {
   }, []);
 
   const subjects = [...new Set(lessons.map((l) => l.subject))].sort();
+  const hasActiveFilters = Boolean(debouncedSearch || subjectFilter);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -65,7 +72,7 @@ export function HistoryClient() {
             aria-label="Search lessons by title"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-base md:text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
           />
         </div>
         {subjects.length > 1 && (
@@ -83,16 +90,25 @@ export function HistoryClient() {
       </div>
 
       {/* Grid */}
-      {loading ? (
+      {initialLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-36 bg-surface rounded-xl" />
           ))}
         </div>
       ) : lessons.length === 0 ? (
-        <p className="text-center font-body text-text-secondary py-12">
-          {search || subjectFilter ? 'Nothing found — try a different search.' : 'No lessons yet.'}
-        </p>
+        <div className="text-center font-body text-text-secondary py-12">
+          {hasActiveFilters ? (
+            <p>Nothing found — try a different search.</p>
+          ) : (
+            <>
+              <p className="mb-4">No lessons yet.</p>
+              <Button asChild>
+                <Link href="/generate">Generate a lesson</Link>
+              </Button>
+            </>
+          )}
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lessons.map((lesson) => (
@@ -116,7 +132,7 @@ export function HistoryClient() {
                   </span>
                   <span>{lesson.grade}</span>
                 </div>
-                <p className="text-[10px] font-body text-text-secondary/60">
+                <p className="text-xs font-body text-text-secondary">
                   {new Date(lesson.created_at).toLocaleDateString()}
                 </p>
               </Link>
