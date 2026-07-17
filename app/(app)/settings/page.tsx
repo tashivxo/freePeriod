@@ -9,10 +9,10 @@ export const metadata = { title: 'Settings — FreePeriod' };
 function SettingsSkeleton() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 animate-pulse">
-      <div className="h-8 w-32 bg-gray-200 rounded mb-8" />
-      <div className="h-48 bg-gray-100 rounded-xl mb-8" />
-      <div className="h-48 bg-gray-100 rounded-xl mb-8" />
-      <div className="h-24 bg-gray-100 rounded-xl" />
+      <div className="h-8 w-32 bg-surface border border-border rounded mb-8" />
+      <div className="h-48 bg-surface border border-border rounded-xl mb-8" />
+      <div className="h-48 bg-surface border border-border rounded-xl mb-8" />
+      <div className="h-24 bg-surface border border-border rounded-xl" />
     </div>
   );
 }

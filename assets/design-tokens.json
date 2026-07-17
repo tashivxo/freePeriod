@@ -43,7 +43,7 @@
       "surface":           { "value": "{primitive.color.neutral-0}",   "type": "color", "css": "var(--surface)" },
       "border":            { "value": "{primitive.color.neutral-200}", "type": "color", "css": "var(--color-border)" },
       "text-primary":      { "value": "{primitive.color.neutral-900}", "type": "color", "css": "var(--text-primary)" },
-      "text-secondary":    { "value": "{primitive.color.neutral-500}", "type": "color", "css": "var(--text-secondary)" },
+      "text-secondary":    { "value": "{primitive.color.neutral-600}", "type": "color", "css": "var(--text-secondary)" },
       "success":           { "value": "{primitive.color.green-500}",   "type": "color", "css": "var(--color-success)" },
       "error":             { "value": "{primitive.color.red-500}",     "type": "color", "css": "var(--color-error)" },
       "focus-ring":        { "value": "{primitive.color.coral-500}",   "type": "color", "css": "var(--color-coral)" }
