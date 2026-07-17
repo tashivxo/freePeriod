@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <label
         htmlFor={inputId}
         className={[
-          'absolute left-4 transition-all duration-150 pointer-events-none font-body',
+          'absolute left-4 transition-[top,transform,font-size,color] duration-150 pointer-events-none font-body',
           focused || hasValue
             ? 'top-1.5 text-xs'
             : 'top-1/2 -translate-y-1/2 text-base',
