@@ -15,6 +15,7 @@ const config: Config = {
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/tests/e2e/',
+    '<rootDir>/.worktrees/',
   ],
 };
 
