@@ -20,6 +20,7 @@ export function SignUpPage() {
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -58,8 +59,14 @@ export function SignUpPage() {
       return;
     }
 
-    // Create profile row immediately if session is available (no email confirmation required)
-    if (authData.user && authData.session) {
+    // Email confirmation required — stay on page with in-card success
+    if (!authData.session) {
+      setCheckEmail(true);
+      return;
+    }
+
+    // Create profile row immediately if session is available
+    if (authData.user) {
       await supabase.from('users').insert({
         id: authData.user.id,
         email,
@@ -68,9 +75,18 @@ export function SignUpPage() {
         default_grade: null,
         default_curriculum: null,
       });
+
+      const { data: profile } = await supabase
+        .from('users')
+        .select('onboarding_complete')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      router.push(profile?.onboarding_complete ? '/dashboard' : '/onboarding');
+      return;
     }
 
-    router.push('/dashboard');
+    router.push('/onboarding');
   }
 
   async function handleGoogleLogin() {
@@ -108,6 +124,21 @@ export function SignUpPage() {
           </div>
         )}
 
+        {checkEmail ? (
+          <div role="status" className="space-y-4">
+            <div className="p-3 rounded-xl bg-success/10 text-success text-sm text-center">
+              Check your email — we&apos;ve sent a confirmation link to{' '}
+              <strong>{email}</strong>
+            </div>
+            <p className="text-center text-sm font-body text-text-secondary">
+              Already confirmed?{' '}
+              <Link href="/sign-in" className="text-coral font-semibold hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <>
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <Input
             label="Full Name"
@@ -203,6 +234,8 @@ export function SignUpPage() {
             Sign in
           </Link>
         </p>
+          </>
+        )}
 
           </CardContent>
         </Card>

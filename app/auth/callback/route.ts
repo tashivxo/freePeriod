@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 function resolveNext(
   nextParam: string | null,
   type: EmailOtpType | null,
+  onboardingComplete: boolean,
 ): string {
   if (nextParam && isSafeInternalPath(nextParam)) {
     return nextParam;
@@ -13,7 +14,7 @@ function resolveNext(
   if (type === 'recovery') {
     return '/update-password';
   }
-  return '/dashboard';
+  return onboardingComplete ? '/dashboard' : '/onboarding';
 }
 
 function redirectTo(request: Request, next: string) {
@@ -33,14 +34,16 @@ function redirectTo(request: Request, next: string) {
 async function ensureUserProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
   user: User,
-) {
+): Promise<{ onboardingComplete: boolean }> {
   const { data: existingProfile } = await supabase
     .from('users')
-    .select('id')
+    .select('id, onboarding_complete')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (existingProfile) return;
+  if (existingProfile) {
+    return { onboardingComplete: Boolean(existingProfile.onboarding_complete) };
+  }
 
   const metaFullName = user.user_metadata?.full_name;
   const metaName = user.user_metadata?.name;
@@ -73,6 +76,8 @@ async function ensureUserProfile(
     },
     { onConflict: 'user_id' },
   );
+
+  return { onboardingComplete: false };
 }
 
 export async function GET(request: Request) {
@@ -81,7 +86,6 @@ export async function GET(request: Request) {
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
   const nextParam = searchParams.get('next');
-  const next = resolveNext(nextParam, type);
 
   const supabase = await createClient();
 
@@ -89,11 +93,13 @@ export async function GET(request: Request) {
     const { error, data: sessionData } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      let onboardingComplete = false;
       if (sessionData.user) {
-        await ensureUserProfile(supabase, sessionData.user);
+        const profile = await ensureUserProfile(supabase, sessionData.user);
+        onboardingComplete = profile.onboardingComplete;
       }
 
-      return redirectTo(request, next);
+      return redirectTo(request, resolveNext(nextParam, type, onboardingComplete));
     }
   }
 
@@ -108,11 +114,13 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
 
+      let onboardingComplete = false;
       if (user) {
-        await ensureUserProfile(supabase, user);
+        const profile = await ensureUserProfile(supabase, user);
+        onboardingComplete = profile.onboardingComplete;
       }
 
-      return redirectTo(request, next);
+      return redirectTo(request, resolveNext(nextParam, type, onboardingComplete));
     }
   }
 

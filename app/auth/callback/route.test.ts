@@ -39,7 +39,9 @@ describe('GET /auth/callback', () => {
     mockFrom.mockReturnValue({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'user-1' } }),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: 'user-1', onboarding_complete: false },
+      }),
       insert: jest.fn().mockResolvedValue({ error: null }),
       upsert: jest.fn().mockResolvedValue({ error: null }),
     });
@@ -55,30 +57,47 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
   });
 
-  it('defaults bare PKCE code callback to /dashboard when next is absent', async () => {
+  it('defaults bare PKCE code callback to /onboarding when onboarding incomplete', async () => {
     const response = await GET(callbackRequest('?code=pkce-code'));
 
     expect(mockExchangeCodeForSession).toHaveBeenCalledWith('pkce-code');
     expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding');
+  });
+
+  it('defaults bare PKCE code callback to /dashboard when onboarding complete', async () => {
+    mockFrom.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id: 'user-1', onboarding_complete: true },
+      }),
+      insert: jest.fn().mockResolvedValue({ error: null }),
+      upsert: jest.fn().mockResolvedValue({ error: null }),
+    });
+
+    const response = await GET(callbackRequest('?code=pkce-code'));
+
+    expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard');
   });
 
-  it('rejects unsafe next and falls back to /dashboard for PKCE code', async () => {
+  it('rejects unsafe next and falls back to /onboarding for incomplete users', async () => {
     const response = await GET(
       callbackRequest('?code=pkce-code&next=//evil.example'),
     );
 
     expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard');
+    expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding');
   });
 
-  it('rejects encoded protocol-relative next and falls back to /dashboard for PKCE code', async () => {
+  it('rejects encoded protocol-relative next and falls back to /onboarding for incomplete users', async () => {
     const response = await GET(
       callbackRequest('?code=pkce-code&next=/%2f%2fevil.example'),
     );
 
     expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard');
+    expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding');
   });
 
   it('redirects recovery token_hash flow to /update-password by default', async () => {

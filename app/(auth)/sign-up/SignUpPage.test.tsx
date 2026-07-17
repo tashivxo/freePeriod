@@ -91,7 +91,10 @@ describe('SignUpPage', () => {
 
   it('calls signUp on valid submit', async () => {
     const { createClient } = await import('@/lib/supabase/client');
-    const mockSignUp = jest.fn().mockResolvedValue({ data: {}, error: null });
+    const mockSignUp = jest.fn().mockResolvedValue({
+      data: { session: null, user: { id: 'user-1' } },
+      error: null,
+    });
     (createClient as jest.Mock).mockReturnValue({
       auth: {
         signUp: mockSignUp,
@@ -113,6 +116,109 @@ describe('SignUpPage', () => {
         data: { name: 'Jane Doe' },
       },
     });
+  });
+
+  it('shows check-your-email state when signup returns no session', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn().mockResolvedValue({
+      data: { session: null, user: { id: 'user-1' } },
+      error: null,
+    });
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+    });
+
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(
+      await screen.findByText(/check your email/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/jane@test.com/i)).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('routes new users with a session to onboarding', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn().mockResolvedValue({
+      data: {
+        session: { access_token: 'tok' },
+        user: { id: 'user-1' },
+      },
+      error: null,
+    });
+    const mockMaybeSingle = jest.fn().mockResolvedValue({
+      data: { onboarding_complete: false },
+    });
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+      from: jest.fn().mockReturnValue({
+        insert: jest.fn().mockResolvedValue({ error: null }),
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: mockMaybeSingle,
+          }),
+        }),
+      }),
+    });
+
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await screen.findByRole('button', { name: /create account/i });
+    expect(mockPush).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('routes returning complete users with a session to dashboard', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn().mockResolvedValue({
+      data: {
+        session: { access_token: 'tok' },
+        user: { id: 'user-1' },
+      },
+      error: null,
+    });
+    const mockMaybeSingle = jest.fn().mockResolvedValue({
+      data: { onboarding_complete: true },
+    });
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+      from: jest.fn().mockReturnValue({
+        insert: jest.fn().mockResolvedValue({ error: null }),
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: mockMaybeSingle,
+          }),
+        }),
+      }),
+    });
+
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await screen.findByRole('button', { name: /create account/i });
+    expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
 
   it('shows error message on failed sign-up', async () => {
