@@ -16,7 +16,6 @@ import {
 type LessonEditorProps = {
   content: string;
   onChange: (html: string) => void;
-  onBlur?: () => void;
 };
 
 type ToolbarButtonProps = {
@@ -32,6 +31,7 @@ function ToolbarButton({ onClick, isActive, ariaLabel, disabled, children }: Too
     <button
       type="button"
       onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={isActive}
@@ -48,15 +48,12 @@ function ToolbarButton({ onClick, isActive, ariaLabel, disabled, children }: Too
   );
 }
 
-export function LessonEditor({ content, onChange, onBlur }: LessonEditorProps) {
+export function LessonEditor({ content, onChange }: LessonEditorProps) {
   const editor = useEditor({
     extensions: [StarterKit, Typography],
     content,
     onUpdate({ editor: e }) {
       onChange(e.getHTML());
-    },
-    onBlur() {
-      onBlur?.();
     },
   });
 

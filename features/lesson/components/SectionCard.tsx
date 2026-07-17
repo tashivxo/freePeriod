@@ -62,8 +62,12 @@ export function SectionCard({
       <div className="flex w-full items-center justify-between px-5 py-4">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex flex-1 items-center gap-2 text-left hover:opacity-80 transition-opacity"
+          onClick={() => {
+            if (isEditing) return;
+            setIsOpen(!isOpen);
+          }}
+          disabled={isEditing}
+          className="flex flex-1 items-center gap-2 text-left hover:opacity-80 transition-opacity disabled:cursor-default disabled:hover:opacity-100"
           aria-expanded={isOpen}
         >
           <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
@@ -96,12 +100,12 @@ export function SectionCard({
         )}
       </div>
 
-      {/* Content */}
-      {isOpen && (
+      {/* Content — stay open while editing so the editor cannot collapse mid-edit */}
+      {(isOpen || isEditing) && (
         <div className="px-5 pb-4 border-t border-text-secondary/10">
           {isEditing ? (
             <div className="mt-3">
-              <LessonEditor content={content} onChange={onChange} onBlur={onDone} />
+              <LessonEditor content={content} onChange={onChange} />
             </div>
           ) : (
             <div
