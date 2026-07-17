@@ -181,20 +181,27 @@ export function SignInPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Switch
-              id="remember-me"
-              checked={rememberMe}
-              onCheckedChange={(checked) => setRememberMe(!!checked)}
-              className="data-checked:bg-coral"
-              aria-label="Remember me"
-            />
-            <label
-              htmlFor="remember-me"
-              className="text-sm text-text-secondary font-body cursor-pointer select-none"
-            >
-              Remember me
-            </label>
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="remember-me"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(!!checked)}
+                className="data-checked:bg-coral"
+                aria-label="Remember me"
+                aria-describedby="remember-me-hint"
+              />
+              <label
+                htmlFor="remember-me"
+                className="cursor-pointer select-none font-body text-sm text-text-secondary"
+              >
+                Remember me
+              </label>
+            </div>
+            <p id="remember-me-hint" className="pl-12 text-xs text-text-secondary">
+              You stay signed in on this browser until you sign out. Session length follows
+              your browser&apos;s saved sign-in — not a permanent login.
+            </p>
           </div>
 
           <Button type="submit" className="w-full" isLoading={authBusy}>

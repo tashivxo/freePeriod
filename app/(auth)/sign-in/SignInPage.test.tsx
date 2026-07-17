@@ -176,7 +176,13 @@ describe('SignInPage', () => {
     expect(checkbox).toBeChecked();
   });
 
-  it('unchecking remember me passes persistSession false to createClient', async () => {
+  it('shows honest session helper copy for remember me', () => {
+    render(<SignInPage />);
+    expect(screen.getByText(/stay signed in on this browser until you sign out/i)).toBeInTheDocument();
+    expect(screen.getByText(/not a permanent login/i)).toBeInTheDocument();
+  });
+
+  it('unchecking remember me does not invent alternate persistence', async () => {
     const { createClient } = jest.requireMock('@/lib/supabase/client');
     createClient.mockReturnValue({
       auth: {
