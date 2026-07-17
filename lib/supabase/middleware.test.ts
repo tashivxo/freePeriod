@@ -66,8 +66,19 @@ describe('updateSession password recovery routes', () => {
     );
   });
 
-  it('forwards PKCE code from landing page to auth callback', async () => {
+  it('forwards bare PKCE code from landing page without recovery next', async () => {
     const response = await updateSession(requestFor('/?code=pkce-code'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?code=pkce-code',
+    );
+  });
+
+  it('forwards explicit safe recovery next with landing-page PKCE code', async () => {
+    const response = await updateSession(
+      requestFor('/?code=pkce-code&next=%2Fupdate-password'),
+    );
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe(
@@ -75,7 +86,7 @@ describe('updateSession password recovery routes', () => {
     );
   });
 
-  it('preserves explicit next when forwarding landing-page auth params', async () => {
+  it('preserves explicit safe next when forwarding landing-page auth params', async () => {
     const response = await updateSession(
       requestFor('/?code=pkce-code&next=%2Fdashboard'),
     );
@@ -93,7 +104,18 @@ describe('updateSession password recovery routes', () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toBe(
-      'http://localhost:3000/auth/callback?code=pkce-code&next=%2Fupdate-password',
+      'http://localhost:3000/auth/callback?code=pkce-code',
+    );
+  });
+
+  it('does not forward unsafe next from landing-page PKCE code', async () => {
+    const response = await updateSession(
+      requestFor('/?code=pkce-code&next=//evil.example'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/auth/callback?code=pkce-code',
     );
   });
 

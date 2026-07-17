@@ -1,19 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { EmailOtpType, User } from '@supabase/supabase-js';
+import { isSafeInternalPath } from '@/lib/auth/safe-redirect';
 import { createClient } from '@/lib/supabase/server';
-
-function isSafeInternalPath(path: string): boolean {
-  return path.startsWith('/') && !path.startsWith('//');
-}
 
 function resolveNext(
   nextParam: string | null,
-  options: { hasCode: boolean; type: EmailOtpType | null },
+  type: EmailOtpType | null,
 ): string {
   if (nextParam && isSafeInternalPath(nextParam)) {
     return nextParam;
   }
-  if (options.hasCode || options.type === 'recovery') {
+  if (type === 'recovery') {
     return '/update-password';
   }
   return '/dashboard';
@@ -84,7 +81,7 @@ export async function GET(request: Request) {
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
   const nextParam = searchParams.get('next');
-  const next = resolveNext(nextParam, { hasCode: Boolean(code), type });
+  const next = resolveNext(nextParam, type);
 
   const supabase = await createClient();
 
