@@ -50,7 +50,7 @@ test.describe('Pricing page', () => {
 
   test('pro card shows $9/mo on monthly billing', async ({ page }) => {
     // Ensure monthly is active (default)
-    await expect(page.getByRole('button', { name: 'Monthly' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Monthly' })).toBeVisible();
     // Pro plan price
     const proCard = page.locator('[data-card]').nth(1);
     await expect(proCard.getByText('$9')).toBeVisible();
@@ -64,18 +64,18 @@ test.describe('Pricing page', () => {
 
   // ── Billing toggle ───────────────────────────────────────────────
   test('billing toggle switches between Monthly and Annual', async ({ page }) => {
-    // Default: Monthly active
-    const monthlyBtn = page.getByRole('button', { name: 'Monthly' });
-    // Annual button uses role="switch"
-    const annualBtn = page.getByRole('switch');
-    await expect(monthlyBtn).toBeVisible();
-    await expect(annualBtn).toBeVisible();
+    const tablist = page.getByRole('tablist', { name: 'Billing period' });
+    const monthlyTab = page.getByRole('tab', { name: 'Monthly' });
+    const annualTab = page.getByRole('tab', { name: /Annual/i });
+    await expect(tablist).toBeVisible();
+    await expect(monthlyTab).toBeVisible();
+    await expect(annualTab).toBeVisible();
+    await expect(monthlyTab).toHaveAttribute('aria-selected', 'true');
 
-    // Switch to Annual
-    await annualBtn.click();
+    await annualTab.click();
 
-    // Annual button should now be active (has bg-coral class)
-    await expect(annualBtn).toHaveClass(/bg-coral/);
+    await expect(annualTab).toHaveAttribute('aria-selected', 'true');
+    await expect(annualTab).toHaveClass(/bg-coral/);
   });
 
   test('"Save 20%" badge is visible on Annual button', async ({ page }) => {
@@ -83,7 +83,7 @@ test.describe('Pricing page', () => {
   });
 
   test('switching to Annual updates Pro price to $7', async ({ page }) => {
-    await page.getByRole('switch').click();
+    await page.getByRole('tab', { name: /Annual/i }).click();
     await page.waitForTimeout(100);
 
     const proCard = page.locator('[data-card]').nth(1);
@@ -91,7 +91,7 @@ test.describe('Pricing page', () => {
   });
 
   test('switching to Annual updates Pro+ price to $10', async ({ page }) => {
-    await page.getByRole('switch').click();
+    await page.getByRole('tab', { name: /Annual/i }).click();
     await page.waitForTimeout(100);
 
     const plusCard = page.locator('[data-card]').nth(2);
@@ -99,7 +99,7 @@ test.describe('Pricing page', () => {
   });
 
   test('annual billing shows "Billed as $X/yr" text', async ({ page }) => {
-    await page.getByRole('switch').click();
+    await page.getByRole('tab', { name: /Annual/i }).click();
     await page.waitForTimeout(100);
 
     // Pro: $7 * 12 = $84/yr
@@ -162,19 +162,19 @@ test.describe('Pricing page', () => {
   test('trust footer text is visible', async ({ page }) => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(
-      page.getByText(/30-day free trial.*cancel anytime/i),
+      page.getByText(/paid plans include a 30-day free trial.*cancel anytime/i),
     ).toBeVisible();
   });
 
   // ── Accessibility ─────────────────────────────────────────────────
-  test('Annual toggle button has role="switch"', async ({ page }) => {
-    const annualBtn = page.getByRole('switch');
-    await expect(annualBtn).toBeVisible();
-    // Default: switch is off
-    await expect(annualBtn).toHaveAttribute('aria-checked', 'false');
-    // After click: switch is on
-    await annualBtn.click();
-    await expect(annualBtn).toHaveAttribute('aria-checked', 'true');
+  test('billing period tabs expose aria-selected state', async ({ page }) => {
+    const monthlyTab = page.getByRole('tab', { name: 'Monthly' });
+    const annualTab = page.getByRole('tab', { name: /Annual/i });
+    await expect(monthlyTab).toHaveAttribute('aria-selected', 'true');
+    await expect(annualTab).toHaveAttribute('aria-selected', 'false');
+    await annualTab.click();
+    await expect(annualTab).toHaveAttribute('aria-selected', 'true');
+    await expect(monthlyTab).toHaveAttribute('aria-selected', 'false');
   });
 
   test('all CTAs meet minimum 44px touch target height', async ({ page }) => {
@@ -229,7 +229,7 @@ test.describe('Pricing page – colour scheme accessibility', () => {
       });
 
       test(`trust footer is visible in ${scheme} mode`, async ({ page }) => {
-        await expect(page.getByText(/30-day free trial/i)).toBeVisible();
+        await expect(page.getByText(/paid plans include a 30-day free trial/i)).toBeVisible();
       });
     });
   }

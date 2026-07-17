@@ -59,29 +59,30 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
         <DialogOverlay />
         <DialogContent
           aria-label="Upgrade to Pro"
-          className="max-w-md border-0 bg-[#FFFBF7] p-0 shadow-xl"
+          className="max-w-md border-0 bg-background p-0 shadow-xl"
           onInteractOutside={onDismiss}
         >
           <div ref={containerRef} style={{ opacity: open && !prefersReduced && !zenMode ? undefined : open ? 1 : 0 }}>
             {/* Header */}
-            <div className="relative flex flex-col items-center gap-3 rounded-t-xl bg-gradient-to-br from-[#FF8BB0]/20 to-[#F7C34B]/10 px-6 pt-8 pb-6">
+            <div className="relative flex flex-col items-center gap-3 rounded-t-xl bg-gradient-to-br from-coral/20 to-mustard/10 px-6 pt-8 pb-6">
               <button
+                type="button"
                 aria-label="Dismiss"
                 onClick={onDismiss}
-                className="absolute right-4 top-4 rounded-full p-1.5 text-[#6B7280] transition-colors hover:bg-[#1A1A2E]/5 hover:text-[#1A1A2E] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8BB0]"
+                className="absolute right-4 top-4 rounded-full p-1.5 text-text-secondary transition-colors hover:bg-text-primary/5 hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-coral"
               >
                 <X size={16} />
               </button>
 
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FF8BB0] shadow-lg">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-coral shadow-lg">
                 <Zap size={28} fill="white" className="text-white" />
               </div>
 
               <div className="text-center">
-                <h2 className="font-nunito text-xl font-bold text-[#1A1A2E]">
+                <h2 className="font-display text-xl font-bold text-text-primary">
                   Upgrade to Pro
                 </h2>
-                <p className="mt-1 text-sm text-[#6B7280]">
+                <p className="mt-1 text-sm text-text-secondary">
                   You&apos;ve reached the 5-lesson free plan limit.
                 </p>
               </div>
@@ -89,7 +90,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
 
             {/* Features list */}
             <div className="px-6 py-5">
-              <ul className="space-y-3 text-sm text-[#1A1A2E]">
+              <ul className="space-y-3 text-sm text-text-primary">
                 {[
                   'Unlimited lesson plan generations',
                   'Claude AI (smarter, more detailed plans)',
@@ -97,7 +98,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
                   'DOCX export and filled-in template download',
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#FF8BB0]/15 text-[#FF8BB0]">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-coral/15 text-coral">
                       <Zap size={11} fill="currentColor" />
                     </span>
                     {feature}
@@ -110,13 +111,14 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
             <div className="flex flex-col gap-2 px-6 pb-6">
               <Button
                 onClick={handleUpgrade}
-                className="w-full bg-[#FF8BB0] font-semibold text-white hover:bg-[#FF8BB0]/90 focus-visible:ring-[#FF8BB0]"
+                className="w-full bg-coral font-semibold text-white hover:bg-coral/90 focus-visible:ring-coral"
               >
                 Upgrade to Pro
               </Button>
               <button
+                type="button"
                 onClick={onDismiss}
-                className="w-full rounded-lg py-2 text-sm text-[#6B7280] hover:text-[#1A1A2E] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8BB0]"
+                className="w-full rounded-lg py-2 text-sm text-text-secondary hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-coral"
               >
                 Maybe later
               </button>

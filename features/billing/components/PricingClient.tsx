@@ -87,7 +87,7 @@ const PLANS: Plan[] = [
     features: ['Unlimited lesson plans', 'Everything in Pro'],
     cta: 'Start Pro+',
     ctaClass:
-      'bg-mustard hover:bg-mustard/90 text-[#1A1A2E] focus-visible:ring-2 focus-visible:ring-mustard',
+      'bg-mustard hover:bg-mustard/90 text-text-primary focus-visible:ring-2 focus-visible:ring-mustard',
   },
 ];
 
@@ -100,6 +100,7 @@ export function PricingClient() {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -113,6 +114,7 @@ export function PricingClient() {
 
   const handleCheckout = useCallback(
     async (planId: string) => {
+      setCheckoutError(null);
       setLoadingPlan(planId);
       try {
         // Check auth client-side first — redirect unauthenticated users directly
@@ -141,13 +143,25 @@ export function PricingClient() {
         const data = (await res.json()) as { url?: string; error?: string };
         if (data.url) {
           router.push(data.url);
+          return;
         }
+
+        setCheckoutError(
+          data.error ?? 'Checkout is unavailable right now. Please try again.',
+        );
+      } catch {
+        setCheckoutError('Checkout is unavailable right now. Please try again.');
       } finally {
         setLoadingPlan(null);
       }
     },
     [router, isAnnual],
   );
+
+  const handleBillingChange = useCallback((annual: boolean) => {
+    setCheckoutError(null);
+    setIsAnnual(annual);
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-background font-body">
@@ -214,10 +228,17 @@ export function PricingClient() {
 
           {/* Billing toggle */}
           <div
+            role="tablist"
+            aria-label="Billing period"
             className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-surface p-1.5 shadow-sm ring-1 ring-border/50"
           >
             <button
-              onClick={() => setIsAnnual(false)}
+              type="button"
+              role="tab"
+              id="billing-monthly"
+              aria-selected={!isAnnual}
+              aria-controls="pricing-plans"
+              onClick={() => handleBillingChange(false)}
               className={`rounded-xl px-5 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
                 !isAnnual
                   ? 'bg-coral text-white shadow-sm'
@@ -227,9 +248,12 @@ export function PricingClient() {
               Monthly
             </button>
             <button
-              role="switch"
-              aria-checked={isAnnual}
-              onClick={() => setIsAnnual(true)}
+              type="button"
+              role="tab"
+              id="billing-annual"
+              aria-selected={isAnnual}
+              aria-controls="pricing-plans"
+              onClick={() => handleBillingChange(true)}
               className={`flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
                 isAnnual
                   ? 'bg-coral text-white shadow-sm'
@@ -246,6 +270,9 @@ export function PricingClient() {
 
         {/* Pricing cards */}
         <div
+          id="pricing-plans"
+          role="tabpanel"
+          aria-labelledby={isAnnual ? 'billing-annual' : 'billing-monthly'}
           className="grid grid-cols-1 gap-6 sm:grid-cols-3"
         >
           {PLANS.map((plan) => {
@@ -287,19 +314,19 @@ export function PricingClient() {
                     {/* Price */}
                     <div className="mb-2">
                       {price === 0 ? (
-                        <span className="font-display text-4xl font-bold text-text-primary">
+                        <span className="font-display text-4xl font-bold text-text-primary tabular-nums">
                           Free
                         </span>
                       ) : (
                         <div className="flex items-end gap-1">
-                          <span className="font-display text-4xl font-bold text-text-primary">
+                          <span className="font-display text-4xl font-bold text-text-primary tabular-nums">
                             ${price}
                           </span>
-                          <span className="mb-1 text-sm text-text-secondary">/mo</span>
+                          <span className="mb-1 text-sm text-text-secondary tabular-nums">/mo</span>
                         </div>
                       )}
                       {isAnnual && price > 0 && (
-                        <p className="mt-1 text-xs text-text-secondary">
+                        <p className="mt-1 text-xs text-text-secondary tabular-nums">
                           Billed as ${price * 12}/yr
                         </p>
                       )}
@@ -330,8 +357,10 @@ export function PricingClient() {
                         </Link>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => handleCheckout(plan.id)}
                           disabled={isLoading}
+                          aria-busy={isLoading}
                           className={`relative btn-shine overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed ${plan.ctaClass}`}
                         >
                           {isLoading ? (
@@ -368,9 +397,18 @@ export function PricingClient() {
           })}
         </div>
 
+        {checkoutError ? (
+          <p
+            role="alert"
+            className="mt-6 text-center text-sm font-medium text-error"
+          >
+            {checkoutError}
+          </p>
+        ) : null}
+
         {/* Trust footer */}
         <p className="mt-12 text-center text-sm text-text-secondary">
-          All plans include a 30-day free trial. Cancel anytime. No hidden fees.
+          Paid plans include a 30-day free trial. Cancel anytime. No hidden fees.
         </p>
       </main>
 
