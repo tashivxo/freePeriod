@@ -104,6 +104,7 @@ export function GenerationScreen({ events, onComplete }: GenerationScreenProps) 
   return (
     <div
       ref={containerRef}
+      data-motion-enter
       className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
       style={{ opacity: prefersReduced ? 1 : 0 }}
       role="status"

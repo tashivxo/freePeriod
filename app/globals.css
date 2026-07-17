@@ -188,6 +188,15 @@
   to { transform: translateX(320%) skewX(-15deg); }
 }
 
+/* SSR-safe: PRM users never see opacity:0 before JS matchMedia hydrates */
+@media (prefers-reduced-motion: reduce) {
+  [data-animate],
+  [data-motion-enter] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @media (hover: hover) and (pointer: fine) {
     .btn-shine {
