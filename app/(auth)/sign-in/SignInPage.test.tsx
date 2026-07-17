@@ -138,7 +138,7 @@ describe('SignInPage', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(
-      await screen.findByText(/invalid login credentials/i),
+      await screen.findByText(/incorrect email or password/i),
     ).toBeInTheDocument();
   });
 
@@ -150,7 +150,10 @@ describe('SignInPage', () => {
 
   it('renders eye toggle button with aria-label "Show password"', () => {
     render(<SignInPage />);
-    expect(screen.getByRole('button', { name: /show password/i })).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: /show password/i });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.className).toMatch(/min-h-11/);
+    expect(toggle.className).toMatch(/min-w-11/);
   });
 
   it('clicking eye toggle changes password input type to text', async () => {

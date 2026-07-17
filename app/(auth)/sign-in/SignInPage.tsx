@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +21,7 @@ export function SignInPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   function validate(): boolean {
@@ -34,18 +35,18 @@ export function SignInPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError('');
-    if (!validate()) return;
+    if (!validate() || authBusy) return;
 
-    setIsLoading(true);
+    setAuthBusy(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    setIsLoading(false);
 
     if (error) {
-      setServerError(error.message);
+      setServerError(mapAuthError(error.message));
+      setAuthBusy(false);
       return;
     }
 
@@ -79,14 +80,15 @@ export function SignInPage() {
       setErrors({ email: 'Email is required' });
       return;
     }
+    if (authBusy) return;
 
-    setIsLoading(true);
+    setAuthBusy(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({ email });
-    setIsLoading(false);
+    setAuthBusy(false);
 
     if (error) {
-      setServerError(error.message);
+      setServerError(mapAuthError(error.message));
       return;
     }
 
@@ -94,14 +96,21 @@ export function SignInPage() {
   }
 
   async function handleGoogleLogin() {
+    if (authBusy) return;
+    setAuthBusy(true);
+    setServerError('');
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'openid email profile',
       },
     });
+    if (error) {
+      setServerError(mapAuthError(error.message));
+      setAuthBusy(false);
+    }
   }
 
   return (
@@ -156,7 +165,7 @@ export function SignInPage() {
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword((v) => !v)}
-                  className="text-text-secondary hover:text-text-primary transition-colors p-1"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -188,7 +197,7 @@ export function SignInPage() {
             </label>
           </div>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
+          <Button type="submit" className="w-full" isLoading={authBusy}>
             Sign in
           </Button>
         </form>
@@ -204,6 +213,7 @@ export function SignInPage() {
             className="w-full"
             onClick={handleGoogleLogin}
             type="button"
+            disabled={authBusy}
           >
             Continue with Google
           </Button>
@@ -213,6 +223,7 @@ export function SignInPage() {
             className="w-full"
             onClick={handleMagicLink}
             type="button"
+            disabled={authBusy}
           >
             Send magic link
           </Button>

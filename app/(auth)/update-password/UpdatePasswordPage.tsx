@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -71,7 +72,7 @@ export function UpdatePasswordPage() {
       if (isExpiredSessionError(error.message)) {
         setSessionMissing(true);
       }
-      setServerError(error.message);
+      setServerError(mapAuthError(error.message));
       return;
     }
     router.push('/dashboard');
@@ -139,7 +140,7 @@ export function UpdatePasswordPage() {
                           type="button"
                           aria-label={showPassword ? 'Hide password' : 'Show password'}
                           onClick={() => setShowPassword((v) => !v)}
-                          className="p-1 text-text-secondary transition-colors hover:text-text-primary"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -164,7 +165,7 @@ export function UpdatePasswordPage() {
                         type="button"
                         aria-label={showConfirm ? 'Hide password' : 'Show password'}
                         onClick={() => setShowConfirm((v) => !v)}
-                        className="p-1 text-text-secondary transition-colors hover:text-text-primary"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
                       >
                         {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>

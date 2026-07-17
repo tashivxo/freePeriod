@@ -115,7 +115,7 @@ describe('UpdatePasswordPage', () => {
     await user.type(await screen.findByLabelText(/new password/i), 'newpassword123');
     await user.type(screen.getByLabelText(/confirm password/i), 'newpassword123');
     await user.click(screen.getByRole('button', { name: /set new password/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/password too weak/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/stronger password/i);
   });
 
   it('shows recovery CTA when session is missing', async () => {

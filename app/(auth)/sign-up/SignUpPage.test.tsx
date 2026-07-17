@@ -242,7 +242,7 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(
-      await screen.findByText(/user already registered/i),
+      await screen.findByText(/an account with this email already exists/i),
     ).toBeInTheDocument();
   });
 

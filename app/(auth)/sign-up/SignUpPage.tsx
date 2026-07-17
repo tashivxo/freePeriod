@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,8 @@ export function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [termsError, setTermsError] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
 
@@ -31,9 +33,7 @@ export function SignUpPage() {
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
-    if (!acceptedTerms) {
-      setServerError('You must agree to the Terms of Service and Privacy Policy.');
-    }
+    setTermsError(acceptedTerms ? '' : 'You must agree to the Terms of Service and Privacy Policy.');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0 && acceptedTerms;
   }
@@ -41,9 +41,9 @@ export function SignUpPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError('');
-    if (!validate()) return;
+    if (!validate() || authBusy) return;
 
-    setIsLoading(true);
+    setAuthBusy(true);
     const supabase = createClient();
     const { data: authData, error } = await supabase.auth.signUp({
       email,
@@ -52,16 +52,17 @@ export function SignUpPage() {
         data: { name },
       },
     });
-    setIsLoading(false);
 
     if (error) {
-      setServerError(error.message);
+      setServerError(mapAuthError(error.message));
+      setAuthBusy(false);
       return;
     }
 
     // Email confirmation required — stay on page with in-card success
     if (!authData.session) {
       setCheckEmail(true);
+      setAuthBusy(false);
       return;
     }
 
@@ -90,14 +91,21 @@ export function SignUpPage() {
   }
 
   async function handleGoogleLogin() {
+    if (authBusy) return;
+    setAuthBusy(true);
+    setServerError('');
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         scopes: 'openid email profile',
       },
     });
+    if (error) {
+      setServerError(mapAuthError(error.message));
+      setAuthBusy(false);
+    }
   }
 
   return (
@@ -168,36 +176,43 @@ export function SignUpPage() {
                 type="button"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowPassword((v) => !v)}
-                className="text-text-secondary hover:text-text-primary transition-colors p-1"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             }
           />
 
-          <label className="flex items-start gap-3 text-sm font-body text-text-secondary">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => {
-                setAcceptedTerms(e.target.checked);
-                if (e.target.checked) setServerError('');
-              }}
-              className="mt-1 h-4 w-4 rounded border-border text-coral focus:ring-coral"
-            />
-            <span>
-              I agree to the{' '}
-              <Link href="/terms" className="text-coral font-semibold hover:underline" target="_blank">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" className="text-coral font-semibold hover:underline" target="_blank">
-                Privacy Policy
-              </Link>
-            </span>
-          </label>
+          <div className="space-y-1.5">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-body text-text-secondary">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => {
+                  setAcceptedTerms(e.target.checked);
+                  if (e.target.checked) setTermsError('');
+                }}
+                className="h-5 w-5 shrink-0 rounded border-border text-coral focus:ring-coral"
+              />
+              <span>
+                I agree to the{' '}
+                <Link href="/terms" className="text-coral font-semibold hover:underline" target="_blank">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="text-coral font-semibold hover:underline" target="_blank">
+                  Privacy Policy
+                </Link>
+              </span>
+            </label>
+            {termsError && (
+              <p role="alert" className="px-1 text-sm text-error">
+                {termsError}
+              </p>
+            )}
+          </div>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
+          <Button type="submit" className="w-full" isLoading={authBusy}>
             Create account
           </Button>
         </form>
@@ -212,6 +227,7 @@ export function SignUpPage() {
           className="w-full"
           onClick={handleGoogleLogin}
           type="button"
+          disabled={authBusy}
         >
           Continue with Google
         </Button>
