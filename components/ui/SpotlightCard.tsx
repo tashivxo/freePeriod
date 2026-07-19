@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import type { ReactNode, CSSProperties } from 'react';
+import type { ReactNode, CSSProperties, FocusEvent } from 'react';
 
 interface SpotlightCardProps {
   children: ReactNode;
@@ -18,23 +18,38 @@ export function SpotlightCard({
 }: SpotlightCardProps) {
   const divRef = useRef<HTMLDivElement>(null);
 
+  function setSpotlight(x: string, y: string, opacity: string) {
+    const el = divRef.current;
+    if (!el) return;
+    el.style.setProperty('--spotlight-x', x);
+    el.style.setProperty('--spotlight-y', y);
+    el.style.setProperty('--spotlight-color', spotlightColor);
+    el.style.setProperty('--spotlight-opacity', opacity);
+  }
+
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = divRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    if (divRef.current) {
-      divRef.current.style.setProperty('--spotlight-x', `${x}px`);
-      divRef.current.style.setProperty('--spotlight-y', `${y}px`);
-      divRef.current.style.setProperty('--spotlight-color', spotlightColor);
-      divRef.current.style.setProperty('--spotlight-opacity', '1');
-    }
+    setSpotlight(`${e.clientX - rect.left}px`, `${e.clientY - rect.top}px`, '1');
   }
 
   function handleMouseLeave() {
-    if (divRef.current) {
-      divRef.current.style.setProperty('--spotlight-opacity', '0');
+    // Keep focus-within glow if keyboard focus remains inside
+    if (divRef.current?.matches(':focus-within')) {
+      setSpotlight('50%', '50%', '0.85');
+      return;
     }
+    setSpotlight('50%', '50%', '0');
+  }
+
+  function handleFocusCapture() {
+    setSpotlight('50%', '50%', '0.85');
+  }
+
+  function handleBlurCapture(e: FocusEvent<HTMLDivElement>) {
+    const next = e.relatedTarget as Node | null;
+    if (next && divRef.current?.contains(next)) return;
+    setSpotlight('50%', '50%', '0');
   }
 
   return (
@@ -52,6 +67,8 @@ export function SpotlightCard({
       }
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onFocusCapture={handleFocusCapture}
+      onBlurCapture={handleBlurCapture}
     >
       <div
         className="pointer-events-none absolute inset-0 transition-opacity duration-300"
@@ -60,6 +77,7 @@ export function SpotlightCard({
             'radial-gradient(400px at var(--spotlight-x) var(--spotlight-y), var(--spotlight-color), transparent 80%)',
           opacity: 'var(--spotlight-opacity)' as string,
         }}
+        aria-hidden="true"
       />
       {children}
     </div>

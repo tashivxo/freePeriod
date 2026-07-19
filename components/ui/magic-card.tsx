@@ -54,6 +54,11 @@ function isOrbMode(props: MagicCardProps): props is MagicCardOrbProps {
   return props.mode === "orb"
 }
 
+function getPrefersCoarsePointer(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(pointer: coarse)").matches
+}
+
 export function MagicCard(props: MagicCardProps) {
   const {
     children,
@@ -74,8 +79,18 @@ export function MagicCard(props: MagicCardProps) {
   const glowOpacity = isOrbMode(props) ? (props.glowOpacity ?? 0.9) : 0.9
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [isCoarsePointer, setIsCoarsePointer] = useState(getPrefersCoarsePointer)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)")
+    setIsCoarsePointer(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsCoarsePointer(e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
 
   const isDarkTheme = useMemo(() => {
     if (!mounted) return true
@@ -92,6 +107,7 @@ export function MagicCard(props: MagicCardProps) {
   const modeRef = useRef(mode)
   const glowOpacityRef = useRef(glowOpacity)
   const gradientSizeRef = useRef(gradientSize)
+  const isCoarseRef = useRef(isCoarsePointer)
 
   useEffect(() => {
     modeRef.current = mode
@@ -105,13 +121,36 @@ export function MagicCard(props: MagicCardProps) {
     gradientSizeRef.current = gradientSize
   }, [gradientSize])
 
+  useEffect(() => {
+    isCoarseRef.current = isCoarsePointer
+  }, [isCoarsePointer])
+
+  const placeStaticCenter = useCallback(() => {
+    const el = cardRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    mouseX.set(rect.width / 2)
+    mouseY.set(rect.height / 2)
+  }, [mouseX, mouseY])
+
   const reset = useCallback(
     (reason: ResetReason = "leave") => {
       const currentMode = modeRef.current
+      const coarse = isCoarseRef.current
 
       if (currentMode === "orb") {
-        if (reason === "enter") orbVisible.set(glowOpacityRef.current)
-        else orbVisible.set(0)
+        if (reason === "enter" || (coarse && reason === "init")) {
+          orbVisible.set(glowOpacityRef.current * (coarse ? 0.55 : 1))
+          if (coarse) placeStaticCenter()
+        } else if (!coarse) {
+          orbVisible.set(0)
+        }
+        return
+      }
+
+      // Gradient mode: coarse pointers keep a centered static glow at rest
+      if (coarse) {
+        placeStaticCenter()
         return
       }
 
@@ -119,11 +158,12 @@ export function MagicCard(props: MagicCardProps) {
       mouseX.set(off)
       mouseY.set(off)
     },
-    [mouseX, mouseY, orbVisible]
+    [mouseX, mouseY, orbVisible, placeStaticCenter]
   )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isCoarseRef.current) return
       const rect = e.currentTarget.getBoundingClientRect()
       mouseX.set(e.clientX - rect.left)
       mouseY.set(e.clientY - rect.top)
@@ -133,7 +173,7 @@ export function MagicCard(props: MagicCardProps) {
 
   useEffect(() => {
     reset("init")
-  }, [reset])
+  }, [reset, isCoarsePointer])
 
   useEffect(() => {
     const handleGlobalPointerOut = (e: PointerEvent) => {
@@ -157,6 +197,7 @@ export function MagicCard(props: MagicCardProps) {
 
   return (
     <motion.div
+      ref={cardRef}
       className={cn(
         "group relative isolate overflow-hidden rounded-[inherit] border border-transparent",
         className
@@ -180,7 +221,12 @@ export function MagicCard(props: MagicCardProps) {
       {mode === "gradient" && (
         <motion.div
           suppressHydrationWarning
-          className="pointer-events-none absolute inset-px z-30 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className={cn(
+            "pointer-events-none absolute inset-px z-30 rounded-[inherit] transition-opacity duration-300",
+            isCoarsePointer
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-100"
+          )}
           style={{
             background: useMotionTemplate`
               radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
@@ -188,7 +234,7 @@ export function MagicCard(props: MagicCardProps) {
                 transparent 100%
               )
             `,
-            opacity: gradientOpacity,
+            opacity: isCoarsePointer ? gradientOpacity * 0.55 : gradientOpacity,
           }}
         />
       )}
@@ -211,7 +257,6 @@ export function MagicCard(props: MagicCardProps) {
             background: `linear-gradient(${glowAngle}deg, ${glowFrom}, ${glowTo})`,
 
             mixBlendMode: isDarkTheme ? "screen" : "multiply",
-            willChange: "transform, opacity",
           }}
         />
       )}
