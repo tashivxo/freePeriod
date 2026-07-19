@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { LegalDocumentShell } from '@/components/legal/LegalDocumentShell';
-import { PrivacyPolicyContent } from '@/components/legal/PrivacyPolicyContent';
+import { PrivacyPolicyContent, privacyTableOfContents } from '@/components/legal/PrivacyPolicyContent';
 import { legalConfig } from '@/lib/legal/config';
 
 export const metadata: Metadata = {
@@ -11,7 +11,11 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalDocumentShell title="Privacy Policy" lastUpdated={legalConfig.effectiveDate}>
+    <LegalDocumentShell
+      title="Privacy Policy"
+      effectiveDate={legalConfig.effectiveDate}
+      tableOfContents={[...privacyTableOfContents]}
+    >
       <PrivacyPolicyContent />
     </LegalDocumentShell>
   );

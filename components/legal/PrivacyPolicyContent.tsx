@@ -1,13 +1,27 @@
 import Link from 'next/link';
 import { legalConfig, operatorLabel } from '@/lib/legal/config';
 
+export const privacyTableOfContents = [
+  { id: 'who-we-are', title: '1. Who we are' },
+  { id: 'information-we-collect', title: '2. Information we collect' },
+  { id: 'how-we-use-your-information', title: '3. How we use your information' },
+  { id: 'ai-and-third-party-processors', title: '4. AI and third-party processors' },
+  { id: 'international-data-transfers', title: '5. International data transfers' },
+  { id: 'cookies', title: '6. Cookies' },
+  { id: 'data-retention', title: '7. Data retention' },
+  { id: 'security', title: '8. Security' },
+  { id: 'your-rights', title: '9. Your rights' },
+  { id: 'children', title: '10. Children' },
+  { id: 'changes-to-this-policy', title: '11. Changes to this policy' },
+  { id: 'contact', title: '12. Contact' },
+] as const;
+
 export function PrivacyPolicyContent() {
   const {
     serviceName,
     contactEmail,
     physicalAddress,
     websiteUrl,
-    effectiveDate,
     accountDeletionGraceDays,
     paymentProcessor,
     dataHostingRegion,
@@ -28,7 +42,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>1. Who we are</h2>
+        <h2 id="who-we-are">1. Who we are</h2>
         <p>
           <strong>Service:</strong> {serviceName}
           <br />
@@ -42,7 +56,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>2. Information we collect</h2>
+        <h2 id="information-we-collect">2. Information we collect</h2>
         <p>We collect the following categories of personal information:</p>
 
         <h3>Account and profile information</h3>
@@ -84,7 +98,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>3. How we use your information</h2>
+        <h2 id="how-we-use-your-information">3. How we use your information</h2>
         <p>We process personal information for these lawful purposes (POPIA Condition 6):</p>
         <ul>
           <li>
@@ -115,7 +129,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>4. AI and third-party processors</h2>
+        <h2 id="ai-and-third-party-processors">4. AI and third-party processors</h2>
         <p>
           We use trusted third parties to operate {serviceName}. They process data only as needed to
           provide their service to us:
@@ -151,7 +165,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>5. International data transfers</h2>
+        <h2 id="international-data-transfers">5. International data transfers</h2>
         <p>
           Your data may be stored and processed in {dataHostingRegion}. Our processors may also
           process data in other countries. Where required by POPIA (Condition 8) and GDPR, we rely
@@ -162,7 +176,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>6. Cookies</h2>
+        <h2 id="cookies">6. Cookies</h2>
         <p>
           We use essential cookies required for authentication and session management (via Supabase).
           These are strictly necessary to operate the Service and do not require a marketing cookie
@@ -171,7 +185,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>7. Data retention</h2>
+        <h2 id="data-retention">7. Data retention</h2>
         <ul>
           <li>
             <strong>Active accounts:</strong> we retain your account data and content while your
@@ -195,7 +209,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>8. Security</h2>
+        <h2 id="security">8. Security</h2>
         <p>
           We implement reasonable technical and organisational measures to protect your information,
           including HTTPS encryption in transit, access controls, row-level security in our
@@ -205,7 +219,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>9. Your rights</h2>
+        <h2 id="your-rights">9. Your rights</h2>
         <p>Depending on your location, you may have the right to:</p>
         <ul>
           <li>Access the personal information we hold about you</li>
@@ -224,7 +238,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>10. Children</h2>
+        <h2 id="children">10. Children</h2>
         <p>
           {serviceName} is designed for teachers and education professionals. It is not directed at
           children under 13 (or 16 in the EU where applicable). We do not knowingly collect personal
@@ -234,7 +248,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>11. Changes to this policy</h2>
+        <h2 id="changes-to-this-policy">11. Changes to this policy</h2>
         <p>
           We may update this Privacy Policy from time to time. We will post the updated version on
           this page and update the &quot;Last updated&quot; date. Material changes may be communicated
@@ -243,7 +257,7 @@ export function PrivacyPolicyContent() {
       </section>
 
       <section>
-        <h2>12. Contact</h2>
+        <h2 id="contact">12. Contact</h2>
         <p>
           Questions about this Privacy Policy or our data practices:
           <br />
@@ -255,8 +269,6 @@ export function PrivacyPolicyContent() {
           See also our <Link href="/terms">Terms of Service</Link>.
         </p>
       </section>
-
-      <p className="text-xs text-text-secondary">Effective date: {effectiveDate}</p>
     </>
   );
 }

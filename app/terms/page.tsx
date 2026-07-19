@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { LegalDocumentShell } from '@/components/legal/LegalDocumentShell';
-import { TermsOfServiceContent } from '@/components/legal/TermsOfServiceContent';
+import { TermsOfServiceContent, termsTableOfContents } from '@/components/legal/TermsOfServiceContent';
 import { legalConfig } from '@/lib/legal/config';
 
 export const metadata: Metadata = {
@@ -10,7 +10,11 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalDocumentShell title="Terms of Service" lastUpdated={legalConfig.effectiveDate}>
+    <LegalDocumentShell
+      title="Terms of Service"
+      effectiveDate={legalConfig.effectiveDate}
+      tableOfContents={[...termsTableOfContents]}
+    >
       <TermsOfServiceContent />
     </LegalDocumentShell>
   );
