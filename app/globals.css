@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --color-coral-100: #FFE4EE;
   --color-coral: #FF8BB0;
   --color-coral-light: #FFB8D0;
   --color-coral-dark: #E5709A;
@@ -95,31 +96,28 @@
 
 :root {
   /*
-   * Token reconciliation (W-TOKENS-01) — pre-fix mismatches documented for audit trail:
-   * - Coral / primary: @theme --color-coral is #FF8BB0; --primary was oklch(0.75 0.14 1)
-   *   (coral-adjacent) but not wired to the coral primitive — Button bg-primary drifted.
-   * - text-secondary: :root used #4B5563 (brand neutral-600); @theme fallback and
-   *   design-tokens.json pointed at neutral-500 #6B7280.
-   * Resolution: --primary → var(--color-coral); --text-secondary → #4B5563 everywhere.
+   * Token reconciliation (W-TOKENS-01) — P0 bridged primary↔coral and text-secondary.
+   * P2 aligns remaining shadcn semantic aliases with design-tokens.json primitives:
+   * background/surface/border, secondary/accent→mustard, muted→neutral-100 skeleton wash.
    */
   --shiny-text-highlight: rgba(255, 255, 255, 0.88);
-  --background: oklch(0.993 0.012 83.6);
-  --foreground: oklch(0.145 0.034 271);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.034 271);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.034 271);
+  --background: #FFFBF7;
+  --foreground: #1A1A2E;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A2E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A2E;
   --primary: var(--color-coral);
-  --primary-foreground: oklch(0.145 0.034 271);
-  --secondary: oklch(0.95 0.03 86);
-  --secondary-foreground: oklch(0.205 0.034 271);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --primary-foreground: #FFFFFF;
+  --secondary: #FEF3C7;
+  --secondary-foreground: #1A1A2E;
+  --muted: #F3F4F6;
+  --muted-foreground: #4B5563;
+  --accent: #F7C34B;
+  --accent-foreground: #1A1A2E;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: #E5E7EB;
+  --input: #E5E7EB;
   --ring: var(--color-coral);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -153,12 +151,12 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: var(--color-coral);
   --primary-foreground: oklch(0.145 0.034 271);
-  --secondary: oklch(0.269 0 0);
+  --secondary: color-mix(in srgb, var(--color-mustard) 22%, transparent);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: var(--color-mustard);
+  --accent-foreground: #1A1A2E;
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 15%);
   --input: oklch(1 0 0 / 18%);

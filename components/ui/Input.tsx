@@ -24,13 +24,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={[
-          'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-surface text-text-primary',
+          'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-background text-text-primary',
           'transition-colors duration-150 outline-none',
           'placeholder-transparent',
           endAdornment ? 'pr-11' : '',
           error
             ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
-            : 'border-text-secondary/30 focus:border-coral focus:ring-2 focus:ring-coral/20',
+            : 'border-coral/50 focus:border-coral focus:ring-2 focus:ring-coral/20',
           'disabled:opacity-50 disabled:cursor-not-allowed',
         ].filter(Boolean).join(' ')}
         placeholder={label}
