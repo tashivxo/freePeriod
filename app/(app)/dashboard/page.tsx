@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/ui/BlurText';
 
 function DashboardSkeleton() {
@@ -51,13 +52,12 @@ async function DashboardContent() {
       </p>
 
       {/* Quick generate */}
-      <Link
-        href="/generate"
-        className="relative mb-8 inline-flex overflow-hidden items-center justify-center gap-2 rounded-xl bg-coral px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-coral/90 focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 btn-shine"
-      >
-        <Plus className="h-5 w-5" />
-        New Lesson Plan
-      </Link>
+      <Button asChild className="mb-8">
+        <Link href="/generate" className="gap-2">
+          <Plus className="h-5 w-5" />
+          New Lesson Plan
+        </Link>
+      </Button>
 
       {/* Recent lessons */}
       {lessons && lessons.length > 0 ? (
@@ -109,14 +109,11 @@ async function DashboardContent() {
             })}
           </div>
 
-          {lessons.length >= 9 && (
+          {lessons.length > 0 && (
             <div className="mt-6 text-center">
-              <Link
-                href="/history"
-                className="text-sm font-body text-coral hover:underline"
-              >
-                View all lessons →
-              </Link>
+              <Button asChild variant="link" className="text-coral">
+                <Link href="/history">View all lessons →</Link>
+              </Button>
             </div>
           )}
         </>
@@ -125,13 +122,12 @@ async function DashboardContent() {
           <p className="font-body text-text-secondary mb-4">
             No lessons yet. Create your first one!
           </p>
-          <Link
-            href="/generate"
-            className="relative inline-flex overflow-hidden items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary shadow-sm transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-coral focus:ring-offset-2 btn-shine"
-          >
-            <Plus className="h-4 w-4" />
-            Generate Lesson
-          </Link>
+          <Button asChild variant="outline" className="gap-1.5">
+            <Link href="/generate">
+              <Plus className="h-4 w-4" />
+              Generate Lesson
+            </Link>
+          </Button>
         </div>
       )}
       </div>
