@@ -6,4 +6,10 @@ export {
   getLessonContentValidationFailures,
   parsePlanningFieldPatch,
 } from './lesson-content-quality';
-export { FREE_GENERATION_LIMIT, isRateLimited, shouldUseGemini } from './router';
+export {
+  FREE_GENERATION_LIMIT,
+  PRO_GENERATION_LIMIT,
+  getPlanGenerationLimit,
+  isRateLimited,
+  shouldUseGemini,
+} from './router';

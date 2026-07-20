@@ -1,11 +1,23 @@
 import type { Plan } from '@/types';
+import {
+  getPlanGenerationLimit,
+  isRateLimited as quotaIsRateLimited,
+  type GenerationMode,
+} from '@/lib/generation/quota';
 
-export const FREE_GENERATION_LIMIT = 50;
+export const FREE_GENERATION_LIMIT = 3;
+export const PRO_GENERATION_LIMIT = 20;
 
-export function shouldUseGemini(plan: Plan): boolean {
-  return plan === 'free';
+/** @deprecated Prefer resolveGenerationMode + Fast/Quality; kept for call sites during migration */
+export function shouldUseGemini(modeOrPlan: GenerationMode | Plan): boolean {
+  if (modeOrPlan === 'fast') return true;
+  if (modeOrPlan === 'quality') return false;
+  // Legacy: free plan used Gemini
+  return modeOrPlan === 'free';
 }
 
 export function isRateLimited(plan: Plan, generationCount: number): boolean {
-  return plan === 'free' && generationCount >= FREE_GENERATION_LIMIT;
+  return quotaIsRateLimited(plan, generationCount);
 }
+
+export { getPlanGenerationLimit };
