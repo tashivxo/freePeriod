@@ -53,6 +53,7 @@ describe('GenerateForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     // Mock fetch used by uploadFile to call /api/parse-document
     (global as { fetch: unknown }).fetch = jest.fn().mockResolvedValue({ ok: true });
   });
@@ -220,6 +221,17 @@ describe('GenerateForm', () => {
     );
   });
 
+  it('shows Fast and Quality; Quality disabled for free', () => {
+    render(<GenerateForm userPlan="free" onSubmit={onSubmit} />);
+    expect(screen.getByRole('radio', { name: /fast/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /quality/i })).toBeDisabled();
+  });
+
+  it('allows Quality for pro', () => {
+    render(<GenerateForm userPlan="pro" onSubmit={onSubmit} />);
+    expect(screen.getByRole('radio', { name: /quality/i })).not.toBeDisabled();
+  });
+
   it('calls onSubmit with form data when Generate is clicked', async () => {
     const { user } = render(
       <GenerateForm onSubmit={onSubmit} defaults={defaults} />,
@@ -236,6 +248,22 @@ describe('GenerateForm', () => {
         teacherPrompt: '',
         curriculumDocPath: null,
         templatePath: null,
+        generationMode: 'fast',
+      }),
+    );
+  });
+
+  it('submits fast when pro selects Fast mode', async () => {
+    const { user } = render(
+      <GenerateForm onSubmit={onSubmit} userPlan="pro" defaults={defaults} />,
+    );
+
+    await user.click(screen.getByRole('radio', { name: /fast/i }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generationMode: 'fast',
       }),
     );
   });

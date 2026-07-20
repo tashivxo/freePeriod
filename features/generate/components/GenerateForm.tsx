@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +8,15 @@ import { usePresetField } from '@/lib/forms/usePresetField';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
+import type { Plan } from '@/types';
+
+const GENERATION_MODE_STORAGE_KEY = 'fp-generation-mode';
+
+type GenerationMode = 'fast' | 'quality';
+
+function isPaidPlan(plan: Plan): boolean {
+  return plan === 'pro' || plan === 'pro_plus';
+}
 
 const DURATION_PRESETS = [30, 45, 60, 90, 120];
 const CUSTOM_DURATION_MIN = 1;
@@ -33,7 +42,7 @@ export interface GenerateFormProps {
     grade?: string;
     curriculum?: string;
   };
-  userPlan?: 'free' | 'pro';
+  userPlan?: Plan;
   onSubmit?: (data: GenerateFormData) => void | Promise<void>;
   /** Parent-owned busy flag (overlay lifecycle). Prefer over local submit flicker. */
   isGenerating?: boolean;
@@ -47,6 +56,7 @@ export interface GenerateFormData {
   teacherPrompt: string;
   curriculumDocPath: string | null;
   templatePath: string | null;
+  generationMode: GenerationMode;
 }
 
 function parseCustomDuration(value: string): number | null {
@@ -74,6 +84,29 @@ export function GenerateForm({
   const [templatePath, setTemplatePath] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [generationMode, setGenerationMode] = useState<GenerationMode>(() =>
+    isPaidPlan(userPlan) ? 'quality' : 'fast',
+  );
+
+  const qualityUnlocked = isPaidPlan(userPlan);
+
+  useEffect(() => {
+    if (!qualityUnlocked) {
+      setGenerationMode('fast');
+      return;
+    }
+
+    const stored = localStorage.getItem(GENERATION_MODE_STORAGE_KEY);
+    if (stored === 'fast' || stored === 'quality') {
+      setGenerationMode(stored);
+    }
+  }, [qualityUnlocked]);
+
+  const handleGenerationModeChange = (mode: GenerationMode) => {
+    if (!qualityUnlocked) return;
+    setGenerationMode(mode);
+    localStorage.setItem(GENERATION_MODE_STORAGE_KEY, mode);
+  };
 
   const busy = isGenerating || isSubmitting;
 
@@ -114,6 +147,7 @@ export function GenerateForm({
         teacherPrompt,
         curriculumDocPath,
         templatePath,
+        generationMode: qualityUnlocked ? generationMode : 'fast',
       };
 
       if (onSubmit) {
@@ -294,6 +328,61 @@ export function GenerateForm({
           onUploadComplete={(p) => setTemplatePath(p)}
           onRemove={() => setTemplatePath(null)}
         />
+
+        {/* Generation mode */}
+        <fieldset className="border-0 p-0 m-0">
+          <legend className="mb-2 block text-sm font-body font-medium text-text-secondary">
+            Generation mode
+          </legend>
+          <div
+            role="radiogroup"
+            aria-label="Generation mode"
+            className="space-y-3 rounded-xl border border-border bg-background/50 p-4"
+          >
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="radio"
+                name="generation-mode"
+                value="fast"
+                checked={generationMode === 'fast'}
+                onChange={() => handleGenerationModeChange('fast')}
+                className="mt-1 h-4 w-4 accent-coral"
+              />
+              <span>
+                <span className="block text-sm font-body font-medium text-text-primary">Fast</span>
+                <span className="block text-sm font-body text-text-secondary">
+                  Quicker plans for everyday lessons.
+                </span>
+              </span>
+            </label>
+            <label
+              className={`flex items-start gap-3 ${
+                qualityUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+              }`}
+            >
+              <input
+                type="radio"
+                name="generation-mode"
+                value="quality"
+                checked={generationMode === 'quality'}
+                onChange={() => handleGenerationModeChange('quality')}
+                disabled={!qualityUnlocked}
+                className="mt-1 h-4 w-4 accent-coral"
+              />
+              <span>
+                <span className="block text-sm font-body font-medium text-text-primary">Quality</span>
+                <span className="block text-sm font-body text-text-secondary">
+                  More thorough plans. Takes a bit longer.
+                </span>
+              </span>
+            </label>
+            {!qualityUnlocked && (
+              <p className="text-sm font-body text-text-secondary">
+                Upgrade to unlock Quality mode.
+              </p>
+            )}
+          </div>
+        </fieldset>
 
         {/* Submit */}
         <Button

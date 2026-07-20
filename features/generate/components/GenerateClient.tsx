@@ -143,7 +143,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
     <>
       <GenerateForm
         defaults={defaults}
-        userPlan={plan as 'free' | 'pro'}
+        userPlan={plan}
         onSubmit={handleSubmit}
         isGenerating={isGenerating}
       />
