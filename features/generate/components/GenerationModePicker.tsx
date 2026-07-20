@@ -159,8 +159,10 @@ export function GenerationModePicker({
         <DropdownMenuContent
           ref={contentRef}
           align="start"
+          side="bottom"
           sideOffset={6}
-          data-origin="top-left"
+          avoidCollisions
+          collisionPadding={16}
           className={cn(
             't-dropdown min-w-[var(--radix-dropdown-menu-trigger-width)] p-1.5',
             'rounded-xl border border-border bg-background/95 text-popover-foreground backdrop-blur-md',

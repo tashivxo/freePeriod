@@ -213,6 +213,21 @@
     opacity var(--dropdown-open-dur) var(--dropdown-ease);
   will-change: transform, opacity;
 }
+.t-dropdown[data-side="top"] {
+  transform-origin: bottom left;
+}
+.t-dropdown[data-side="top"][data-align="center"] {
+  transform-origin: bottom center;
+}
+.t-dropdown[data-side="top"][data-align="end"] {
+  transform-origin: bottom right;
+}
+.t-dropdown[data-side="bottom"][data-align="center"] {
+  transform-origin: top center;
+}
+.t-dropdown[data-side="bottom"][data-align="end"] {
+  transform-origin: top right;
+}
 .t-dropdown[data-origin="top-right"] {
   transform-origin: top right;
 }
