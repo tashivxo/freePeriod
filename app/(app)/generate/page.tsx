@@ -23,7 +23,7 @@ async function GeneratePageContent() {
     const [{ data: userData }, { data: subData }] = await Promise.all([
       supabase
         .from('users')
-        .select('default_subject, default_grade, default_curriculum')
+        .select('default_subject, default_grade, default_curriculum, is_admin')
         .eq('id', user.id)
         .single(),
       supabase
@@ -33,7 +33,7 @@ async function GeneratePageContent() {
         .maybeSingle(),
     ]);
 
-    userPlan = resolveEffectivePlan(subData);
+    userPlan = resolveEffectivePlan(subData, userData?.is_admin ?? false);
 
     if (userData) {
       if (userData.default_subject || userData.default_grade || userData.default_curriculum) {

@@ -26,7 +26,7 @@ ALTERs that assume that base schema already exists. To run a local stack:
    filename-sorted) order — there are duplicate `003_`/`004_` prefixes and `003_stripe_fields.sql`
    predates `003_lemon_squeezy_subscriptions.sql`:
    `schema.sql` → `001` → `002` → `003_stripe_fields` → `003_lemon_squeezy_subscriptions`
-   → `004_account_deletion` → `004_add_trial_fields` (pipe each into `psql` in the `supabase_db_*` container).
+   → `004_account_deletion` → `004_add_trial_fields` → `005_add_is_admin` (pipe each into `psql` in the `supabase_db_*` container).
 3. **Gotcha (important):** hosted Supabase auto-grants table privileges to the `anon` /
    `authenticated` / `service_role` roles, but tables created by applying `schema.sql` via `psql`
    do NOT get those grants — the app then fails onboarding with `permission denied for table users`.
@@ -38,6 +38,8 @@ ALTERs that assume that base schema already exists. To run a local stack:
    Local auth auto-confirms email signups (no email step needed).
 
 Alternatively, point `.env.local` at a real hosted Supabase project via secrets and skip the local stack.
+
+**Admin comp access:** `users.is_admin = true` grants effective Pro+ (unlimited + Quality mode) regardless of billing. Migration `005_add_is_admin.sql` seeds `tashivxo@gmail.com` and `janiestribe@gmail.com`. On hosted Supabase, run that migration in the SQL Editor after both accounts have signed up; verify with `SELECT email, is_admin, plan FROM public.users WHERE is_admin;`.
 
 ### AI generation & billing
 Lesson generation needs `GOOGLE_GENERATIVE_AI_API_KEY` (free tier) and/or `ANTHROPIC_API_KEY`

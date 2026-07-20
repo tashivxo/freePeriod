@@ -24,7 +24,8 @@ export type SubscriptionSnapshot = {
   trial_end: string | null;
 } | null;
 
-export function resolveEffectivePlan(sub: SubscriptionSnapshot): Plan {
+export function resolveEffectivePlan(sub: SubscriptionSnapshot, isAdmin?: boolean): Plan {
+  if (isAdmin) return 'pro_plus';
   if (!sub?.plan) return 'free';
   if (sub.status === 'active' && (sub.plan === 'pro' || sub.plan === 'pro_plus')) {
     return sub.plan;

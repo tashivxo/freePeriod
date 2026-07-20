@@ -102,11 +102,11 @@ async function SettingsContent() {
 
   const subscription = (subscriptionRow as Subscription | null) ?? null;
   const email = user.email || authUser.email || '';
-  const planLabel = formatPlanLabel(user.plan, subscription);
+  const generationAccess = await resolveGenerationAccess(supabase, authUser.id);
+  const planLabel = formatPlanLabel(generationAccess.userPlan, subscription);
   const manageSubscriptionUrl = await resolveCustomerPortalUrl(
     subscription?.ls_subscription_id ?? null,
   );
-  const generationAccess = await resolveGenerationAccess(supabase, authUser.id);
   const usageLabel = formatGenerationUsage({
     plan: generationAccess.userPlan,
     generationCount: generationAccess.generationCount,

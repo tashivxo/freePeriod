@@ -63,6 +63,13 @@ describe('resolveEffectivePlan', () => {
   it('returns free when no subscription', () => {
     expect(resolveEffectivePlan(null)).toBe('free');
   });
+
+  it('returns pro_plus when isAdmin is true regardless of subscription', () => {
+    expect(resolveEffectivePlan(null, true)).toBe('pro_plus');
+    expect(
+      resolveEffectivePlan({ plan: 'free', status: 'inactive', trial_end: null }, true),
+    ).toBe('pro_plus');
+  });
 });
 
 describe('resolveGenerationMode', () => {

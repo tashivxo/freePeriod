@@ -2,7 +2,7 @@ import { resolveGenerationAccess } from './authorize';
 
 function mockSupabase(opts: {
   sub: Record<string, unknown> | null;
-  user: { generation_count: number; generation_count_reset_at: string | null };
+  user: { generation_count: number; generation_count_reset_at: string | null; is_admin?: boolean };
   onUserUpdate?: (payload: Record<string, unknown>) => void;
 }) {
   const updates: Record<string, unknown>[] = [];
@@ -43,7 +43,7 @@ describe('resolveGenerationAccess', () => {
   it('resets free count when reset_at is null and applies free limit', async () => {
     const sb = mockSupabase({
       sub: null,
-      user: { generation_count: 50, generation_count_reset_at: null },
+      user: { generation_count: 50, generation_count_reset_at: null, is_admin: false },
     });
     const access = await resolveGenerationAccess(sb as never, 'user-1');
     expect(access.userPlan).toBe('free');
@@ -57,7 +57,7 @@ describe('resolveGenerationAccess', () => {
     const future = new Date(Date.now() + 86400000).toISOString();
     const sb = mockSupabase({
       sub: null,
-      user: { generation_count: 3, generation_count_reset_at: future },
+      user: { generation_count: 3, generation_count_reset_at: future, is_admin: false },
     });
     const access = await resolveGenerationAccess(sb as never, 'user-1');
     expect(access.isRateLimited).toBe(true);
@@ -67,7 +67,7 @@ describe('resolveGenerationAccess', () => {
     const future = new Date(Date.now() + 86400000).toISOString();
     const sb = mockSupabase({
       sub: { plan: 'pro_plus', status: 'active', trial_end: null, renews_at: future },
-      user: { generation_count: 100, generation_count_reset_at: future },
+      user: { generation_count: 100, generation_count_reset_at: future, is_admin: false },
     });
     const access = await resolveGenerationAccess(sb as never, 'user-1');
     expect(access.userPlan).toBe('pro_plus');
@@ -80,10 +80,22 @@ describe('resolveGenerationAccess', () => {
     const renews = new Date(Date.now() + 86400000 * 30).toISOString();
     const sb = mockSupabase({
       sub: { plan: 'pro', status: 'trial', trial_end: trialEnd, renews_at: renews },
-      user: { generation_count: 20, generation_count_reset_at: renews },
+      user: { generation_count: 20, generation_count_reset_at: renews, is_admin: false },
     });
     const access = await resolveGenerationAccess(sb as never, 'user-1');
     expect(access.userPlan).toBe('pro');
     expect(access.isRateLimited).toBe(true);
+  });
+
+  it('grants pro_plus unlimited when is_admin is true without subscription', async () => {
+    const future = new Date(Date.now() + 86400000).toISOString();
+    const sb = mockSupabase({
+      sub: null,
+      user: { generation_count: 500, generation_count_reset_at: future, is_admin: true },
+    });
+    const access = await resolveGenerationAccess(sb as never, 'user-1');
+    expect(access.userPlan).toBe('pro_plus');
+    expect(access.isRateLimited).toBe(false);
+    expect(access.generationLimit).toBeNull();
   });
 });

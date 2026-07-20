@@ -12,6 +12,7 @@ export type User = {
   default_grade: string | null;
   default_curriculum: string | null;
   plan: Plan;
+  is_admin: boolean;
   generation_count: number;
   generation_count_reset_at: string | null;
   onboarding_complete: boolean;
@@ -104,11 +105,12 @@ export type Database = {
     Tables: {
       users: {
         Row: User;
-        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'deletion_scheduled_at'> & {
+        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at'> & {
           generation_count?: number;
           generation_count_reset_at?: string | null;
           onboarding_complete?: boolean;
           plan?: Plan;
+          is_admin?: boolean;
           deletion_scheduled_at?: string | null;
         };
         Update: Partial<Omit<User, 'id' | 'created_at'>>;

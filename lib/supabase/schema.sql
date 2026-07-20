@@ -15,6 +15,7 @@ create table public.users (
   default_grade text,
   default_curriculum text,
   plan text not null default 'free',
+  is_admin boolean not null default false,
   generation_count int not null default 0,
   generation_count_reset_at timestamptz,
   onboarding_complete boolean not null default false,
@@ -35,6 +36,33 @@ create policy "Users can update own row"
 create policy "Users can insert own row"
   on public.users for insert
   with check (auth.uid() = id);
+
+create or replace function public.protect_users_is_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if coalesce(auth.jwt() ->> 'role', '') in ('service_role')
+     or current_user in ('postgres', 'supabase_admin') then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.is_admin := false;
+  elsif tg_op = 'UPDATE' and new.is_admin is distinct from old.is_admin then
+    new.is_admin := old.is_admin;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger protect_users_is_admin
+  before insert or update on public.users
+  for each row
+  execute function public.protect_users_is_admin();
 
 -- ============================================================
 -- lesson_plans table

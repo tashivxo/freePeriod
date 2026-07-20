@@ -28,12 +28,12 @@ export async function resolveGenerationAccess(
       .maybeSingle(),
     supabase
       .from('users')
-      .select('generation_count, generation_count_reset_at')
+      .select('generation_count, generation_count_reset_at, is_admin')
       .eq('id', userId)
       .single(),
   ]);
 
-  const userPlan = resolveEffectivePlan(subData);
+  const userPlan = resolveEffectivePlan(subData, userRecord?.is_admin ?? false);
   let generationCount = userRecord?.generation_count ?? 0;
   const resetAt = userRecord?.generation_count_reset_at ?? null;
 
