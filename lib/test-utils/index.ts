@@ -7,7 +7,7 @@ function renderWithProviders(
   options?: Omit<RenderOptions, 'wrapper'>,
 ) {
   return {
-    user: userEvent.setup(),
+    user: userEvent.setup({ delay: null }),
     ...render(ui, { ...options }),
   };
 }

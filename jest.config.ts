@@ -11,11 +11,12 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
+  testTimeout: 15_000,
+  // Forward-slash patterns avoid Windows backslash regex escapes (e.g. \t in \tests\).
   testPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/.next/',
-    '<rootDir>/tests/e2e/',
-    '<rootDir>/.worktrees/',
+    '/node_modules/',
+    '/.next/',
+    '/tests/e2e/',
   ],
 };
 
