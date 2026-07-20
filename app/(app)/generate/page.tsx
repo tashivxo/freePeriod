@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { resolveEffectivePlan } from '@/lib/generation/quota';
 import { GenerateClient } from '@/features/generate/components/GenerateClient';
+import type { Plan } from '@/types';
 
 export const metadata: Metadata = {
   title: 'Generate — FreePeriod',
@@ -15,7 +17,7 @@ async function GeneratePageContent() {
 
   let defaults: { subject: string; grade: string; curriculum: string } | undefined;
 
-  let userPlan: 'free' | 'pro' = 'free';
+  let userPlan: Plan = 'free';
 
   if (user) {
     const [{ data: userData }, { data: subData }] = await Promise.all([
@@ -26,13 +28,12 @@ async function GeneratePageContent() {
         .single(),
       supabase
         .from('subscriptions')
-        .select('plan, status')
+        .select('plan, status, trial_end')
         .eq('user_id', user.id)
-        .eq('status', 'active')
         .maybeSingle(),
     ]);
 
-    userPlan = subData?.plan === 'pro' ? 'pro' : 'free';
+    userPlan = resolveEffectivePlan(subData);
 
     if (userData) {
       if (userData.default_subject || userData.default_grade || userData.default_curriculum) {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
-import type { GenerateStreamEvent } from '@/types';
+import type { GenerateStreamEvent, Plan } from '@/types';
 
 type GenerationPhase = 'idle' | 'generating' | 'error';
 
@@ -15,7 +15,7 @@ type GenerateClientProps = {
     grade: string;
     curriculum: string;
   };
-  plan?: 'free' | 'pro';
+  plan?: Plan;
 };
 
 export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps) {
@@ -143,7 +143,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
     <>
       <GenerateForm
         defaults={defaults}
-        userPlan={plan}
+        userPlan={plan as 'free' | 'pro'}
         onSubmit={handleSubmit}
         isGenerating={isGenerating}
       />
