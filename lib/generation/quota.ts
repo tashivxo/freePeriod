@@ -63,3 +63,14 @@ export function periodEndForReset(input: {
   }
   return nextUtcMonthStart(input.now).toISOString();
 }
+
+export function formatGenerationUsage(input: {
+  plan: Plan;
+  generationCount: number;
+  generationLimit: number | null;
+}): string {
+  if (input.generationLimit === null) {
+    return `${input.generationCount} generated this period (Unlimited)`;
+  }
+  return `${input.generationCount} of ${input.generationLimit} used this period`;
+}

@@ -1,9 +1,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
+import { resolveGenerationAccess } from '@/lib/generation/authorize';
+import { formatGenerationUsage } from '@/lib/generation/quota';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/ui/BlurText';
 
@@ -27,15 +28,22 @@ async function DashboardContent() {
 
   if (!user) return null;
 
-  const [{ data: profile }, { data: lessons }] = await Promise.all([
-    supabase.from('users').select('name, generation_count').eq('id', user.id).single(),
+  const [{ data: profile }, { data: lessons }, generationAccess] = await Promise.all([
+    supabase.from('users').select('name').eq('id', user.id).single(),
     supabase
       .from('lesson_plans')
       .select('id, title, subject, grade, duration_minutes, created_at, content')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(9),
+    resolveGenerationAccess(supabase, user.id),
   ]);
+
+  const usageLabel = formatGenerationUsage({
+    plan: generationAccess.userPlan,
+    generationCount: generationAccess.generationCount,
+    generationLimit: generationAccess.generationLimit,
+  });
 
   const authName = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? '') as string;
   const nameSource = (profile?.name || authName).trim();
@@ -46,10 +54,7 @@ async function DashboardContent() {
       <div className="relative z-10 mx-auto max-w-5xl px-4 py-8">
       {/* Greeting */}
       <BlurText as="h1" text={`Hi, ${firstName}!`} className="font-display text-3xl font-bold text-text-primary mb-1" />
-      <p className="font-body text-text-secondary mb-6">
-        <Badge variant="secondary" className="mr-2">{profile?.generation_count ?? 0}</Badge>
-        lesson{(profile?.generation_count ?? 0) !== 1 ? 's' : ''} generated
-      </p>
+      <p className="font-body text-text-secondary mb-6">{usageLabel}</p>
 
       {/* Quick generate */}
       <Button asChild className="mb-8">

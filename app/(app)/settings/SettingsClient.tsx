@@ -36,6 +36,7 @@ export type SettingsClientProps = {
   user: User;
   email: string;
   planLabel: string;
+  usageLabel?: string;
   manageSubscriptionUrl?: string | null;
 };
 
@@ -43,6 +44,7 @@ export function SettingsClient({
   user,
   email,
   planLabel,
+  usageLabel,
   manageSubscriptionUrl = null,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
@@ -258,6 +260,12 @@ export function SettingsClient({
             <dt className="text-sm font-body font-medium text-text-secondary">Plan</dt>
             <dd className="text-sm font-body text-text-primary">{planLabel}</dd>
           </div>
+          {usageLabel && (
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+              <dt className="text-sm font-body font-medium text-text-secondary">Usage</dt>
+              <dd className="text-sm font-body text-text-primary">{usageLabel}</dd>
+            </div>
+          )}
         </dl>
         <div className="space-y-3">
           {manageSubscriptionUrl && (

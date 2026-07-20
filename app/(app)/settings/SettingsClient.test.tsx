@@ -49,6 +49,7 @@ const defaultProps = {
   user: baseUser,
   email: baseUser.email,
   planLabel: 'Free',
+  usageLabel: '2 of 3 used this period',
   manageSubscriptionUrl: null as string | null,
 };
 
@@ -64,11 +65,18 @@ async function changeSubjectToScience(user: Awaited<ReturnType<typeof render>>['
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('SettingsClient — account context', () => {
-  it('shows read-only email and plan', () => {
-    render(<SettingsClient {...defaultProps} planLabel="Pro" />);
+  it('shows read-only email, plan, and usage', () => {
+    render(
+      <SettingsClient
+        {...defaultProps}
+        planLabel="Pro"
+        usageLabel="5 of 20 used this period"
+      />,
+    );
 
     expect(screen.getByText('teacher@example.com')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
+    expect(screen.getByText('5 of 20 used this period')).toBeInTheDocument();
   });
 
   it('does not show manage subscription when portal URL is missing', () => {

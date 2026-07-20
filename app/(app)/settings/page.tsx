@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSubscription, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@/lib/supabase/server';
+import { resolveGenerationAccess } from '@/lib/generation/authorize';
+import { formatGenerationUsage } from '@/lib/generation/quota';
 import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
 import { SettingsClient } from './SettingsClient';
 import type { Plan, Subscription, User } from '@/types';
@@ -104,12 +106,19 @@ async function SettingsContent() {
   const manageSubscriptionUrl = await resolveCustomerPortalUrl(
     subscription?.ls_subscription_id ?? null,
   );
+  const generationAccess = await resolveGenerationAccess(supabase, authUser.id);
+  const usageLabel = formatGenerationUsage({
+    plan: generationAccess.userPlan,
+    generationCount: generationAccess.generationCount,
+    generationLimit: generationAccess.generationLimit,
+  });
 
   return (
     <SettingsClient
       user={user}
       email={email}
       planLabel={planLabel}
+      usageLabel={usageLabel}
       manageSubscriptionUrl={manageSubscriptionUrl}
     />
   );

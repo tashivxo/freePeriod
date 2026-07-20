@@ -7,6 +7,7 @@ import {
   nextUtcMonthStart,
   shouldResetGenerationWindow,
   periodEndForReset,
+  formatGenerationUsage,
 } from './quota';
 import type { Plan } from '@/types';
 
@@ -103,6 +104,26 @@ describe('shouldResetGenerationWindow', () => {
   it('does not reset when now is before resetAt', () => {
     const now = new Date('2026-07-19T12:00:00.000Z');
     expect(shouldResetGenerationWindow('2026-08-01T00:00:00.000Z', now)).toBe(false);
+  });
+});
+
+describe('formatGenerationUsage', () => {
+  it('formats free plan with limit', () => {
+    expect(
+      formatGenerationUsage({ plan: 'free', generationCount: 2, generationLimit: 3 }),
+    ).toBe('2 of 3 used this period');
+  });
+
+  it('formats pro plan with limit', () => {
+    expect(
+      formatGenerationUsage({ plan: 'pro', generationCount: 5, generationLimit: 20 }),
+    ).toBe('5 of 20 used this period');
+  });
+
+  it('formats pro_plus as unlimited', () => {
+    expect(
+      formatGenerationUsage({ plan: 'pro_plus', generationCount: 10, generationLimit: null }),
+    ).toBe('10 generated this period (Unlimited)');
   });
 });
 
