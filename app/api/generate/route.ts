@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { GEMINI_FREE_MODEL } from '@/lib/ai/gemini';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { generateLessonContent } from '@/lib/generation/generate-content';
+import { resolveGenerationMode } from '@/lib/generation/quota';
 import { mapGenerationError } from '@/lib/generation/map-error';
 import { persistLessonPlan } from '@/lib/generation/persist';
 import { encodeSSE } from '@/lib/generation/sse';
@@ -23,12 +24,14 @@ export async function POST(request: NextRequest) {
   const access = await resolveGenerationAccess(supabase, user.id);
 
   if (access.isRateLimited) {
-    return new Response(
-      JSON.stringify({
-        error: 'Upgrade to Pro to generate more lesson plans.',
-      }),
-      { status: 402, headers: { 'Content-Type': 'application/json' } },
-    );
+    const message =
+      access.userPlan === 'pro'
+        ? 'You have used all 20 lesson plans for this billing period. Upgrade to Pro+ for unlimited generations.'
+        : 'You have used all 3 free lesson plans for this month. Upgrade to generate more.';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 402,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   let body: GenerateRequest;
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, templatePath, modelPreference } = body;
+  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, templatePath, generationMode: requestedMode } = body;
 
   if (!subject || !grade || !duration) {
     return new Response(JSON.stringify({ error: 'subject, grade, and duration are required' }), {
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const isFreePlan = access.userPlan === 'free';
+  const generationMode = resolveGenerationMode(access.userPlan, requestedMode);
 
   let curriculumText: string | undefined;
   if (curriculumDocPath) {
@@ -69,7 +72,8 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      let modelUsed = isFreePlan ? GEMINI_FREE_MODEL : 'claude-sonnet-4-6';
+      const useGemini = generationMode === 'fast';
+      let modelUsed = useGemini ? GEMINI_FREE_MODEL : 'claude-sonnet-4-6';
 
       function send(event: GenerateStreamEvent) {
         controller.enqueue(encoder.encode(encodeSSE(event)));
@@ -85,8 +89,7 @@ export async function POST(request: NextRequest) {
         send({ type: 'status', message: 'Writing lesson plan…' });
 
         const generated = await generateLessonContent({
-          isFreePlan,
-          modelPreference,
+          generationMode,
           subject,
           grade,
           curriculum: curriculum ?? '',
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
       } catch (err: unknown) {
         send({
           type: 'error',
-          message: mapGenerationError(err, { isFreePlan, modelUsed }),
+          message: mapGenerationError(err, { isFreePlan: access.userPlan === 'free', modelUsed }),
         });
       } finally {
         controller.close();
