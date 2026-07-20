@@ -31,15 +31,20 @@ function DropdownMenuTrigger({
   )
 }
 
-function DropdownMenuContent({
-  className,
-  align = "start",
-  sideOffset = 4,
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+const DropdownMenuContent = React.forwardRef<
+  React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
+    align?: React.ComponentProps<typeof DropdownMenuPrimitive.Content>['align'];
+    sideOffset?: number;
+  }
+>(function DropdownMenuContent(
+  { className, align = 'start', sideOffset = 4, ...props },
+  ref,
+) {
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
+        ref={ref}
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         align={align}
@@ -47,8 +52,9 @@ function DropdownMenuContent({
         {...props}
       />
     </DropdownMenuPrimitive.Portal>
-  )
-}
+  );
+});
+DropdownMenuContent.displayName = 'DropdownMenuContent';
 
 function DropdownMenuGroup({
   ...props

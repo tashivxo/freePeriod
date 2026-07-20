@@ -221,15 +221,25 @@ describe('GenerateForm', () => {
     );
   });
 
-  it('shows Fast and Quality; Quality disabled for free', () => {
-    render(<GenerateForm userPlan="free" onSubmit={onSubmit} />);
-    expect(screen.getByRole('radio', { name: /fast/i })).toBeChecked();
-    expect(screen.getByRole('radio', { name: /quality/i })).toBeDisabled();
+  it('shows Fast and Quality; Quality disabled for free', async () => {
+    const { user } = render(<GenerateForm userPlan="free" onSubmit={onSubmit} />);
+    expect(screen.getByRole('button', { name: /generation mode: fast/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
+    expect(screen.getByRole('menuitemradio', { name: /quality/i })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
-  it('allows Quality for pro', () => {
-    render(<GenerateForm userPlan="pro" onSubmit={onSubmit} />);
-    expect(screen.getByRole('radio', { name: /quality/i })).not.toBeDisabled();
+  it('allows Quality for pro', async () => {
+    const { user } = render(<GenerateForm userPlan="pro" onSubmit={onSubmit} />);
+
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    expect(screen.getByRole('menuitemradio', { name: /quality/i })).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('calls onSubmit with form data when Generate is clicked', async () => {
@@ -258,7 +268,8 @@ describe('GenerateForm', () => {
       <GenerateForm onSubmit={onSubmit} userPlan="pro" defaults={defaults} />,
     );
 
-    await user.click(screen.getByRole('radio', { name: /fast/i }));
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    await user.click(screen.getByRole('menuitemradio', { name: /fast/i }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(

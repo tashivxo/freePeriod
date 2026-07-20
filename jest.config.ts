@@ -17,6 +17,7 @@ const config: Config = {
     '/node_modules/',
     '/.next/',
     '/tests/e2e/',
+    '/.worktrees/',
   ],
 };
 

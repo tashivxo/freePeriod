@@ -4,6 +4,7 @@ import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
+import { GenerationModePicker } from '@/features/generate/components/GenerationModePicker';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
@@ -330,59 +331,20 @@ export function GenerateForm({
         />
 
         {/* Generation mode */}
-        <fieldset className="border-0 p-0 m-0">
-          <legend className="mb-2 block text-sm font-body font-medium text-text-secondary">
-            Generation mode
-          </legend>
-          <div
-            role="radiogroup"
-            aria-label="Generation mode"
-            className="space-y-3 rounded-xl border border-border bg-background/50 p-4"
+        <div>
+          <label
+            htmlFor="generation-mode-picker"
+            className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="radio"
-                name="generation-mode"
-                value="fast"
-                checked={generationMode === 'fast'}
-                onChange={() => handleGenerationModeChange('fast')}
-                className="mt-1 h-4 w-4 accent-coral"
-              />
-              <span>
-                <span className="block text-sm font-body font-medium text-text-primary">Fast</span>
-                <span className="block text-sm font-body text-text-secondary">
-                  Quicker plans for everyday lessons.
-                </span>
-              </span>
-            </label>
-            <label
-              className={`flex items-start gap-3 ${
-                qualityUnlocked ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
-              }`}
-            >
-              <input
-                type="radio"
-                name="generation-mode"
-                value="quality"
-                checked={generationMode === 'quality'}
-                onChange={() => handleGenerationModeChange('quality')}
-                disabled={!qualityUnlocked}
-                className="mt-1 h-4 w-4 accent-coral"
-              />
-              <span>
-                <span className="block text-sm font-body font-medium text-text-primary">Quality</span>
-                <span className="block text-sm font-body text-text-secondary">
-                  More thorough plans. Takes a bit longer.
-                </span>
-              </span>
-            </label>
-            {!qualityUnlocked && (
-              <p className="text-sm font-body text-text-secondary">
-                Upgrade to unlock Quality mode.
-              </p>
-            )}
-          </div>
-        </fieldset>
+            Generation mode
+          </label>
+          <GenerationModePicker
+            id="generation-mode-picker"
+            value={generationMode}
+            onChange={handleGenerationModeChange}
+            qualityUnlocked={qualityUnlocked}
+          />
+        </div>
 
         {/* Submit */}
         <Button
