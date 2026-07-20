@@ -33,4 +33,18 @@ describe('Button', () => {
       expect(screen.getByRole('button')).not.toHaveClass('btn-shine');
     });
   });
+
+  describe('asChild', () => {
+    it('renders a single child element without extra slot children', () => {
+      render(
+        <Button asChild>
+          <a href="/generate">New Lesson Plan</a>
+        </Button>,
+      );
+
+      const link = screen.getByRole('link', { name: 'New Lesson Plan' });
+      expect(link).toHaveAttribute('data-slot', 'button');
+      expect(link).toHaveClass('btn-shine');
+    });
+  });
 });

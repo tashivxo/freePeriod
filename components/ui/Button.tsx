@@ -105,18 +105,24 @@ function Button({
       onMouseLeave={hasSpotlight ? handleMouseLeave : undefined}
       {...props}
     >
-      {hasSpotlight && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-200"
-          style={{
-            background: 'radial-gradient(80px at var(--sp-x) var(--sp-y), rgba(255,255,255,0.25), transparent 80%)',
-            opacity: 'var(--sp-o)' as string,
-          }}
-        />
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {hasSpotlight && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-200"
+              style={{
+                background: 'radial-gradient(80px at var(--sp-x) var(--sp-y), rgba(255,255,255,0.25), transparent 80%)',
+                opacity: 'var(--sp-o)' as string,
+              }}
+            />
+          )}
+          {isLoading && <Loader2 className="animate-spin" />}
+          {children}
+        </>
       )}
-      {isLoading && <Loader2 className="animate-spin" />}
-      {children}
     </Comp>
   )
 }

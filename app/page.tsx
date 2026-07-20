@@ -34,7 +34,7 @@ const LEAD_FEATURE = {
   icon: PenLine,
   title: 'Structured Plans',
   description:
-    'Twelve sections covering objectives, activities, differentiation, and assessment — consistent structure you can trust every time.',
+    'Twelve sections covering objectives, activities, differentiation, and assessment, with consistent structure you can trust every time.',
   color: 'bg-coral/10 text-coral',
 } as const;
 

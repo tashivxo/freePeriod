@@ -179,7 +179,8 @@ describe('SignInPage', () => {
   it('shows honest session helper copy for remember me', () => {
     render(<SignInPage />);
     expect(screen.getByText(/stay signed in on this browser until you sign out/i)).toBeInTheDocument();
-    expect(screen.getByText(/not a permanent login/i)).toBeInTheDocument();
+    expect(screen.getByText(/saved sign-in/i)).toBeInTheDocument();
+    expect(screen.queryByText(/not a permanent login/i)).not.toBeInTheDocument();
   });
 
   it('unchecking remember me does not invent alternate persistence', async () => {

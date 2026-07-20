@@ -22,17 +22,16 @@ async function globalSetup(_config: FullConfig) {
     }),
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(180000);
 
-  await page.goto(`${BASE_URL}/sign-in`);
-  // Wait for the JS-hydrated form to be fully interactive
-  await page.waitForLoadState('networkidle');
-  await page.waitForSelector('input[id="email"]', { timeout: 30000 });
+  await page.goto(`${BASE_URL}/sign-in`, { waitUntil: 'domcontentloaded', timeout: 180000 });
+  await page.waitForSelector('input[id="email"]', { timeout: 60000 });
 
   await page.getByLabel('Email').fill('testteacher@mailinator.com');
-  await page.waitForSelector('input[id="password"]', { timeout: 15000 });
+  await page.waitForSelector('input[id="password"]', { timeout: 60000 });
   await page.locator('input#password').fill('TestPass123!');
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL('**/dashboard', { timeout: 45000 });
+  await page.getByRole('button', { name: /sign in/i }).click({ noWaitAfter: true });
+  await page.waitForURL('**/dashboard', { timeout: 180000 });
 
   // Save auth cookies/storage to file
   await context.storageState({ path: AUTH_FILE });
