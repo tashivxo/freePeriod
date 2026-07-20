@@ -85,8 +85,7 @@ async function runPaidGenerationTest(): Promise<Response> {
   console.log('[test-paid-generation] Sample prompt:', PAID_GENERATION_SAMPLE);
 
   const generated = await generateLessonContent({
-    isFreePlan: false,
-    modelPreference: PAID_GENERATION_SAMPLE.modelPreference,
+    generationMode: PAID_GENERATION_SAMPLE.generationMode,
     subject: PAID_GENERATION_SAMPLE.subject,
     grade: PAID_GENERATION_SAMPLE.grade,
     curriculum: PAID_GENERATION_SAMPLE.curriculum,

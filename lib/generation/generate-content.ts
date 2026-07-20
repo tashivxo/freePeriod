@@ -12,15 +12,12 @@ import {
 } from '@/lib/ai/lesson-content-quality';
 import type { LessonSection } from '@/types';
 
-const ALLOWED_MODELS = ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5'] as const;
-export type AllowedModel = (typeof ALLOWED_MODELS)[number];
-
-function isAllowedModel(model: string): model is AllowedModel {
-  return (ALLOWED_MODELS as readonly string[]).includes(model);
+export function shouldGenerateWithGemini(mode: 'fast' | 'quality'): boolean {
+  return mode === 'fast';
 }
 
 export type GenerateContentInput = {
-  isFreePlan: boolean;
+  generationMode: 'fast' | 'quality';
   modelPreference?: string;
   subject: string;
   grade: string;
@@ -39,8 +36,7 @@ export type GenerateContentResult = {
 
 export async function generateLessonContent(input: GenerateContentInput): Promise<GenerateContentResult> {
   const {
-    isFreePlan,
-    modelPreference,
+    generationMode,
     subject,
     grade,
     curriculum,
@@ -49,13 +45,11 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     curriculumText,
   } = input;
 
-  const claudeModel: AllowedModel =
-    !isFreePlan && modelPreference && isAllowedModel(modelPreference)
-      ? modelPreference
-      : 'claude-sonnet-4-6';
-  const modelUsed = isFreePlan ? GEMINI_FREE_MODEL : claudeModel;
+  const useGemini = shouldGenerateWithGemini(generationMode);
+  const claudeModel = 'claude-sonnet-4-6';
+  const modelUsed = useGemini ? GEMINI_FREE_MODEL : claudeModel;
 
-  if (isFreePlan) {
+  if (useGemini) {
     const geminiResult = await generateWithGemini({
       subject,
       grade,

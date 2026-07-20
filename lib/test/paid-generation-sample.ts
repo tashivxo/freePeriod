@@ -12,7 +12,7 @@ export const PAID_GENERATION_SAMPLE = {
     'Differentiate for learners who struggle with negative gradients and extend for learners ready for simultaneous equations.',
     'Reference Grade 10 CAPS Mathematics terminology where appropriate.',
   ].join('\n'),
-  modelPreference: 'claude-sonnet-4-6' as const,
+  generationMode: 'quality' as const,
 };
 
 export const PAID_GENERATION_OUTPUT_DIR = path.resolve(
