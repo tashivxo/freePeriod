@@ -83,7 +83,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
                   Upgrade to Pro
                 </h2>
                 <p className="mt-1 text-sm text-text-secondary">
-                  You&apos;ve reached the 5-lesson free plan limit.
+                  You&apos;ve reached the 3-lesson free plan limit for this month.
                 </p>
               </div>
             </div>
@@ -92,9 +92,9 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
             <div className="px-6 py-5">
               <ul className="space-y-3 text-sm text-text-primary">
                 {[
-                  'Unlimited lesson plan generations',
-                  'Claude AI (smarter, more detailed plans)',
-                  'Priority generation speed',
+                  '20 lesson plans per month on Pro',
+                  'Unlimited on Pro+',
+                  'Fast and Quality generation modes',
                   'DOCX export and filled-in template download',
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-2.5">

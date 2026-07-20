@@ -138,4 +138,16 @@ describe('PricingClient', () => {
       expect(mockPush).toHaveBeenCalledWith('/sign-up?plan=pro');
     });
   });
+
+  it('shows Fast mode on Free and Fast and Quality modes on Pro', () => {
+    render(<PricingClient />);
+
+    expect(screen.getByText('Fast mode')).toBeInTheDocument();
+    expect(screen.getByText('Fast and Quality modes')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'For teachers who plan every week, up to 20 AI lesson plans a month with Fast and Quality modes.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

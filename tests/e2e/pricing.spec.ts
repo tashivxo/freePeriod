@@ -143,6 +143,7 @@ test.describe('Pricing page', () => {
   // ── Features lists ───────────────────────────────────────────────
   test('Free plan features are listed', async ({ page }) => {
     await expect(page.getByText('3 lesson plans per month')).toBeVisible();
+    await expect(page.getByText('Fast mode')).toBeVisible();
     await expect(page.getByText('DOCX export')).toBeVisible();
     await expect(page.getByText('Filled-in template download')).toBeVisible();
   });
@@ -150,6 +151,7 @@ test.describe('Pricing page', () => {
   test('Pro plan features are listed', async ({ page }) => {
     await expect(page.getByText('Everything in Free')).toBeVisible();
     await expect(page.getByText('20 lesson plans per month')).toBeVisible();
+    await expect(page.getByText('Fast and Quality modes')).toBeVisible();
     await expect(page.getByText('OCR text extraction')).toBeVisible();
   });
 

@@ -46,4 +46,23 @@ describe('UpgradePrompt', () => {
     expect(mockOnDismiss).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith('/settings#billing');
   });
+
+  it('shows 3-lesson free plan limit message', () => {
+    render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
+
+    expect(
+      screen.getByText("You've reached the 3-lesson free plan limit for this month."),
+    ).toBeInTheDocument();
+  });
+
+  it('lists Fast and Quality generation modes in features', () => {
+    render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
+
+    expect(screen.getByText('20 lesson plans per month on Pro')).toBeInTheDocument();
+    expect(screen.getByText('Unlimited on Pro+')).toBeInTheDocument();
+    expect(screen.getByText('Fast and Quality generation modes')).toBeInTheDocument();
+    expect(
+      screen.getByText('DOCX export and filled-in template download'),
+    ).toBeInTheDocument();
+  });
 });

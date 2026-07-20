@@ -44,7 +44,7 @@ const PLANS: Plan[] = [
     description: 'Perfect for trying out FreePeriod. Get started with no commitment.',
     features: [
       '3 lesson plans per month',
-      'Gemini Flash model',
+      'Fast mode',
       'PDF, DOCX, XLSX upload',
       'DOCX export',
       'Filled-in template download',
@@ -63,10 +63,11 @@ const PLANS: Plan[] = [
     priceMonthly: 9,
     priceAnnual: 7,
     description:
-      'For teachers who plan every week, up to 20 AI lesson plans a month with smarter AI.',
+      'For teachers who plan every week, up to 20 AI lesson plans a month with Fast and Quality modes.',
     features: [
       'Everything in Free',
       '20 lesson plans per month',
+      'Fast and Quality modes',
       'OCR text extraction',
       'Priority support',
     ],
