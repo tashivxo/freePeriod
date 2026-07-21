@@ -64,6 +64,7 @@ export function GenerationModePicker({
         onSelect={handleSelect}
         triggerAriaLabel={`Generation mode: ${selected.label}. ${selected.description}`}
       />
+      <p className="mt-1.5 text-sm font-body text-text-secondary">{selected.description}</p>
 
       {!qualityUnlocked && (
         <p className="mt-2 text-sm font-body text-text-secondary">

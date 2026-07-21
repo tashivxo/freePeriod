@@ -23,6 +23,7 @@ describe('GenerationModePicker', () => {
 
     expect(screen.getByRole('button', { name: /generation mode: quality/i })).toBeInTheDocument();
     expect(screen.getByText('Quality')).toBeInTheDocument();
+    expect(screen.getByText('More thorough plans. Takes a bit longer.')).toBeInTheDocument();
   });
 
   it('calls onChange when a different mode is selected', async () => {
