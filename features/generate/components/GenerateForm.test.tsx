@@ -226,7 +226,7 @@ describe('GenerateForm', () => {
     expect(screen.getByRole('button', { name: /generation mode: fast/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
-    expect(screen.getByRole('menuitemradio', { name: /quality/i })).toHaveAttribute(
+    expect(screen.getByRole('option', { name: /quality/i })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
@@ -236,7 +236,7 @@ describe('GenerateForm', () => {
     const { user } = render(<GenerateForm userPlan="pro" onSubmit={onSubmit} />);
 
     await user.click(screen.getByRole('button', { name: /generation mode/i }));
-    expect(screen.getByRole('menuitemradio', { name: /quality/i })).not.toHaveAttribute(
+    expect(screen.getByRole('option', { name: /quality/i })).not.toHaveAttribute(
       'aria-disabled',
       'true',
     );
@@ -269,7 +269,7 @@ describe('GenerateForm', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /generation mode/i }));
-    await user.click(screen.getByRole('menuitemradio', { name: /fast/i }));
+    await user.click(screen.getByRole('option', { name: /fast/i }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
     expect(onSubmit).toHaveBeenCalledWith(

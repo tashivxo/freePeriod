@@ -3,7 +3,10 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { formatGenerationUsage } from '@/lib/generation/quota';
-import { Plus, BookOpen, Clock } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { BookTextIcon } from '@/components/ui/book-text';
+import { ClockIcon } from '@/components/ui/clock';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/ui/BlurText';
@@ -90,11 +93,11 @@ async function DashboardContent() {
                   </h3>
                   <div className="flex items-center gap-3 text-xs font-body text-text-secondary mb-3">
                     <span className="inline-flex items-center gap-1">
-                      <BookOpen className="h-3 w-3" />
+                      <MotionSafeIcon icon={BookTextIcon} size={12} />
                       {lesson.subject}
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
+                      <MotionSafeIcon icon={ClockIcon} size={12} />
                       {lesson.duration_minutes}m
                     </span>
                     <span>{lesson.grade}</span>

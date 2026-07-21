@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, BookOpen, Clock, Trash2 } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
+import { BookTextIcon } from '@/components/ui/book-text';
+import { ClockIcon } from '@/components/ui/clock';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
@@ -123,11 +126,11 @@ export function HistoryClient() {
                 </h3>
                 <div className="flex items-center gap-3 text-xs font-body text-text-secondary mb-1">
                   <span className="inline-flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" />
+                    <MotionSafeIcon icon={BookTextIcon} size={12} />
                     {lesson.subject}
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
+                    <MotionSafeIcon icon={ClockIcon} size={12} />
                     {lesson.duration_minutes}m
                   </span>
                   <span>{lesson.grade}</span>

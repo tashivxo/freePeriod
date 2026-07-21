@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
-import { ArrowLeft, Download, Clock, BookOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { BookTextIcon } from '@/components/ui/book-text';
+import { ClockIcon } from '@/components/ui/clock';
+import { DownloadIcon } from '@/components/ui/download';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { downloadBlob } from '@/lib/download-blob';
@@ -140,11 +144,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
         <div className="flex flex-wrap items-center gap-4 text-sm font-body text-text-secondary">
           <span className="inline-flex items-center gap-1">
-            <BookOpen className="h-4 w-4" />
+            <MotionSafeIcon icon={BookTextIcon} size={16} />
             {lesson.subject} · {lesson.grade}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Clock className="h-4 w-4" />
+            <MotionSafeIcon icon={ClockIcon} size={16} />
             {lesson.duration_minutes} min
           </span>
           {lesson.curriculum && (
@@ -174,7 +178,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             onClick={() => void handleExport()}
             isLoading={exportLoading}
           >
-            <Download className="h-4 w-4 mr-1" />
+            <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
             Download DOCX
           </Button>
           {lesson.template_path && canFillTemplate && (
@@ -184,7 +188,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               onClick={handleFillTemplate}
               isLoading={fillLoading}
             >
-              <Download className="h-4 w-4 mr-1" />
+              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
               Download filled-in template
             </Button>
           )}

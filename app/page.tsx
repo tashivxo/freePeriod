@@ -2,8 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { PenLine, Download, Sparkles, Clock, BookOpen, Moon, Sun, FileText } from 'lucide-react';
-import { useTheme } from '@/providers/theme';
+import { FileText } from 'lucide-react';
+import { PenToolIcon } from '@/components/ui/pen-tool';
+import { SparklesIcon } from '@/components/ui/sparkles';
+import { DownloadIcon } from '@/components/ui/download';
+import { BookTextIcon } from '@/components/ui/book-text';
+import { ClockIcon } from '@/components/ui/clock';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/icons/types';
 import { animate, stagger } from 'animejs';
 import { Logo } from '@/components/ui/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
@@ -31,42 +38,62 @@ const CtaIridescenceBackground = dynamic(
 );
 
 const LEAD_FEATURE = {
-  icon: PenLine,
+  icon: PenToolIcon,
+  iconSize: 28,
   title: 'Structured Plans',
   description:
     'Twelve sections covering objectives, activities, differentiation, and assessment, with consistent structure you can trust every time.',
   color: 'bg-coral/10 text-coral',
 } as const;
 
-const SUPPORTING_FEATURES = [
+const SUPPORTING_FEATURES: {
+  icon: AnimatedIconComponent;
+  iconSize: number;
+  title: string;
+  description: string;
+  color: string;
+}[] = [
   {
-    icon: Sparkles,
+    icon: SparklesIcon,
+    iconSize: 20,
     title: 'AI-Powered',
     description: 'Tailored to your subject, year group, and curriculum in seconds.',
     color: 'bg-mustard/20 text-mustard-dark',
   },
   {
-    icon: Download,
+    icon: DownloadIcon,
+    iconSize: 20,
     title: 'Export Anywhere',
     description: 'Download as DOCX or a filled-in template. Edit inline before exporting.',
     color: 'bg-coral/10 text-coral',
   },
-] as const;
+];
 
-const CONVERSION_POINTS = [
+const CONVERSION_POINTS: {
+  icon: AnimatedIconComponent | typeof FileText;
+  animated: boolean;
+  iconSize: number;
+  text: string;
+}[] = [
   {
     icon: FileText,
+    animated: false,
+    iconSize: 20,
     text: '12 structured sections in every plan',
   },
   {
-    icon: PenLine,
+    icon: PenToolIcon,
+    animated: true,
+    iconSize: 20,
     text: 'Edit before you export',
   },
   {
-    icon: BookOpen,
+    icon: BookTextIcon,
+    animated: true,
+    iconSize: 20,
     text: 'Free to start. No credit card required.',
   },
-] as const;
+];
 
 function getPrefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;
@@ -78,7 +105,6 @@ export default function HomePage() {
   const featuresRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
-  const { resolvedTheme, setTheme } = useTheme();
   const hiddenUntilAnimated = prefersReduced ? 1 : 0;
 
   useEffect(() => {
@@ -253,12 +279,12 @@ export default function HomePage() {
                 style={{ opacity: hiddenUntilAnimated }}
               >
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
-                  <Clock className="h-3.5 w-3.5" />
+                  <MotionSafeIcon icon={ClockIcon} size={14} />
                   Avg. 15 seconds to generate
                 </div>
                 <div className="h-3 w-px bg-border" />
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
-                  <BookOpen className="h-3.5 w-3.5" />
+                  <MotionSafeIcon icon={BookTextIcon} size={14} />
                   Free to start
                 </div>
               </div>
@@ -290,7 +316,7 @@ export default function HomePage() {
               className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-7 backdrop-blur transition-colors hover:border-coral/50 lg:row-span-2 lg:p-9"
             >
               <div className={`mb-5 inline-flex rounded-xl p-3.5 ${LEAD_FEATURE.color}`}>
-                <LeadIcon className="h-7 w-7" />
+                <MotionSafeIcon icon={LeadIcon} size={LEAD_FEATURE.iconSize} />
               </div>
               <h3 className="mb-3 font-display text-2xl font-semibold text-text-primary">
                 {LEAD_FEATURE.title}
@@ -300,14 +326,14 @@ export default function HomePage() {
               </p>
             </SpotlightCard>
 
-            {SUPPORTING_FEATURES.map(({ icon: Icon, title, description, color }) => (
+            {SUPPORTING_FEATURES.map(({ icon, iconSize, title, description, color }) => (
               <SpotlightCard
                 key={title}
                 data-feature
                 className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur transition-colors hover:border-coral/50 md:p-7"
               >
                 <div className={`mb-4 inline-flex rounded-xl p-3 ${color}`}>
-                  <Icon className="h-5 w-5" />
+                  <MotionSafeIcon icon={icon} size={iconSize} />
                 </div>
                 <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{title}</h3>
                 <p className="font-body text-sm leading-relaxed text-text-secondary">{description}</p>
@@ -337,10 +363,14 @@ export default function HomePage() {
             </div>
 
             <ul className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
-              {CONVERSION_POINTS.map(({ icon: Icon, text }) => (
+              {CONVERSION_POINTS.map(({ icon, animated, iconSize, text }) => (
                 <li key={text} className="flex flex-col items-center gap-2 px-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/10">
-                    <Icon className="h-5 w-5 text-coral" />
+                    {animated ? (
+                      <MotionSafeIcon icon={icon as AnimatedIconComponent} size={iconSize} className="text-coral" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-coral" />
+                    )}
                   </div>
                   <p className="font-body text-sm leading-snug text-text-secondary">{text}</p>
                 </li>
@@ -362,26 +392,12 @@ export default function HomePage() {
         </div>
       </main>
 
-      <button
-        ref={toggleRef}
-        onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-        aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        data-motion-enter
-        className="fixed bottom-6 right-6 z-50 btn-shine flex min-h-[44px] items-center gap-2 overflow-hidden rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+      <ThemeToggle
+        variant="floating-label"
+        buttonRef={toggleRef}
+        wrapperClassName="fixed bottom-6 right-6 z-50"
         style={{ opacity: hiddenUntilAnimated }}
-      >
-        {resolvedTheme === 'dark' ? (
-          <>
-            <Sun className="h-4 w-4" />
-            Try light mode
-          </>
-        ) : (
-          <>
-            <Moon className="h-4 w-4" />
-            Try dark mode
-          </>
-        )}
-      </button>
+      />
     </div>
   );
 }

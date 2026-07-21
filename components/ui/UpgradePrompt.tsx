@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { ZapIcon } from '@/components/ui/zap';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
 import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
 import { useZenMode } from '@/providers/zen-mode';
@@ -75,7 +77,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
               </button>
 
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-coral shadow-lg">
-                <Zap size={28} fill="white" className="text-white" />
+                <MotionSafeIcon icon={ZapIcon} size={28} className="text-white" />
               </div>
 
               <div className="text-center">
@@ -99,7 +101,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-2.5">
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-coral/15 text-coral">
-                      <Zap size={11} fill="currentColor" />
+                      <MotionSafeIcon icon={ZapIcon} size={11} className="text-coral" />
                     </span>
                     {feature}
                   </li>

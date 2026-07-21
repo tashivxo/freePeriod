@@ -4,10 +4,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import type { LucideIcon } from 'lucide-react';
-import { Check, Sparkles, Zap, BookOpen, Moon, Sun } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { BookTextIcon } from '@/components/ui/book-text';
+import { SparklesIcon } from '@/components/ui/sparkles';
+import { ZapIcon } from '@/components/ui/zap';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
-import { useTheme } from '@/providers/theme';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/icons/types';
 import { MagicCard } from '@/components/ui/magic-card';
 import { Logo } from '@/components/ui/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
@@ -21,7 +25,7 @@ const SoftAurora = dynamic(
 interface Plan {
   id: string;
   name: string;
-  Icon: LucideIcon;
+  Icon: AnimatedIconComponent;
   iconBg: string;
   priceMonthly: number;
   priceAnnual: number;
@@ -37,7 +41,7 @@ const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
-    Icon: BookOpen,
+    Icon: BookTextIcon,
     iconBg: 'bg-coral/10',
     priceMonthly: 0,
     priceAnnual: 0,
@@ -58,7 +62,7 @@ const PLANS: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    Icon: Sparkles,
+    Icon: SparklesIcon,
     iconBg: 'bg-coral/15',
     priceMonthly: 9,
     priceAnnual: 7,
@@ -79,8 +83,8 @@ const PLANS: Plan[] = [
   {
     id: 'pro_plus',
     name: 'Pro+',
-    Icon: Zap,
-    iconBg: 'bg-text-primary/10',
+    Icon: ZapIcon,
+    iconBg: 'bg-coral/10',
     priceMonthly: 12,
     priceAnnual: 10,
     description:
@@ -103,7 +107,6 @@ export function PricingClient() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
-  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -305,7 +308,7 @@ export function PricingClient() {
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-xl ${plan.iconBg}`}
                       >
-                        <Icon size={20} className="text-coral" />
+                        <MotionSafeIcon icon={Icon} size={20} className="text-coral" />
                       </div>
                       <h2 className="font-display text-xl font-bold text-text-primary">
                         {plan.name}
@@ -415,26 +418,7 @@ export function PricingClient() {
 
       <MarketingFooter />
 
-      {/* Floating dark mode toggle — wrapper owns fixed position; button owns relative for btn-shine */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="relative btn-shine overflow-hidden flex min-h-[44px] items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral focus-visible:outline-offset-2 dark:bg-white/10 dark:border-white/25 dark:text-white dark:hover:bg-white/15"
-        >
-          {resolvedTheme === 'dark' ? (
-            <>
-              <Sun className="h-4 w-4" />
-              Try light mode
-            </>
-          ) : (
-            <>
-              <Moon className="h-4 w-4" />
-              Try dark mode
-            </>
-          )}
-        </button>
-      </div>
+      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 right-6 z-50" />
     </div>
   );
 }

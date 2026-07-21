@@ -68,7 +68,7 @@ describe('HomePage', () => {
     it('toggle button has fixed positioning', () => {
       render(<HomePage />);
       const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
-      expect(toggle.className).toMatch(/fixed/);
+      expect(toggle.closest('.fixed')).toBeInTheDocument();
     });
   });
 

@@ -2,15 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PenLine, Clock, Settings } from 'lucide-react';
+import { HomeIcon } from '@/components/ui/home';
+import { FilePenLineIcon } from '@/components/ui/file-pen-line';
+import { ClockIcon } from '@/components/ui/clock';
+import { SettingsIcon } from '@/components/ui/settings';
 import { Logo } from '@/components/ui/Logo';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/icons/types';
 
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/generate', label: 'Generate', icon: PenLine },
-  { href: '/history', label: 'History', icon: Clock },
-  { href: '/settings', label: 'Settings', icon: Settings },
-] as const;
+const NAV_ITEMS: {
+  href: string;
+  label: string;
+  icon: AnimatedIconComponent;
+}[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: HomeIcon },
+  { href: '/generate', label: 'Generate', icon: FilePenLineIcon },
+  { href: '/history', label: 'History', icon: ClockIcon },
+  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+];
 
 export function Navbar() {
   const pathname = usePathname();
@@ -23,7 +32,7 @@ export function Navbar() {
         </Link>
 
         <ul className="flex items-center gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, label, icon }) => {
             const active = pathname.startsWith(href);
             return (
               <li key={href}>
@@ -36,7 +45,7 @@ export function Navbar() {
                       : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <MotionSafeIcon icon={icon} size={16} />
                   <span className="hidden sm:inline">{label}</span>
                 </Link>
               </li>

@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useId } from 'react';
-import { X, Upload } from 'lucide-react';
+import { X } from 'lucide-react';
+import { UploadIcon } from '@/components/ui/upload';
+import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import type { UploadType } from '@/types';
@@ -68,10 +70,10 @@ export function DocumentUploadZone({
       >
         {!file ? (
           <div className="flex flex-col items-center gap-2 text-center">
-            <Upload
-              className="h-6 w-6"
-              style={{ color: 'var(--color-text-secondary)' }}
-              aria-hidden="true"
+            <MotionSafeIcon
+              icon={UploadIcon}
+              size={24}
+              className="text-[var(--color-text-secondary)]"
             />
             <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               {isUploading ? 'Uploading…' : 'Click to upload'}
