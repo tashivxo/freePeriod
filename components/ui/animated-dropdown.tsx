@@ -9,6 +9,9 @@ export interface DropdownItem {
   name: string;
   value?: string;
   link?: string;
+  description?: string;
+  disabled?: boolean;
+  badge?: string;
 }
 
 interface AnimatedDropdownProps {
@@ -18,6 +21,7 @@ interface AnimatedDropdownProps {
   onSelect?: (item: DropdownItem) => void;
   selectedValue?: string;
   id?: string;
+  triggerAriaLabel?: string;
 }
 
 export function AnimatedDropdown({
@@ -27,6 +31,7 @@ export function AnimatedDropdown({
   onSelect,
   selectedValue,
   id,
+  triggerAriaLabel,
 }: AnimatedDropdownProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,6 +65,7 @@ export function AnimatedDropdown({
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-label={triggerAriaLabel}
         className="h-13 w-full flex items-center justify-between rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] pl-4 pr-3 font-body text-base transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
       >
         <span
@@ -96,23 +102,46 @@ export function AnimatedDropdown({
             {items.map((item) => {
               const val = item.value ?? item.name;
               const isSelected = selectedValue === val;
+              const isDisabled = item.disabled === true;
               return (
                 <li
                   key={val}
                   role="option"
                   aria-selected={isSelected}
+                  aria-disabled={isDisabled || undefined}
                   onClick={() => {
+                    if (isDisabled) return;
                     onSelect?.(item);
                     setOpen(false);
                   }}
                   className={cn(
-                    'cursor-pointer px-4 py-2.5 text-sm font-body transition-colors duration-100',
+                    'px-4 py-2.5 text-sm font-body transition-colors duration-100',
+                    item.description ? 'py-3' : 'py-2.5',
+                    isDisabled
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:bg-[var(--color-primary-light)]/20',
                     isSelected
                       ? 'bg-[var(--color-primary-light)]/20 text-coral'
-                      : 'text-[var(--color-text-primary)] hover:bg-[var(--color-primary-light)]/20',
+                      : 'text-[var(--color-text-primary)]',
                   )}
                 >
-                  {item.name}
+                  {item.description ? (
+                    <span className="flex min-w-0 flex-col gap-0.5 text-left">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">{item.name}</span>
+                        {item.badge && (
+                          <span className="inline-flex rounded-md bg-coral/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral">
+                            {item.badge}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-sm leading-snug text-[var(--color-text-secondary)]">
+                        {item.description}
+                      </span>
+                    </span>
+                  ) : (
+                    item.name
+                  )}
                 </li>
               );
             })}

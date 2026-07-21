@@ -70,6 +70,16 @@ test.describe('AnimatedDropdown — generate page', () => {
     await page.locator('body').click({ position: { x: 10, y: 10 } });
     await expect(page.getByRole('listbox')).not.toBeVisible();
   });
+
+  test('generation mode dropdown opens below the trigger button', async ({ page }) => {
+    const trigger = page.locator('#generation-mode-picker');
+    await trigger.click();
+    const listbox = page.getByRole('listbox');
+    await expect(listbox).toBeVisible();
+    const triggerBox = await trigger.boundingBox();
+    const listboxBox = await listbox.boundingBox();
+    expect(listboxBox!.y).toBeGreaterThan(triggerBox!.y + triggerBox!.height - 1);
+  });
 });
 
 test.describe('AnimatedDropdown — settings page', () => {

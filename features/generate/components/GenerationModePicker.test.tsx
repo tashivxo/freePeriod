@@ -36,7 +36,7 @@ describe('GenerationModePicker', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /generation mode: quality/i }));
-    await user.click(screen.getByRole('menuitemradio', { name: /fast/i }));
+    await user.click(screen.getByRole('option', { name: /fast/i }));
 
     expect(onChange).toHaveBeenCalledWith('fast');
   });
@@ -55,7 +55,7 @@ describe('GenerationModePicker', () => {
     expect(screen.getByRole('link', { name: /upgrade to pro/i })).toHaveAttribute('href', '/pricing');
 
     await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
-    expect(screen.getByRole('menuitemradio', { name: /quality/i })).toHaveAttribute(
+    expect(screen.getByRole('option', { name: /quality/i })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
