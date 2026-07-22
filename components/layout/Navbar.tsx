@@ -45,7 +45,7 @@ export function Navbar() {
                       : 'text-text-secondary hover:text-text-primary hover:bg-muted'
                   }`}
                 >
-                  <MotionSafeIcon icon={icon} size={16} />
+                  <MotionSafeIcon icon={icon} size={16} parentFocus />
                   <span className="hidden sm:inline">{label}</span>
                 </Link>
               </li>

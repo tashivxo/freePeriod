@@ -2,6 +2,9 @@
 
 import { useRef, useSyncExternalStore } from 'react';
 
+import type { AnimatedIconHandle } from '@/components/icons/types';
+import { useZenMode } from '@/providers/zen-mode';
+
 function subscribeReducedMotion(callback: () => void) {
   const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
   mq.addEventListener('change', callback);
@@ -16,13 +19,17 @@ function getReducedMotionServerSnapshot() {
   return false;
 }
 
-export function useMotionSafeIconRef<T>() {
-  const ref = useRef<T>(null);
+export function useMotionSafeIconRef() {
+  const ref = useRef<AnimatedIconHandle>(null);
   const prefersReduced = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
     getReducedMotionServerSnapshot,
   );
+  const { zenMode } = useZenMode();
 
-  return prefersReduced ? ref : undefined;
+  return {
+    ref,
+    animationDisabled: prefersReduced || zenMode,
+  };
 }

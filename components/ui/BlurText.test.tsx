@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { BlurText } from './BlurText';
 
 // Mock Framer Motion so animations don't break jsdom
-jest.mock('framer-motion', () => ({
+jest.mock('motion/react', () => ({
   motion: {
     span: ({ children, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
       <span {...props}>{children}</span>
@@ -60,7 +60,7 @@ describe('BlurText', () => {
 
   it('respects prefers-reduced-motion by still rendering text', () => {
     // When reduced motion is on the component should still mount and show text
-    jest.mock('framer-motion', () => ({
+    jest.mock('motion/react', () => ({
       motion: {
         span: ({ children, ...props }: React.HTMLAttributes<HTMLSpanElement>) => (
           <span {...props}>{children}</span>

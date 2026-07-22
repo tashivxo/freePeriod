@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import type { CSSProperties, Ref } from 'react';
 import { SunIcon } from '@/components/ui/sun';
 import { MoonIcon } from '@/components/ui/moon';
@@ -15,6 +16,15 @@ type ThemeToggleProps = {
   style?: CSSProperties;
 };
 
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (!ref) return;
+  if (typeof ref === 'function') {
+    ref(value);
+  } else {
+    ref.current = value;
+  }
+}
+
 export function ThemeToggle({
   variant = 'icon',
   className,
@@ -23,13 +33,41 @@ export function ThemeToggle({
   style,
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  const iconRef = useMotionSafeIconRef();
+  const { ref: iconRef, animationDisabled } = useMotionSafeIconRef();
+  const internalButtonRef = useRef<HTMLButtonElement>(null);
   const isDark = resolvedTheme === 'dark';
   const iconSize = variant === 'icon' ? 18 : 16;
 
+  useEffect(() => {
+    if (animationDisabled) return;
+
+    const button = internalButtonRef.current;
+    if (!button) return;
+
+    const handleFocusIn = () => {
+      iconRef.current?.startAnimation();
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      if (!button.contains(event.relatedTarget as Node | null)) {
+        iconRef.current?.stopAnimation();
+      }
+    };
+
+    button.addEventListener('focusin', handleFocusIn);
+    button.addEventListener('focusout', handleFocusOut);
+    return () => {
+      button.removeEventListener('focusin', handleFocusIn);
+      button.removeEventListener('focusout', handleFocusOut);
+    };
+  }, [animationDisabled, iconRef]);
+
   const button = (
     <button
-      ref={buttonRef}
+      ref={(node) => {
+        internalButtonRef.current = node;
+        assignRef(buttonRef, node);
+      }}
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -46,6 +84,8 @@ export function ThemeToggle({
           <SunIcon
             ref={iconRef}
             size={iconSize}
+            animationDisabled={animationDisabled}
+            aria-hidden
             className="inline-flex shrink-0 items-center text-current"
           />
           {variant === 'floating-label' ? 'Try light mode' : null}
@@ -55,6 +95,8 @@ export function ThemeToggle({
           <MoonIcon
             ref={iconRef}
             size={iconSize}
+            animationDisabled={animationDisabled}
+            aria-hidden
             className="inline-flex shrink-0 items-center text-current"
           />
           {variant === 'floating-label' ? 'Try dark mode' : null}
