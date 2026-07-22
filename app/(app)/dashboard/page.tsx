@@ -4,12 +4,10 @@ import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { formatGenerationUsage } from '@/lib/generation/quota';
 import { Plus } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/icons/book-text';
-import { ClockIcon } from '@/components/ui/icons/clock';
-import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/ui/effects/BlurText';
+import { RecentLessons } from '@/features/dashboard/components/RecentLessons';
+import type { LessonPlanCardData } from '@/features/lesson/components/LessonPlanCard';
 
 function DashboardSkeleton() {
   return (
@@ -23,6 +21,34 @@ function DashboardSkeleton() {
       </div>
     </div>
   );
+}
+
+function mapRecentLessons(
+  lessons: {
+    id: string;
+    title: string;
+    subject: string;
+    grade: string;
+    duration_minutes: number;
+    created_at: string;
+    content: unknown;
+  }[],
+): LessonPlanCardData[] {
+  return lessons.map((lesson) => {
+    const objectives = (lesson.content as Record<string, unknown>)?.objectives;
+    const firstObjective =
+      Array.isArray(objectives) && objectives.length > 0 ? String(objectives[0]) : null;
+
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      subject: lesson.subject,
+      grade: lesson.grade,
+      duration_minutes: lesson.duration_minutes,
+      created_at: lesson.created_at,
+      firstObjective,
+    };
+  });
 }
 
 async function DashboardContent() {
@@ -52,6 +78,8 @@ async function DashboardContent() {
   const nameSource = (profile?.name || authName).trim();
   const firstName = nameSource.split(' ')[0] || 'there';
 
+  const recentLessons = lessons ? mapRecentLessons(lessons) : [];
+
   return (
     <div className="relative">
       <div className="relative z-10 mx-auto max-w-5xl px-4 py-8">
@@ -68,63 +96,8 @@ async function DashboardContent() {
       </Button>
 
       {/* Recent lessons */}
-      {lessons && lessons.length > 0 ? (
-        <>
-          <h2 className="font-display text-xl font-semibold text-text-primary mb-4">
-            Recent Lessons
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {lessons.map((lesson) => {
-              const objectives = (lesson.content as Record<string, unknown>)?.objectives;
-              const firstObjective =
-                Array.isArray(objectives) && objectives.length > 0
-                  ? String(objectives[0])
-                  : null;
-
-              return (
-              <Link
-                key={lesson.id}
-                href={`/lesson/${lesson.id}`}
-              >
-                <Card className="group border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                  <CardContent className="p-5">
-                  <h3 className="font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2">
-                    {lesson.title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs font-body text-text-secondary mb-3">
-                    <span className="inline-flex items-center gap-1">
-                      <MotionSafeIcon icon={BookTextIcon} size={12} />
-                      {lesson.subject}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MotionSafeIcon icon={ClockIcon} size={12} />
-                      {lesson.duration_minutes}m
-                    </span>
-                    <span>{lesson.grade}</span>
-                  </div>
-                  {firstObjective && (
-                    <p className="text-xs font-body text-text-secondary line-clamp-2">
-                      {firstObjective}
-                    </p>
-                  )}
-                  <p className="mt-3 text-[10px] font-body text-text-secondary/60">
-                    {new Date(lesson.created_at).toLocaleDateString()}
-                  </p>
-                  </CardContent>
-                </Card>
-              </Link>
-              );
-            })}
-          </div>
-
-          {lessons.length > 0 && (
-            <div className="mt-6 text-center">
-              <Button asChild variant="link" className="text-coral">
-                <Link href="/history">View all lessons →</Link>
-              </Button>
-            </div>
-          )}
-        </>
+      {recentLessons.length > 0 ? (
+        <RecentLessons initialLessons={recentLessons} />
       ) : (
         <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
           <p className="font-body text-text-secondary mb-4">

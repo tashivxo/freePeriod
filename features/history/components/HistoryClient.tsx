@@ -2,16 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search, Trash2 } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/icons/book-text';
-import { ClockIcon } from '@/components/ui/icons/clock';
-import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import { Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
+import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
@@ -21,7 +18,6 @@ export function HistoryClient() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -54,7 +50,6 @@ export function HistoryClient() {
   const handleDelete = useCallback(async (id: string) => {
     const supabase = createClient();
     await supabase.from('lesson_plans').delete().eq('id', id);
-    setDeleteId(null);
     setLessons((prev) => prev.filter((l) => l.id !== id));
   }, []);
 
@@ -115,67 +110,7 @@ export function HistoryClient() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lessons.map((lesson) => (
-            <Card
-              key={lesson.id}
-              className="group relative border-border/60 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <CardContent className="p-5">
-              <Link href={`/lesson/${lesson.id}`} className="block">
-                <h3 className="font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2">
-                  {lesson.title}
-                </h3>
-                <div className="flex items-center gap-3 text-xs font-body text-text-secondary mb-1">
-                  <span className="inline-flex items-center gap-1">
-                    <MotionSafeIcon icon={BookTextIcon} size={12} />
-                    {lesson.subject}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <MotionSafeIcon icon={ClockIcon} size={12} />
-                    {lesson.duration_minutes}m
-                  </span>
-                  <span>{lesson.grade}</span>
-                </div>
-                <p className="text-xs font-body text-text-secondary">
-                  {new Date(lesson.created_at).toLocaleDateString()}
-                </p>
-              </Link>
-
-              {/* Delete */}
-              <button
-                type="button"
-                onClick={() => setDeleteId(lesson.id)}
-                className="absolute top-3 right-3 flex min-h-11 min-w-11 items-center justify-center rounded text-text-secondary/40 hover:text-red-500 transition-colors opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 [@media(pointer:coarse)]:opacity-100"
-                aria-label={`Delete ${lesson.title}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-
-              {/* Delete confirmation */}
-              {deleteId === lesson.id && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-surface/95 backdrop-blur-sm">
-                  <div className="text-center px-4">
-                    <p className="text-sm font-body text-text-primary mb-3">Delete this lesson?</p>
-                    <div className="flex gap-2 justify-center">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(lesson.id)}
-                        className="rounded-lg bg-red-500 px-4 py-2.5 text-xs font-body text-white hover:bg-red-600 transition-colors"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteId(null)}
-                        className="rounded-lg border border-border px-4 py-2.5 text-xs font-body text-text-secondary hover:bg-muted transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              </CardContent>
-            </Card>
+            <LessonPlanCard key={lesson.id} lesson={lesson} onDelete={handleDelete} />
           ))}
         </div>
       )}
