@@ -12,6 +12,8 @@ type MotionSafeIconProps = {
   className?: string;
   /** Trigger icon animation when the parent interactive element receives focus (Navbar, ThemeToggle). */
   parentFocus?: boolean;
+  /** Trigger icon animation when the parent interactive element is hovered (Navbar links). */
+  parentHover?: boolean;
 };
 
 export function MotionSafeIcon({
@@ -19,12 +21,13 @@ export function MotionSafeIcon({
   size,
   className,
   parentFocus = false,
+  parentHover = false,
 }: MotionSafeIconProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { ref, animationDisabled } = useMotionSafeIconRef();
 
   useEffect(() => {
-    if (!parentFocus || animationDisabled) return;
+    if ((!parentFocus && !parentHover) || animationDisabled) return;
 
     const parent = wrapperRef.current?.parentElement;
     if (!parent) return;
@@ -39,16 +42,41 @@ export function MotionSafeIcon({
       }
     };
 
-    parent.addEventListener('focusin', handleFocusIn);
-    parent.addEventListener('focusout', handleFocusOut);
-    return () => {
-      parent.removeEventListener('focusin', handleFocusIn);
-      parent.removeEventListener('focusout', handleFocusOut);
+    const handleMouseEnter = () => {
+      ref.current?.startAnimation();
     };
-  }, [animationDisabled, parentFocus, ref]);
+
+    const handleMouseLeave = () => {
+      ref.current?.stopAnimation();
+    };
+
+    if (parentFocus) {
+      parent.addEventListener('focusin', handleFocusIn);
+      parent.addEventListener('focusout', handleFocusOut);
+    }
+
+    if (parentHover) {
+      parent.addEventListener('mouseenter', handleMouseEnter);
+      parent.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    return () => {
+      if (parentFocus) {
+        parent.removeEventListener('focusin', handleFocusIn);
+        parent.removeEventListener('focusout', handleFocusOut);
+      }
+      if (parentHover) {
+        parent.removeEventListener('mouseenter', handleMouseEnter);
+        parent.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, [animationDisabled, parentFocus, parentHover, ref]);
 
   return (
-    <div ref={wrapperRef} className="inline-flex shrink-0">
+    <div
+      ref={wrapperRef}
+      className={cn('inline-flex shrink-0', parentHover && 'pointer-events-none')}
+    >
       <Icon
         ref={ref}
         size={size}
