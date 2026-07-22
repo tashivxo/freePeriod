@@ -2,7 +2,7 @@
 
 import { useRef, useSyncExternalStore } from 'react';
 
-import type { AnimatedIconHandle } from '@/components/icons/types';
+import type { AnimatedIconHandle } from '@/components/ui/icons/types';
 import { useZenMode } from '@/providers/zen-mode';
 
 function subscribeReducedMotion(callback: () => void) {

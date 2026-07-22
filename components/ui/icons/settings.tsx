@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 
-import { createAnimatedIcon } from "@/components/icons/createAnimatedIcon";
+import { createAnimatedIcon } from "@/components/ui/icons/createAnimatedIcon";
 
 const SettingsIcon = createAnimatedIcon({
   displayName: "SettingsIcon",

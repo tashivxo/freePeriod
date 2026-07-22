@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Logo } from '@/components/ui/Logo';
+import { Logo } from '@/components/ui/branding/Logo';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 

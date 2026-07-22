@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
-const Noise = dynamic(() => import('@/components/ui/Noise/Noise'), { ssr: false });
+const Noise = dynamic(() => import('@/components/ui/backgrounds/Noise/Noise'), { ssr: false });
 
 export function GrainOverlay() {
   const [prefersReduced, setPrefersReduced] = useState(false);

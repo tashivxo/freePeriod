@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@/providers/theme';
 
-const Waves = dynamic(() => import('@/components/ui/Waves/Waves'), { ssr: false });
+const Waves = dynamic(() => import('@/components/ui/backgrounds/Waves/Waves'), { ssr: false });
 
 function getPrefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false;

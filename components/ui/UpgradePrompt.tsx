@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
-import { ZapIcon } from '@/components/ui/zap';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import { ZapIcon } from '@/components/ui/icons/zap';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Dialog, DialogContent, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/Button';
 import { useZenMode } from '@/providers/zen-mode';

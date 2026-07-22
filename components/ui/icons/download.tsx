@@ -3,12 +3,12 @@
 import type { Variants } from "motion/react";
 import { motion } from "motion/react";
 
-import { createAnimatedIcon } from "@/components/icons/createAnimatedIcon";
+import { createAnimatedIcon } from "@/components/ui/icons/createAnimatedIcon";
 
 const ARROW_VARIANTS: Variants = {
   normal: { y: 0 },
   animate: {
-    y: -2,
+    y: 2,
     transition: {
       type: "spring",
       stiffness: 200,
@@ -18,8 +18,8 @@ const ARROW_VARIANTS: Variants = {
   },
 };
 
-const UploadIcon = createAnimatedIcon({
-  displayName: "UploadIcon",
+const DownloadIcon = createAnimatedIcon({
+  displayName: "DownloadIcon",
   onActivate: (controls) => controls.start("animate"),
   onDeactivate: (controls) => controls.start("normal"),
   render: ({ size, controls }) => (
@@ -36,11 +36,11 @@ const UploadIcon = createAnimatedIcon({
     >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <motion.g animate={controls} variants={ARROW_VARIANTS}>
-        <polyline points="17 8 12 3 7 8" />
-        <line x1="12" x2="12" y1="3" y2="15" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" x2="12" y1="15" y2="3" />
       </motion.g>
     </svg>
   ),
 });
 
-export { UploadIcon };
+export { DownloadIcon };

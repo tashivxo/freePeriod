@@ -2,8 +2,8 @@
 
 import { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
-import { UploadIcon } from '@/components/ui/upload';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import { UploadIcon } from '@/components/ui/icons/upload';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import type { UploadType } from '@/types';

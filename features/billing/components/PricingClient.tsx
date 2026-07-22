@@ -5,20 +5,20 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Check } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/book-text';
-import { SparklesIcon } from '@/components/ui/sparkles';
-import { ZapIcon } from '@/components/ui/zap';
+import { BookTextIcon } from '@/components/ui/icons/book-text';
+import { SparklesIcon } from '@/components/ui/icons/sparkles';
+import { ZapIcon } from '@/components/ui/icons/zap';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
-import type { AnimatedIconComponent } from '@/components/icons/types';
-import { MagicCard } from '@/components/ui/magic-card';
-import { Logo } from '@/components/ui/Logo';
+import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/ui/icons/types';
+import { MagicCard } from '@/components/ui/effects/magic-card';
+import { Logo } from '@/components/ui/branding/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { createClient } from '@/lib/supabase/client';
 
 const SoftAurora = dynamic(
-  () => import('@/components/ui/SoftAurora/SoftAurora'),
+  () => import('@/components/ui/backgrounds/SoftAurora/SoftAurora'),
   { ssr: false },
 );
 

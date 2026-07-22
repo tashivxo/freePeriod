@@ -3,19 +3,19 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
-import { PenToolIcon } from '@/components/ui/pen-tool';
-import { SparklesIcon } from '@/components/ui/sparkles';
-import { DownloadIcon } from '@/components/ui/download';
-import { BookTextIcon } from '@/components/ui/book-text';
-import { ClockIcon } from '@/components/ui/clock';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
-import type { AnimatedIconComponent } from '@/components/icons/types';
+import { PenToolIcon } from '@/components/ui/icons/pen-tool';
+import { SparklesIcon } from '@/components/ui/icons/sparkles';
+import { DownloadIcon } from '@/components/ui/icons/download';
+import { BookTextIcon } from '@/components/ui/icons/book-text';
+import { ClockIcon } from '@/components/ui/icons/clock';
+import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { animate, stagger } from 'animejs';
-import { Logo } from '@/components/ui/Logo';
+import { Logo } from '@/components/ui/branding/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
-import { ShinyText } from '@/components/ui/ShinyText';
-import { SpotlightCard } from '@/components/ui/SpotlightCard';
+import { ShinyText } from '@/components/ui/effects/ShinyText';
+import { SpotlightCard } from '@/components/ui/effects/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
 import dynamic from 'next/dynamic';
 
@@ -25,13 +25,13 @@ const HeroPictogram = dynamic(
 );
 
 const SoftAurora = dynamic(
-  () => import('@/components/ui/SoftAurora/SoftAurora'),
+  () => import('@/components/ui/backgrounds/SoftAurora/SoftAurora'),
   { ssr: false }
 );
 
 const CtaIridescenceBackground = dynamic(
   () =>
-    import('@/components/backgrounds/CtaIridescenceBackground').then(
+    import('@/components/ui/backgrounds/CtaIridescenceBackground').then(
       (m) => m.CtaIridescenceBackground
     ),
   { ssr: false }

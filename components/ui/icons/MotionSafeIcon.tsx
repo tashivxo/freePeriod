@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
-import type { AnimatedIconComponent } from '@/components/icons/types';
+import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 
 type MotionSafeIconProps = {
   icon: AnimatedIconComponent;

@@ -3,7 +3,7 @@
 import type { Variants } from "motion/react";
 import { motion } from "motion/react";
 
-import { createMultiControlAnimatedIcon } from "@/components/icons/createAnimatedIcon";
+import { createMultiControlAnimatedIcon } from "@/components/ui/icons/createAnimatedIcon";
 import { ICON_MOTION } from "@/lib/motion/tokens";
 
 const SPARKLE_VARIANTS: Variants = {

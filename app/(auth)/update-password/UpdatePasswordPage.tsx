@@ -9,7 +9,7 @@ import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Logo } from '@/components/ui/Logo';
+import { Logo } from '@/components/ui/branding/Logo';
 
 function isExpiredSessionError(message: string): boolean {
   const lower = message.toLowerCase();

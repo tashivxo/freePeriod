@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, Trash2 } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/book-text';
-import { ClockIcon } from '@/components/ui/clock';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import { BookTextIcon } from '@/components/ui/icons/book-text';
+import { ClockIcon } from '@/components/ui/icons/clock';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';
-import { BlurText } from '@/components/ui/BlurText';
+import { BlurText } from '@/components/ui/effects/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;

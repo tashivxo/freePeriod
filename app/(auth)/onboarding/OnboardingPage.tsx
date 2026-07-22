@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Logo } from '@/components/ui/Logo';
+import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';

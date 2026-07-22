@@ -9,7 +9,7 @@ import {
 } from 'react';
 
 import { cn } from '@/lib/utils';
-import type { AnimatedIconHandle, AnimatedIconProps } from '@/components/icons/types';
+import type { AnimatedIconHandle, AnimatedIconProps } from '@/components/ui/icons/types';
 
 type AnimationControls = ReturnType<typeof useAnimation>;
 

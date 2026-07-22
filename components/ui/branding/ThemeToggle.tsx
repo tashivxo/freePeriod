@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import type { CSSProperties, Ref } from 'react';
-import { SunIcon } from '@/components/ui/sun';
-import { MoonIcon } from '@/components/ui/moon';
+import { SunIcon } from '@/components/ui/icons/sun';
+import { MoonIcon } from '@/components/ui/icons/moon';
 import { useTheme } from '@/providers/theme';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';

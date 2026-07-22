@@ -4,11 +4,11 @@ import { useTheme } from '@/providers/theme';
 import HomePage from './page';
 
 jest.mock('@/providers/theme');
-jest.mock('@/components/backgrounds/CtaIridescenceBackground', () => ({
+jest.mock('@/components/ui/backgrounds/CtaIridescenceBackground', () => ({
   CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
     prefersReduced ? null : <div data-testid="cta-iridescence" aria-hidden="true" />,
 }));
-jest.mock('@/components/ui/SpotlightCard', () => ({
+jest.mock('@/components/ui/effects/SpotlightCard', () => ({
   SpotlightCard: ({ children, className, ...rest }: { children: React.ReactNode; className?: string; [key: string]: unknown }) => (
     <div className={className} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>{children}</div>
   ),

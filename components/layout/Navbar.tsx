@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HomeIcon } from '@/components/ui/home';
-import { FilePenLineIcon } from '@/components/ui/file-pen-line';
-import { ClockIcon } from '@/components/ui/clock';
-import { SettingsIcon } from '@/components/ui/settings';
-import { Logo } from '@/components/ui/Logo';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
-import type { AnimatedIconComponent } from '@/components/icons/types';
+import { HomeIcon } from '@/components/ui/icons/home';
+import { FilePenLineIcon } from '@/components/ui/icons/file-pen-line';
+import { ClockIcon } from '@/components/ui/icons/clock';
+import { SettingsIcon } from '@/components/ui/icons/settings';
+import { Logo } from '@/components/ui/branding/Logo';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 
 const NAV_ITEMS: {
   href: string;

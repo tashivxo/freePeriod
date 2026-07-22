@@ -42,9 +42,12 @@ app/                          # Next.js App Router routes (thin shells)
   (app)/                      # Authenticated route group (dashboard, generate, lesson, settings)
   api/                        # API routes (generate, parse-document, export, checkout)
 components/
-  ui/                         # Reusable UI primitives (Button, Input, Card, Modal)
+  ui/                         # Reusable UI primitives (Button, Input, Card, shadcn)
+    icons/                    # Animated lucide icons + MotionSafeIcon wrapper
+    backgrounds/              # WebGL / ambient backgrounds (SoftAurora, Waves, Noise, etc.)
+    effects/                  # Text and card embellishments (BlurText, SpotlightCard)
+    branding/                 # Logo, ThemeToggle
   animations/                 # anime.js wrappers (dynamically imported via next/dynamic)
-  backgrounds/                # WebGL / ambient backgrounds
   forms/                      # Shared form widgets (DocumentUploadZone)
   layout/                     # Layout components (Navbar)
 features/                     # Domain-specific smart components

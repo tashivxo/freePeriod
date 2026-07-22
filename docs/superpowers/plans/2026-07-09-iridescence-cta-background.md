@@ -123,7 +123,7 @@ git commit -m "feat: add CTA iridescence background wrapper"
 ```tsx
 const CtaIridescenceBackground = dynamic(
   () =>
-    import('@/components/backgrounds/CtaIridescenceBackground').then(
+    import('@/components/ui/backgrounds/CtaIridescenceBackground').then(
       (m) => m.CtaIridescenceBackground
     ),
   { ssr: false }
@@ -167,7 +167,7 @@ git commit -m "feat: add iridescence glow behind landing CTA"
 Add after existing mocks:
 
 ```tsx
-jest.mock('@/components/backgrounds/CtaIridescenceBackground', () => ({
+jest.mock('@/components/ui/backgrounds/CtaIridescenceBackground', () => ({
   CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
     prefersReduced ? null : <div data-testid="cta-iridescence" aria-hidden="true" />,
 }));

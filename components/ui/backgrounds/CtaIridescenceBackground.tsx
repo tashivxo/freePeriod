@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
-const Iridescence = dynamic(() => import('@/components/Iridescence'), { ssr: false });
+const Iridescence = dynamic(() => import('@/components/ui/backgrounds/Iridescence'), { ssr: false });
 
 /** Warm coral tint for brand-aligned shader (RGB 0–1). */
 const CORAL_SHADER_COLOR: [number, number, number] = [1, 0.55, 0.69];

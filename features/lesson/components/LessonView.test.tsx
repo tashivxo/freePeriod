@@ -26,7 +26,7 @@ jest.mock('animejs', () => ({
   remove: jest.fn(),
 }));
 
-jest.mock('@/components/ui/BlurText', () => ({
+jest.mock('@/components/ui/effects/BlurText', () => ({
   BlurText: ({ text, className }: { text: string; className?: string }) => (
     <h1 className={className}>{text}</h1>
   ),

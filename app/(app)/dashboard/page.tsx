@@ -4,12 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { formatGenerationUsage } from '@/lib/generation/quota';
 import { Plus } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/book-text';
-import { ClockIcon } from '@/components/ui/clock';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import { BookTextIcon } from '@/components/ui/icons/book-text';
+import { ClockIcon } from '@/components/ui/icons/clock';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
-import { BlurText } from '@/components/ui/BlurText';
+import { BlurText } from '@/components/ui/effects/BlurText';
 
 function DashboardSkeleton() {
   return (

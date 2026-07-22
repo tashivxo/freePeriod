@@ -3,7 +3,7 @@
 import type { Variants } from "motion/react";
 import { motion } from "motion/react";
 
-import { createAnimatedIcon } from "@/components/icons/createAnimatedIcon";
+import { createAnimatedIcon } from "@/components/ui/icons/createAnimatedIcon";
 
 const SVG_VARIANTS: Variants = {
   normal: { rotate: 0, translateX: 0, translateY: 0 },

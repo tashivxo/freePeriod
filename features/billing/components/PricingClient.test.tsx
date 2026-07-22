@@ -14,7 +14,7 @@ jest.mock('next/dynamic', () => ({
   default: () => () => null,
 }));
 
-jest.mock('@/components/ui/magic-card', () => ({
+jest.mock('@/components/ui/effects/magic-card', () => ({
   MagicCard: ({ children, className }: { children: React.ReactNode; className?: string }) => (
     <div data-testid="magic-card" className={className}>
       {children}
@@ -22,7 +22,7 @@ jest.mock('@/components/ui/magic-card', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/Logo', () => ({
+jest.mock('@/components/ui/branding/Logo', () => ({
   Logo: () => <div>FreePeriod</div>,
 }));
 

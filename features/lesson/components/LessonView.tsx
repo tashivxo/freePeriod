@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
 import { ArrowLeft } from 'lucide-react';
-import { BookTextIcon } from '@/components/ui/book-text';
-import { ClockIcon } from '@/components/ui/clock';
-import { DownloadIcon } from '@/components/ui/download';
-import { MotionSafeIcon } from '@/components/icons/MotionSafeIcon';
+import { BookTextIcon } from '@/components/ui/icons/book-text';
+import { ClockIcon } from '@/components/ui/icons/clock';
+import { DownloadIcon } from '@/components/ui/icons/download';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { downloadBlob } from '@/lib/download-blob';
@@ -16,7 +16,7 @@ import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan, LessonSectionKey } from '@/types';
-import { BlurText } from '@/components/ui/BlurText';
+import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 
 type LessonViewProps = {
