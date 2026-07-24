@@ -64,6 +64,8 @@ create trigger protect_users_is_admin
   for each row
   execute function public.protect_users_is_admin();
 
+create unique index users_email_lower_uidx on public.users (lower(email));
+
 -- ============================================================
 -- lesson_plans table
 -- ============================================================

@@ -1,4 +1,8 @@
-import { render, screen } from '@/lib/test-utils';
+import { render, screen, waitFor } from '@/lib/test-utils';
+
+jest.mock('@/lib/auth/check-email-availability', () => ({
+  checkEmailAvailability: jest.fn().mockResolvedValue('available'),
+}));
 
 // Mock the Supabase client module
 jest.mock('@/lib/supabase/client', () => ({
@@ -17,10 +21,13 @@ jest.mock('next/navigation', () => ({
 }));
 
 import { SignUpPage } from './SignUpPage';
+import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
+import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
 
 describe('SignUpPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (checkEmailAvailability as jest.Mock).mockResolvedValue('available');
   });
 
   it('renders the sign-up heading', () => {
@@ -116,6 +123,61 @@ describe('SignUpPage', () => {
         data: { name: 'Jane Doe' },
       },
     });
+  });
+
+  it('shows taken email feedback and does not call signUp', async () => {
+    jest.useFakeTimers();
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn();
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+    });
+    (checkEmailAvailability as jest.Mock).mockResolvedValue('taken');
+
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/email/i), 'taken@test.com');
+    jest.advanceTimersByTime(400);
+
+    await waitFor(() => {
+      expect(screen.getByText(EMAIL_ALREADY_EXISTS)).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /create account/i })).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(mockSignUp).not.toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('re-checks email on submit before signUp', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn().mockResolvedValue({
+      data: { session: null, user: { id: 'user-1' } },
+      error: null,
+    });
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+    });
+
+    const { user } = render(<SignUpPage />);
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(checkEmailAvailability).toHaveBeenCalled();
+    expect(mockSignUp).toHaveBeenCalled();
   });
 
   it('shows check-your-email state when signup returns no session', async () => {

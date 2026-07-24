@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
+import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/auth/email';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+
+const EMAIL_CHECK_DEBOUNCE_MS = 400;
 
 export function SignUpPage() {
   const router = useRouter();
@@ -23,6 +27,42 @@ export function SignUpPage() {
   const [authBusy, setAuthBusy] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
+  const [emailTaken, setEmailTaken] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
+
+  useEffect(() => {
+    const normalized = normalizeEmail(email);
+    if (!isValidEmailFormat(normalized)) {
+      setEmailTaken(false);
+      setEmailChecking(false);
+      setErrors((prev) =>
+        prev.email === EMAIL_ALREADY_EXISTS ? { ...prev, email: undefined } : prev,
+      );
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setEmailChecking(true);
+      const result = await checkEmailAvailability(email);
+      if (cancelled) return;
+      setEmailChecking(false);
+      if (result === 'taken') {
+        setEmailTaken(true);
+        setErrors((prev) => ({ ...prev, email: EMAIL_ALREADY_EXISTS }));
+      } else {
+        setEmailTaken(false);
+        setErrors((prev) =>
+          prev.email === EMAIL_ALREADY_EXISTS ? { ...prev, email: undefined } : prev,
+        );
+      }
+    }, EMAIL_CHECK_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [email]);
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -33,6 +73,9 @@ export function SignUpPage() {
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
     }
+    if (emailTaken) {
+      newErrors.email = EMAIL_ALREADY_EXISTS;
+    }
     setTermsError(acceptedTerms ? '' : 'You must agree to the Terms of Service and Privacy Policy.');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0 && acceptedTerms;
@@ -41,12 +84,28 @@ export function SignUpPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setServerError('');
-    if (!validate() || authBusy) return;
+    if (!validate() || authBusy || emailChecking || emailTaken) return;
+
+    const normalizedEmail = normalizeEmail(email);
 
     setAuthBusy(true);
+    const availability = await checkEmailAvailability(normalizedEmail);
+    if (availability === 'taken') {
+      setEmailTaken(true);
+      setErrors((prev) => ({ ...prev, email: EMAIL_ALREADY_EXISTS }));
+      setServerError(EMAIL_ALREADY_EXISTS);
+      setAuthBusy(false);
+      return;
+    }
+    if (availability === 'error') {
+      setServerError('Unable to verify email. Please try again.');
+      setAuthBusy(false);
+      return;
+    }
+
     const supabase = createClient();
     const { data: authData, error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: { name },
@@ -70,7 +129,7 @@ export function SignUpPage() {
     if (authData.user) {
       await supabase.from('users').insert({
         id: authData.user.id,
-        email,
+        email: normalizedEmail,
         name,
         default_subject: null,
         default_grade: null,
@@ -90,6 +149,14 @@ export function SignUpPage() {
     router.push('/onboarding');
   }
 
+  function handleEmailChange(value: string) {
+    setEmail(value);
+    setEmailTaken(false);
+    setErrors((prev) =>
+      prev.email === EMAIL_ALREADY_EXISTS ? { ...prev, email: undefined } : prev,
+    );
+  }
+
   async function handleGoogleLogin() {
     if (authBusy) return;
     setAuthBusy(true);
@@ -107,6 +174,8 @@ export function SignUpPage() {
       setAuthBusy(false);
     }
   }
+
+  const submitDisabled = authBusy || emailTaken || emailChecking;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background/80 px-4 py-12">
@@ -136,7 +205,7 @@ export function SignUpPage() {
           <div role="status" className="space-y-4">
             <div className="p-3 rounded-xl bg-success/10 text-success text-sm text-center">
               Check your email — we&apos;ve sent a confirmation link to{' '}
-              <strong>{email}</strong>
+              <strong>{normalizeEmail(email)}</strong>
             </div>
             <p className="text-center text-sm font-body text-text-secondary">
               Already confirmed?{' '}
@@ -160,7 +229,7 @@ export function SignUpPage() {
             label="Email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => handleEmailChange(e.target.value)}
             error={errors.email}
             autoComplete="email"
           />
@@ -212,7 +281,7 @@ export function SignUpPage() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" isLoading={authBusy}>
+          <Button type="submit" className="w-full" isLoading={authBusy} disabled={submitDisabled}>
             Create account
           </Button>
         </form>

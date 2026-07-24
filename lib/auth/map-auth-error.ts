@@ -1,3 +1,5 @@
+import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
+
 /**
  * Map raw Supabase auth error messages to short, actionable copy.
  * Unknown messages pass through unchanged.
@@ -19,7 +21,7 @@ export function mapAuthError(message: string): string {
     lower.includes('already been registered') ||
     lower.includes('email address has already been registered')
   ) {
-    return 'An account with this email already exists. Sign in instead.';
+    return EMAIL_ALREADY_EXISTS;
   }
 
   if (
