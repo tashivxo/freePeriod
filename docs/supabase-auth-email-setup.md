@@ -14,7 +14,7 @@ Reset your FreePeriod password
 
 ### Body (HTML)
 
-Paste the template below. The button must use Supabase’s built-in `{{ .ConfirmationURL }}` (signed, single-use link). Optional `{{ .Email }}` shows the recipient when the editor supports it.
+Paste the template below. Prefer linking to `/reset-password?token={{ .TokenHash }}` so the app validates the recovery token against Supabase Auth (`verifyOtp`) via `/api/auth/validate-recovery` **before** showing the password form.
 
 ```html
 <h2>Reset your FreePeriod password</h2>
@@ -24,7 +24,7 @@ Paste the template below. The button must use Supabase’s built-in `{{ .Confirm
 <p>We received a request to reset the password for <strong>{{ .Email }}</strong>.</p>
 
 <p>
-  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">
+  <a href="{{ .SiteURL }}/reset-password?token={{ .TokenHash }}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">
     Reset password
   </a>
 </p>
@@ -33,6 +33,8 @@ Paste the template below. The button must use Supabase’s built-in `{{ .Confirm
 
 <p>— The FreePeriod team</p>
 ```
+
+**Why not `{{ .ConfirmationURL }}`?** That URL hits Supabase `/auth/v1/verify`, which often redirects back with `#access_token=...&type=recovery` (hash fragments). The server `/auth/callback` route cannot read the hash. The app still recovers hash sessions on `/update-password`, but `/reset-password?token={{ .TokenHash }}` is the preferred path: the token is validated against Auth before the form renders.
 
 **Save** the template in the dashboard after pasting.
 

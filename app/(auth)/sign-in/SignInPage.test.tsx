@@ -82,6 +82,18 @@ describe('SignInPage', () => {
     expect(screen.getByText(/email is required/i)).toBeInTheDocument();
   });
 
+  it('shows callback failure banner when error=auth_callback_failed', () => {
+    mockSearchParams.set('error', 'auth_callback_failed');
+    render(<SignInPage />);
+    expect(
+      screen.getByText(/that sign-in link is invalid or has expired/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /request a new password reset/i }),
+    ).toHaveAttribute('href', '/forgot-password');
+    mockSearchParams.delete('error');
+  });
+
   it('shows validation error when password is empty and form submitted', async () => {
     const { user } = render(<SignInPage />);
     await user.type(screen.getByLabelText(/email/i), 'test@test.com');

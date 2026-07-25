@@ -23,6 +23,7 @@ export function SignInPage() {
   const [serverError, setServerError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const callbackFailed = searchParams.get('error') === 'auth_callback_failed';
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -130,6 +131,16 @@ export function SignInPage() {
 
         <Card className="border-border/60 shadow-sm">
           <CardContent className="space-y-5 p-6">
+
+        {callbackFailed && (
+          <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">
+            That sign-in link is invalid or has expired. Try signing in below, or{' '}
+            <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
+              request a new password reset
+            </Link>
+            .
+          </div>
+        )}
 
         {serverError && (
           <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">

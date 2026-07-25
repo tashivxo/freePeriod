@@ -148,4 +148,24 @@ describe('GET /auth/callback', () => {
       'http://localhost:3000/sign-in?error=auth_callback_failed',
     );
   });
+
+  it('redirects failed recovery (next=/update-password, no tokens) to /update-password', async () => {
+    const response = await GET(callbackRequest('?next=/update-password'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
+  });
+
+  it('redirects failed recovery OTP to /update-password', async () => {
+    mockVerifyOtp.mockResolvedValue({
+      error: { message: 'Email link is invalid or has expired', code: 'otp_expired' },
+    });
+
+    const response = await GET(
+      callbackRequest('?token_hash=expired-hash&type=recovery&next=/update-password'),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
+  });
 });

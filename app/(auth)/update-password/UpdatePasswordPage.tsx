@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import type { RecoveryValidationResult } from '@/lib/auth/validate-recovery';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,8 +23,25 @@ function isExpiredSessionError(message: string): boolean {
   );
 }
 
+async function validateRecoveryWithApi(
+  payload?: { token?: string; token_hash?: string },
+): Promise<RecoveryValidationResult> {
+  const response = await fetch('/api/auth/validate-recovery', {
+    method: payload ? 'POST' : 'GET',
+    headers: payload ? { 'Content-Type': 'application/json' } : undefined,
+    body: payload ? JSON.stringify(payload) : undefined,
+    credentials: 'include',
+  });
+  try {
+    return (await response.json()) as RecoveryValidationResult;
+  } catch {
+    return { valid: false, reason: 'invalid' };
+  }
+}
+
 export function UpdatePasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,19 +54,110 @@ export function UpdatePasswordPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function checkSession() {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+    const supabase = createClient();
+
+    async function establishRecoverySession() {
+      const tokenParam =
+        searchParams.get('token')?.trim() ||
+        searchParams.get('token_hash')?.trim() ||
+        '';
+
+      // Query-token path (e.g. /reset-password?token=XYZ): validate against
+      // Supabase Auth via the API before rendering the form.
+      if (tokenParam) {
+        const result = await validateRecoveryWithApi(
+          searchParams.get('token_hash')
+            ? { token_hash: tokenParam }
+            : { token: tokenParam },
+        );
+        // #region agent log
+        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'B',location:'UpdatePasswordPage.tsx:query-token',message:'query token validation result',data:{valid:result.valid,reason:result.valid?null:result.reason,tokenLen:tokenParam.length},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+
+        if (result.valid) {
+          if (!cancelled) {
+            setSessionMissing(false);
+            setCheckingSession(false);
+            const clean = new URL(window.location.href);
+            clean.searchParams.delete('token');
+            clean.searchParams.delete('token_hash');
+            window.history.replaceState(null, '', clean.pathname + clean.search);
+          }
+          return;
+        }
+
+        // React Strict Mode (dev) remounts effects: the first verifyOtp consumes
+        // the single-use token and sets cookies; the second call then looks
+        // "expired". Accept an existing provider session in that case.
+        const existing = await validateRecoveryWithApi();
+        // #region agent log
+        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'strict-remount',location:'UpdatePasswordPage.tsx:token-fallback',message:'fallback getUser after token reject',data:{valid:existing.valid,reason:existing.valid?null:existing.reason},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        if (!cancelled) {
+          setSessionMissing(!existing.valid);
+          setCheckingSession(false);
+        }
+        return;
+      }
+
+      // Implicit recovery redirects leave tokens in the URL hash; the server
+      // callback cannot see them. Persist them, then confirm with Auth getUser.
+      if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+        const params = new URLSearchParams(window.location.hash.slice(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const hashType = params.get('type');
+        // #region agent log
+        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'hash-session',location:'UpdatePasswordPage.tsx:hash',message:'parsing recovery hash tokens',data:{hasAccess:Boolean(accessToken),hasRefresh:Boolean(refreshToken),hashType},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        if (accessToken && refreshToken && (hashType === 'recovery' || !hashType)) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          if (error) {
+            if (!cancelled) {
+              setSessionMissing(true);
+              setCheckingSession(false);
+            }
+            return;
+          }
+        }
+      }
+
+      // Always re-validate with the auth provider (getUser), not local JWT only.
+      const result = await validateRecoveryWithApi();
+      // #region agent log
+      fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'A',location:'UpdatePasswordPage.tsx:session-check',message:'provider session validation',data:{valid:result.valid,reason:result.valid?null:result.reason},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (!cancelled) {
-        setSessionMissing(!session);
+        setSessionMissing(!result.valid);
         setCheckingSession(false);
       }
     }
-    void checkSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      // Do not flip to "valid" from auth events alone when we still need
+      // provider confirmation; only clear the form if the session disappears.
+      if (
+        (event === 'SIGNED_OUT' || event === 'USER_DELETED') &&
+        !session
+      ) {
+        setSessionMissing(true);
+        setCheckingSession(false);
+      }
+    });
+
+    void establishRecoverySession();
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [searchParams]);
 
   function validate(): boolean {
     const newErrors: { password?: string; confirm?: string } = {};
@@ -65,6 +174,15 @@ export function UpdatePasswordPage() {
     setServerError('');
     if (!validate()) return;
     setIsLoading(true);
+
+    // Re-check provider session before accepting a password change.
+    const status = await validateRecoveryWithApi();
+    if (!status.valid) {
+      setIsLoading(false);
+      setSessionMissing(true);
+      return;
+    }
+
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
     setIsLoading(false);

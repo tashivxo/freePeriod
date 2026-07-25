@@ -45,6 +45,14 @@ describe('updateSession password recovery routes', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('allows unauthenticated access to /reset-password', async () => {
+    const response = await updateSession(requestFor('/reset-password?token=xyz'));
+
+    expect(response.status).not.toBe(307);
+    expect(response.status).not.toBe(308);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('allows unauthenticated access to /auth/callback for email recovery', async () => {
     const response = await updateSession(
       requestFor('/auth/callback?code=test-code&next=/update-password'),

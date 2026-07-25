@@ -4,27 +4,37 @@ import userEvent from '@testing-library/user-event';
 import { UpdatePasswordPage } from './UpdatePasswordPage';
 
 const mockUpdateUser = jest.fn();
-const mockGetSession = jest.fn();
+const mockSetSession = jest.fn();
 const mockPush = jest.fn();
+const mockSearchParams = new URLSearchParams();
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
       updateUser: mockUpdateUser,
-      getSession: mockGetSession,
+      setSession: mockSetSession,
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
     },
   })),
 }));
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 describe('UpdatePasswordPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSearchParams.delete('token');
+    mockSearchParams.delete('token_hash');
     mockUpdateUser.mockResolvedValue({ data: {}, error: null });
-    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } } });
+    mockSetSession.mockResolvedValue({ data: { session: { user: { id: 'u1' } } }, error: null });
+    global.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({ valid: true }),
+    }) as unknown as typeof fetch;
   });
 
   it('renders the heading', async () => {
@@ -118,14 +128,66 @@ describe('UpdatePasswordPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/stronger password/i);
   });
 
-  it('shows recovery CTA when session is missing', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
+  it('shows recovery CTA when provider session is invalid', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      json: async () => ({ valid: false, reason: 'invalid' }),
+    });
     render(<UpdatePasswordPage />);
     expect(await screen.findByRole('alert')).toHaveTextContent(/reset link has expired/i);
     expect(screen.getByRole('link', { name: /request a new reset link/i })).toHaveAttribute(
       'href',
       '/forgot-password',
     );
+  });
+
+  it('validates ?token= against the recovery API before showing the form', async () => {
+    mockSearchParams.set('token', 'recovery-token-xyz');
+    (global.fetch as jest.Mock).mockImplementation(async (url: RequestInfo) => {
+      if (String(url).includes('/api/auth/validate-recovery')) {
+        return { json: async () => ({ valid: true }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    render(<UpdatePasswordPage />);
+    expect(await screen.findByLabelText(/new password/i)).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/auth/validate-recovery',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ token: 'recovery-token-xyz' }),
+      }),
+    );
+  });
+
+  it('shows recovery CTA when ?token= is rejected by the API', async () => {
+    mockSearchParams.set('token', 'bad-token');
+    (global.fetch as jest.Mock).mockImplementation(async (url: RequestInfo, init?: RequestInit) => {
+      if (String(url).includes('/api/auth/validate-recovery')) {
+        if (init?.method === 'POST') {
+          return { json: async () => ({ valid: false, reason: 'expired' }) };
+        }
+        return { json: async () => ({ valid: false, reason: 'invalid' }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    render(<UpdatePasswordPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/reset link has expired/i);
+    expect(screen.queryByLabelText(/new password/i)).not.toBeInTheDocument();
+  });
+
+  it('shows form when token verify fails but provider session already exists', async () => {
+    mockSearchParams.set('token', 'already-consumed');
+    (global.fetch as jest.Mock).mockImplementation(async (url: RequestInfo, init?: RequestInit) => {
+      if (String(url).includes('/api/auth/validate-recovery')) {
+        if (init?.method === 'POST') {
+          return { json: async () => ({ valid: false, reason: 'expired' }) };
+        }
+        return { json: async () => ({ valid: true }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    render(<UpdatePasswordPage />);
+    expect(await screen.findByLabelText(/new password/i)).toBeInTheDocument();
   });
 
   it('shows recovery CTA when update fails with expired session', async () => {
