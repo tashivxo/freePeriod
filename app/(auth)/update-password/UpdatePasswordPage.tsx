@@ -70,9 +70,6 @@ export function UpdatePasswordPage() {
             ? { token_hash: tokenParam }
             : { token: tokenParam },
         );
-        // #region agent log
-        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'B',location:'UpdatePasswordPage.tsx:query-token',message:'query token validation result',data:{valid:result.valid,reason:result.valid?null:result.reason,tokenLen:tokenParam.length},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
 
         if (result.valid) {
           if (!cancelled) {
@@ -90,9 +87,6 @@ export function UpdatePasswordPage() {
         // the single-use token and sets cookies; the second call then looks
         // "expired". Accept an existing provider session in that case.
         const existing = await validateRecoveryWithApi();
-        // #region agent log
-        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'strict-remount',location:'UpdatePasswordPage.tsx:token-fallback',message:'fallback getUser after token reject',data:{valid:existing.valid,reason:existing.valid?null:existing.reason},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (!cancelled) {
           setSessionMissing(!existing.valid);
           setCheckingSession(false);
@@ -107,9 +101,6 @@ export function UpdatePasswordPage() {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const hashType = params.get('type');
-        // #region agent log
-        fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'hash-session',location:'UpdatePasswordPage.tsx:hash',message:'parsing recovery hash tokens',data:{hasAccess:Boolean(accessToken),hasRefresh:Boolean(refreshToken),hashType},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         if (accessToken && refreshToken && (hashType === 'recovery' || !hashType)) {
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -128,9 +119,6 @@ export function UpdatePasswordPage() {
 
       // Always re-validate with the auth provider (getUser), not local JWT only.
       const result = await validateRecoveryWithApi();
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'A',location:'UpdatePasswordPage.tsx:session-check',message:'provider session validation',data:{valid:result.valid,reason:result.valid?null:result.reason},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       if (!cancelled) {
         setSessionMissing(!result.valid);
         setCheckingSession(false);
@@ -143,10 +131,7 @@ export function UpdatePasswordPage() {
       if (cancelled) return;
       // Do not flip to "valid" from auth events alone when we still need
       // provider confirmation; only clear the form if the session disappears.
-      if (
-        (event === 'SIGNED_OUT' || event === 'USER_DELETED') &&
-        !session
-      ) {
+      if (event === 'SIGNED_OUT' && !session) {
         setSessionMissing(true);
         setCheckingSession(false);
       }

@@ -86,21 +86,11 @@ export async function GET(request: Request) {
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
   const nextParam = searchParams.get('next');
-  const cookieHeader = request.headers.get('cookie') ?? '';
-  const hasPkceCookie = /code-verifier|pkce/i.test(cookieHeader);
-
-  // #region agent log
-  fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'A,B,C',location:'app/auth/callback/route.ts:GET:entry',message:'auth callback entry',data:{hasCode:Boolean(code),hasTokenHash:Boolean(tokenHash),type,nextParam,hasPkceCookie,cookieCount:cookieHeader?cookieHeader.split(';').length:0,paramKeys:[...searchParams.keys()]},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
 
   const supabase = await createClient();
 
   if (code) {
     const { error, data: sessionData } = await supabase.auth.exchangeCodeForSession(code);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'A,C',location:'app/auth/callback/route.ts:GET:pkce',message:'PKCE exchangeCodeForSession result',data:{ok:!error,errorMessage:error?.message??null,errorCode:(error as {code?:string}|null)?.code??null,hasUser:Boolean(sessionData?.user),hasPkceCookie,type,nextParam},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     if (!error) {
       let onboardingComplete = false;
@@ -109,11 +99,7 @@ export async function GET(request: Request) {
         onboardingComplete = profile.onboardingComplete;
       }
 
-      const dest = resolveNext(nextParam, type, onboardingComplete);
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'C',location:'app/auth/callback/route.ts:GET:pkce-success',message:'PKCE success redirect',data:{dest,onboardingComplete,type,nextParam},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      return redirectTo(request, dest);
+      return redirectTo(request, resolveNext(nextParam, type, onboardingComplete));
     }
   }
 
@@ -122,10 +108,6 @@ export async function GET(request: Request) {
       type,
       token_hash: tokenHash,
     });
-
-    // #region agent log
-    fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'D',location:'app/auth/callback/route.ts:GET:otp',message:'verifyOtp recovery result',data:{ok:!error,errorMessage:error?.message??null,errorCode:(error as {code?:string}|null)?.code??null,type,nextParam,tokenHashLen:tokenHash.length},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
 
     if (!error) {
       const {
@@ -138,11 +120,7 @@ export async function GET(request: Request) {
         onboardingComplete = profile.onboardingComplete;
       }
 
-      const dest = resolveNext(nextParam, type, onboardingComplete);
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'D',location:'app/auth/callback/route.ts:GET:otp-success',message:'OTP success redirect',data:{dest,onboardingComplete,type,nextParam},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
-      return redirectTo(request, dest);
+      return redirectTo(request, resolveNext(nextParam, type, onboardingComplete));
     }
   }
 
@@ -153,10 +131,6 @@ export async function GET(request: Request) {
   // UpdatePasswordPage can show the expired-link CTA.
   const isRecoveryAttempt =
     type === 'recovery' || nextParam === '/update-password';
-
-  // #region agent log
-  fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'post-fix',hypothesisId:'A,B,C,D,E',location:'app/auth/callback/route.ts:GET:fail',message:'auth callback failure branch',data:{hasCode:Boolean(code),hasTokenHash:Boolean(tokenHash),type,nextParam,hasPkceCookie,isRecoveryAttempt,dest:isRecoveryAttempt?'/update-password':'/sign-in?error=auth_callback_failed'},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
 
   if (isRecoveryAttempt) {
     return redirectTo(request, '/update-password');

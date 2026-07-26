@@ -42,10 +42,6 @@ export async function POST(request: Request) {
     token_hash: token,
   });
 
-  // #region agent log
-  fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'C',location:'api/auth/validate-recovery:POST',message:'verifyOtp recovery token',data:{ok:!error&&Boolean(data.user),errorMessage:error?.message??null,errorCode:(error as {code?:string}|null)?.code??null,tokenLen:token.length},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-
   if (error || !data.user) {
     return json({
       valid: false,
@@ -71,10 +67,6 @@ export async function GET() {
     data: { user },
     error,
   } = await supabase.auth.getUser();
-
-  // #region agent log
-  fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'token-validate',hypothesisId:'A',location:'api/auth/validate-recovery:GET',message:'getUser recovery session check',data:{ok:!error&&Boolean(user),errorMessage:error?.message??null},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
 
   if (error || !user) {
     return json({ valid: false, reason: 'invalid' });

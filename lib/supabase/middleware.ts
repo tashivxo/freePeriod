@@ -59,9 +59,6 @@ export async function updateSession(request: NextRequest) {
       } else if (existingNext && isSafeInternalPath(existingNext)) {
         url.searchParams.set('next', existingNext);
       }
-      // #region agent log
-      fetch('http://127.0.0.1:7810/ingest/5fe91cc7-a83e-4a00-85c2-1d832e7eebd5',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f48c7'},body:JSON.stringify({sessionId:'3f48c7',runId:'pre-fix',hypothesisId:'B,E',location:'lib/supabase/middleware.ts:landing-forward',message:'forwarding auth params from / to /auth/callback',data:{isRecoveryFallback,isPkceFallback,hasCode:Boolean(code),hasTokenHash:Boolean(tokenHash),otpType,forwardTo:url.pathname+url.search},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       return NextResponse.redirect(url);
     }
   }
