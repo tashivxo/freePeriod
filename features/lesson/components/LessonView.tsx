@@ -47,6 +47,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [fillLoading, setFillLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
+  const [dialogActionError, setDialogActionError] = useState<string | null>(null);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
     Partial<Record<LessonSectionKey, number>>
   >({});
@@ -89,62 +90,110 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, [zenMode]);
 
-  const handleExport = useCallback(async () => {
-    setExportLoading(true);
-    setExportError(null);
-    try {
-      const response = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
-      });
-
-      if (!response.ok) {
-        setExportError(await readExportError(response, 'Failed to export lesson'));
-        return;
+  const handleExport = useCallback(
+    async (options?: { fromDialog?: boolean }): Promise<boolean> => {
+      setExportLoading(true);
+      if (!options?.fromDialog) {
+        setExportError(null);
       }
+      try {
+        const response = await fetch('/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
+        });
 
-      downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
-    } catch {
-      setExportError('Failed to export lesson. Check your connection and try again.');
-    } finally {
-      setExportLoading(false);
-    }
-  }, [lesson.id, lesson.subject]);
+        if (!response.ok) {
+          const message = await readExportError(response, 'Failed to export lesson');
+          if (options?.fromDialog) {
+            setDialogActionError(message);
+          } else {
+            setExportError(message);
+          }
+          return false;
+        }
 
-  const handleFillTemplate = useCallback(async () => {
-    setFillLoading(true);
-    setExportError(null);
-    try {
-      const response = await fetch('/api/export/fill-template', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId: lesson.id }),
-      });
-
-      if (!response.ok) {
-        setExportError(await readExportError(response, 'Failed to export filled template'));
-        return;
+        downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
+        return true;
+      } catch {
+        const message = 'Failed to export lesson. Check your connection and try again.';
+        if (options?.fromDialog) {
+          setDialogActionError(message);
+        } else {
+          setExportError(message);
+        }
+        return false;
+      } finally {
+        setExportLoading(false);
       }
+    },
+    [lesson.id, lesson.subject],
+  );
 
-      const ext = lesson.template_path?.split('.').pop() ?? 'docx';
-      downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
-    } catch {
-      setExportError('Failed to export filled template. Check your connection and try again.');
-    } finally {
-      setFillLoading(false);
-    }
-  }, [lesson.id, lesson.template_path, lesson.title]);
+  const handleFillTemplate = useCallback(
+    async (options?: { fromDialog?: boolean }): Promise<boolean> => {
+      setFillLoading(true);
+      if (!options?.fromDialog) {
+        setExportError(null);
+      }
+      try {
+        const response = await fetch('/api/export/fill-template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lessonId: lesson.id }),
+        });
+
+        if (!response.ok) {
+          const message = await readExportError(response, 'Failed to export filled template');
+          if (options?.fromDialog) {
+            setDialogActionError(message);
+          } else {
+            setExportError(message);
+          }
+          return false;
+        }
+
+        const ext = lesson.template_path?.split('.').pop() ?? 'docx';
+        downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
+        return true;
+      } catch {
+        const message =
+          'Failed to export filled template. Check your connection and try again.';
+        if (options?.fromDialog) {
+          setDialogActionError(message);
+        } else {
+          setExportError(message);
+        }
+        return false;
+      } finally {
+        setFillLoading(false);
+      }
+    },
+    [lesson.id, lesson.template_path, lesson.title],
+  );
 
   const handleFreePeriodFromDialog = useCallback(async () => {
-    await handleExport();
-    setFilledTemplateDialogOpen(false);
+    setDialogActionError(null);
+    const ok = await handleExport({ fromDialog: true });
+    if (ok) {
+      setFilledTemplateDialogOpen(false);
+    }
   }, [handleExport]);
 
   const handleSharedTemplateFromDialog = useCallback(async () => {
-    await handleFillTemplate();
-    setFilledTemplateDialogOpen(false);
+    setDialogActionError(null);
+    const ok = await handleFillTemplate({ fromDialog: true });
+    if (ok) {
+      setFilledTemplateDialogOpen(false);
+    }
   }, [handleFillTemplate]);
+
+  const handleFilledTemplateDialogOpenChange = useCallback((open: boolean) => {
+    setFilledTemplateDialogOpen(open);
+    if (open) {
+      setDialogActionError(null);
+    }
+  }, []);
 
   const handleTemplateAttached = useCallback((templatePath: string) => {
     setLesson((prev) => ({ ...prev, template_path: templatePath }));
@@ -208,7 +257,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setFilledTemplateDialogOpen(true)}
+            onClick={() => handleFilledTemplateDialogOpenChange(true)}
           >
             <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
             Download filled template
@@ -223,7 +272,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
 
       <FilledTemplateChoiceDialog
         open={filledTemplateDialogOpen}
-        onOpenChange={setFilledTemplateDialogOpen}
+        onOpenChange={handleFilledTemplateDialogOpenChange}
+        dialogActionError={dialogActionError}
         lessonId={lesson.id}
         variant={filledTemplateVariant}
         showPdfNote={showPdfNote}

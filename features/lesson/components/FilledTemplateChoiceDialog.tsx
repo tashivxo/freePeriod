@@ -12,6 +12,10 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
+  BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN,
+  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
+  BTN_UPLOAD_ONE_NOW,
+  BTN_USE_SHARED_TEMPLATE,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_PDF_NOTE,
@@ -30,6 +34,7 @@ type FilledTemplateChoiceDialogProps = {
   onTemplateAttached: (templatePath: string) => void;
   freePeriodLoading: boolean;
   sharedTemplateLoading: boolean;
+  dialogActionError?: string | null;
 };
 
 function getModalCloseMs(): number {
@@ -55,6 +60,7 @@ export function FilledTemplateChoiceDialog({
   onTemplateAttached,
   freePeriodLoading,
   sharedTemplateLoading,
+  dialogActionError = null,
 }: FilledTemplateChoiceDialogProps) {
   const inputId = useId();
   const { zenMode } = useZenMode();
@@ -179,9 +185,9 @@ export function FilledTemplateChoiceDialog({
               {showPdfNote ? (
                 <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
               ) : null}
-              {(uploadError || attachError) && (
+              {(dialogActionError || uploadError || attachError) && (
                 <p role="alert" className="text-sm font-medium text-error">
-                  {uploadError ?? attachError}
+                  {dialogActionError ?? uploadError ?? attachError}
                 </p>
               )}
             </div>
@@ -195,7 +201,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => void onFreePeriodDownload()}
                     isLoading={freePeriodLoading}
                   >
-                    FreePeriod template
+                    {BTN_DOWNLOAD_FREEPERIOD_TEMPLATE}
                   </Button>
                   <Button
                     type="button"
@@ -203,7 +209,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => void onUseSharedTemplate()}
                     isLoading={sharedTemplateLoading}
                   >
-                    Use your template
+                    {BTN_USE_SHARED_TEMPLATE}
                   </Button>
                 </>
               ) : (
@@ -214,7 +220,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => document.getElementById(inputId)?.click()}
                     isLoading={isUploading || isAttaching}
                   >
-                    Upload one now
+                    {BTN_UPLOAD_ONE_NOW}
                   </Button>
                   <input
                     id={inputId}
@@ -234,7 +240,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => void onFreePeriodDownload()}
                     isLoading={freePeriodLoading}
                   >
-                    Download FreePeriod generated lesson plan
+                    {BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN}
                   </Button>
                 </>
               )}

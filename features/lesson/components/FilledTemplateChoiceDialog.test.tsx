@@ -1,5 +1,9 @@
 import { render, screen } from '@/lib/test-utils';
 import {
+  BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN,
+  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
+  BTN_UPLOAD_ONE_NOW,
+  BTN_USE_SHARED_TEMPLATE,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_PDF_NOTE,
@@ -49,8 +53,8 @@ describe('FilledTemplateChoiceDialog', () => {
     );
 
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /freeperiod template/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /use your template/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /upload one now/i })).not.toBeInTheDocument();
   });
 
@@ -71,9 +75,9 @@ describe('FilledTemplateChoiceDialog', () => {
     );
 
     expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /upload one now/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /download freeperiod generated lesson plan/i }),
+      screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN }),
     ).toBeInTheDocument();
   });
 

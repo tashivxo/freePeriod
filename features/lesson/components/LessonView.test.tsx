@@ -205,4 +205,21 @@ describe('LessonView', () => {
       expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
     });
   });
+
+  it('keeps dialog open and shows error in dialog when FreePeriod export fails', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Export service unavailable' }),
+    });
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: /download a freeperiod generated lesson plan/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent('Export service unavailable');
+    });
+  });
 });
