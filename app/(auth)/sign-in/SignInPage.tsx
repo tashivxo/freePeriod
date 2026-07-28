@@ -210,8 +210,7 @@ export function SignInPage() {
               </label>
             </div>
             <p id="remember-me-hint" className="pl-12 text-xs text-text-secondary">
-              You stay signed in on this browser until you sign out. Session length follows
-              your browser&apos;s saved sign-in.
+              You stay signed in on this browser until you sign out.
             </p>
           </div>
 

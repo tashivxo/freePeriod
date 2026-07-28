@@ -157,6 +157,8 @@ export function FilledTemplateChoiceDialog({
 
   const motionEnabled = !prefersReduced && !zenMode;
   const visuallyOpen = open && !isClosing;
+  const footerButtonClassName =
+    'h-auto min-h-10 w-full shrink whitespace-normal px-3 py-2.5 text-center leading-snug';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -192,12 +194,13 @@ export function FilledTemplateChoiceDialog({
               )}
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4 sm:flex-row sm:justify-end">
+            <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4">
               {variant === 'has-template' ? (
                 <>
                   <Button
                     type="button"
                     variant="secondary"
+                    className={footerButtonClassName}
                     onClick={() => void onFreePeriodDownload()}
                     isLoading={freePeriodLoading}
                   >
@@ -206,6 +209,7 @@ export function FilledTemplateChoiceDialog({
                   <Button
                     type="button"
                     variant="outline"
+                    className={footerButtonClassName}
                     onClick={() => void onUseSharedTemplate()}
                     isLoading={sharedTemplateLoading}
                   >
@@ -217,6 +221,7 @@ export function FilledTemplateChoiceDialog({
                   <Button
                     type="button"
                     variant="secondary"
+                    className={footerButtonClassName}
                     onClick={() => document.getElementById(inputId)?.click()}
                     isLoading={isUploading || isAttaching}
                   >
@@ -237,6 +242,7 @@ export function FilledTemplateChoiceDialog({
                   <Button
                     type="button"
                     variant="outline"
+                    className={footerButtonClassName}
                     onClick={() => void onFreePeriodDownload()}
                     isLoading={freePeriodLoading}
                   >
