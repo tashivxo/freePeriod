@@ -10,10 +10,15 @@ import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
+import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
+import {
+  FilledTemplateChoiceDialog,
+  type FilledTemplateDialogVariant,
+} from '@/features/lesson/components/FilledTemplateChoiceDialog';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
@@ -41,9 +46,16 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [exportLoading, setExportLoading] = useState(false);
   const [fillLoading, setFillLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
     Partial<Record<LessonSectionKey, number>>
   >({});
+
+  const hasFillableTemplate = isFillableTemplatePath(lesson.template_path);
+  const filledTemplateVariant: FilledTemplateDialogVariant = hasFillableTemplate
+    ? 'has-template'
+    : 'no-template';
+  const showPdfNote = Boolean(lesson.template_path && isPdfTemplatePath(lesson.template_path));
 
   const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
     lesson.id,
@@ -124,9 +136,21 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     }
   }, [lesson.id, lesson.template_path, lesson.title]);
 
+  const handleFreePeriodFromDialog = useCallback(async () => {
+    await handleExport();
+    setFilledTemplateDialogOpen(false);
+  }, [handleExport]);
+
+  const handleSharedTemplateFromDialog = useCallback(async () => {
+    await handleFillTemplate();
+    setFilledTemplateDialogOpen(false);
+  }, [handleFillTemplate]);
+
+  const handleTemplateAttached = useCallback((templatePath: string) => {
+    setLesson((prev) => ({ ...prev, template_path: templatePath }));
+  }, []);
+
   const content = lesson.content;
-  const templateExt = lesson.template_path?.split('.').pop()?.toLowerCase() ?? '';
-  const canFillTemplate = templateExt === 'docx' || templateExt === 'xlsx' || templateExt === 'xls';
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -181,17 +205,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
             Download DOCX
           </Button>
-          {lesson.template_path && canFillTemplate && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleFillTemplate}
-              isLoading={fillLoading}
-            >
-              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
-              Download filled-in template
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setFilledTemplateDialogOpen(true)}
+          >
+            <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
+            Download filled template
+          </Button>
         </div>
         {exportError ? (
           <p role="alert" className="mt-3 text-sm font-medium text-error">
@@ -199,6 +220,19 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </p>
         ) : null}
       </div>
+
+      <FilledTemplateChoiceDialog
+        open={filledTemplateDialogOpen}
+        onOpenChange={setFilledTemplateDialogOpen}
+        lessonId={lesson.id}
+        variant={filledTemplateVariant}
+        showPdfNote={showPdfNote}
+        onFreePeriodDownload={handleFreePeriodFromDialog}
+        onUseSharedTemplate={handleSharedTemplateFromDialog}
+        onTemplateAttached={handleTemplateAttached}
+        freePeriodLoading={exportLoading}
+        sharedTemplateLoading={fillLoading}
+      />
 
       <div ref={cardsRef} className="space-y-4">
         {LESSON_VIEW_SECTIONS.map((section) => (

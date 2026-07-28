@@ -36,7 +36,26 @@ jest.mock('./SectionCard', () => ({
   SectionCard: ({ title }: { title: string }) => <div>{title}</div>,
 }));
 
+const mockHandleFile = jest.fn();
+
+jest.mock('@/hooks/useFileUpload', () => ({
+  useFileUpload: jest.fn(() => ({
+    file: null,
+    storagePath: null,
+    uploadId: null,
+    isUploading: false,
+    error: null,
+    handleFile: mockHandleFile,
+    removeFile: jest.fn(),
+  })),
+}));
+
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import {
+  FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
+  FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
+} from './filled-template-copy';
 import { LessonView } from './LessonView';
 
 const lesson: LessonPlan = {
@@ -110,5 +129,80 @@ describe('LessonView', () => {
     render(<LessonView lesson={lesson} />);
 
     expect(screen.getByRole('button', { name: /back to dashboard/i })).toHaveClass('min-h-11');
+  });
+
+  it('always shows Download filled template and opens no-template dialog copy', async () => {
+    const { user } = render(<LessonView lesson={lesson} />);
+
+    expect(screen.getByRole('button', { name: /download filled template/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download filled-in template/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+
+    expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
+  });
+
+  it('opens has-template dialog when lesson has a fillable template', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    const { user } = render(<LessonView lesson={withTemplate} />);
+
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+
+    expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
+  });
+
+  it('flips to has-template dialog after upload attaches template_path', async () => {
+    const React = await import('react');
+    (useFileUpload as jest.Mock).mockImplementation(() => {
+      const [storagePath, setStoragePath] = React.useState<string | null>(null);
+      return {
+        file: storagePath ? { name: 'plan.docx' } : null,
+        storagePath,
+        uploadId: storagePath ? 'upload-1' : null,
+        isUploading: false,
+        error: null,
+        handleFile: jest.fn(async () => {
+          setStoragePath('user-1/template/plan.docx');
+        }),
+        removeFile: jest.fn(),
+      };
+    });
+
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/api/lessons/') && url.includes('/template')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            lesson: { id: lesson.id, template_path: 'user-1/template/plan.docx' },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, blob: async () => new Blob() });
+    });
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+
+    const input = document.querySelector('input[type="file"]');
+    expect(input).toBeTruthy();
+
+    const file = new File(['x'], 'plan.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    await user.upload(input as HTMLInputElement, file);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/lessons/${lesson.id}/template`,
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
+    });
   });
 });
