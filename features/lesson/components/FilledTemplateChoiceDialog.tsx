@@ -7,7 +7,9 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
@@ -69,6 +71,8 @@ export function FilledTemplateChoiceDialog({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isAttaching, setIsAttaching] = useState(false);
   const attachedPathRef = useRef<string | null>(null);
+  const { ref: noTemplateIconRef, animationDisabled: noTemplateIconMotionDisabled } =
+    useMotionSafeIconRef();
 
   const { storagePath, isUploading, error: uploadError, handleFile } = useFileUpload({
     uploadType: 'template',
@@ -88,6 +92,11 @@ export function FilledTemplateChoiceDialog({
       setAttachError(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || variant !== 'no-template' || noTemplateIconMotionDisabled) return;
+    noTemplateIconRef.current?.startAnimation();
+  }, [noTemplateIconMotionDisabled, noTemplateIconRef, open, variant]);
 
   const requestClose = useCallback(() => {
     if (prefersReduced || zenMode) {
@@ -179,11 +188,27 @@ export function FilledTemplateChoiceDialog({
               <DialogTitle className="font-display text-lg font-semibold text-text-primary">
                 Download filled template
               </DialogTitle>
-              <DialogDescription className="font-body text-sm text-text-secondary">
-                {variant === 'has-template'
-                  ? FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE
-                  : FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE}
-              </DialogDescription>
+              {variant === 'has-template' ? (
+                <DialogDescription className="font-body text-sm text-text-secondary">
+                  {FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE}
+                </DialogDescription>
+              ) : (
+                <div
+                  role="alert"
+                  className="flex gap-3 rounded-xl bg-error/10 p-3 text-error"
+                >
+                  <XIcon
+                    ref={noTemplateIconRef}
+                    size={24}
+                    animationDisabled={noTemplateIconMotionDisabled}
+                    aria-hidden
+                    className="mt-0.5 shrink-0"
+                  />
+                  <DialogDescription className="font-body text-sm text-error">
+                    {FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE}
+                  </DialogDescription>
+                </div>
+              )}
               {showPdfNote ? (
                 <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
               ) : null}
