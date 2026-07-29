@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { SparklesIcon } from '@/components/ui/icons/sparkles';
 import { ZapIcon } from '@/components/ui/icons/zap';
@@ -107,8 +107,10 @@ export function PricingClient() {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutLongWait, setCheckoutLongWait] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
+  const loadingPlanRef = useRef<string | null>(null);
   const { ref: checkoutErrorIconRef, animationDisabled: checkoutErrorIconMotionDisabled } =
     useMotionSafeIconRef();
 
@@ -125,18 +127,38 @@ export function PricingClient() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  useEffect(() => {
+    if (!loadingPlan) {
+      setCheckoutLongWait(false);
+      return;
+    }
+    setCheckoutLongWait(false);
+    const timer = window.setTimeout(() => setCheckoutLongWait(true), 1500);
+    return () => window.clearTimeout(timer);
+  }, [loadingPlan]);
+
+  const clearCheckoutLoading = useCallback(() => {
+    loadingPlanRef.current = null;
+    setLoadingPlan(null);
+    setCheckoutLongWait(false);
+  }, []);
+
   const handleCheckout = useCallback(
     async (planId: string) => {
+      if (loadingPlanRef.current) return;
+
+      loadingPlanRef.current = planId;
       setCheckoutError(null);
       setLoadingPlan(planId);
+
       try {
-        // Check auth client-side first — redirect unauthenticated users directly
         const supabase = createClient();
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
         if (!session) {
+          clearCheckoutLoading();
           router.push(`/sign-up?plan=${planId}`);
           return;
         }
@@ -149,26 +171,27 @@ export function PricingClient() {
         );
 
         if (res.status === 401) {
+          clearCheckoutLoading();
           router.push(`/sign-up?plan=${planId}`);
           return;
         }
 
         const data = (await res.json()) as { url?: string; error?: string };
         if (data.url) {
-          router.push(data.url);
+          window.location.assign(data.url);
           return;
         }
 
         setCheckoutError(
-          data.error ?? 'Checkout is unavailable right now. Please try again.',
+          data.error ?? "Couldn't open checkout — try again",
         );
+        clearCheckoutLoading();
       } catch {
-        setCheckoutError('Checkout is unavailable right now. Please try again.');
-      } finally {
-        setLoadingPlan(null);
+        setCheckoutError("Couldn't open checkout — try again");
+        clearCheckoutLoading();
       }
     },
-    [router, isAnnual],
+    [router, isAnnual, clearCheckoutLoading],
   );
 
   const handleBillingChange = useCallback((annual: boolean) => {
@@ -291,7 +314,11 @@ export function PricingClient() {
           {PLANS.map((plan) => {
             const { Icon } = plan;
             const price = isAnnual ? plan.priceAnnual : plan.priceMonthly;
-            const isLoading = loadingPlan === plan.id;
+            const isActiveLoading = loadingPlan === plan.id;
+            const isPaidCtaDisabled = loadingPlan !== null && !plan.href;
+            const loadingLabel = checkoutLongWait
+              ? 'Setting up your secure checkout…'
+              : 'Redirecting to checkout…';
 
             return (
               <div
@@ -372,34 +399,18 @@ export function PricingClient() {
                         <button
                           type="button"
                           onClick={() => handleCheckout(plan.id)}
-                          disabled={isLoading}
-                          aria-busy={isLoading}
+                          disabled={isPaidCtaDisabled}
+                          aria-busy={isActiveLoading}
                           className={`relative btn-shine overflow-hidden flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none disabled:opacity-60 disabled:cursor-not-allowed ${plan.ctaClass}`}
                         >
-                          {isLoading ? (
-                            <svg
-                              className="h-4 w-4 animate-spin"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              aria-hidden="true"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                              />
-                            </svg>
-                          ) : null}
-                          {plan.cta}
+                          {isActiveLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                              <span aria-live="polite">{loadingLabel}</span>
+                            </>
+                          ) : (
+                            plan.cta
+                          )}
                         </button>
                       )}
                     </div>
