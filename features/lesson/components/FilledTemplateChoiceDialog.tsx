@@ -7,6 +7,9 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { DownloadIcon } from '@/components/ui/icons/download';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
@@ -73,9 +76,12 @@ export function FilledTemplateChoiceDialog({
   const attachedPathRef = useRef<string | null>(null);
   const { ref: noTemplateIconRef, animationDisabled: noTemplateIconMotionDisabled } =
     useMotionSafeIconRef();
+  const { ref: actionErrorIconRef, animationDisabled: actionErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
 
   const { storagePath, isUploading, error: uploadError, handleFile } = useFileUpload({
     uploadType: 'template',
+    accept: '.docx,.xlsx,.xls',
   });
 
   useEffect(() => {
@@ -97,6 +103,12 @@ export function FilledTemplateChoiceDialog({
     if (!open || variant !== 'no-template' || noTemplateIconMotionDisabled) return;
     noTemplateIconRef.current?.startAnimation();
   }, [noTemplateIconMotionDisabled, noTemplateIconRef, open, variant]);
+
+  const activeActionError = dialogActionError ?? uploadError ?? attachError;
+  useEffect(() => {
+    if (!activeActionError || actionErrorIconMotionDisabled) return;
+    actionErrorIconRef.current?.startAnimation();
+  }, [actionErrorIconMotionDisabled, actionErrorIconRef, activeActionError]);
 
   const requestClose = useCallback(() => {
     if (prefersReduced || zenMode) {
@@ -212,10 +224,17 @@ export function FilledTemplateChoiceDialog({
               {showPdfNote ? (
                 <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
               ) : null}
-              {(dialogActionError || uploadError || attachError) && (
-                <p role="alert" className="text-sm font-medium text-error">
-                  {dialogActionError ?? uploadError ?? attachError}
-                </p>
+              {activeActionError && (
+                <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+                  <XIcon
+                    ref={actionErrorIconRef}
+                    size={24}
+                    animationDisabled={actionErrorIconMotionDisabled}
+                    aria-hidden
+                    className="mt-0.5 shrink-0"
+                  />
+                  <p className="font-body text-sm text-error">{activeActionError}</p>
+                </div>
               )}
             </div>
 
@@ -250,6 +269,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => document.getElementById(inputId)?.click()}
                     isLoading={isUploading || isAttaching}
                   >
+                    <MotionSafeIcon icon={UploadIcon} size={16} parentHover parentFocus />
                     {BTN_UPLOAD_ONE_NOW}
                   </Button>
                   <input
@@ -271,6 +291,7 @@ export function FilledTemplateChoiceDialog({
                     onClick={() => void onFreePeriodDownload()}
                     isLoading={freePeriodLoading}
                   >
+                    <MotionSafeIcon icon={DownloadIcon} size={16} parentHover parentFocus />
                     {BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN}
                   </Button>
                 </>

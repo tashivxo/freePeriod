@@ -8,6 +8,7 @@ interface UseFileUploadProps {
   bucket?: string;
   uploadType: UploadType;
   onParsed?: (uploadId: string) => void;
+  accept?: string;
 }
 
 interface UseFileUploadReturn {
@@ -24,6 +25,7 @@ export function useFileUpload({
   bucket = 'uploads',
   uploadType,
   onParsed,
+  accept = '',
 }: UseFileUploadProps): UseFileUploadReturn {
   const [file, setFile] = useState<File | null>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
@@ -33,6 +35,19 @@ export function useFileUpload({
 
   const handleFile = async (incoming: File) => {
     setError(null);
+
+    if (accept) {
+      const accepted = accept.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+      const nameParts = incoming.name.split('.');
+      const ext = nameParts.length > 1 ? `.${nameParts.pop()!.toLowerCase()}` : '';
+      if (!accepted.includes(ext)) {
+        setError(
+          `Only ${accepted.join(', ')} files are accepted. You uploaded a ${ext || 'unknown'} file.`,
+        );
+        return;
+      }
+    }
+
     setIsUploading(true);
     try {
       const supabase = createClient();

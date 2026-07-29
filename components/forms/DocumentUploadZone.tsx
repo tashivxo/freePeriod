@@ -3,8 +3,10 @@
 import { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 import { UploadIcon } from '@/components/ui/icons/upload';
+import { XIcon } from '@/components/ui/icons/x';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';
 import type { UploadType } from '@/types';
 
@@ -33,7 +35,16 @@ export function DocumentUploadZone({
 
   const { file, storagePath, isUploading, error, handleFile, removeFile } = useFileUpload({
     uploadType,
+    accept,
   });
+
+  const { ref: errorIconRef, animationDisabled: errorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!error || errorIconMotionDisabled) return;
+    errorIconRef.current?.startAnimation();
+  }, [error, errorIconMotionDisabled, errorIconRef]);
 
   // Notify parent when storagePath is set after a successful upload
   useEffect(() => {
@@ -129,9 +140,16 @@ export function DocumentUploadZone({
       />
 
       {error && (
-        <p className="text-xs" style={{ color: 'var(--color-error)' }} role="alert">
-          {error}
-        </p>
+        <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+          <XIcon
+            ref={errorIconRef}
+            size={24}
+            animationDisabled={errorIconMotionDisabled}
+            aria-hidden
+            className="mt-0.5 shrink-0"
+          />
+          <p className="font-body text-sm text-error">{error}</p>
+        </div>
       )}
     </div>
   );
