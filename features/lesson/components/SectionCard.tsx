@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { animate } from 'animejs';
-import { ChevronDown, Pencil, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Check } from 'lucide-react';
 import { SUCCESS } from '@/lib/utils/brand-colors';
 
 // Tiptap uses browser-only APIs — load it client-side only
@@ -59,6 +59,8 @@ export function SectionCard({
     flashSaved();
   };
 
+  const panelOpen = isOpen || isEditing;
+
   return (
     <div
       ref={cardRef}
@@ -74,12 +76,21 @@ export function SectionCard({
           }}
           disabled={isEditing}
           className="flex flex-1 items-center gap-2 text-left hover:opacity-80 transition-opacity disabled:cursor-default disabled:hover:opacity-100"
-          aria-expanded={isOpen}
+          aria-expanded={panelOpen}
         >
           <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
-          <ChevronDown
-            className={`h-5 w-5 text-text-secondary transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          />
+          <div
+            className="t-icon-swap h-5 w-5 shrink-0 text-text-secondary"
+            data-state={isOpen ? 'b' : 'a'}
+            aria-hidden="true"
+          >
+            <span className="t-icon" data-icon="a">
+              <ChevronDown className="h-5 w-5" />
+            </span>
+            <span className="t-icon" data-icon="b">
+              <ChevronUp className="h-5 w-5" />
+            </span>
+          </div>
         </button>
 
         {!isEditing ? (
@@ -107,22 +118,34 @@ export function SectionCard({
       </div>
 
       {/* Content — stay open while editing so the editor cannot collapse mid-edit */}
-      {(isOpen || isEditing) && (
-        <div className="px-5 pb-4 border-t border-text-secondary/10">
-          {isEditing ? (
-            <div className="mt-3">
-              <LessonEditor content={content} onChange={onChange} />
-            </div>
-          ) : (
-            <div
-              className="mt-3 font-body text-text-primary prose prose-sm max-w-none
-                [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
-                [&_h3]:font-semibold [&_h3]:text-base [&_p]:my-1"
-              dangerouslySetInnerHTML={{ __html: content }}
-            />
-          )}
+      <div
+        className="t-panel-collapse grid overflow-hidden"
+        style={{
+          gridTemplateRows: panelOpen ? '1fr' : '0fr',
+          transitionDuration: panelOpen ? 'var(--panel-open-dur)' : 'var(--panel-close-dur)',
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className="t-panel-slide px-5 pb-4 border-t border-text-secondary/10"
+            data-open={panelOpen ? 'true' : 'false'}
+            aria-hidden={!panelOpen}
+          >
+            {isEditing ? (
+              <div className="mt-3">
+                <LessonEditor content={content} onChange={onChange} />
+              </div>
+            ) : (
+              <div
+                className="mt-3 font-body text-text-primary prose prose-sm max-w-none
+                  [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
+                  [&_h3]:font-semibold [&_h3]:text-base [&_p]:my-1"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
