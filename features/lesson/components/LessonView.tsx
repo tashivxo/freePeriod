@@ -8,12 +8,14 @@ import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import { XIcon } from '@/components/ui/icons/x';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import {
   FilledTemplateChoiceDialog,
@@ -46,6 +48,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [exportLoading, setExportLoading] = useState(false);
   const [fillLoading, setFillLoading] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const { ref: exportErrorIconRef, animationDisabled: exportErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
   const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
   const [dialogActionError, setDialogActionError] = useState<string | null>(null);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
@@ -66,6 +70,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       setAutosaveFlashBySection((prev) => ({ ...prev, [key]: Date.now() }));
     },
   );
+
+  useEffect(() => {
+    if (!exportError || exportErrorIconMotionDisabled) return;
+    exportErrorIconRef.current?.startAnimation();
+  }, [exportError, exportErrorIconMotionDisabled, exportErrorIconRef]);
 
   useEffect(() => {
     if (!cardsRef.current) return;
@@ -264,9 +273,16 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </Button>
         </div>
         {exportError ? (
-          <p role="alert" className="mt-3 text-sm font-medium text-error">
-            {exportError}
-          </p>
+          <div role="alert" className="mt-3 flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+            <XIcon
+              ref={exportErrorIconRef}
+              size={24}
+              animationDisabled={exportErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="font-body text-sm text-error">{exportError}</p>
+          </div>
         ) : null}
       </div>
 

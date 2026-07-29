@@ -12,6 +12,8 @@ import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 type FinishStatus = 'idle' | 'saving' | 'redirecting';
 
@@ -250,9 +252,24 @@ function OnboardingProgress({ step, total = 3 }: { step: number; total?: number 
 }
 
 function StepError({ message }: { message: string }) {
+  const { ref: errorIconRef, animationDisabled: errorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!message || errorIconMotionDisabled) return;
+    errorIconRef.current?.startAnimation();
+  }, [message, errorIconMotionDisabled, errorIconRef]);
+
   return (
-    <div role="alert" className="mb-4 rounded-xl bg-error/10 p-3 text-center text-sm text-error">
-      {message}
+    <div role="alert" className="mb-4 flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+      <XIcon
+        ref={errorIconRef}
+        size={20}
+        animationDisabled={errorIconMotionDisabled}
+        aria-hidden
+        className="mt-0.5 shrink-0"
+      />
+      <p className="text-sm">{message}</p>
     </div>
   );
 }

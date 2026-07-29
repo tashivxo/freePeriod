@@ -17,6 +17,8 @@ import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 import { cn } from '@/lib/utils';
 import { ExternalLink, LogOut } from 'lucide-react';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import type { User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
@@ -61,6 +63,10 @@ export function SettingsClient({
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const { ref: deleteErrorIconRef, animationDisabled: deleteErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+  const { ref: saveErrorIconRef, animationDisabled: saveErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
 
@@ -68,6 +74,16 @@ export function SettingsClient({
     subjectField.value !== savedDefaults.subject ||
     gradeSelect !== savedDefaults.grade ||
     curriculumField.value !== savedDefaults.curriculum;
+
+  useEffect(() => {
+    if (!deleteError || deleteErrorIconMotionDisabled) return;
+    deleteErrorIconRef.current?.startAnimation();
+  }, [deleteError, deleteErrorIconMotionDisabled, deleteErrorIconRef]);
+
+  useEffect(() => {
+    if (saveStatus?.tone !== 'error' || saveErrorIconMotionDisabled) return;
+    saveErrorIconRef.current?.startAnimation();
+  }, [saveStatus, saveErrorIconMotionDisabled, saveErrorIconRef]);
 
   useEffect(() => {
     if (saveStatus?.tone !== 'success') return;
@@ -233,16 +249,27 @@ export function SettingsClient({
           >
             {saving ? 'Saving...' : 'Save Settings'}
           </Button>
-          {saveStatus && (
+          {saveStatus?.tone === 'success' && (
             <div
               role="status"
-              className={`mt-3 rounded-xl p-3 text-sm font-body text-center ${
-                saveStatus.tone === 'success'
-                  ? 'bg-success/10 text-success'
-                  : 'bg-error/10 text-error'
-              }`}
+              className="mt-3 rounded-xl bg-success/10 p-3 text-center font-body text-sm text-success"
             >
               {saveStatus.message}
+            </div>
+          )}
+          {saveStatus?.tone === 'error' && (
+            <div
+              role="alert"
+              className="mt-3 flex gap-3 rounded-xl bg-error/10 p-3 text-error"
+            >
+              <XIcon
+                ref={saveErrorIconRef}
+                size={24}
+                animationDisabled={saveErrorIconMotionDisabled}
+                aria-hidden
+                className="mt-0.5 shrink-0"
+              />
+              <p className="font-body text-sm text-error">{saveStatus.message}</p>
             </div>
           )}
         </div>
@@ -312,9 +339,16 @@ export function SettingsClient({
                 onChange={(e) => setDeleteConfirm(e.target.value)}
               />
               {deleteError && (
-                <p className="text-sm text-error" role="alert">
-                  {deleteError}
-                </p>
+                <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+                  <XIcon
+                    ref={deleteErrorIconRef}
+                    size={24}
+                    animationDisabled={deleteErrorIconMotionDisabled}
+                    aria-hidden
+                    className="mt-0.5 shrink-0"
+                  />
+                  <p className="font-body text-sm text-error">{deleteError}</p>
+                </div>
               )}
               <div className="flex gap-2">
                 <Button

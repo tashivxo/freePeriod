@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -17,6 +19,13 @@ export function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const { ref: serverErrorIconRef, animationDisabled: serverErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!serverError || serverErrorIconMotionDisabled) return;
+    serverErrorIconRef.current?.startAnimation();
+  }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -80,8 +89,15 @@ export function ForgotPasswordPage() {
         <Card className="border-border/60 shadow-sm">
           <CardContent className="space-y-5 p-6">
             {serverError && (
-              <div role="alert" className="rounded-xl bg-error/10 p-3 text-center text-sm text-error">
-                {serverError}
+              <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+                <XIcon
+                  ref={serverErrorIconRef}
+                  size={20}
+                  animationDisabled={serverErrorIconMotionDisabled}
+                  aria-hidden
+                  className="mt-0.5 shrink-0"
+                />
+                <p className="text-sm">{serverError}</p>
               </div>
             )}
 

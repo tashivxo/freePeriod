@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 function isExpiredSessionError(message: string): boolean {
   const lower = message.toLowerCase();
@@ -51,6 +53,20 @@ export function UpdatePasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionMissing, setSessionMissing] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const { ref: expiredLinkErrorIconRef, animationDisabled: expiredLinkErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+  const { ref: serverErrorIconRef, animationDisabled: serverErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!sessionMissing || expiredLinkErrorIconMotionDisabled) return;
+    expiredLinkErrorIconRef.current?.startAnimation();
+  }, [sessionMissing, expiredLinkErrorIconMotionDisabled, expiredLinkErrorIconRef]);
+
+  useEffect(() => {
+    if (!serverError || serverErrorIconMotionDisabled) return;
+    serverErrorIconRef.current?.startAnimation();
+  }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,8 +220,17 @@ export function UpdatePasswordPage() {
               <p className="text-center font-body text-sm text-text-secondary">Checking your reset link…</p>
             ) : sessionMissing ? (
               <div className="space-y-4">
-                <div role="alert" className="rounded-xl bg-error/10 p-3 text-center text-sm text-error">
-                  This reset link has expired or is no longer valid. Request a new one to continue.
+                <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+                  <XIcon
+                    ref={expiredLinkErrorIconRef}
+                    size={20}
+                    animationDisabled={expiredLinkErrorIconMotionDisabled}
+                    aria-hidden
+                    className="mt-0.5 shrink-0"
+                  />
+                  <p className="text-sm">
+                    This reset link has expired or is no longer valid. Request a new one to continue.
+                  </p>
                 </div>
                 <Link
                   href="/forgot-password"
@@ -217,15 +242,24 @@ export function UpdatePasswordPage() {
             ) : (
               <>
                 {serverError && (
-                  <div role="alert" className="rounded-xl bg-error/10 p-3 text-center text-sm text-error">
-                    {serverError}
-                    {isExpiredSessionError(serverError) && (
-                      <span className="mt-2 block">
-                        <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
-                          Request a new reset link
-                        </Link>
-                      </span>
-                    )}
+                  <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+                    <XIcon
+                      ref={serverErrorIconRef}
+                      size={20}
+                      animationDisabled={serverErrorIconMotionDisabled}
+                      aria-hidden
+                      className="mt-0.5 shrink-0"
+                    />
+                    <p className="text-sm">
+                      {serverError}
+                      {isExpiredSessionError(serverError) && (
+                        <span className="mt-2 block">
+                          <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
+                            Request a new reset link
+                          </Link>
+                        </span>
+                      )}
+                    </p>
                   </div>
                 )}
 

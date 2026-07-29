@@ -16,6 +16,8 @@ import { MagicCard } from '@/components/ui/effects/magic-card';
 import { Logo } from '@/components/ui/branding/Logo';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { createClient } from '@/lib/supabase/client';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 const SoftAurora = dynamic(
   () => import('@/components/ui/backgrounds/SoftAurora/SoftAurora'),
@@ -107,6 +109,13 @@ export function PricingClient() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
+  const { ref: checkoutErrorIconRef, animationDisabled: checkoutErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!checkoutError || checkoutErrorIconMotionDisabled) return;
+    checkoutErrorIconRef.current?.startAnimation();
+  }, [checkoutError, checkoutErrorIconMotionDisabled, checkoutErrorIconRef]);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -402,12 +411,19 @@ export function PricingClient() {
         </div>
 
         {checkoutError ? (
-          <p
+          <div
             role="alert"
-            className="mt-6 text-center text-sm font-medium text-error"
+            className="mt-6 flex gap-3 rounded-xl bg-error/10 p-3 text-error"
           >
-            {checkoutError}
-          </p>
+            <XIcon
+              ref={checkoutErrorIconRef}
+              size={24}
+              animationDisabled={checkoutErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="font-body text-sm text-error">{checkoutError}</p>
+          </div>
         ) : null}
 
         {/* Trust footer */}

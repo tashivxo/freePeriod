@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 const EMAIL_CHECK_DEBOUNCE_MS = 400;
 
@@ -29,6 +31,13 @@ export function SignUpPage() {
   const [checkEmail, setCheckEmail] = useState(false);
   const [emailTaken, setEmailTaken] = useState(false);
   const [emailChecking, setEmailChecking] = useState(false);
+  const { ref: serverErrorIconRef, animationDisabled: serverErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!serverError || serverErrorIconMotionDisabled) return;
+    serverErrorIconRef.current?.startAnimation();
+  }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
 
   useEffect(() => {
     const normalized = normalizeEmail(email);
@@ -196,8 +205,15 @@ export function SignUpPage() {
           <CardContent className="space-y-5 p-6">
 
         {serverError && (
-          <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">
-            {serverError}
+          <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+            <XIcon
+              ref={serverErrorIconRef}
+              size={20}
+              animationDisabled={serverErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="text-sm">{serverError}</p>
           </div>
         )}
 

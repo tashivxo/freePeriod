@@ -5,6 +5,8 @@ import { animate, remove } from 'animejs';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { HeroPictogram } from '@/components/animations/HeroPictogram';
 import { Button } from '@/components/ui/Button';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { getSectionProgressLabel, LESSON_SECTION_COUNT } from '@/lib/lesson/sections';
 import type { GenerateStreamEvent, LessonSectionKey } from '@/types';
 
@@ -37,6 +39,8 @@ export function GenerationScreen({
   const stepsRef = useRef<HTMLDivElement>(null);
   const hasCompletedRef = useRef(false);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
+  const { ref: errorIconRef, animationDisabled: errorIconMotionDisabled } =
+    useMotionSafeIconRef();
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -45,6 +49,15 @@ export function GenerationScreen({
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
+  useEffect(() => {
+    let msg: string | null = null;
+    for (const event of events) {
+      if (event.type === 'error') msg = event.message;
+    }
+    if (!msg || errorIconMotionDisabled) return;
+    errorIconRef.current?.startAnimation();
+  }, [events, errorIconMotionDisabled, errorIconRef]);
 
   // Derive status steps from events
   const statusSteps: StatusStep[] = [];
@@ -161,7 +174,19 @@ export function GenerationScreen({
 
         {errorMessage && (
           <div className="mt-4 space-y-4">
-            <p className="text-sm text-error">{errorMessage}</p>
+            <div
+              role="alert"
+              className="flex gap-3 rounded-xl bg-error/10 p-3 text-error"
+            >
+              <XIcon
+                ref={errorIconRef}
+                size={24}
+                animationDisabled={errorIconMotionDisabled}
+                aria-hidden
+                className="mt-0.5 shrink-0"
+              />
+              <p className="font-body text-sm text-error">{errorMessage}</p>
+            </div>
             <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
               {onRetry && (
                 <Button type="button" onClick={onRetry}>

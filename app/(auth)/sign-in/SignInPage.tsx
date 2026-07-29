@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+import { XIcon } from '@/components/ui/icons/x';
+import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
 export function SignInPage() {
   const router = useRouter();
@@ -24,6 +26,20 @@ export function SignInPage() {
   const [authBusy, setAuthBusy] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const callbackFailed = searchParams.get('error') === 'auth_callback_failed';
+  const { ref: callbackErrorIconRef, animationDisabled: callbackErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+  const { ref: serverErrorIconRef, animationDisabled: serverErrorIconMotionDisabled } =
+    useMotionSafeIconRef();
+
+  useEffect(() => {
+    if (!callbackFailed || callbackErrorIconMotionDisabled) return;
+    callbackErrorIconRef.current?.startAnimation();
+  }, [callbackFailed, callbackErrorIconMotionDisabled, callbackErrorIconRef]);
+
+  useEffect(() => {
+    if (!serverError || serverErrorIconMotionDisabled) return;
+    serverErrorIconRef.current?.startAnimation();
+  }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
 
   function validate(): boolean {
     const newErrors: typeof errors = {};
@@ -133,18 +149,34 @@ export function SignInPage() {
           <CardContent className="space-y-5 p-6">
 
         {callbackFailed && (
-          <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">
-            That sign-in link is invalid or has expired. Try signing in below, or{' '}
-            <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
-              request a new password reset
-            </Link>
-            .
+          <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+            <XIcon
+              ref={callbackErrorIconRef}
+              size={20}
+              animationDisabled={callbackErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="text-sm">
+              That sign-in link is invalid or has expired. Try signing in below, or{' '}
+              <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
+                request a new password reset
+              </Link>
+              .
+            </p>
           </div>
         )}
 
         {serverError && (
-          <div role="alert" className="p-3 rounded-xl bg-error/10 text-error text-sm text-center">
-            {serverError}
+          <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+            <XIcon
+              ref={serverErrorIconRef}
+              size={20}
+              animationDisabled={serverErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="text-sm">{serverError}</p>
           </div>
         )}
 
