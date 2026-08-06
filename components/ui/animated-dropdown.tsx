@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ export interface DropdownItem {
   description?: string;
   disabled?: boolean;
   badge?: string;
+  icon?: ReactNode;
 }
 
 interface AnimatedDropdownProps {
@@ -19,6 +20,7 @@ interface AnimatedDropdownProps {
   text?: string;
   className?: string;
   onSelect?: (item: DropdownItem) => void;
+  onDisabledSelect?: (item: DropdownItem) => void;
   selectedValue?: string;
   id?: string;
   triggerAriaLabel?: string;
@@ -29,6 +31,7 @@ export function AnimatedDropdown({
   text = 'Select option',
   className,
   onSelect,
+  onDisabledSelect,
   selectedValue,
   id,
   triggerAriaLabel,
@@ -110,7 +113,13 @@ export function AnimatedDropdown({
                   aria-selected={isSelected}
                   aria-disabled={isDisabled || undefined}
                   onClick={() => {
-                    if (isDisabled) return;
+                    if (isDisabled) {
+                      if (onDisabledSelect) {
+                        onDisabledSelect(item);
+                        setOpen(false);
+                      }
+                      return;
+                    }
                     onSelect?.(item);
                     setOpen(false);
                   }}
@@ -118,7 +127,12 @@ export function AnimatedDropdown({
                     'px-4 py-2.5 text-sm font-body transition-colors duration-100',
                     item.description ? 'py-3' : 'py-2.5',
                     isDisabled
-                      ? 'cursor-not-allowed opacity-60'
+                      ? cn(
+                          'opacity-60',
+                          onDisabledSelect
+                            ? 'cursor-pointer hover:bg-[var(--color-primary-light)]/10'
+                            : 'cursor-not-allowed',
+                        )
                       : 'cursor-pointer hover:bg-[var(--color-primary-light)]/20',
                     isSelected
                       ? 'bg-[var(--color-primary-light)]/20 text-coral'
@@ -134,13 +148,17 @@ export function AnimatedDropdown({
                             {item.badge}
                           </span>
                         )}
+                        {item.icon}
                       </span>
                       <span className="text-sm leading-snug text-[var(--color-text-secondary)]">
                         {item.description}
                       </span>
                     </span>
                   ) : (
-                    item.name
+                    <span className="flex items-center gap-2">
+                      {item.name}
+                      {item.icon}
+                    </span>
                   )}
                 </li>
               );

@@ -71,32 +71,43 @@ describe('OnboardingPage', () => {
     render(<OnboardingPage />);
     for (const subject of SUBJECTS) {
       expect(
-        screen.getByRole('button', { name: new RegExp(subject, 'i') }),
+        screen.getByRole('radio', { name: new RegExp(subject, 'i') }),
       ).toBeInTheDocument();
     }
   });
 
-  it('allows selecting multiple subject chips', async () => {
+  it('allows selecting a single subject chip', async () => {
     const { user } = render(<OnboardingPage />);
-    const mathChip = screen.getByRole('button', { name: /mathematics/i });
-    const historyChip = screen.getByRole('button', { name: /history/i });
+    const mathChip = screen.getByRole('radio', { name: /mathematics/i });
+    const historyChip = screen.getByRole('radio', { name: /history/i });
 
     await user.click(mathChip);
     await user.click(historyChip);
 
-    expect(mathChip).toHaveAttribute('aria-pressed', 'true');
-    expect(historyChip).toHaveAttribute('aria-pressed', 'true');
+    expect(mathChip).toHaveAttribute('aria-checked', 'false');
+    expect(historyChip).toHaveAttribute('aria-checked', 'true');
   });
 
   it('allows deselecting a subject chip', async () => {
     const { user } = render(<OnboardingPage />);
-    const mathChip = screen.getByRole('button', { name: /mathematics/i });
+    const mathChip = screen.getByRole('radio', { name: /mathematics/i });
 
     await user.click(mathChip);
-    expect(mathChip).toHaveAttribute('aria-pressed', 'true');
+    expect(mathChip).toHaveAttribute('aria-checked', 'true');
 
     await user.click(mathChip);
-    expect(mathChip).toHaveAttribute('aria-pressed', 'false');
+    expect(mathChip).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('clears the chip when typing a custom subject', async () => {
+    const { user } = render(<OnboardingPage />);
+    const mathChip = screen.getByRole('radio', { name: /mathematics/i });
+
+    await user.click(mathChip);
+    expect(mathChip).toHaveAttribute('aria-checked', 'true');
+
+    await user.type(screen.getByPlaceholderText(/other subject/i), 'Drama');
+    expect(mathChip).toHaveAttribute('aria-checked', 'false');
   });
 
   it('renders custom subject input', () => {
@@ -106,7 +117,7 @@ describe('OnboardingPage', () => {
 
   it('shows next button and navigates to step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -118,7 +129,7 @@ describe('OnboardingPage', () => {
 
   it('renders grade dropdown on step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -129,7 +140,7 @@ describe('OnboardingPage', () => {
   it('navigates from step 2 to step 3', async () => {
     const { user } = render(<OnboardingPage />);
     // Step 1: select subject
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Step 2: select grade
@@ -150,7 +161,7 @@ describe('OnboardingPage', () => {
   it('renders curriculum AnimatedDropdown on step 3', async () => {
     const { user } = render(<OnboardingPage />);
     // Navigate to step 3
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
@@ -177,7 +188,7 @@ describe('OnboardingPage', () => {
 
   it('allows going back from step 2 to step 1', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -196,7 +207,7 @@ describe('OnboardingPage', () => {
     const { user } = render(<OnboardingPage />);
 
     // Step 1: select subjects
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     // Step 2: select grade
@@ -219,7 +230,12 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('button', { name: /finish/i }));
 
     await waitFor(() => {
-      expect(mockUpsert).toHaveBeenCalled();
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          default_subject: 'Mathematics',
+        }),
+        { onConflict: 'id' },
+      );
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
   });
@@ -239,7 +255,7 @@ describe('OnboardingPage', () => {
 
   it('updates progress indicator when advancing to step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     await waitFor(() => {
@@ -252,7 +268,7 @@ describe('OnboardingPage', () => {
 
   it('selecting Custom curriculum reveals text input on step 3', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/grade level/i));
@@ -273,7 +289,7 @@ describe('OnboardingPage', () => {
     mockUpsert.mockResolvedValueOnce({ error: { message: 'Database error' } });
     const { user } = render(<OnboardingPage />);
 
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/grade level/i));
@@ -296,7 +312,7 @@ describe('OnboardingPage', () => {
   it('shows saving then redirecting feedback on successful finish', async () => {
     const { user } = render(<OnboardingPage />);
 
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/grade level/i));
@@ -321,7 +337,7 @@ describe('OnboardingPage', () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(<OnboardingPage />);
 
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/grade level/i));
@@ -350,7 +366,7 @@ describe('OnboardingPage', () => {
 
   it('Finish button is disabled until a curriculum is selected on step 3', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('button', { name: /mathematics/i }));
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/grade level/i));

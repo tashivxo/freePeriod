@@ -14,12 +14,24 @@ function getPrefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+const DEFAULT_MESSAGE =
+  "You've reached the 3-lesson free plan limit for this month.";
+
 type UpgradePromptProps = {
   open: boolean;
   onDismiss: () => void;
+  /** Override body copy (e.g. locked Quality vs quota exhaustion). */
+  message?: string;
+  /** Where "Upgrade to Pro" navigates. Defaults to settings billing. */
+  upgradeHref?: string;
 };
 
-export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
+export function UpgradePrompt({
+  open,
+  onDismiss,
+  message = DEFAULT_MESSAGE,
+  upgradeHref = '/settings#billing',
+}: UpgradePromptProps) {
   const router = useRouter();
   const { zenMode } = useZenMode();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -52,7 +64,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
 
   function handleUpgrade() {
     onDismiss();
-    router.push('/settings#billing');
+    router.push(upgradeHref);
   }
 
   return (
@@ -84,9 +96,7 @@ export function UpgradePrompt({ open, onDismiss }: UpgradePromptProps) {
                 <h2 className="font-display text-xl font-bold text-text-primary">
                   Upgrade to Pro
                 </h2>
-                <p className="mt-1 text-sm text-text-secondary">
-                  You&apos;ve reached the 3-lesson free plan limit for this month.
-                </p>
+                <p className="mt-1 text-sm text-text-secondary">{message}</p>
               </div>
             </div>
 

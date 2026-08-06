@@ -4,6 +4,14 @@ import {
   GENERATION_MODE_OPTIONS,
 } from '@/features/generate/components/GenerationModePicker';
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
+jest.mock('@/providers/zen-mode', () => ({
+  useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: jest.fn() })),
+}));
+
 describe('GenerationModePicker', () => {
   const onChange = jest.fn();
 
@@ -42,7 +50,7 @@ describe('GenerationModePicker', () => {
     expect(onChange).toHaveBeenCalledWith('fast');
   });
 
-  it('disables Quality for free users and shows upgrade hint', async () => {
+  it('shows a lock on Quality for free users and opens UpgradePrompt on click', async () => {
     const { user } = render(
       <GenerationModePicker
         id="generation-mode-picker"
@@ -53,13 +61,44 @@ describe('GenerationModePicker', () => {
     );
 
     expect(screen.getByText(/upgrade to pro/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /upgrade to pro/i })).toHaveAttribute('href', '/pricing');
+    expect(screen.getByRole('link', { name: /upgrade to pro/i })).toHaveAttribute(
+      'href',
+      '/pricing',
+    );
 
     await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
-    expect(screen.getByRole('option', { name: /quality/i })).toHaveAttribute(
-      'aria-disabled',
-      'true',
+
+    const qualityOption = screen.getByRole('option', { name: /quality/i });
+    expect(qualityOption).toHaveAttribute('aria-disabled', 'true');
+    expect(qualityOption.querySelector('[data-testid="quality-lock-icon"]')).toBeTruthy();
+    expect(qualityOption).toHaveAccessibleName(/quality.*pro only/i);
+
+    await user.click(qualityOption);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: /upgrade to pro/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/quality mode is available on pro and pro\+/i),
+    ).toBeInTheDocument();
+  });
+
+  it('allows Quality for paid users without a lock', async () => {
+    const { user } = render(
+      <GenerationModePicker
+        id="generation-mode-picker"
+        value="fast"
+        onChange={onChange}
+        qualityUnlocked
+      />,
     );
+
+    await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
+    const qualityOption = screen.getByRole('option', { name: /quality/i });
+    expect(qualityOption).not.toHaveAttribute('aria-disabled');
+    expect(qualityOption.querySelector('[data-testid="quality-lock-icon"]')).toBeNull();
+
+    await user.click(qualityOption);
+    expect(onChange).toHaveBeenCalledWith('quality');
   });
 
   it('exports mode options with labels and descriptions', () => {

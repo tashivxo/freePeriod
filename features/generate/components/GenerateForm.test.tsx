@@ -179,6 +179,18 @@ describe('GenerateForm', () => {
 
   // ---- Validation & submission ----
 
+  it('rejects multiple subjects in a custom subject value', async () => {
+    const onSubmit = jest.fn();
+    const { user } = render(
+      <GenerateForm defaults={{ subject: 'Mathematics, Science' }} onSubmit={onSubmit} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    expect(await screen.findByText(/please enter one subject only/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('disables Generate button when subject is empty', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     expect(screen.getByRole('button', { name: /generate/i })).toBeDisabled();

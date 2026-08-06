@@ -47,12 +47,27 @@ describe('UpgradePrompt', () => {
     expect(mockPush).toHaveBeenCalledWith('/settings#billing');
   });
 
-  it('shows 3-lesson free plan limit message', () => {
+  it('shows 3-lesson free plan limit message by default', () => {
     render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
 
     expect(
       screen.getByText("You've reached the 3-lesson free plan limit for this month."),
     ).toBeInTheDocument();
+  });
+
+  it('renders a custom message and upgrade href', async () => {
+    const { user } = render(
+      <UpgradePrompt
+        open
+        onDismiss={mockOnDismiss}
+        message="Quality mode is a Pro feature."
+        upgradeHref="/pricing"
+      />,
+    );
+
+    expect(screen.getByText('Quality mode is a Pro feature.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^upgrade to pro$/i }));
+    expect(mockPush).toHaveBeenCalledWith('/pricing');
   });
 
   it('lists Fast and Quality generation modes in features', () => {

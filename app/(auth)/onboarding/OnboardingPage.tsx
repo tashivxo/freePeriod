@@ -20,7 +20,7 @@ type FinishStatus = 'idle' | 'saving' | 'redirecting';
 export function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [grade, setGrade] = useState('');
   const [curriculumSelect, setCurriculumSelect] = useState('');
@@ -76,12 +76,14 @@ export function OnboardingPage() {
     }
   }, [prefersReduced]);
 
-  const toggleSubject = useCallback((subject: string) => {
-    setSelectedSubjects((prev) =>
-      prev.includes(subject)
-        ? prev.filter((s) => s !== subject)
-        : [...prev, subject],
-    );
+  const selectSubject = useCallback((subject: string) => {
+    setCustomSubject('');
+    setSelectedSubject((prev) => (prev === subject ? '' : subject));
+  }, []);
+
+  const handleCustomSubjectChange = useCallback((value: string) => {
+    setSelectedSubject('');
+    setCustomSubject(value);
   }, []);
 
   const handleNext = useCallback(async () => {
@@ -115,10 +117,7 @@ export function OnboardingPage() {
         return;
       }
 
-      const subjects = [...selectedSubjects];
-      if (customSubject.trim()) {
-        subjects.push(customSubject.trim());
-      }
+      const defaultSubject = selectedSubject || customSubject.trim();
 
       const metaName = user.user_metadata?.name;
       const metaFullName = user.user_metadata?.full_name;
@@ -135,7 +134,7 @@ export function OnboardingPage() {
             id: user.id,
             email: user.email ?? '',
             name: displayName,
-            default_subject: subjects.join(', '),
+            default_subject: defaultSubject,
             default_grade: grade,
             default_curriculum: curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect,
             onboarding_complete: true,
@@ -161,7 +160,7 @@ export function OnboardingPage() {
       setIsSubmitting(false);
       setFinishStatus('idle');
     }
-  }, [selectedSubjects, customSubject, grade, curriculumSelect, customCurriculum, router]);
+  }, [selectedSubject, customSubject, grade, curriculumSelect, customCurriculum, router]);
 
   // Animate on mount
   useEffect(() => {
@@ -187,11 +186,11 @@ export function OnboardingPage() {
             <div ref={stepContainerRef}>
               {step === 1 && (
                 <StepSubjects
-                  subjects={selectedSubjects}
+                  selectedSubject={selectedSubject}
                   customSubject={customSubject}
                   error={error}
-                  onToggle={toggleSubject}
-                  onCustomChange={setCustomSubject}
+                  onSelect={selectSubject}
+                  onCustomChange={handleCustomSubjectChange}
                   onNext={handleNext}
                 />
               )}
@@ -275,36 +274,41 @@ function StepError({ message }: { message: string }) {
 }
 
 function StepSubjects({
-  subjects,
+  selectedSubject,
   customSubject,
   error,
-  onToggle,
+  onSelect,
   onCustomChange,
   onNext,
 }: {
-  subjects: string[];
+  selectedSubject: string;
   customSubject: string;
   error: string;
-  onToggle: (subject: string) => void;
+  onSelect: (subject: string) => void;
   onCustomChange: (value: string) => void;
   onNext: () => void;
 }) {
+  const hasSubject = Boolean(selectedSubject || customSubject.trim());
+
   return (
     <div>
-      <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
+      <h1 className="mb-2 text-center font-display text-2xl font-bold text-text-primary">
         What do you teach?
       </h1>
+      <p className="mb-6 text-center font-body text-sm text-text-secondary">
+        Pick one subject — you can change this anytime in settings.
+      </p>
 
-      <div className="mb-4 flex flex-wrap justify-center gap-2">
+      <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Subject">
         {SUBJECTS.map((subject) => (
           <button
             key={subject}
             type="button"
-            role="button"
-            aria-pressed={subjects.includes(subject)}
-            onClick={() => onToggle(subject)}
+            role="radio"
+            aria-checked={selectedSubject === subject}
+            onClick={() => onSelect(subject)}
             className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-              subjects.includes(subject)
+              selectedSubject === subject
                 ? 'border-primary bg-primary text-white'
                 : 'border-border bg-background text-text-primary hover:border-coral'
             }`}
@@ -327,7 +331,7 @@ function StepSubjects({
       <Button
         onClick={onNext}
         className="w-full"
-        disabled={subjects.length === 0 && !customSubject.trim()}
+        disabled={!hasSubject}
       >
         Next
       </Button>

@@ -51,7 +51,22 @@ export function mapGenerationError(err: unknown, context: GenerationErrorContext
     return 'Invalid request to Claude API. Please try again.';
   }
 
-  if (errMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY') || errMessage.toLowerCase().includes('api key')) {
+  if (
+    errType === 'authentication_error'
+    || sdkErr.status === 401
+    || errMessage.toLowerCase().includes('api key is invalid')
+    || errMessage.toLowerCase().includes('invalid api key')
+    || errMessage.toLowerCase().includes('incorrect api key')
+  ) {
+    return 'Generation API key is invalid. Update ANTHROPIC_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY in Vercel.';
+  }
+
+  if (
+    errMessage.includes('GOOGLE_GENERATIVE_AI_API_KEY')
+    || errMessage.includes('ANTHROPIC_API_KEY')
+    || errMessage.toLowerCase().includes('api key is not set')
+    || errMessage.toLowerCase().includes('api key not configured')
+  ) {
     return 'Generation API key is not configured on this deployment. Check Vercel environment variables.';
   }
 

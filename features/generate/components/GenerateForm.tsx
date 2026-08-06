@@ -117,6 +117,8 @@ export function GenerateForm({
     const nextErrors: FieldErrors = {};
     if (!subjectField.value.trim()) {
       nextErrors.subject = 'Please select a subject';
+    } else if (/[,;/]|\band\b/i.test(subjectField.value)) {
+      nextErrors.subject = 'Please enter one subject only';
     }
     if (!grade.trim()) {
       nextErrors.grade = 'Please select a grade';
