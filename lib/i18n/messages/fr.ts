@@ -6,6 +6,7 @@ export const fr: Messages = {
     generate: 'Générer',
     history: 'Historique',
     settings: 'Paramètres',
+    homeAriaLabel: 'Accueil FreePeriod',
   },
   settings: {
     title: 'Paramètres',
@@ -73,6 +74,8 @@ export const fr: Messages = {
     conversionPoint2: 'Modifiez avant d’exporter',
     conversionPoint3: 'Gratuit pour commencer. Aucune carte requise.',
     ctaButton: 'Commencer gratuitement',
+    footerNavAriaLabel: 'Mentions légales et assistance',
+    footerTagline: 'Conçu pour les enseignants, par des enseignants.',
   },
   generate: {
     planLanguageHint: 'Les nouveaux plans seront rédigés en {language}',

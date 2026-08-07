@@ -19,7 +19,7 @@ export function MarketingFooter() {
     <footer className="border-t border-border bg-background py-10">
       <div className="mx-auto max-w-3xl space-y-4 px-6 text-center">
         <nav
-          aria-label="Legal and support"
+          aria-label={t('landing.footerNavAriaLabel')}
           className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-body"
         >
           {links.map((link) =>
@@ -43,7 +43,7 @@ export function MarketingFooter() {
           )}
         </nav>
         <p className="font-body text-sm text-text-secondary">
-          © {year} {legalConfig.serviceName}. Built for teachers, by teachers.
+          © {year} {legalConfig.serviceName}. {t('landing.footerTagline')}
         </p>
       </div>
     </footer>

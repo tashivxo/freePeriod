@@ -29,7 +29,7 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-40 border-b border-border/60 bg-surface/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/dashboard" aria-label="FreePeriod home">
+        <Link href="/dashboard" aria-label={t('nav.homeAriaLabel')}>
           <Logo size="sm" />
         </Link>
 

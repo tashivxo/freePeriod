@@ -6,6 +6,7 @@ export const ar: Messages = {
     generate: 'إنشاء',
     history: 'السجل',
     settings: 'الإعدادات',
+    homeAriaLabel: 'الصفحة الرئيسية FreePeriod',
   },
   settings: {
     title: 'الإعدادات',
@@ -73,6 +74,8 @@ export const ar: Messages = {
     conversionPoint2: 'عدّل قبل التصدير',
     conversionPoint3: 'ابدأ مجانًا. لا حاجة لبطاقة ائتمان.',
     ctaButton: 'ابدأ مجانًا',
+    footerNavAriaLabel: 'قانوني ودعم',
+    footerTagline: 'صُنع للمعلمين، من المعلمين.',
   },
   generate: {
     planLanguageHint: 'ستُكتب الخطط الجديدة بـ {language}',

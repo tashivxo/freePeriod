@@ -6,6 +6,7 @@ export const es: Messages = {
     generate: 'Generar',
     history: 'Historial',
     settings: 'Ajustes',
+    homeAriaLabel: 'Inicio de FreePeriod',
   },
   settings: {
     title: 'Ajustes',
@@ -73,6 +74,8 @@ export const es: Messages = {
     conversionPoint2: 'Edita antes de exportar',
     conversionPoint3: 'Empieza gratis. No se requiere tarjeta.',
     ctaButton: 'Empieza gratis',
+    footerNavAriaLabel: 'Legal y soporte',
+    footerTagline: 'Hecho por profesores, para profesores.',
   },
   generate: {
     planLanguageHint: 'Los nuevos planes se escribirán en {language}',

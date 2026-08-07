@@ -4,6 +4,7 @@ export const en = {
     generate: 'Generate',
     history: 'History',
     settings: 'Settings',
+    homeAriaLabel: 'FreePeriod home',
   },
   settings: {
     title: 'Settings',
@@ -71,6 +72,8 @@ export const en = {
     conversionPoint2: 'Edit before you export',
     conversionPoint3: 'Free to start. No credit card required.',
     ctaButton: 'Start for free',
+    footerNavAriaLabel: 'Legal and support',
+    footerTagline: 'Built for teachers, by teachers.',
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
@@ -83,6 +86,7 @@ export type Messages = {
     generate: string;
     history: string;
     settings: string;
+    homeAriaLabel: string;
   };
   settings: {
     title: string;
@@ -146,6 +150,8 @@ export type Messages = {
     conversionPoint2: string;
     conversionPoint3: string;
     ctaButton: string;
+    footerNavAriaLabel: string;
+    footerTagline: string;
   };
   generate: {
     planLanguageHint: string;
