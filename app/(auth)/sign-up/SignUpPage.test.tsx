@@ -113,7 +113,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).toHaveBeenCalledWith({
@@ -149,7 +149,7 @@ describe('SignUpPage', () => {
 
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).not.toHaveBeenCalled();
@@ -173,7 +173,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(checkEmailAvailability).toHaveBeenCalled();
@@ -197,7 +197,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(
@@ -238,7 +238,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     await screen.findByRole('button', { name: /create account/i });
@@ -276,7 +276,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     await screen.findByRole('button', { name: /create account/i });
@@ -300,7 +300,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(

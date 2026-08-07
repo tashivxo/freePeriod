@@ -70,6 +70,13 @@ describe('UpgradePrompt', () => {
     expect(mockPush).toHaveBeenCalledWith('/pricing');
   });
 
+  it('uses a single custom dismiss control without the default dialog close', () => {
+    render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
+
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
+  });
+
   it('lists Fast and Quality generation modes in features', () => {
     render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
 
@@ -79,5 +86,15 @@ describe('UpgradePrompt', () => {
     expect(
       screen.getByText('DOCX export and filled-in template download'),
     ).toBeInTheDocument();
+  });
+
+  it('applies btn-shine to the Maybe later button', () => {
+    render(<UpgradePrompt open onDismiss={mockOnDismiss} />);
+
+    expect(screen.getByRole('button', { name: /maybe later/i })).toHaveClass(
+      'btn-shine',
+      'relative',
+      'overflow-hidden',
+    );
   });
 });

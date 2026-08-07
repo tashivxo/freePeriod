@@ -271,13 +271,15 @@ export function SignUpPage() {
           <div className="space-y-1.5">
             <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-body text-text-secondary">
               <input
-                type="checkbox"
+                type="radio"
+                name="acceptedTerms"
+                value="yes"
                 checked={acceptedTerms}
-                onChange={(e) => {
-                  setAcceptedTerms(e.target.checked);
-                  if (e.target.checked) setTermsError('');
+                onChange={() => {
+                  setAcceptedTerms(true);
+                  setTermsError('');
                 }}
-                className="h-5 w-5 shrink-0 rounded border-border text-coral focus:ring-coral"
+                className="h-5 w-5 shrink-0 rounded-full border-border text-coral focus:ring-coral"
               />
               <span>
                 I agree to the{' '}
