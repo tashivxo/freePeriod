@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
-import { useLocale } from '@/providers/locale';
+import { useLocale, useT } from '@/providers/locale';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +42,7 @@ export function LanguagePicker({
   style,
 }: LanguagePickerProps) {
   const { locale, setLocale } = useLocale();
+  const t = useT();
   const { ref: iconRef, animationDisabled } = useMotionSafeIconRef();
   const internalButtonRef = useRef<HTMLButtonElement>(null);
   const iconSize = variant === 'icon' ? 18 : 16;
@@ -83,7 +84,7 @@ export function LanguagePicker({
             assignRef(buttonRef, node);
           }}
           type="button"
-          aria-label="Language"
+          aria-label={t('settings.language')}
           className={cn(
             variant === 'icon'
               ? 'relative inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background text-text-secondary hover:bg-muted hover:text-text-primary transition-[transform,opacity,color,background-color,border-color] active:scale-[0.96]'
@@ -104,17 +105,30 @@ export function LanguagePicker({
           ) : null}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[10rem]">
-        {LOCALES.map((code) => (
-          <DropdownMenuItem
-            key={code}
-            className="flex min-h-[44px] items-center justify-between gap-3"
-            onSelect={() => handleSelect(code)}
-          >
-            <span>{LOCALE_LABELS[code]}</span>
-            {locale === code ? <Check className="h-4 w-4 shrink-0 text-coral" aria-hidden /> : null}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent
+        align="end"
+        className="min-w-[10rem] duration-150 data-open:zoom-in-[0.97] data-closed:zoom-out-[0.97]"
+      >
+        {LOCALES.map((code) => {
+          const selected = locale === code;
+          return (
+            <DropdownMenuItem
+              key={code}
+              className={cn(
+                'flex min-h-[44px] items-center justify-between gap-3',
+                'focus:bg-[var(--color-primary-light)]/20 focus:text-text-primary',
+                'data-[highlighted]:bg-[var(--color-primary-light)]/20 data-[highlighted]:text-text-primary',
+                selected && 'bg-[var(--color-primary-light)]/20 text-coral',
+              )}
+              onSelect={() => handleSelect(code)}
+            >
+              <span>{LOCALE_LABELS[code]}</span>
+              {selected ? (
+                <Check className="h-4 w-4 shrink-0 text-coral" aria-hidden />
+              ) : null}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
