@@ -8,10 +8,11 @@ import { extendTailwindMerge, validators } from "tailwind-merge"
  */
 const twMerge = extendTailwindMerge({
   extend: {
+    // Custom tw-animate groups are not in DefaultClassGroupIds
     classGroups: {
       "zoom-in": [{ "zoom-in": [validators.isAny] }],
       "zoom-out": [{ "zoom-out": [validators.isAny] }],
-    },
+    } as Record<string, [{ [key: string]: (typeof validators.isAny)[] }]>,
   },
 })
 
