@@ -12,4 +12,5 @@ export type {
   UploadType,
   User,
 } from './database';
-export type { GenerateRequest, GenerateStreamEvent, LessonSectionKey } from './lesson';
+export type { GenerateRequest, GenerateStreamEvent, GenerationLocale, LessonSectionKey } from './lesson';
+export { GENERATION_LOCALES } from './lesson';

@@ -15,6 +15,10 @@ import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
+import { useLocale, useT } from '@/providers/locale';
+import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { LanguagesIcon } from '@/components/ui/icons/languages';
+import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { cn } from '@/lib/utils';
 import { ExternalLink, LogOut } from 'lucide-react';
 import { XIcon } from '@/components/ui/icons/x';
@@ -22,6 +26,11 @@ import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import type { User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
+
+const LOCALE_ITEMS = LOCALES.map((code) => ({
+  name: LOCALE_LABELS[code],
+  value: code,
+}));
 
 type SaveStatus = {
   tone: 'success' | 'error';
@@ -69,11 +78,19 @@ export function SettingsClient({
     useMotionSafeIconRef();
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
+  const { locale, setLocale } = useLocale();
+  const t = useT();
 
   const isDirty =
     subjectField.value !== savedDefaults.subject ||
     gradeSelect !== savedDefaults.grade ||
     curriculumField.value !== savedDefaults.curriculum;
+
+  useEffect(() => {
+    if (user.preferred_locale && isLocale(user.preferred_locale)) {
+      setLocale(user.preferred_locale);
+    }
+  }, [setLocale, user.preferred_locale]);
 
   useEffect(() => {
     if (!deleteError || deleteErrorIconMotionDisabled) return;
@@ -90,6 +107,20 @@ export function SettingsClient({
     const timer = window.setTimeout(() => setSaveStatus(null), 4000);
     return () => window.clearTimeout(timer);
   }, [saveStatus]);
+
+  const handleLocaleChange = async (nextLocale: Locale) => {
+    setLocale(nextLocale);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('users')
+        .update({ preferred_locale: nextLocale })
+        .eq('id', user.id);
+      if (error) throw error;
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSave = async () => {
     if (!isDirty) return;
@@ -113,10 +144,10 @@ export function SettingsClient({
 
       if (error) throw error;
       setSavedDefaults(nextDefaults);
-      setSaveStatus({ tone: 'success', message: 'Settings saved!' });
+      setSaveStatus({ tone: 'success', message: t('settings.saved') });
     } catch (err) {
       console.error(err);
-      setSaveStatus({ tone: 'error', message: 'Failed to save settings' });
+      setSaveStatus({ tone: 'error', message: t('settings.saveFailed') });
     } finally {
       setSaving(false);
     }
@@ -149,7 +180,7 @@ export function SettingsClient({
         <div className="flex items-center justify-between mb-6">
           <BlurText
             as="h1"
-            text="Settings"
+            text={t('settings.title')}
             className="font-display text-2xl font-bold text-text-primary"
           />
           <ThemeToggle />
@@ -161,10 +192,10 @@ export function SettingsClient({
               htmlFor="zen-mode"
               className="block text-sm font-body font-medium text-text-primary"
             >
-              Zen Mode
+              {t('settings.zenMode')}
             </label>
             <p className="mt-1 text-sm font-body text-text-secondary">
-              Are our colorful backgrounds too much for you? Try Zen Mode.
+              {t('settings.zenModeDescription')}
             </p>
           </div>
           <Switch
@@ -172,7 +203,37 @@ export function SettingsClient({
             checked={zenMode}
             onCheckedChange={(checked) => setZenMode(!!checked)}
             className="data-checked:bg-coral shrink-0"
-            aria-label="Zen Mode"
+            aria-label={t('settings.zenMode')}
+          />
+        </div>
+
+        <div className="mb-6 rounded-xl border border-border bg-background p-4">
+          <div className="mb-3 flex items-start gap-3">
+            <MotionSafeIcon icon={LanguagesIcon} size={20} className="mt-0.5 text-text-secondary" />
+            <div className="min-w-0">
+              <label
+                htmlFor="preferred-locale"
+                className="block text-sm font-body font-medium text-text-primary"
+              >
+                {t('settings.language')}
+              </label>
+              <p className="mt-1 text-sm font-body text-text-secondary">
+                {t('settings.languageDescription')}
+              </p>
+            </div>
+          </div>
+          <AnimatedDropdown
+            id="preferred-locale"
+            text={LOCALE_LABELS[locale]}
+            items={LOCALE_ITEMS}
+            selectedValue={locale}
+            triggerAriaLabel={t('settings.language')}
+            onSelect={(item) => {
+              const nextLocale = item.value ?? item.name;
+              if (isLocale(nextLocale)) {
+                void handleLocaleChange(nextLocale);
+              }
+            }}
           />
         </div>
 
@@ -183,11 +244,11 @@ export function SettingsClient({
               htmlFor="default-subject"
               className="mb-2 block text-sm font-body font-medium text-text-secondary"
             >
-              Default Subject
+              {t('settings.defaultSubject')}
             </label>
             <AnimatedDropdown
               id="default-subject"
-              text="Select subject"
+              text={t('settings.selectSubject')}
               items={SUBJECT_ITEMS}
               selectedValue={subjectField.select}
               onSelect={(item) => subjectField.setSelect(item.value ?? item.name)}
@@ -195,7 +256,7 @@ export function SettingsClient({
             {subjectField.isCustom && (
               <div className="mt-3">
                 <Input
-                  label="Enter subject"
+                  label={t('settings.enterSubject')}
                   value={subjectField.custom}
                   onChange={(e) => subjectField.setCustom(e.target.value)}
                 />
@@ -206,11 +267,11 @@ export function SettingsClient({
           {/* Default Grade */}
           <div>
             <label htmlFor="default-grade" className="mb-2 block text-sm font-body font-medium text-text-secondary">
-              Default Grade / Year Group
+              {t('settings.defaultGrade')}
             </label>
             <AnimatedDropdown
               id="default-grade"
-              text="Select grade"
+              text={t('settings.selectGrade')}
               items={GRADE_ITEMS}
               selectedValue={gradeSelect}
               onSelect={(item) => setGradeSelect(item.value ?? item.name)}
@@ -220,11 +281,11 @@ export function SettingsClient({
           {/* Default Curriculum */}
           <div>
             <label htmlFor="default-curriculum" className="mb-2 block text-sm font-body font-medium text-text-secondary">
-              Default Curriculum
+              {t('settings.defaultCurriculum')}
             </label>
             <AnimatedDropdown
               id="default-curriculum"
-              text="Select curriculum"
+              text={t('settings.selectCurriculum')}
               items={CURRICULUM_ITEMS}
               selectedValue={curriculumField.select}
               onSelect={(item) => curriculumField.setSelect(item.value ?? item.name)}
@@ -232,7 +293,7 @@ export function SettingsClient({
             {curriculumField.isCustom && (
               <div className="mt-3">
                 <Input
-                  label="Enter curriculum"
+                  label={t('settings.enterCurriculum')}
                   value={curriculumField.custom}
                   onChange={(e) => curriculumField.setCustom(e.target.value)}
                 />
@@ -247,7 +308,7 @@ export function SettingsClient({
             isLoading={saving}
             className="w-full mt-6"
           >
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? t('settings.saving') : t('settings.save')}
           </Button>
           {saveStatus?.tone === 'success' && (
             <div
@@ -277,19 +338,19 @@ export function SettingsClient({
 
       {/* Account */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
-        <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">Account</h2>
+        <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">{t('settings.account')}</h2>
         <dl className="mb-4 space-y-3 rounded-xl border border-border bg-background p-4">
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-            <dt className="text-sm font-body font-medium text-text-secondary">Email</dt>
+            <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.email')}</dt>
             <dd className="truncate text-sm font-body text-text-primary">{email}</dd>
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-            <dt className="text-sm font-body font-medium text-text-secondary">Plan</dt>
+            <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.plan')}</dt>
             <dd className="text-sm font-body text-text-primary">{planLabel}</dd>
           </div>
           {usageLabel && (
             <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-              <dt className="text-sm font-body font-medium text-text-secondary">Usage</dt>
+              <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.usage')}</dt>
               <dd className="text-sm font-body text-text-primary">{usageLabel}</dd>
             </div>
           )}
@@ -302,7 +363,7 @@ export function SettingsClient({
               className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
             >
               <ExternalLink className="mr-2 h-4 w-4" />
-              Manage subscription
+              {t('settings.manageSubscription')}
             </a>
           )}
 
@@ -316,7 +377,7 @@ export function SettingsClient({
             }}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Log out
+            {t('settings.logOut')}
           </Button>
 
           {!deleteOpen ? (
@@ -325,16 +386,15 @@ export function SettingsClient({
               className="w-full border-error/30 text-error hover:bg-error/5"
               onClick={() => setDeleteOpen(true)}
             >
-              Delete account
+              {t('settings.deleteAccount')}
             </Button>
           ) : (
             <div className="rounded-xl border border-error/30 bg-error/5 p-4 space-y-3">
               <p className="text-sm font-body text-text-secondary">
-                Your account will be deactivated immediately. Personal data is permanently deleted
-                after a 30-day grace period. Export any lesson plans you want to keep first.
+                {t('settings.deleteConfirmDescription')}
               </p>
               <Input
-                label='Type "DELETE" to confirm'
+                label={t('settings.deleteConfirmLabel')}
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
               />
@@ -356,7 +416,7 @@ export function SettingsClient({
                   disabled={deleteConfirm !== 'DELETE' || deleting}
                   onClick={handleDeleteAccount}
                 >
-                  {deleting ? 'Deleting...' : 'Confirm deletion'}
+                  {deleting ? t('settings.deleting') : t('settings.confirmDeletion')}
                 </Button>
                 <Button
                   variant="outline"
@@ -368,7 +428,7 @@ export function SettingsClient({
                     setDeleteError('');
                   }}
                 >
-                  Cancel
+                  {t('settings.cancel')}
                 </Button>
               </div>
             </div>
@@ -378,22 +438,22 @@ export function SettingsClient({
 
       {/* Legal */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
-        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">Legal</h2>
+        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">{t('settings.legal')}</h2>
         <p className="mb-4 text-sm font-body text-text-secondary">
-          How we handle your data and the rules for using FreePeriod.
+          {t('settings.legalDescription')}
         </p>
         <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
           <Link
             href="/privacy"
             className="text-coral font-medium hover:underline"
           >
-            Privacy Policy
+            {t('settings.privacyPolicy')}
           </Link>
           <Link
             href="/terms"
             className="text-coral font-medium hover:underline"
           >
-            Terms of Service
+            {t('settings.termsOfService')}
           </Link>
         </nav>
       </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -6,6 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { GenerationModePicker } from '@/features/generate/components/GenerationModePicker';
 import { usePresetField } from '@/lib/forms/usePresetField';
+import { LOCALE_LABELS } from '@/lib/i18n';
+import { useLocale, useT } from '@/providers/locale';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
@@ -75,6 +78,8 @@ export function GenerateForm({
   onSubmit,
   isGenerating = false,
 }: GenerateFormProps) {
+  const { locale } = useLocale();
+  const t = useT();
   const subjectField = usePresetField(defaults?.subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(defaults?.curriculum, CURRICULA as readonly string[]);
   const [grade, setGrade] = useState(defaults?.grade ?? '');
@@ -166,7 +171,13 @@ export function GenerateForm({
       onSubmit={handleSubmit}
       className="w-full max-w-3xl mx-auto rounded-2xl border border-border bg-surface/50 backdrop-blur p-6 md:p-8"
     >
-      <h2 className="font-display text-2xl font-bold text-text-primary mb-6">Generate a Lesson</h2>
+      <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Generate a Lesson</h2>
+      <p className="text-sm text-text-secondary mb-6">
+        {t('generate.planLanguageHint', { language: LOCALE_LABELS[locale] ?? LOCALE_LABELS.en })}{' '}
+        <Link href="/settings" className="text-coral hover:underline">
+          {t('nav.settings')}
+        </Link>
+      </p>
 
       <div className="space-y-5">
         {/* Subject */}

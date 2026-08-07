@@ -9,20 +9,22 @@ import { SettingsIcon } from '@/components/ui/icons/settings';
 import { Logo } from '@/components/ui/branding/Logo';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
+import { useT } from '@/providers/locale';
 
 const NAV_ITEMS: {
   href: string;
-  label: string;
+  labelKey: 'nav.dashboard' | 'nav.generate' | 'nav.history' | 'nav.settings';
   icon: AnimatedIconComponent;
 }[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: HomeIcon },
-  { href: '/generate', label: 'Generate', icon: FilePenLineIcon },
-  { href: '/history', label: 'History', icon: ClockIcon },
-  { href: '/settings', label: 'Settings', icon: SettingsIcon },
+  { href: '/dashboard', labelKey: 'nav.dashboard', icon: HomeIcon },
+  { href: '/generate', labelKey: 'nav.generate', icon: FilePenLineIcon },
+  { href: '/history', labelKey: 'nav.history', icon: ClockIcon },
+  { href: '/settings', labelKey: 'nav.settings', icon: SettingsIcon },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <nav className="sticky top-0 z-40 border-b border-border/60 bg-surface/80 backdrop-blur-md">
@@ -32,7 +34,8 @@ export function Navbar() {
         </Link>
 
         <ul className="flex items-center gap-1">
-          {NAV_ITEMS.map(({ href, label, icon }) => {
+          {NAV_ITEMS.map(({ href, labelKey, icon }) => {
+            const label = t(labelKey);
             const active = pathname.startsWith(href);
             return (
               <li key={href}>

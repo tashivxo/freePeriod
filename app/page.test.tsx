@@ -1,8 +1,37 @@
 import { render, screen, waitFor } from '@/lib/test-utils';
 import userEvent from '@testing-library/user-event';
+import { getMessages } from '@/lib/i18n';
 import { useTheme } from '@/providers/theme';
 import HomePage from './page';
 
+function createMockT() {
+  const messages = getMessages('en');
+  return (key: string) => {
+    const parts = key.split('.');
+    let current: unknown = messages;
+    for (const part of parts) {
+      if (current && typeof current === 'object' && part in current) {
+        current = (current as Record<string, unknown>)[part];
+      } else {
+        return key;
+      }
+    }
+    return typeof current === 'string' ? current : key;
+  };
+}
+
+const mockT = createMockT();
+
+jest.mock('@/providers/locale', () => ({
+  useT: () => mockT,
+  useLocale: () => ({
+    locale: 'en',
+    setLocale: jest.fn(),
+    dir: 'ltr',
+    messages: getMessages('en'),
+    t: mockT,
+  }),
+}));
 jest.mock('@/providers/theme');
 jest.mock('@/components/ui/backgrounds/CtaIridescenceBackground', () => ({
   CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
@@ -30,6 +59,11 @@ describe('HomePage', () => {
   it('renders the hero heading', () => {
     render(<HomePage />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Lesson plans in seconds, not hours');
+  });
+
+  it('renders the language picker in the sticky header', () => {
+    render(<HomePage />);
+    expect(screen.getByRole('button', { name: /language/i })).toBeInTheDocument();
   });
 
   it('renders the hero description', () => {

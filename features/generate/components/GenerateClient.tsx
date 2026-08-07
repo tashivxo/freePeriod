@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { useLocale } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
+import type { Locale } from '@/lib/i18n';
 
 type GenerationPhase = 'idle' | 'generating' | 'error';
 
@@ -16,10 +18,17 @@ type GenerateClientProps = {
     curriculum: string;
   };
   plan?: Plan;
+  preferredLocale?: Locale;
 };
 
-export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps) {
+export function GenerateClient({
+  defaults,
+  plan = 'free',
+  preferredLocale,
+}: GenerateClientProps) {
   const router = useRouter();
+  const { locale, setLocale } = useLocale();
+  const generationLocale = locale ?? 'en';
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -28,6 +37,12 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
 
   const isGenerating = phase === 'generating';
   const showOverlay = phase === 'generating' || phase === 'error';
+
+  useEffect(() => {
+    if (preferredLocale && preferredLocale !== locale) {
+      setLocale(preferredLocale);
+    }
+  }, [locale, preferredLocale, setLocale]);
 
   const returnToForm = useCallback(() => {
     abortRef.current?.abort();
@@ -56,7 +71,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, locale: generationLocale }),
         signal: controller.signal,
       });
 
@@ -121,7 +136,7 @@ export function GenerateClient({ defaults, plan = 'free' }: GenerateClientProps)
       }
       surfaceError('Connection lost. Please try again.');
     }
-  }, []);
+  }, [generationLocale]);
 
   const handleRetry = useCallback(() => {
     const data = lastFormDataRef.current;

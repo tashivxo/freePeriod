@@ -2,14 +2,59 @@ import React from 'react';
 import { render, screen, waitFor } from '@/lib/test-utils';
 import { SettingsClient } from './SettingsClient';
 import { useZenMode } from '@/providers/zen-mode';
+import { useLocale } from '@/providers/locale';
 import type { User } from '@/types';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 const mockSetZenMode = jest.fn();
+const mockSetLocale = jest.fn();
 
 jest.mock('@/providers/zen-mode', () => ({
   useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: mockSetZenMode })),
+}));
+
+const SETTINGS_LABELS: Record<string, string> = {
+  'settings.title': 'Settings',
+  'settings.zenMode': 'Zen Mode',
+  'settings.zenModeDescription':
+    'Are our colorful backgrounds too much for you? Try Zen Mode.',
+  'settings.language': 'Language',
+  'settings.languageDescription': 'Website and new lesson plans use this language.',
+  'settings.defaultSubject': 'Default Subject',
+  'settings.selectSubject': 'Select subject',
+  'settings.enterSubject': 'Enter subject',
+  'settings.defaultGrade': 'Default Grade / Year Group',
+  'settings.selectGrade': 'Select grade',
+  'settings.defaultCurriculum': 'Default Curriculum',
+  'settings.selectCurriculum': 'Select curriculum',
+  'settings.enterCurriculum': 'Enter curriculum',
+  'settings.save': 'Save Settings',
+  'settings.saving': 'Saving...',
+  'settings.saved': 'Settings saved!',
+  'settings.saveFailed': 'Failed to save settings',
+  'settings.account': 'Account',
+  'settings.email': 'Email',
+  'settings.plan': 'Plan',
+  'settings.usage': 'Usage',
+  'settings.manageSubscription': 'Manage subscription',
+  'settings.logOut': 'Log out',
+  'settings.deleteAccount': 'Delete account',
+  'settings.deleteConfirmDescription':
+    'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
+  'settings.deleteConfirmLabel': 'Type "DELETE" to confirm',
+  'settings.deleting': 'Deleting...',
+  'settings.confirmDeletion': 'Confirm deletion',
+  'settings.cancel': 'Cancel',
+  'settings.legal': 'Legal',
+  'settings.legalDescription': 'How we handle your data and the rules for using FreePeriod.',
+  'settings.privacyPolicy': 'Privacy Policy',
+  'settings.termsOfService': 'Terms of Service',
+};
+
+jest.mock('@/providers/locale', () => ({
+  useLocale: jest.fn(() => ({ locale: 'en', setLocale: mockSetLocale, dir: 'ltr', messages: {}, t: jest.fn() })),
+  useT: jest.fn(() => (key: string) => SETTINGS_LABELS[key] ?? key),
 }));
 
 const mockUpdate = jest.fn().mockReturnValue({
@@ -38,10 +83,12 @@ const baseUser: User = {
   default_grade: null,
   default_curriculum: null,
   plan: 'free',
+  is_admin: false,
   generation_count: 5,
   generation_count_reset_at: null,
   onboarding_complete: true,
   deletion_scheduled_at: null,
+  preferred_locale: 'en',
   created_at: '2024-01-01T00:00:00Z',
 };
 
@@ -174,6 +221,13 @@ describe('SettingsClient — zen mode', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useZenMode as jest.Mock).mockReturnValue({ zenMode: false, setZenMode: mockSetZenMode });
+    (useLocale as jest.Mock).mockReturnValue({
+      locale: 'en',
+      setLocale: mockSetLocale,
+      dir: 'ltr',
+      messages: {},
+      t: jest.fn(),
+    });
   });
 
   it('renders zen mode switch with description', () => {
@@ -191,6 +245,53 @@ describe('SettingsClient — zen mode', () => {
     await user.click(screen.getByRole('switch', { name: /zen mode/i }));
 
     expect(mockSetZenMode).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('SettingsClient — language', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+    (useLocale as jest.Mock).mockReturnValue({
+      locale: 'en',
+      setLocale: mockSetLocale,
+      dir: 'ltr',
+      messages: {},
+      t: jest.fn(),
+    });
+  });
+
+  it('renders language row with description', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    expect(screen.getByText('Language')).toBeInTheDocument();
+    expect(
+      screen.getByText(/website and new lesson plans use this language/i),
+    ).toBeInTheDocument();
+  });
+
+  it('syncs locale from user.preferred_locale on mount', () => {
+    render(
+      <SettingsClient
+        {...defaultProps}
+        user={{ ...baseUser, preferred_locale: 'fr' }}
+      />,
+    );
+
+    expect(mockSetLocale).toHaveBeenCalledWith('fr');
+  });
+
+  it('changing language calls setLocale and persists preferred_locale immediately', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const trigger = screen.getByLabelText(/language/i);
+    await user.click(trigger);
+    await user.click(screen.getByRole('option', { name: 'Español' }));
+
+    expect(mockSetLocale).toHaveBeenCalledWith('es');
+    expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'es' });
   });
 });
 
@@ -252,6 +353,6 @@ describe('SettingsClient — save feedback', () => {
     await changeSubjectToScience(user);
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/failed to save settings/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
   });
 });

@@ -18,6 +18,10 @@ export type LessonSectionKey =
   | 'realWorldConnections'
   | 'plenary';
 
+export type GenerationLocale = 'en' | 'ar' | 'es' | 'fr';
+
+export const GENERATION_LOCALES: GenerationLocale[] = ['en', 'ar', 'es', 'fr'];
+
 export type GenerateRequest = {
   subject: string;
   grade: string;
@@ -28,6 +32,7 @@ export type GenerateRequest = {
   templatePath: string | null;
   generationMode?: 'fast' | 'quality';
   modelPreference?: 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5';
+  locale?: GenerationLocale;
 };
 
 export type GenerateStreamEvent =

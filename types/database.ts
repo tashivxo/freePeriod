@@ -1,5 +1,7 @@
 export type UploadType = 'curriculum_doc' | 'template';
 export type ExportFormat = 'docx' | 'xlsx';
+import type { Locale } from '@/lib/i18n/locales';
+
 export type Plan = 'free' | 'pro' | 'pro_plus';
 export type BillingInterval = 'monthly' | 'yearly';
 export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired' | 'on_trial' | 'inactive' | 'trial';
@@ -17,6 +19,7 @@ export type User = {
   generation_count_reset_at: string | null;
   onboarding_complete: boolean;
   deletion_scheduled_at: string | null;
+  preferred_locale: Locale;
   created_at: string;
 }
 
@@ -105,13 +108,14 @@ export type Database = {
     Tables: {
       users: {
         Row: User;
-        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at'> & {
+        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at' | 'preferred_locale'> & {
           generation_count?: number;
           generation_count_reset_at?: string | null;
           onboarding_complete?: boolean;
           plan?: Plan;
           is_admin?: boolean;
           deletion_scheduled_at?: string | null;
+          preferred_locale?: Locale;
         };
         Update: Partial<Omit<User, 'id' | 'created_at'>>;
         Relationships: [];

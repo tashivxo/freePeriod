@@ -1,4 +1,4 @@
-import { buildSystemPrompt, parseLessonContent } from './claude';
+import { buildSystemPrompt, buildUserPrompt, parseLessonContent } from './claude';
 
 describe('Claude lesson prompt parsing', () => {
   it('parses formal lesson planning fields from model JSON', () => {
@@ -62,5 +62,48 @@ describe('Claude lesson prompt parsing', () => {
     expect(prompt).toContain('CAPS');
     expect(prompt).toContain('GCSE');
     expect(prompt).not.toContain('UAE/MOE');
+  });
+
+  it('does not add language instructions for English default', () => {
+    const systemPrompt = buildSystemPrompt();
+    const userPrompt = buildUserPrompt({
+      subject: 'Science',
+      grade: 'Grade 5',
+      curriculum: 'NGSS',
+      duration: 45,
+      teacherPrompt: '',
+    });
+
+    expect(systemPrompt).not.toContain('LANGUAGE OUTPUT REQUIREMENTS');
+    expect(userPrompt).not.toContain('Output language:');
+  });
+
+  it('adds language instructions for non-English locales', () => {
+    const baseParams = {
+      subject: 'Science',
+      grade: 'Grade 5',
+      curriculum: 'NGSS',
+      duration: 45,
+      teacherPrompt: '',
+    };
+
+    const arSystem = buildSystemPrompt(undefined, 'ar');
+    const arUser = buildUserPrompt({ ...baseParams, locale: 'ar' });
+    expect(arSystem).toContain('LANGUAGE OUTPUT REQUIREMENTS');
+    expect(arSystem).toContain('Modern Standard Arabic');
+    expect(arSystem).toContain('Preserve curriculum codes');
+    expect(arSystem).toContain('Keep ALL JSON object KEYS in English');
+    expect(arSystem).toContain('"Time:", "Teacher Activity:"');
+    expect(arUser).toContain('- Output language: Arabic (ar)');
+
+    const esSystem = buildSystemPrompt(undefined, 'es');
+    const esUser = buildUserPrompt({ ...baseParams, locale: 'es' });
+    expect(esSystem).toContain('Write ALL human-readable JSON string VALUES in Spanish');
+    expect(esUser).toContain('- Output language: Spanish (es)');
+
+    const frSystem = buildSystemPrompt(undefined, 'fr');
+    const frUser = buildUserPrompt({ ...baseParams, locale: 'fr' });
+    expect(frSystem).toContain('Write ALL human-readable JSON string VALUES in French');
+    expect(frUser).toContain('- Output language: French (fr)');
   });
 });

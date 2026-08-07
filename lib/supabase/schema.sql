@@ -20,6 +20,7 @@ create table public.users (
   generation_count_reset_at timestamptz,
   onboarding_complete boolean not null default false,
   deletion_scheduled_at timestamptz,
+  preferred_locale text not null default 'en' check (preferred_locale in ('en', 'ar', 'es', 'fr')),
   created_at timestamptz not null default now()
 );
 

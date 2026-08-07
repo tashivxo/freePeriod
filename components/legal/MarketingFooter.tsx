@@ -1,13 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import { legalConfig } from '@/lib/legal/config';
+import { useT } from '@/providers/locale';
 
 export function MarketingFooter() {
+  const t = useT();
   const year = new Date().getFullYear();
 
   const links: { href: string; label: string; external?: boolean }[] = [
-    { href: '/privacy', label: 'Privacy Policy' },
-    { href: '/terms', label: 'Terms of Service' },
-    { href: '/pricing', label: 'Pricing' },
+    { href: '/privacy', label: t('settings.privacyPolicy') },
+    { href: '/terms', label: t('settings.termsOfService') },
+    { href: '/pricing', label: t('landing.headerPricing') },
     { href: `mailto:${legalConfig.contactEmail}`, label: 'Contact', external: true },
   ];
 

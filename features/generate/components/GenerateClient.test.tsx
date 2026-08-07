@@ -41,6 +41,25 @@ jest.mock('animejs', () => ({
   remove: jest.fn(),
 }));
 
+jest.mock('@/providers/locale', () => ({
+  useLocale: () => ({
+    locale: 'en',
+    setLocale: jest.fn(),
+    dir: 'ltr',
+    messages: {},
+    t: (key: string) => key,
+  }),
+  useT: () => (key: string, vars?: Record<string, string>) => {
+    if (key === 'generate.planLanguageHint' && vars?.language) {
+      return `New plans will be written in ${vars.language}`;
+    }
+    const labels: Record<string, string> = {
+      'nav.settings': 'Settings',
+    };
+    return labels[key] ?? key;
+  },
+}));
+
 import { GenerateClient } from './GenerateClient';
 
 const defaults = {

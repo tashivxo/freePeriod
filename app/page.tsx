@@ -9,6 +9,7 @@ import { DownloadIcon } from '@/components/ui/icons/download';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
+import { LanguagePicker } from '@/components/ui/LanguagePicker';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { animate, stagger } from 'animejs';
@@ -17,6 +18,7 @@ import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { ShinyText } from '@/components/ui/effects/ShinyText';
 import { SpotlightCard } from '@/components/ui/effects/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
+import { useT } from '@/providers/locale';
 import dynamic from 'next/dynamic';
 
 const HeroPictogram = dynamic(
@@ -40,31 +42,30 @@ const CtaIridescenceBackground = dynamic(
 const LEAD_FEATURE = {
   icon: PenToolIcon,
   iconSize: 28,
-  title: 'Structured Plans',
-  description:
-    'Twelve sections covering objectives, activities, differentiation, and assessment, with consistent structure you can trust every time.',
+  titleKey: 'landing.featureStructuredPlans',
+  descriptionKey: 'landing.featureStructuredPlansDesc',
   color: 'bg-coral/10 text-coral',
 } as const;
 
 const SUPPORTING_FEATURES: {
   icon: AnimatedIconComponent;
   iconSize: number;
-  title: string;
-  description: string;
+  titleKey: 'landing.featureAiPowered' | 'landing.featureExportAnywhere';
+  descriptionKey: 'landing.featureAiPoweredDesc' | 'landing.featureExportAnywhereDesc';
   color: string;
 }[] = [
   {
     icon: SparklesIcon,
     iconSize: 20,
-    title: 'AI-Powered',
-    description: 'Tailored to your subject, year group, and curriculum in seconds.',
+    titleKey: 'landing.featureAiPowered',
+    descriptionKey: 'landing.featureAiPoweredDesc',
     color: 'bg-mustard/20 text-mustard-dark',
   },
   {
     icon: DownloadIcon,
     iconSize: 20,
-    title: 'Export Anywhere',
-    description: 'Download as DOCX or a filled-in template. Edit inline before exporting.',
+    titleKey: 'landing.featureExportAnywhere',
+    descriptionKey: 'landing.featureExportAnywhereDesc',
     color: 'bg-coral/10 text-coral',
   },
 ];
@@ -73,25 +74,25 @@ const CONVERSION_POINTS: {
   icon: AnimatedIconComponent | typeof FileText;
   animated: boolean;
   iconSize: number;
-  text: string;
+  textKey: 'landing.conversionPoint1' | 'landing.conversionPoint2' | 'landing.conversionPoint3';
 }[] = [
   {
     icon: FileText,
     animated: false,
     iconSize: 20,
-    text: '12 structured sections in every plan',
+    textKey: 'landing.conversionPoint1',
   },
   {
     icon: PenToolIcon,
     animated: true,
     iconSize: 20,
-    text: 'Edit before you export',
+    textKey: 'landing.conversionPoint2',
   },
   {
     icon: BookTextIcon,
     animated: true,
     iconSize: 20,
-    text: 'Free to start. No credit card required.',
+    textKey: 'landing.conversionPoint3',
   },
 ];
 
@@ -101,6 +102,7 @@ function getPrefersReducedMotion(): boolean {
 }
 
 export default function HomePage() {
+  const t = useT();
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -198,17 +200,18 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
           <Logo size="sm" />
           <nav className="flex items-center gap-2">
+            <LanguagePicker variant="icon" />
             <Link
               href="/pricing"
               className="inline-flex min-h-11 items-center px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
             >
-              Pricing
+              {t('landing.headerPricing')}
             </Link>
             <Link
               href="/sign-in"
               className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
             >
-              Sign in
+              {t('landing.headerSignIn')}
             </Link>
           </nav>
         </div>
@@ -223,9 +226,9 @@ export default function HomePage() {
                 className="font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.02em] text-text-primary sm:text-5xl lg:text-[3.25rem]"
                 style={{ opacity: hiddenUntilAnimated }}
               >
-                Lesson plans in{' '}
+                {t('landing.heroHeadline1')}{' '}
                 <span className="relative whitespace-nowrap text-coral">
-                  seconds,
+                  {t('landing.heroHeadlineHighlight')}
                   <svg
                     className="absolute -bottom-1 left-0 w-full"
                     viewBox="0 0 200 8"
@@ -242,7 +245,7 @@ export default function HomePage() {
                     />
                   </svg>
                 </span>{' '}
-                not hours
+                {t('landing.heroHeadline2')}
               </h1>
 
               <p
@@ -250,8 +253,7 @@ export default function HomePage() {
                 className="mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg"
                 style={{ opacity: hiddenUntilAnimated }}
               >
-                Upload your curriculum docs, describe what you need, and FreePeriod
-                generates a complete, structured lesson plan you can edit and export.
+                {t('landing.heroSub')}
               </p>
 
               <div
@@ -263,13 +265,13 @@ export default function HomePage() {
                   href="/sign-up"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl bg-coral px-6 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
                 >
-                  Start for free
+                  {t('landing.heroCtaPrimary')}
                 </Link>
                 <Link
                   href="/sign-in"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl border border-border bg-surface px-6 py-3 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                 >
-                  Sign in
+                  {t('landing.heroCtaSecondary')}
                 </Link>
               </div>
 
@@ -280,12 +282,12 @@ export default function HomePage() {
               >
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={ClockIcon} size={14} />
-                  Avg. 15 seconds to generate
+                  {t('landing.heroStatTime')}
                 </div>
                 <div className="h-3 w-px bg-border" />
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={BookTextIcon} size={14} />
-                  Free to start
+                  {t('landing.heroStatFree')}
                 </div>
               </div>
             </div>
@@ -303,10 +305,10 @@ export default function HomePage() {
         >
           <div className="mb-10 text-center md:mb-12">
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary md:text-4xl">
-              <ShinyText text="Why Teachers Love FreePeriod" speed={8} />
+              <ShinyText text={t('landing.featuresTitle')} speed={8} />
             </h2>
             <p className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base">
-              Structure you can trust, speed when you need it.
+              {t('landing.featuresSub')}
             </p>
           </div>
 
@@ -319,24 +321,24 @@ export default function HomePage() {
                 <MotionSafeIcon icon={LeadIcon} size={LEAD_FEATURE.iconSize} />
               </div>
               <h3 className="mb-3 font-display text-2xl font-semibold text-text-primary">
-                {LEAD_FEATURE.title}
+                {t(LEAD_FEATURE.titleKey)}
               </h3>
               <p className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base">
-                {LEAD_FEATURE.description}
+                {t(LEAD_FEATURE.descriptionKey)}
               </p>
             </SpotlightCard>
 
-            {SUPPORTING_FEATURES.map(({ icon, iconSize, title, description, color }) => (
+            {SUPPORTING_FEATURES.map(({ icon, iconSize, titleKey, descriptionKey, color }) => (
               <SpotlightCard
-                key={title}
+                key={titleKey}
                 data-feature
                 className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur transition-colors hover:border-coral/50 md:p-7"
               >
                 <div className={`mb-4 inline-flex rounded-xl p-3 ${color}`}>
                   <MotionSafeIcon icon={icon} size={iconSize} />
                 </div>
-                <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{title}</h3>
-                <p className="font-body text-sm leading-relaxed text-text-secondary">{description}</p>
+                <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{t(titleKey)}</h3>
+                <p className="font-body text-sm leading-relaxed text-text-secondary">{t(descriptionKey)}</p>
               </SpotlightCard>
             ))}
           </div>
@@ -347,24 +349,24 @@ export default function HomePage() {
           <div className="relative z-10 mx-auto max-w-4xl px-6">
             <SpotlightCard className="relative rounded-2xl border border-border bg-surface/80 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
             <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
-              Ready to reclaim your evenings?
+              {t('landing.ctaHeadline')}
             </h2>
             <p className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base">
-              Join teachers who plan faster without sacrificing structure.
+              {t('landing.ctaSub')}
             </p>
 
             <div className="mx-auto mt-8 max-w-xl border-t border-border pt-8">
               <h3 className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl">
-                Your plan, your way
+                {t('landing.ctaBandTitle')}
               </h3>
               <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base">
-                Start from scratch, or send your template and AI fills it in.
+                {t('landing.ctaBandSub')}
               </p>
             </div>
 
             <ul className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
-              {CONVERSION_POINTS.map(({ icon, animated, iconSize, text }) => (
-                <li key={text} className="flex flex-col items-center gap-2 px-2">
+              {CONVERSION_POINTS.map(({ icon, animated, iconSize, textKey }) => (
+                <li key={textKey} className="flex flex-col items-center gap-2 px-2">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/10">
                     {animated ? (
                       <MotionSafeIcon icon={icon as AnimatedIconComponent} size={iconSize} className="text-coral" />
@@ -372,7 +374,7 @@ export default function HomePage() {
                       <FileText className="h-5 w-5 text-coral" />
                     )}
                   </div>
-                  <p className="font-body text-sm leading-snug text-text-secondary">{text}</p>
+                  <p className="font-body text-sm leading-snug text-text-secondary">{t(textKey)}</p>
                 </li>
               ))}
             </ul>
@@ -381,7 +383,7 @@ export default function HomePage() {
               href="/sign-up"
               className="relative btn-shine mt-8 inline-flex min-h-[44px] items-center justify-center overflow-hidden rounded-xl bg-coral px-8 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
             >
-              Start for free
+              {t('landing.ctaButton')}
             </Link>
           </SpotlightCard>
           </div>

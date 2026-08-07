@@ -25,6 +25,7 @@ export type GenerateContentInput = {
   duration: number;
   teacherPrompt: string;
   curriculumText?: string;
+  locale?: string;
 };
 
 export type GenerateContentResult = {
@@ -43,6 +44,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     duration,
     teacherPrompt,
     curriculumText,
+    locale,
   } = input;
 
   const useGemini = shouldGenerateWithGemini(generationMode);
@@ -57,6 +59,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
       duration,
       teacherPrompt,
       curriculumText,
+      locale,
     });
 
     return {
@@ -67,8 +70,8 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     };
   }
 
-  const systemPrompt = buildSystemPrompt(curriculumText);
-  const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt });
+  const systemPrompt = buildSystemPrompt(curriculumText, locale);
+  const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt, locale });
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const messageStream = anthropic.messages.stream({

@@ -8,7 +8,15 @@ import { mapGenerationError } from '@/lib/generation/map-error';
 import { persistLessonPlan } from '@/lib/generation/persist';
 import { encodeSSE } from '@/lib/generation/sse';
 import { LESSON_SECTION_KEYS } from '@/lib/lesson/sections';
-import type { GenerateRequest, GenerateStreamEvent } from '@/types';
+import type { GenerateRequest, GenerateStreamEvent, GenerationLocale } from '@/types';
+import { GENERATION_LOCALES } from '@/types';
+
+function resolveLocale(raw?: string): GenerationLocale {
+  if (raw && GENERATION_LOCALES.includes(raw as GenerationLocale)) {
+    return raw as GenerationLocale;
+  }
+  return 'en';
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -44,7 +52,8 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, templatePath, generationMode: requestedMode } = body;
+  const { subject, grade, curriculum, duration, teacherPrompt, curriculumDocPath, templatePath, generationMode: requestedMode, locale: requestedLocale } = body;
+  const locale = resolveLocale(requestedLocale);
 
   if (!subject || !grade || !duration) {
     return new Response(JSON.stringify({ error: 'subject, grade, and duration are required' }), {
@@ -96,6 +105,7 @@ export async function POST(request: NextRequest) {
           duration,
           teacherPrompt: teacherPrompt ?? '',
           curriculumText,
+          locale,
         });
 
         modelUsed = generated.modelUsed;

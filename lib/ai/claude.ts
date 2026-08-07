@@ -1,4 +1,29 @@
-import type { LessonSection } from '@/types';
+import type { GenerationLocale, LessonSection } from '@/types';
+
+const LOCALE_LANGUAGE_NAMES: Record<GenerationLocale, string> = {
+  en: 'English',
+  ar: 'Arabic',
+  es: 'Spanish',
+  fr: 'French',
+};
+
+function buildLocaleInstructions(locale?: string): string {
+  if (!locale || locale === 'en') return '';
+
+  const languageName = LOCALE_LANGUAGE_NAMES[locale as GenerationLocale] ?? locale;
+  let instructions = `\n\nLANGUAGE OUTPUT REQUIREMENTS:
+- Write ALL human-readable JSON string VALUES in ${languageName}.
+- Keep ALL JSON object KEYS in English exactly as specified above.
+- Keep activity-phase field labels in English: "Time:", "Teacher Activity:", "Learner Activity & Success Criteria:", "Formative Assessment:", "Resources:".
+- Do NOT translate JSON keys or these field labels. Only translate the content after each label.`;
+
+  if (locale === 'ar') {
+    instructions += `\n- Use formal Modern Standard Arabic (الفصحى) suitable for teacher professional documents.
+- Preserve curriculum codes and standards identifiers untranslated (e.g. MS-PS1-4, RL.5.3).`;
+  }
+
+  return instructions;
+}
 
 const ACTIVITY_PHASE_FORMAT = `Activity phase format (hook, every mainActivities item, guidedPractice, independentPractice, and plenary):
 Each activity phase MUST be a single plain-text string with exactly these five labeled fields, in this order:
@@ -35,7 +60,7 @@ ${ACTIVITY_PHASE_RULES}
 General rules:
 - Do not use markdown formatting of any kind. No asterisks, no bold markers (*word* or **word**), no hyphens used as bullet chars, no heading symbols (#). Plain text only inside JSON string values.`;
 
-export function buildSystemPrompt(curriculumText?: string): string {
+export function buildSystemPrompt(curriculumText?: string, locale?: string): string {
   let prompt = `You are an expert lesson planner with deep knowledge of curriculum standards and pedagogical best practices. Your task is to generate a comprehensive, structured lesson plan that is suitable for a formal observation and useful for a real teacher to deliver.
 
 You MUST respond with valid JSON only — no markdown code fences, no explanation outside the JSON object.
@@ -84,7 +109,7 @@ Quality expectations:
 - Write successCriteria at lesson level as "I can" statements; repeat the relevant ones inside each phase's Learner Activity & Success Criteria field.
 - Show adaptive teaching: scaffolds for students below standard and extension for high-attaining students.
 - Include purposeful technology or AI use only when it directly supports the lesson objective.
-- Keep activity phases structured and scannable, but make planning fields substantive enough to teach from without further editing.`;
+- Keep activity phases structured and scannable, but make planning fields substantive enough to teach from without further editing.${buildLocaleInstructions(locale)}`;
 
   if (curriculumText) {
     prompt += `\n\n--- CURRICULUM DOCUMENT ---\nThe teacher uploaded the following curriculum document. Use it to align the lesson objectives, activities, and assessments with their specific curriculum requirements:\n\n${curriculumText}\n--- END CURRICULUM DOCUMENT ---`;
@@ -99,11 +124,17 @@ export function buildUserPrompt(params: {
   curriculum: string;
   duration: number;
   teacherPrompt: string;
+  locale?: string;
 }): string {
   let prompt = `Create a lesson plan with the following details:
 - Subject: ${params.subject}
 - Grade: ${params.grade}
 - Duration: ${params.duration} minutes`;
+
+  if (params.locale && params.locale !== 'en') {
+    const languageName = LOCALE_LANGUAGE_NAMES[params.locale as GenerationLocale] ?? params.locale;
+    prompt += `\n- Output language: ${languageName} (${params.locale})`;
+  }
 
   if (params.curriculum) {
     prompt += `\n- Curriculum/Standard: ${params.curriculum}`;
