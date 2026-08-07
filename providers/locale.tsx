@@ -75,7 +75,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
-  const dir = isRtl(locale) ? 'rtl' : 'ltr';
+  const dir: 'ltr' | 'rtl' = isRtl(locale) ? 'rtl' : 'ltr';
 
   const t = useCallback(
     (key: string, vars?: TranslateVars) => interpolate(resolveMessage(messages, key), vars),
