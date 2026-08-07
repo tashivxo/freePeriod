@@ -12,7 +12,7 @@ export function MarketingFooter() {
     { href: '/privacy', label: t('settings.privacyPolicy') },
     { href: '/terms', label: t('settings.termsOfService') },
     { href: '/pricing', label: t('landing.headerPricing') },
-    { href: `mailto:${legalConfig.contactEmail}`, label: 'Contact', external: true },
+    { href: `mailto:${legalConfig.contactEmail}`, label: t('landing.footerContact'), external: true },
   ];
 
   return (

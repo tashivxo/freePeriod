@@ -75,6 +75,7 @@ export const es: Messages = {
     conversionPoint3: 'Empieza gratis. No se requiere tarjeta.',
     ctaButton: 'Empieza gratis',
     footerNavAriaLabel: 'Legal y soporte',
+    footerContact: 'Contacto',
     footerTagline: 'Hecho por profesores, para profesores.',
   },
   generate: {

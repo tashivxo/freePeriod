@@ -75,6 +75,7 @@ export const fr: Messages = {
     conversionPoint3: 'Gratuit pour commencer. Aucune carte requise.',
     ctaButton: 'Commencer gratuitement',
     footerNavAriaLabel: 'Mentions légales et assistance',
+    footerContact: 'Contact',
     footerTagline: 'Conçu pour les enseignants, par des enseignants.',
   },
   generate: {

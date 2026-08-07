@@ -75,6 +75,7 @@ export const ar: Messages = {
     conversionPoint3: 'ابدأ مجانًا. لا حاجة لبطاقة ائتمان.',
     ctaButton: 'ابدأ مجانًا',
     footerNavAriaLabel: 'قانوني ودعم',
+    footerContact: 'تواصل',
     footerTagline: 'صُنع للمعلمين، من المعلمين.',
   },
   generate: {

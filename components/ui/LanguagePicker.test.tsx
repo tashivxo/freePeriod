@@ -99,7 +99,7 @@ describe('LanguagePicker', () => {
     expect(content!.className).toMatch(/zoom-in-\[0\.97\]/);
     expect(content!.className).toMatch(/zoom-out-\[0\.97\]/);
     expect(content!.className).not.toMatch(/duration-100/);
-    // tailwind-merge does not dedupe data-open:zoom-in-95 vs data-open:zoom-in-[0.97];
-    // our override is additive; later rule wins in CSS when specificity matches.
+    expect(content!.className).not.toMatch(/zoom-in-95/);
+    expect(content!.className).not.toMatch(/zoom-out-95/);
   });
 });

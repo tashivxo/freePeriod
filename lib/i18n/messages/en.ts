@@ -73,6 +73,7 @@ export const en = {
     conversionPoint3: 'Free to start. No credit card required.',
     ctaButton: 'Start for free',
     footerNavAriaLabel: 'Legal and support',
+    footerContact: 'Contact',
     footerTagline: 'Built for teachers, by teachers.',
   },
   generate: {
@@ -151,6 +152,7 @@ export type Messages = {
     conversionPoint3: string;
     ctaButton: string;
     footerNavAriaLabel: string;
+    footerContact: string;
     footerTagline: string;
   };
   generate: {
