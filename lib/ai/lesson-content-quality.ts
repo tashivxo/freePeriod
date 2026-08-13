@@ -63,10 +63,10 @@ export function getLessonContentValidationFailures(content: LessonSection): Plan
 const FIELD_EXAMPLES: Record<PlanningValidationField, string> = {
   priorKnowledge: '"Students should already understand that all matter is made of particles in constant motion."',
   performanceExpectations:
-    '"MS-PS1-4: Develop a model that predicts changes in particle motion when thermal energy is added or removed."',
+    '"The lesson develops students\' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance."',
   misconceptions:
     '"Students often think particles stop moving in solids — addressed by comparing particle vibration models."',
-  sciencePractices: '"Developing and using models to represent particle arrangement in different states of matter."',
+  sciencePractices: '"Using evidence from lesson activities to explain the target concept and communicate reasoning clearly."',
   keyConcepts: '"Particle motion — particles move faster when thermal energy increases and slower when it decreases."',
   vocabulary: '"Phase — a distinct form of matter such as solid, liquid, or gas."',
 };
@@ -133,16 +133,16 @@ function synthesizePriorKnowledge(content: LessonSection, title: string): string
   ];
 }
 
-function synthesizePerformanceExpectations(content: LessonSection): string[] {
+function synthesizeAlignmentStatements(content: LessonSection): string[] {
   if (content.objectives.length === 0) {
     return [
       `Students demonstrate understanding of ${content.title} by applying lesson concepts accurately in guided and independent tasks.`,
     ];
   }
 
-  return content.objectives.map((objective, index) => {
+  return content.objectives.map((objective) => {
     const statement = objective.replace(/^Students will /i, 'Students demonstrate that they can ');
-    return `PE-${index + 1}: ${statement}`;
+    return `Students demonstrate the curriculum-aligned learning described by this objective: ${statement}`;
   });
 }
 
@@ -158,23 +158,23 @@ function synthesizeSciencePractices(content: LessonSection): string[] {
   const blob = JSON.stringify(content).toLowerCase();
   const practices: string[] = [];
 
-  if (/model|diagram/.test(blob)) {
-    practices.push('Developing and using models to represent key concepts and relationships in this lesson.');
+  if (/model|diagram|represent/.test(blob)) {
+    practices.push('Using diagrams or other representations to make sense of the lesson ideas.');
   }
   if (/investigat|experiment|observe|station/.test(blob)) {
-    practices.push('Planning and carrying out investigations through structured observations and guided inquiry tasks.');
+    practices.push('Gathering observations during lesson activities and using them to check understanding.');
   }
-  if (/analyz|interpre|data|classif/.test(blob)) {
-    practices.push('Analyzing and interpreting data collected during activities to draw evidence-based conclusions.');
+  if (/analyz|interpre|data|classif|compar/.test(blob)) {
+    practices.push('Comparing information from lesson tasks to identify patterns and support conclusions.');
   }
-  if (/explain|justify|reason|argument/.test(blob)) {
-    practices.push('Constructing explanations and designing solutions using evidence gathered in the lesson.');
+  if (/discuss|explain|justify|reason|write/.test(blob)) {
+    practices.push('Explaining ideas clearly in discussion and written responses using lesson evidence.');
   }
 
   if (practices.length < MIN_PLANNING_ARRAY_ITEMS) {
     practices.push(
-      'Asking questions and defining problems based on observations and lesson phenomena.',
-      'Engaging in argument from evidence during class discussion and written responses.',
+      'Using evidence from lesson activities to explain the target concept and communicate reasoning clearly.',
+      'Applying lesson ideas during guided practice, independent work, and class discussion.',
     );
   }
 
@@ -194,7 +194,7 @@ export function enrichThinLessonContent(
   }
 
   if (!isSubstantiveSentenceList(enriched.performanceExpectations)) {
-    enriched.performanceExpectations = synthesizePerformanceExpectations(enriched);
+    enriched.performanceExpectations = synthesizeAlignmentStatements(enriched);
     enrichedFields.push('performanceExpectations');
   }
 
@@ -211,7 +211,7 @@ export function enrichThinLessonContent(
   if (!isRichExplanationList(enriched.keyConcepts)) {
     enriched.keyConcepts = (enriched.keyConcepts ?? []).map((item) => expandThinConcept(item, enriched));
     if (enriched.keyConcepts.length < MIN_PLANNING_ARRAY_ITEMS) {
-      enriched.keyConcepts = synthesizePerformanceExpectations(enriched).slice(0, 3);
+      enriched.keyConcepts = synthesizeAlignmentStatements(enriched).slice(0, 3);
     }
     enrichedFields.push('keyConcepts');
   }
@@ -233,7 +233,107 @@ export function enrichThinLessonContent(
 export type FinalizeLessonContentOptions = {
   title: string;
   retry?: (retryPrompt: string) => Promise<Partial<LessonSection> | null>;
+  curriculumText?: string;
 };
+
+/** Colon, em dash, en dash, or hyphen used after a PE/LO/SO/AO prefix. */
+const IDENTIFIER_PREFIX_SEPARATORS = '[:—–-]';
+
+const STANDARDS_IDENTIFIER_PATTERN = new RegExp(
+  String.raw`\b(?:` +
+    // Real prefix tokens only (not COVID-19:, Year-12:, etc.), including em dash prefixes.
+    String.raw`(?:PE|LO|SO|AO)-\d{1,4}(?=\s*` +
+    IDENTIFIER_PREFIX_SEPARATORS +
+    ')' +
+    // NGSS and grade-band codes: MS-PS1-4, 5-PS1-1, 3-5-ETS1-1, K-2-ETS1-1
+    String.raw`|(?:K|\d{1,2}|MS|HS)(?:-(?:K|\d{1,2}))?-[A-Z]{2,8}\d{0,2}-\d{1,2}[A-Z]?` +
+    // Common Core math-style dotted codes: 5.NBT.3, 6.EE.A.1, K.CC.1
+    String.raw`|(?:K|\d{1,2}|HS)(?:\.[A-Z]{1,6})+(?:\.[A-Z0-9]{1,4})+` +
+    // Letter-first dotted codes (RL.5.3). Requires numeric segments so U.S.A. / Q.1.a / Fig.1.2 do not match.
+    String.raw`|(?!(?:FIG|EQ|VOL|CH|NO|VS|SEC|REF|TAB|EX)\.)[A-Z]{1,8}\.\d+[A-Z]?(?:\.\d+[A-Z]?)+` +
+    String.raw`)\b`,
+  'gi',
+);
+
+function normalizeIdentifier(identifier: string): string {
+  return identifier.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase();
+}
+
+function getCurriculumIdentifiers(curriculumText?: string): Set<string> {
+  if (!curriculumText) return new Set();
+
+  return new Set(
+    (curriculumText.match(STANDARDS_IDENTIFIER_PATTERN) ?? []).map(normalizeIdentifier),
+  );
+}
+
+/**
+ * Keep identifier-shaped text only when it came from the teacher's curriculum source.
+ * Plain-language alignment remains useful without a document, but fabricated codes do not.
+ */
+export function sanitizeCurriculumIdentifiers(
+  items: string[] | undefined,
+  curriculumText?: string,
+): string[] | undefined {
+  if (!items) return items;
+
+  const allowed = getCurriculumIdentifiers(curriculumText);
+
+  return items
+    .map((item) => {
+      let sanitized = String(item);
+      const identifiers = sanitized.match(STANDARDS_IDENTIFIER_PATTERN) ?? [];
+
+      for (const identifier of identifiers) {
+        if (!allowed.has(normalizeIdentifier(identifier))) {
+          const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          sanitized = sanitized
+            .replace(new RegExp(`^\\s*${escaped}\\s*${IDENTIFIER_PREFIX_SEPARATORS}\\s*`, 'i'), '')
+            .replace(new RegExp(`\\b${escaped}\\b`, 'gi'), '');
+        }
+      }
+
+      return sanitized.replace(/\s{2,}/g, ' ').replace(/\s+([,.;])/g, '$1').trim();
+    })
+    .filter(Boolean);
+}
+
+export function sanitizeLessonCurriculumIdentifiers(
+  content: LessonSection,
+  curriculumText?: string,
+): LessonSection {
+  const sanitizeString = (value: string): string =>
+    sanitizeCurriculumIdentifiers([value], curriculumText)?.[0] ?? '';
+  const sanitizeList = (value: string[] | undefined): string[] | undefined =>
+    value ? sanitizeCurriculumIdentifiers(value, curriculumText) : value;
+
+  return {
+    ...content,
+    title: sanitizeString(content.title),
+    essentialQuestion: content.essentialQuestion
+      ? sanitizeString(content.essentialQuestion)
+      : content.essentialQuestion,
+    objectives: sanitizeList(content.objectives) ?? [],
+    successCriteria: sanitizeList(content.successCriteria) ?? [],
+    priorKnowledge: sanitizeList(content.priorKnowledge),
+    performanceExpectations: sanitizeList(content.performanceExpectations),
+    misconceptions: sanitizeList(content.misconceptions),
+    sciencePractices: sanitizeList(content.sciencePractices),
+    keyConcepts: sanitizeList(content.keyConcepts) ?? [],
+    vocabulary: sanitizeList(content.vocabulary),
+    hook: sanitizeString(content.hook),
+    mainActivities: sanitizeList(content.mainActivities) ?? [],
+    guidedPractice: sanitizeList(content.guidedPractice) ?? [],
+    independentPractice: sanitizeList(content.independentPractice) ?? [],
+    formativeAssessment: sanitizeList(content.formativeAssessment) ?? [],
+    differentiation: {
+      support: sanitizeList(content.differentiation.support) ?? [],
+      extension: sanitizeList(content.differentiation.extension) ?? [],
+    },
+    realWorldConnections: sanitizeList(content.realWorldConnections) ?? [],
+    plenary: sanitizeString(content.plenary),
+  };
+}
 
 export async function finalizeLessonContent(
   content: LessonSection,
@@ -243,7 +343,11 @@ export async function finalizeLessonContent(
   const initialFailures = getLessonContentValidationFailures(current);
 
   if (initialFailures.length > 0 && options.retry) {
-    const patch = await options.retry(buildPlanningFieldsRetryPrompt(initialFailures, current));
+    const retryPrompt = buildPlanningFieldsRetryPrompt(initialFailures, current);
+    const sourceInstruction = options.curriculumText
+      ? '\nUse only standards identifiers that appear verbatim in the uploaded curriculum document.'
+      : '\nDo not include standards identifiers because no curriculum document was supplied.';
+    const patch = await options.retry(`${retryPrompt}${sourceInstruction}`);
     if (patch) {
       current = mergePlanningFieldRetry(current, patch);
     }
@@ -258,10 +362,10 @@ export async function finalizeLessonContent(
         remainingFailures,
       });
     }
-    return enriched;
+    return sanitizeLessonCurriculumIdentifiers(enriched, options.curriculumText);
   }
 
-  return current;
+  return sanitizeLessonCurriculumIdentifiers(current, options.curriculumText);
 }
 
 export function parsePlanningFieldPatch(text: string): Partial<LessonSection> | null {

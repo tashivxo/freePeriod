@@ -22,6 +22,7 @@ import {
   type FilledTemplateDialogVariant,
 } from '@/features/lesson/components/FilledTemplateChoiceDialog';
 import { Button } from '@/components/ui/Button';
+import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
@@ -251,6 +252,10 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               {saveError}
             </span>
           )}
+        </div>
+
+        <div className="mt-4">
+          <CurriculumAccuracyNotice curriculum={lesson.curriculum} />
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">

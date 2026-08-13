@@ -66,15 +66,55 @@ export async function POST(request: NextRequest) {
 
   let curriculumText: string | undefined;
   if (curriculumDocPath) {
-    const { data: uploadRecord } = await supabase
+    const { data: uploadRecord, error: uploadError } = await supabase
       .from('uploads')
-      .select('parsed_content')
+      .select('parsed_content, type')
       .eq('storage_path', curriculumDocPath)
       .eq('user_id', user.id)
+      .eq('type', 'curriculum_doc')
       .single();
 
-    if (uploadRecord?.parsed_content) {
-      curriculumText = (uploadRecord.parsed_content as { text?: string }).text ?? undefined;
+    if (uploadError || !uploadRecord) {
+      return new Response(JSON.stringify({ error: 'The selected curriculum document could not be found.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const parsedContent = uploadRecord.parsed_content as {
+      text?: string;
+      error?: string;
+    } | null;
+
+    if (parsedContent?.error) {
+      return new Response(JSON.stringify({ error: parsedContent.error }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (parsedContent === null) {
+      return new Response(
+        JSON.stringify({ error: 'The curriculum document is still being processed. Please try again shortly.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    curriculumText = parsedContent?.text?.trim() || undefined;
+
+    if (!curriculumText) {
+      return new Response(
+        JSON.stringify({
+          error: 'The curriculum document could not be read. Please re-upload it and try again.',
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
     }
   }
 

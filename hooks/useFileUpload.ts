@@ -86,11 +86,27 @@ export function useFileUpload({
       const newUploadId = (insertData as { id: string }).id;
 
       // Trigger parse-document
-      await fetch('/api/parse-document', {
+      const parseResponse = await fetch('/api/parse-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storagePath: path, uploadId: newUploadId }),
       });
+      if (!parseResponse.ok) {
+        let message = 'The document could not be processed.';
+        try {
+          const data = (await parseResponse.json()) as { error?: string };
+          if (data.error) message = data.error;
+        } catch {
+          // Keep the generic processing error when the response is not JSON.
+        }
+        throw new Error(message);
+      }
+      const parsedData = (await parseResponse.json()) as { text?: string };
+      if (!parsedData.text?.trim()) {
+        throw new Error(
+          'No readable text was found in this document. Please upload a clearer curriculum file.',
+        );
+      }
 
       setFile(incoming);
       setStoragePath(path);

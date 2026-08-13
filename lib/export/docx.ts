@@ -547,13 +547,13 @@ function buildPlanningTable(content: LessonSection): Table {
     labelValueRow('Essential Question', textOrBlank(content.essentialQuestion), TABLE3_WIDTHS),
     labelValueRow('Prior Knowledge', bulletParagraphs(content.priorKnowledge), TABLE3_WIDTHS),
     labelValueRow(
-      'Performance Expectations',
+      'Curriculum Alignment',
       bulletParagraphs(content.performanceExpectations),
       TABLE3_WIDTHS,
     ),
     labelValueRow('Possible Misconceptions', bulletParagraphs(content.misconceptions), TABLE3_WIDTHS),
     labelValueRow(
-      'Science & Engineering Practices',
+      'Learning & Inquiry Practices',
       bulletParagraphs(content.sciencePractices),
       TABLE3_WIDTHS,
     ),

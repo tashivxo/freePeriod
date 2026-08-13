@@ -110,6 +110,14 @@ describe('LessonView', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Saved');
   });
 
+  it('shows the curriculum accuracy notice on generated lessons', () => {
+    render(<LessonView lesson={lesson} />);
+
+    expect(screen.getByRole('note', { name: /curriculum accuracy notice/i })).toHaveTextContent(
+      /verify the plan against your official requirements/i,
+    );
+  });
+
   it('shows inline export error when download fails', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -219,7 +227,9 @@ describe('LessonView', () => {
 
     await waitFor(() => {
       expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
-      expect(screen.getByRole('alert')).toHaveTextContent('Export service unavailable');
+      expect(screen.getAllByRole('alert').some((alert) =>
+        alert.textContent?.includes('Export service unavailable'),
+      )).toBe(true);
     });
   });
 });

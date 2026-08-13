@@ -44,9 +44,9 @@ export const LESSON_SECTIONS: readonly LessonSectionDef[] = [
   },
   {
     key: 'performanceExpectations',
-    label: 'Performance Expectations',
-    progressLabel: 'Performance expectations',
-    exportHeading: 'Performance Expectations',
+    label: 'Curriculum Alignment',
+    progressLabel: 'Curriculum alignment',
+    exportHeading: 'Curriculum Alignment',
     showInView: true,
   },
   {
@@ -58,9 +58,9 @@ export const LESSON_SECTIONS: readonly LessonSectionDef[] = [
   },
   {
     key: 'sciencePractices',
-    label: 'Science & Engineering Practices',
-    progressLabel: 'Science practices',
-    exportHeading: 'Science & Engineering Practices',
+    label: 'Learning & Inquiry Practices',
+    progressLabel: 'Learning and inquiry practices',
+    exportHeading: 'Learning & Inquiry Practices',
     showInView: true,
   },
   {

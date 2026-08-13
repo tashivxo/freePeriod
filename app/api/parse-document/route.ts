@@ -102,7 +102,34 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Unsupported file type: ${ext}` }, { status: 400 });
     }
   } catch {
-    return NextResponse.json({ error: 'Failed to parse document' }, { status: 500 });
+    const errorMessage = 'Failed to parse document';
+    if (uploadId) {
+      await supabase
+        .from('uploads')
+        .update({
+          parsed_content: { error: errorMessage } as unknown as Record<string, unknown>,
+        })
+        .eq('id', uploadId)
+        .eq('user_id', user.id);
+    }
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+
+  if (!parsed.text.trim()) {
+    const errorMessage = 'No readable text was found in this document. Please upload a clearer curriculum file.';
+    if (uploadId) {
+      await supabase
+        .from('uploads')
+        .update({
+          parsed_content: {
+            ...parsed,
+            error: errorMessage,
+          } as unknown as Record<string, unknown>,
+        })
+        .eq('id', uploadId)
+        .eq('user_id', user.id);
+    }
+    return NextResponse.json({ error: errorMessage }, { status: 422 });
   }
 
   if (uploadId) {
