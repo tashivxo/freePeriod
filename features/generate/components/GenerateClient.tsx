@@ -76,7 +76,7 @@ export function GenerateClient({
       });
 
       if (!response.ok) {
-        if (response.status === 402) {
+        if (response.status === 402 && plan === 'free') {
           setShowUpgrade(true);
           setPhase('idle');
           setEvents([]);
@@ -136,7 +136,7 @@ export function GenerateClient({
       }
       surfaceError('Connection lost. Please try again.');
     }
-  }, [generationLocale]);
+  }, [generationLocale, plan]);
 
   const handleRetry = useCallback(() => {
     const data = lastFormDataRef.current;
@@ -171,7 +171,9 @@ export function GenerateClient({
           onBackToForm={returnToForm}
         />
       )}
-      <UpgradePrompt open={showUpgrade} onDismiss={() => setShowUpgrade(false)} />
+      {plan === 'free' && (
+        <UpgradePrompt open={showUpgrade} onDismiss={() => setShowUpgrade(false)} />
+      )}
     </>
   );
 }

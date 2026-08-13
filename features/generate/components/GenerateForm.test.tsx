@@ -254,6 +254,17 @@ describe('GenerateForm', () => {
     );
   });
 
+  it('allows Quality for pro+ without an upgrade prompt', async () => {
+    const { user } = render(<GenerateForm userPlan="pro_plus" onSubmit={onSubmit} />);
+
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    const qualityOption = screen.getByRole('option', { name: /quality/i });
+    expect(qualityOption).not.toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(qualityOption);
+    expect(screen.queryByRole('dialog', { name: /upgrade to pro/i })).not.toBeInTheDocument();
+  });
+
   it('calls onSubmit with form data when Generate is clicked', async () => {
     const { user } = render(
       <GenerateForm onSubmit={onSubmit} defaults={defaults} />,

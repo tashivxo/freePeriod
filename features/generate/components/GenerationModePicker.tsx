@@ -67,7 +67,7 @@ export function GenerationModePicker({
   };
 
   const handleDisabledSelect = (item: DropdownItem) => {
-    if (item.value === 'quality') {
+    if (!qualityUnlocked && item.value === 'quality') {
       setShowUpgrade(true);
     }
   };
@@ -80,7 +80,7 @@ export function GenerationModePicker({
         items={toDropdownItems(qualityUnlocked)}
         selectedValue={value}
         onSelect={handleSelect}
-        onDisabledSelect={handleDisabledSelect}
+        onDisabledSelect={qualityUnlocked ? undefined : handleDisabledSelect}
         triggerAriaLabel={`Generation mode: ${selected.label}. ${selected.description}`}
       />
       <p className="mt-1.5 text-sm font-body text-text-secondary">{selected.description}</p>
@@ -94,12 +94,14 @@ export function GenerationModePicker({
         </p>
       )}
 
-      <UpgradePrompt
-        open={showUpgrade}
-        onDismiss={() => setShowUpgrade(false)}
-        message="Quality mode is available on Pro and Pro+. Upgrade to unlock more thorough lesson plans."
-        upgradeHref="/pricing"
-      />
+      {!qualityUnlocked && (
+        <UpgradePrompt
+          open={showUpgrade}
+          onDismiss={() => setShowUpgrade(false)}
+          message="Quality mode is available on Pro and Pro+. Upgrade to unlock more thorough lesson plans."
+          upgradeHref="/pricing"
+        />
+      )}
     </div>
   );
 }

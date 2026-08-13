@@ -222,7 +222,7 @@ describe('GenerateClient', () => {
       json: async () => ({ error: 'Quota exceeded' }),
     });
 
-    const { user } = render(<GenerateClient defaults={defaults} />);
+    const { user } = render(<GenerateClient defaults={defaults} plan="free" />);
 
     await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
 
@@ -235,6 +235,24 @@ describe('GenerateClient', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /upgrade to pro/i })).toBeInTheDocument();
     });
+  });
+
+  it('does not show UpgradePrompt on 402 for Pro+', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 402,
+      json: async () => ({ error: 'Quota exceeded' }),
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} plan="pro_plus" />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Quota exceeded')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('heading', { name: /upgrade to pro/i })).not.toBeInTheDocument();
   });
 
   it('surfaces stream errors with Try again recovery', async () => {

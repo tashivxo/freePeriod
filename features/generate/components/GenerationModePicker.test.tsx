@@ -99,6 +99,8 @@ describe('GenerationModePicker', () => {
 
     await user.click(qualityOption);
     expect(onChange).toHaveBeenCalledWith('quality');
+    expect(screen.queryByRole('dialog', { name: /upgrade to pro/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/upgrade to pro/i)).not.toBeInTheDocument();
   });
 
   it('exports mode options with labels and descriptions', () => {
