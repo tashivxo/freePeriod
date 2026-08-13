@@ -93,11 +93,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (parsedContent === null) {
+      return new Response(
+        JSON.stringify({ error: 'The curriculum document is still being processed. Please try again shortly.' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
     curriculumText = parsedContent?.text?.trim() || undefined;
 
     if (!curriculumText) {
       return new Response(
-        JSON.stringify({ error: 'The curriculum document is still being processed. Please try again shortly.' }),
+        JSON.stringify({
+          error: 'The curriculum document could not be read. Please re-upload it and try again.',
+        }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },

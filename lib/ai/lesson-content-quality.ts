@@ -158,23 +158,23 @@ function synthesizeSciencePractices(content: LessonSection): string[] {
   const blob = JSON.stringify(content).toLowerCase();
   const practices: string[] = [];
 
-  if (/model|diagram/.test(blob)) {
-    practices.push('Developing and using representations to explain key concepts and relationships in this lesson.');
+  if (/model|diagram|represent/.test(blob)) {
+    practices.push('Using diagrams or other representations to make sense of the lesson ideas.');
   }
   if (/investigat|experiment|observe|station/.test(blob)) {
-    practices.push('Planning and carrying out structured observations or inquiry tasks to investigate the lesson focus.');
+    practices.push('Gathering observations during lesson activities and using them to check understanding.');
   }
-  if (/analyz|interpre|data|classif/.test(blob)) {
-    practices.push('Analyzing information collected during activities to draw evidence-based conclusions.');
+  if (/analyz|interpre|data|classif|compar/.test(blob)) {
+    practices.push('Comparing information from lesson tasks to identify patterns and support conclusions.');
   }
-  if (/explain|justify|reason|argument/.test(blob)) {
-    practices.push('Constructing explanations or solutions using evidence gathered during the lesson.');
+  if (/discuss|explain|justify|reason|write/.test(blob)) {
+    practices.push('Explaining ideas clearly in discussion and written responses using lesson evidence.');
   }
 
   if (practices.length < MIN_PLANNING_ARRAY_ITEMS) {
     practices.push(
-      'Asking focused questions and identifying problems based on observations and lesson content.',
-      'Using evidence to explain reasoning during class discussion and written responses.',
+      'Using evidence from lesson activities to explain the target concept and communicate reasoning clearly.',
+      'Applying lesson ideas during guided practice, independent work, and class discussion.',
     );
   }
 
@@ -236,8 +236,24 @@ export type FinalizeLessonContentOptions = {
   curriculumText?: string;
 };
 
-const STANDARDS_IDENTIFIER_PATTERN =
-  /\b(?:[A-Z]{2,8}-\d{1,4}(?=\s*:)|\d{1,3}-[A-Z]{1,8}\d?-[A-Z0-9]+(?:-[A-Z0-9]+)*|[A-Z]{1,8}(?:[.-][A-Z0-9]+){2,})\b/gi;
+/** Colon, em dash, en dash, or hyphen used after a PE/LO/SO/AO prefix. */
+const IDENTIFIER_PREFIX_SEPARATORS = '[:—–-]';
+
+const STANDARDS_IDENTIFIER_PATTERN = new RegExp(
+  String.raw`\b(?:` +
+    // Real prefix tokens only (not COVID-19:, Year-12:, etc.), including em dash prefixes.
+    String.raw`(?:PE|LO|SO|AO)-\d{1,4}(?=\s*` +
+    IDENTIFIER_PREFIX_SEPARATORS +
+    ')' +
+    // NGSS and grade-band codes: MS-PS1-4, 5-PS1-1, 3-5-ETS1-1, K-2-ETS1-1
+    String.raw`|(?:K|\d{1,2}|MS|HS)(?:-(?:K|\d{1,2}))?-[A-Z]{2,8}\d{0,2}-\d{1,2}[A-Z]?` +
+    // Common Core math-style dotted codes: 5.NBT.3, 6.EE.A.1, K.CC.1
+    String.raw`|(?:K|\d{1,2}|HS)(?:\.[A-Z]{1,6})+(?:\.[A-Z0-9]{1,4})+` +
+    // Letter-first dotted codes (RL.5.3). Requires numeric segments so U.S.A. / Q.1.a / Fig.1.2 do not match.
+    String.raw`|(?!(?:FIG|EQ|VOL|CH|NO|VS|SEC|REF|TAB|EX)\.)[A-Z]{1,8}\.\d+[A-Z]?(?:\.\d+[A-Z]?)+` +
+    String.raw`)\b`,
+  'gi',
+);
 
 function normalizeIdentifier(identifier: string): string {
   return identifier.replace(/[^A-Za-z0-9.-]/g, '').toUpperCase();
@@ -272,7 +288,7 @@ export function sanitizeCurriculumIdentifiers(
         if (!allowed.has(normalizeIdentifier(identifier))) {
           const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           sanitized = sanitized
-            .replace(new RegExp(`^\\s*${escaped}\\s*[:—–-]\\s*`, 'i'), '')
+            .replace(new RegExp(`^\\s*${escaped}\\s*${IDENTIFIER_PREFIX_SEPARATORS}\\s*`, 'i'), '')
             .replace(new RegExp(`\\b${escaped}\\b`, 'gi'), '');
         }
       }
@@ -289,7 +305,7 @@ export function sanitizeLessonCurriculumIdentifiers(
   const sanitizeString = (value: string): string =>
     sanitizeCurriculumIdentifiers([value], curriculumText)?.[0] ?? '';
   const sanitizeList = (value: string[] | undefined): string[] | undefined =>
-    value?.map(sanitizeString);
+    value ? sanitizeCurriculumIdentifiers(value, curriculumText) : value;
 
   return {
     ...content,
