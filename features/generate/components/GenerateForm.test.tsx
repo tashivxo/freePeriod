@@ -76,6 +76,30 @@ describe('GenerateForm', () => {
     );
   });
 
+  it('shows UAE MOE helper text when UAE MOE is selected', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum: 'UAE MOE' }}
+      />,
+    );
+
+    expect(screen.getByText(/guideline pack/i)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/abu dhabi public schools also/i)).toBeInTheDocument();
+    expect(screen.getByText(/under ADEK regulation/i)).toBeInTheDocument();
+  });
+
+  it('shows ADEK helper text when ADEK (Abu Dhabi) is selected', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+
+    await user.click(screen.getByLabelText(/^curriculum$/i));
+    await user.click(screen.getByRole('option', { name: 'ADEK (Abu Dhabi)' }));
+
+    expect(screen.getByText(/guideline pack for ADEK/i)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+  });
+
   // ---- Pre-filling defaults ----
 
   it('pre-fills subject from defaults', () => {

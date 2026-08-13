@@ -16,6 +16,7 @@ export const CURRICULA = [
   'CBSE (India)',
   'CAPS (South Africa)',
   'UAE MOE',
+  'ADEK (Abu Dhabi)',
   'Edexcel',
   'AQA',
   'OCR',

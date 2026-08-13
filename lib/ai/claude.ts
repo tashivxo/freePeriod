@@ -61,7 +61,11 @@ ${ACTIVITY_PHASE_RULES}
 General rules:
 - Do not use markdown formatting of any kind. No asterisks, no bold markers (*word* or **word**), no hyphens used as bullet chars, no heading symbols (#). Plain text only inside JSON string values.`;
 
-export function buildSystemPrompt(curriculumText?: string, locale?: string): string {
+export function buildSystemPrompt(
+  curriculumText?: string,
+  locale?: string,
+  guidelinePackText?: string,
+): string {
   let prompt = `You are an expert lesson planner with deep knowledge of curriculum standards and pedagogical best practices. Your task is to generate a comprehensive, structured lesson plan that is suitable for a formal observation and useful for a real teacher to deliver.
 
 You MUST respond with valid JSON only — no markdown code fences, no explanation outside the JSON object.
@@ -115,6 +119,17 @@ Quality expectations:
 
   if (curriculumText) {
     prompt += `\n\n--- CURRICULUM DOCUMENT ---\nThe teacher uploaded the following curriculum document. Treat it as the source of truth for curriculum-specific terminology, outcomes, and identifiers.\n- Use only curriculum identifiers that appear verbatim in this document.\n- Do not create, infer, or substitute identifiers from another curriculum.\n- If the document does not contain an identifier relevant to the lesson, write plain-language alignment without a code.\n- Do not present general model knowledge as verified curriculum alignment.\n\n${curriculumText}\n--- END CURRICULUM DOCUMENT ---`;
+  }
+
+  if (guidelinePackText) {
+    prompt += `\n\n--- CURRICULUM GUIDELINE PACK ---
+This is a FreePeriod-authored guideline pack for the selected curriculum. It is not an official ministry document and is not verified.
+Do not invent official standards codes.
+Use it for terminology, assessment style, and lesson-structure expectations only.
+If a teacher-uploaded curriculum document is also present, that uploaded document remains the only source of identifiers.
+
+${guidelinePackText}
+--- END CURRICULUM GUIDELINE PACK ---`;
   }
 
   return prompt;

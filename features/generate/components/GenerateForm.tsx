@@ -271,6 +271,20 @@ export function GenerateForm({
               />
             </div>
           )}
+          {curriculumField.value === 'UAE MOE' && (
+            <p className="mt-2 text-sm text-text-secondary">
+              Guideline pack for UAE Ministry of Education planning language. Not official or
+              verified. Common in Dubai and the Northern Emirates; Abu Dhabi public schools also
+              follow MOE curriculum under ADEK regulation.
+            </p>
+          )}
+          {curriculumField.value === 'ADEK (Abu Dhabi)' && (
+            <p className="mt-2 text-sm text-text-secondary">
+              Guideline pack for ADEK (Abu Dhabi regulator) planning language. Not official or
+              verified. Select this for Abu Dhabi school-quality expectations, not as a replacement
+              for MOE subject standards.
+            </p>
+          )}
         </div>
 
         {/* Duration */}
