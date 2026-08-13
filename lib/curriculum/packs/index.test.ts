@@ -27,9 +27,33 @@ describe('curriculum packs', () => {
     expect(adekPack?.curriculumValues).toContain('ADEK (Abu Dhabi)');
   });
 
+  it('returns packs for Cambridge IGCSE, A-Level, CAPS, and Common Core', () => {
+    expect(getCurriculumPack('Cambridge IGCSE')?.id).toBe('cambridge-igcse');
+    expect(getCurriculumPack('A-Level')?.id).toBe('cambridge-a-level');
+    expect(getCurriculumPack('CAPS (South Africa)')?.id).toBe('caps');
+    expect(getCurriculumPack('Common Core')?.id).toBe('common-core');
+  });
+
+  it('returns packs for GCSE, AQA, Edexcel, and OCR', () => {
+    expect(getCurriculumPack('GCSE')?.id).toBe('gcse');
+    expect(getCurriculumPack('AQA')?.id).toBe('aqa');
+    expect(getCurriculumPack('Edexcel')?.id).toBe('edexcel');
+    expect(getCurriculumPack('OCR')?.id).toBe('ocr');
+  });
+
   it('returns null for unsupported curricula', () => {
     expect(getCurriculumPack('IB')).toBeNull();
+    expect(getCurriculumPack('AP')).toBeNull();
     expect(getCurriculumPack('')).toBeNull();
+  });
+
+  it('keeps Cambridge A-Level separate from UK exam-board packs', () => {
+    expect(getCurriculumPack('A-Level')?.id).toBe('cambridge-a-level');
+    expect(getCurriculumPack('AQA')?.id).toBe('aqa');
+    expect(getCurriculumPack('Edexcel')?.id).toBe('edexcel');
+    expect(getCurriculumPack('OCR')?.id).toBe('ocr');
+    expect(getCurriculumPack('A-Level')?.curriculumValues).toEqual(['A-Level']);
+    expect(getCurriculumPack('AQA')?.curriculumValues).toEqual(['AQA']);
   });
 
   it('formats pack prompt text with subject notes when available', () => {
@@ -39,7 +63,7 @@ describe('curriculum packs', () => {
     const formatted = formatCurriculumPackForPrompt(pack!, 'Mathematics', 'Grade 9');
 
     expect(formatted).toContain(`Guideline pack: ${pack!.displayName}`);
-    expect(formatted).toContain('not an official ministry document');
+    expect(formatted).toContain('not an official curriculum document');
     expect(formatted).toContain('Do not invent official outcome or standards codes');
     expect(formatted).toContain('Subject notes (Mathematics)');
   });
@@ -89,5 +113,57 @@ describe('curriculum packs', () => {
     expect(biology).toContain('scientific reasoning');
     expect(computerScience).not.toContain('Subject notes (Computer Science)');
     expect(computerScience).not.toContain('scientific reasoning');
+  });
+
+  it('does not inject sourceNotes URLs for Cambridge, CAPS, or Common Core packs', () => {
+    for (const name of [
+      'Cambridge IGCSE',
+      'A-Level',
+      'CAPS (South Africa)',
+      'Common Core',
+      'GCSE',
+      'AQA',
+      'Edexcel',
+      'OCR',
+    ]) {
+      const pack = getCurriculumPack(name);
+      expect(pack).not.toBeNull();
+      const formatted = formatCurriculumPackForPrompt(pack!, 'English', 'Grade 10');
+      expect(formatted).not.toContain('Source notes');
+      expect(formatted).not.toMatch(/https?:\/\//);
+    }
+  });
+
+  it('gives Common Core subject notes only for English and Mathematics', () => {
+    const pack = getCurriculumPack('Common Core');
+    expect(pack).not.toBeNull();
+
+    const english = formatCurriculumPackForPrompt(pack!, 'English', 'Grade 5');
+    const math = formatCurriculumPackForPrompt(pack!, 'Mathematics', 'Grade 5');
+    const science = formatCurriculumPackForPrompt(pack!, 'Science', 'Grade 5');
+
+    expect(english).toContain('Subject notes (English)');
+    expect(math).toContain('Subject notes (Mathematics)');
+    expect(science).not.toContain('Subject notes (Science)');
+    expect(science).toContain('do not emit CCSS or NGSS identifiers');
+    expect(english).not.toMatch(/\bRL\.\d/);
+    expect(math).not.toMatch(/\d+\.[A-Z]{2,}\.\d/);
+    expect(science).not.toContain('MS-PS');
+  });
+
+  it('does not list Cambridge assessment-objective numbers or paper codes', () => {
+    const igcse = formatCurriculumPackForPrompt(getCurriculumPack('Cambridge IGCSE')!, 'Science', 'Grade 10');
+    const aLevel = formatCurriculumPackForPrompt(getCurriculumPack('A-Level')!, 'Economics', 'Grade 12');
+
+    expect(igcse).not.toMatch(/\bAO[1-9]\b/);
+    expect(aLevel).not.toMatch(/\bAO[1-9]\b/);
+    expect(igcse).toContain('plain language');
+  });
+
+  it('does not list numbered assessment-objective codes in UK exam-board packs', () => {
+    for (const name of ['GCSE', 'AQA', 'Edexcel', 'OCR']) {
+      const formatted = formatCurriculumPackForPrompt(getCurriculumPack(name)!, 'Science', 'Grade 10');
+      expect(formatted).not.toMatch(/\bAO[1-9]\b/);
+    }
   });
 });

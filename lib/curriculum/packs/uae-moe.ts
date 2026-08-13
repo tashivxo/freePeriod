@@ -14,10 +14,12 @@ export const uaeMoePack: CurriculumPack = {
     'Use the current school-issued MOE subject standards and daily-plan template as the source of official codes and required fields.',
     'The MOE public education-platform announcement identifies Arabic, Mathematics, Science, Islamic Studies, Social Studies, and English as core subjects and describes lesson-level feedback: https://www.moe.gov.ae/En/MediaCenter/News/Pages/AlefPlatforminallUAEPublic.aspx.',
   ],
-  applicableEmirates: [
+  applicability: [
     'Dubai and the Northern Emirates commonly use UAE MOE curriculum documents in school planning.',
     'Abu Dhabi public schools also follow the national MOE curriculum; ADEK regulates schools there and is a separate guideline pack.',
   ],
+  uiHelperText:
+    'Guideline pack for UAE Ministry of Education planning language. Not official or verified. Common in Dubai and the Northern Emirates; Abu Dhabi public schools also follow MOE curriculum under ADEK regulation.',
   terminology: [
     'Use content standards, performance standards, and learning outcomes as planning anchors when the school provides the relevant current standards.',
     'Use assessment for learning to describe evidence gathered during instruction and the teaching decision that follows it.',

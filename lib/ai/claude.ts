@@ -123,7 +123,7 @@ Quality expectations:
 
   if (guidelinePackText) {
     prompt += `\n\n--- CURRICULUM GUIDELINE PACK ---
-This is a FreePeriod-authored guideline pack for the selected curriculum. It is not an official ministry document and is not verified.
+This is a FreePeriod-authored guideline pack for the selected curriculum. It is not an official curriculum document and is not verified.
 Do not invent official standards codes.
 Use it for terminology, assessment style, and lesson-structure expectations only.
 If a teacher-uploaded curriculum document is also present, that uploaded document remains the only source of identifiers.

@@ -138,9 +138,15 @@ describe('lesson-content-quality', () => {
     expect(
       sanitizeCurriculumIdentifiers(['Compare CO2 and SO2 emissions in K-12 settings during COVID-19.']),
     ).toEqual(['Compare CO2 and SO2 emissions in K-12 settings during COVID-19.']);
+  });
+
+  it('removes bare Cambridge-style AO codes when no document was uploaded', () => {
     expect(
       sanitizeCurriculumIdentifiers(['Compare AO1 evidence with classroom observations.']),
-    ).toEqual(['Compare AO1 evidence with classroom observations.']);
+    ).toEqual(['Compare evidence with classroom observations.']);
+    expect(
+      sanitizeCurriculumIdentifiers(['AO-2: Analyse the source.']),
+    ).toEqual(['Analyse the source.']);
   });
 
   it('does not treat caption, acronym, or question labels as standards codes', () => {
@@ -188,6 +194,6 @@ describe('lesson-content-quality', () => {
     expect(sanitized.objectives[0]).not.toContain('MS-PS1-4');
     expect(sanitized.keyConcepts[0]).not.toContain('RL.5.3');
     expect(sanitized.hook).not.toContain('MS-PS1-4');
-    expect(sanitized.differentiation.extension[0]).toContain('AO1');
+    expect(sanitized.differentiation.extension[0]).not.toContain('AO1');
   });
 });

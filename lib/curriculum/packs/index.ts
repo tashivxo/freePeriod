@@ -1,8 +1,27 @@
 import { ADEK_PACK } from './adek';
+import { AQA_PACK } from './aqa';
+import { CAMBRIDGE_A_LEVEL_PACK } from './cambridge-a-level';
+import { CAMBRIDGE_IGCSE_PACK } from './cambridge-igcse';
+import { CAPS_PACK } from './caps';
+import { COMMON_CORE_PACK } from './common-core';
+import { EDEXCEL_PACK } from './edexcel';
+import { GCSE_PACK } from './gcse';
+import { OCR_PACK } from './ocr';
 import type { CurriculumPack } from './types';
 import { UAE_MOE_PACK } from './uae-moe';
 
-const PACKS: CurriculumPack[] = [UAE_MOE_PACK, ADEK_PACK];
+const PACKS: CurriculumPack[] = [
+  UAE_MOE_PACK,
+  ADEK_PACK,
+  CAMBRIDGE_IGCSE_PACK,
+  CAMBRIDGE_A_LEVEL_PACK,
+  CAPS_PACK,
+  COMMON_CORE_PACK,
+  GCSE_PACK,
+  AQA_PACK,
+  EDEXCEL_PACK,
+  OCR_PACK,
+];
 
 export type { CurriculumPack } from './types';
 
@@ -56,14 +75,14 @@ export function formatCurriculumPackForPrompt(
 ): string {
   const lines: string[] = [
     `Guideline pack: ${pack.displayName} (${pack.authority})`,
-    `Coverage: ${pack.coverage} only — not an official ministry document.`,
+    `Coverage: ${pack.coverage} only — not an official curriculum document.`,
     `Last reviewed: ${pack.lastReviewed}`,
     `Grade context: ${grade.trim() || 'unspecified'}`,
     `Subject context: ${subject.trim() || 'unspecified'}`,
     '',
-    'Do not invent official outcome or standards codes. Do not cite these notes as official ministry documents.',
+    'Do not invent official outcome or standards codes. Do not cite these notes as official curriculum documents.',
     '',
-    formatBulletSection('Applicable emirates', pack.applicableEmirates),
+    formatBulletSection('Applicability', pack.applicability),
     '',
     formatBulletSection('Terminology', pack.terminology),
     '',

@@ -14,10 +14,12 @@ export const adekPack: CurriculumPack = {
     'ADEK publishes education policies separately from the private-school overview; schools should check the current policy pages and their approved curriculum before treating a planning detail as a requirement: https://www.adek.gov.ae/en/Education-System/Education-Policies.',
     'The MOE public About Ministry page is a useful cross-system reference for assessment for learning, national learning standards, creativity, innovation, and 21st-century skills, but ADEK schools must follow their approved curriculum and current ADEK requirements: https://www.moe.gov.ae/en/about-us/pages/about-ministry.aspx.',
   ],
-  applicableEmirates: [
+  applicability: [
     'Abu Dhabi. ADEK regulates schools there; public schools still follow the national MOE curriculum.',
     'Use this pack for ADEK school-quality and inspection language, not as a replacement for MOE subject standards.',
   ],
+  uiHelperText:
+    'Guideline pack for ADEK (Abu Dhabi regulator) planning language. Not official or verified. Select this for Abu Dhabi school-quality expectations, not as a replacement for MOE subject standards.',
   terminology: [
     'Name the school’s approved curriculum or programme alongside ADEK when writing a plan; ADEK regulates Abu Dhabi education but does not make every private school use one identical subject sequence.',
     'Use learning objectives, success criteria, progress, assessment for learning, inclusion, and next steps as common planning language.',
