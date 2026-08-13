@@ -242,9 +242,11 @@ const IDENTIFIER_PREFIX_SEPARATORS = '[:—–-]';
 const STANDARDS_IDENTIFIER_PATTERN = new RegExp(
   String.raw`\b(?:` +
     // Real prefix tokens only (not COVID-19:, Year-12:, etc.), including em dash prefixes.
-    String.raw`(?:PE|LO|SO|AO)-\d{1,4}(?=\s*` +
+    String.raw`(?:PE|LO|SO)-\d{1,4}(?=\s*` +
     IDENTIFIER_PREFIX_SEPARATORS +
     ')' +
+    // Cambridge-style assessment-objective codes: AO1, AO-1, AO2a
+    String.raw`|AO-?\d{1,2}[A-Z]?` +
     // NGSS and grade-band codes: MS-PS1-4, 5-PS1-1, 3-5-ETS1-1, K-2-ETS1-1
     String.raw`|(?:K|\d{1,2}|MS|HS)(?:-(?:K|\d{1,2}))?-[A-Z]{2,8}\d{0,2}-\d{1,2}[A-Z]?` +
     // Common Core math-style dotted codes: 5.NBT.3, 6.EE.A.1, K.CC.1

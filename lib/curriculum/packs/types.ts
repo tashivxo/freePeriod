@@ -1,12 +1,13 @@
 export type CurriculumPack = {
-  id: string; // 'uae-moe' | 'adek'
-  curriculumValues: string[]; // dropdown values this pack matches
-  authority: 'UAE_MOE' | 'ADEK';
+  id: string;
+  curriculumValues: string[];
+  authority: 'UAE_MOE' | 'ADEK' | 'CAMBRIDGE' | 'CAPS' | 'COMMON_CORE';
   displayName: string;
   coverage: 'guideline';
-  lastReviewed: string; // ISO date YYYY-MM-DD
+  lastReviewed: string;
   sourceNotes: string[];
-  applicableEmirates: string[];
+  applicability: string[];
+  uiHelperText: string;
   terminology: string[];
   assessmentStyle: string[];
   lessonExpectations: string[];

@@ -100,6 +100,34 @@ describe('GenerateForm', () => {
     expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
   });
 
+  it.each([
+    ['Cambridge IGCSE', /cambridge international igcse/i],
+    ['A-Level', /cambridge international as and a level/i],
+    ['CAPS (South Africa)', /caps planning language/i],
+    ['Common Core', /common core ela and math/i],
+  ] as const)('shows guideline helper text when %s is selected', (curriculum, helper) => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum }}
+      />,
+    );
+
+    expect(screen.getByText(helper)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+  });
+
+  it('does not show guideline helper text for IB', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum: 'IB' }}
+      />,
+    );
+
+    expect(screen.queryByText(/guideline pack/i)).not.toBeInTheDocument();
+  });
+
   // ---- Pre-filling defaults ----
 
   it('pre-fills subject from defaults', () => {

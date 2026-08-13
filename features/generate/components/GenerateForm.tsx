@@ -13,6 +13,7 @@ import { useLocale, useT } from '@/providers/locale';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
+import { getCurriculumPack } from '@/lib/curriculum/packs';
 import type { Plan } from '@/types';
 
 const GENERATION_MODE_STORAGE_KEY = 'fp-generation-mode';
@@ -83,6 +84,7 @@ export function GenerateForm({
   const t = useT();
   const subjectField = usePresetField(defaults?.subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(defaults?.curriculum, CURRICULA as readonly string[]);
+  const packHelper = getCurriculumPack(curriculumField.value)?.uiHelperText;
   const [grade, setGrade] = useState(defaults?.grade ?? '');
   const [durationSelect, setDurationSelect] = useState('60');
   const [customDuration, setCustomDuration] = useState('');
@@ -271,19 +273,8 @@ export function GenerateForm({
               />
             </div>
           )}
-          {curriculumField.value === 'UAE MOE' && (
-            <p className="mt-2 text-sm text-text-secondary">
-              Guideline pack for UAE Ministry of Education planning language. Not official or
-              verified. Common in Dubai and the Northern Emirates; Abu Dhabi public schools also
-              follow MOE curriculum under ADEK regulation.
-            </p>
-          )}
-          {curriculumField.value === 'ADEK (Abu Dhabi)' && (
-            <p className="mt-2 text-sm text-text-secondary">
-              Guideline pack for ADEK (Abu Dhabi regulator) planning language. Not official or
-              verified. Select this for Abu Dhabi school-quality expectations, not as a replacement
-              for MOE subject standards.
-            </p>
+          {packHelper && (
+            <p className="mt-2 text-sm text-text-secondary">{packHelper}</p>
           )}
         </div>
 
