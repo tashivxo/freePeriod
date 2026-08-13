@@ -3,6 +3,8 @@ import {
   getLessonContentValidationFailures,
   isRichExplanationList,
   mergePlanningFieldRetry,
+  sanitizeCurriculumIdentifiers,
+  sanitizeLessonCurriculumIdentifiers,
 } from './lesson-content-quality';
 import type { LessonSection } from '@/types';
 
@@ -62,8 +64,56 @@ describe('lesson-content-quality', () => {
 
     expect(enrichedFields.length).toBeGreaterThan(0);
     expect(content.priorKnowledge?.every((item) => item.length >= 40)).toBe(true);
-    expect(content.performanceExpectations?.[0]).toContain('PE-1');
+    expect(content.performanceExpectations?.[0]).not.toMatch(/\bPE-\d+\b/);
     expect(isRichExplanationList(content.keyConcepts)).toBe(true);
     expect(isRichExplanationList(content.vocabulary)).toBe(true);
+  });
+
+  it('keeps only identifiers found in the uploaded curriculum document', () => {
+    const sanitized = sanitizeCurriculumIdentifiers(
+      [
+        'RL.5.3: Compare characters using details from the text.',
+        'MS-PS1-4: Explain particle motion using a model.',
+      ],
+      'The relevant standard is RL.5.3 and its associated learning outcome.',
+    );
+
+    expect(sanitized).toEqual([
+      'RL.5.3: Compare characters using details from the text.',
+      'Explain particle motion using a model.',
+    ]);
+  });
+
+  it('removes code-shaped identifiers when no curriculum document was uploaded', () => {
+    expect(
+      sanitizeCurriculumIdentifiers(['PE-1: Students explain the target concept.']),
+    ).toEqual(['Students explain the target concept.']);
+  });
+
+  it('does not strip ordinary scientific terms or date ranges', () => {
+    expect(
+      sanitizeCurriculumIdentifiers(['Compare CO2 and SO2 emissions in K-12 settings during COVID-19.']),
+    ).toEqual(['Compare CO2 and SO2 emissions in K-12 settings during COVID-19.']);
+  });
+
+  it('sanitizes unsupported identifiers across the lesson content', () => {
+    const sanitized = sanitizeLessonCurriculumIdentifiers(
+      {
+        ...thinContent,
+        objectives: ['Students will apply MS-PS1-4 to explain the topic.'],
+        keyConcepts: ['RL.5.3 — a code that should not appear here'],
+        hook: 'Use MS-PS1-4 to begin the lesson.',
+        differentiation: {
+          support: ['Use a visual model.'],
+          extension: ['Compare AO1 evidence.'],
+        },
+      },
+      'The selected document contains general curriculum guidance only.',
+    );
+
+    expect(sanitized.objectives[0]).not.toContain('MS-PS1-4');
+    expect(sanitized.keyConcepts[0]).not.toContain('RL.5.3');
+    expect(sanitized.hook).not.toContain('MS-PS1-4');
+    expect(sanitized.differentiation.extension[0]).toContain('AO1');
   });
 });

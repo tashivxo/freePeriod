@@ -5,6 +5,7 @@ import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
+import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import { GenerationModePicker } from '@/features/generate/components/GenerationModePicker';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { LOCALE_LABELS } from '@/lib/i18n';
@@ -178,6 +179,9 @@ export function GenerateForm({
           {t('nav.settings')}
         </Link>
       </p>
+      <div className="mb-6">
+        <CurriculumAccuracyNotice curriculum={curriculumField.value} />
+      </div>
 
       <div className="space-y-5">
         {/* Subject */}

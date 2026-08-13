@@ -55,7 +55,9 @@ describe('GenerateForm', () => {
     jest.clearAllMocks();
     localStorage.clear();
     // Mock fetch used by uploadFile to call /api/parse-document
-    (global as { fetch: unknown }).fetch = jest.fn().mockResolvedValue({ ok: true });
+    (global as { fetch: unknown }).fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ text: 'Parsed curriculum text' }) });
   });
 
   // ---- Rendering ----
@@ -65,6 +67,13 @@ describe('GenerateForm', () => {
     expect(
       screen.getByRole('heading', { name: /generate a lesson/i }),
     ).toBeInTheDocument();
+  });
+
+  it('shows the curriculum accuracy notice before generation', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByRole('note', { name: /curriculum accuracy notice/i })).toHaveTextContent(
+      /verify the plan against your official requirements/i,
+    );
   });
 
   // ---- Pre-filling defaults ----

@@ -19,7 +19,8 @@ function buildLocaleInstructions(locale?: string): string {
 
   if (locale === 'ar') {
     instructions += `\n- Use formal Modern Standard Arabic (الفصحى) suitable for teacher professional documents.
-- Preserve curriculum codes and standards identifiers untranslated (e.g. MS-PS1-4, RL.5.3).`;
+- Preserve curriculum codes and standards identifiers untranslated when they are present in the uploaded curriculum document.
+- Do not invent, translate, or infer curriculum codes or standards identifiers.`;
   }
 
   return instructions;
@@ -40,9 +41,9 @@ Success criteria inside Learner Activity & Success Criteria must be written as "
 const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successCriteria, priorKnowledge, performanceExpectations, misconceptions, sciencePractices, keyConcepts, vocabulary, formativeAssessment, differentiation, realWorldConnections):
 - Write complete, teacher-ready content — not skeleton outlines, placeholders, or single-word labels.
 - priorKnowledge: 3-5 full sentences describing prerequisite concepts, skills, and experiences students should already have. Explain WHY each prerequisite matters for this lesson.
-- performanceExpectations: Full curriculum-aligned performance expectation statements. When the curriculum document provides a code (e.g. MS-PS1-4, 5-PS1-1), include it AND a plain-language explanation of what students will demonstrate. Each item should be 1-2 complete sentences.
+- performanceExpectations (legacy JSON key for curriculum alignment): Write 2-4 plain-language statements explaining how the lesson aligns to the supplied curriculum guidance. Include a standards identifier ONLY when it appears verbatim in the uploaded curriculum document. Never invent, infer, or guess a code. Without an uploaded document, do not include any standards identifier.
 - misconceptions: 2-4 common student misconceptions about this topic, each with a brief note on how the lesson will address it.
-- sciencePractices: 2-4 specific Science & Engineering Practices (e.g. "Developing and using models to represent particle motion") aligned to the lesson activities.
+- sciencePractices (legacy JSON key for learning and inquiry practices): Write 2-4 subject-appropriate practices aligned to the lesson activities. Do not assume a Science & Engineering Practices framework unless the selected curriculum or subject explicitly uses it.
 - keyConcepts: Each item must name the concept AND explain it in 1-2 sentences — not just a label like "Energy" or "Phases".
 - vocabulary: Each item must be "Term — student-friendly definition" (e.g. "Phase — a distinct form of matter such as solid, liquid, or gas").
 - objectives: Full measurable objective statements using Bloom's taxonomy verbs — complete sentences, not fragments.
@@ -72,9 +73,9 @@ The JSON object must have exactly these 18 keys:
   "objectives": ["Full measurable learning objective 1", "Full measurable learning objective 2", ...],
   "successCriteria": ["I can ...", "I can ...", ...],
   "priorKnowledge": ["Students should already understand ...", "Students should be able to ...", ...],
-  "performanceExpectations": ["CODE-123: Full performance expectation statement with explanation", ...],
+  "performanceExpectations": ["Plain-language curriculum alignment statement...", ...],
   "misconceptions": ["Students often think ... — addressed by ...", ...],
-  "sciencePractices": ["Developing and using models to ...", "Analyzing data to ...", ...],
+  "sciencePractices": ["Subject-appropriate learning or inquiry practice...", ...],
   "keyConcepts": ["Concept name — explanation of what students need to understand", ...],
   "vocabulary": ["Term — student-friendly definition", ...],
   "hook": "Activity phase string with all 5 labeled fields (see format below)",
@@ -98,12 +99,13 @@ FORMAT EXAMPLES (bad → good):
 - keyConcepts BAD: ["Matter", "Solid", "Gas"] → GOOD: ["States of matter — substances exist as solids, liquids, or gases depending on particle arrangement and energy", "Particle motion — particles vibrate, slide, or move freely depending on the state"]
 - vocabulary BAD: ["Solid", "Liquid"] → GOOD: ["Solid — matter with a fixed shape and volume because particles are tightly packed", "Liquid — matter with a fixed volume but no fixed shape because particles can slide past one another"]
 - priorKnowledge BAD: [] or ["Matter"] → GOOD: ["Students should already know that all materials are made of matter and can be observed in everyday objects.", "Students should be able to compare basic properties such as shape, volume, and whether a material can be poured or compressed."]
-- performanceExpectations BAD: [] or ["Matter"] → GOOD: ["5-PS1-1: Develop a model to describe that matter is made of particles too small to be seen.", "MS-PS1-4: Develop a model that predicts and describes changes in particle motion, temperature, and state when thermal energy is added or removed."]
+- performanceExpectations BAD: [] or ["Matter"] → GOOD: ["The lesson develops students' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance.", "Students demonstrate the target learning through the lesson's evidence-based activities and assessment."]
 
 Each array should contain 3-6 items where practical. Be specific and actionable — avoid generic advice.
 
 Quality expectations:
-- Align terminology, assessment expectations, and curriculum references to the teacher's selected curriculum or uploaded curriculum document, whether that is CAPS, GCSE, IB, Common Core, MOE, or another standard.
+- When an uploaded curriculum document is supplied, align terminology, assessment expectations, and curriculum references to that document.
+- Without an uploaded curriculum document, use the selected curriculum name only for broad context. Do not claim code-level alignment and do not generate standards identifiers from memory.
 - Use a formal observation-ready structure without assuming any single national curriculum.
 - Use measurable Bloom's taxonomy verbs for objectives.
 - Write successCriteria at lesson level as "I can" statements; repeat the relevant ones inside each phase's Learner Activity & Success Criteria field.
@@ -112,7 +114,7 @@ Quality expectations:
 - Keep activity phases structured and scannable, but make planning fields substantive enough to teach from without further editing.${buildLocaleInstructions(locale)}`;
 
   if (curriculumText) {
-    prompt += `\n\n--- CURRICULUM DOCUMENT ---\nThe teacher uploaded the following curriculum document. Use it to align the lesson objectives, activities, and assessments with their specific curriculum requirements:\n\n${curriculumText}\n--- END CURRICULUM DOCUMENT ---`;
+    prompt += `\n\n--- CURRICULUM DOCUMENT ---\nThe teacher uploaded the following curriculum document. Treat it as the source of truth for curriculum-specific terminology, outcomes, and identifiers.\n- Use only curriculum identifiers that appear verbatim in this document.\n- Do not create, infer, or substitute identifiers from another curriculum.\n- If the document does not contain an identifier relevant to the lesson, write plain-language alignment without a code.\n- Do not present general model knowledge as verified curriculum alignment.\n\n${curriculumText}\n--- END CURRICULUM DOCUMENT ---`;
   }
 
   return prompt;

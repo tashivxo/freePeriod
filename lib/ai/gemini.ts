@@ -82,6 +82,7 @@ export async function generateWithGemini(
 
       const finalizedContent = await finalizeLessonContent(lessonContent, {
         title: lessonContent.title,
+        curriculumText: params.curriculumText,
         retry: async (retryPrompt) => {
           const retryResult = await model.generateContent({
             systemInstruction,

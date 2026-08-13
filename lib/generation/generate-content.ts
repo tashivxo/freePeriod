@@ -108,6 +108,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
 
   const lessonContent = await finalizeLessonContent(parsed, {
     title: parsed.title,
+    curriculumText,
     retry: async (retryPrompt) => {
       const retryMessage = await anthropic.messages.create({
         model: claudeModel,

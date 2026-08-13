@@ -53,15 +53,28 @@ describe('Claude lesson prompt parsing', () => {
     expect(prompt).toContain('not skeleton outlines');
     expect(prompt).toContain('Term — student-friendly definition');
     expect(prompt).toContain('FORMAT EXAMPLES');
+    expect(prompt).toContain('Never invent, infer, or guess a code');
+    expect(prompt).not.toContain('MS-PS1-4');
+    expect(prompt).not.toContain('5-PS1-1');
   });
 
   it('keeps curriculum guidance neutral across standards', () => {
     const prompt = buildSystemPrompt();
 
     expect(prompt).toContain('selected curriculum');
-    expect(prompt).toContain('CAPS');
-    expect(prompt).toContain('GCSE');
+    expect(prompt).toContain('curriculum document');
+    expect(prompt).toContain('plain-language statements');
     expect(prompt).not.toContain('UAE/MOE');
+  });
+
+  it('treats an uploaded curriculum document as the source of truth for identifiers', () => {
+    const prompt = buildSystemPrompt(
+      'Official outcome RL.5.3: compare characters using details from the text.',
+    );
+
+    expect(prompt).toContain('Use only curriculum identifiers that appear verbatim');
+    expect(prompt).toContain('RL.5.3');
+    expect(prompt).not.toContain('MS-PS1-4');
   });
 
   it('does not add language instructions for English default', () => {
