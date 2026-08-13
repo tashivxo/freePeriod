@@ -1,8 +1,12 @@
 import { ADEK_PACK } from './adek';
+import { AQA_PACK } from './aqa';
 import { CAMBRIDGE_A_LEVEL_PACK } from './cambridge-a-level';
 import { CAMBRIDGE_IGCSE_PACK } from './cambridge-igcse';
 import { CAPS_PACK } from './caps';
 import { COMMON_CORE_PACK } from './common-core';
+import { EDEXCEL_PACK } from './edexcel';
+import { GCSE_PACK } from './gcse';
+import { OCR_PACK } from './ocr';
 import type { CurriculumPack } from './types';
 import { UAE_MOE_PACK } from './uae-moe';
 
@@ -13,6 +17,10 @@ const PACKS: CurriculumPack[] = [
   CAMBRIDGE_A_LEVEL_PACK,
   CAPS_PACK,
   COMMON_CORE_PACK,
+  GCSE_PACK,
+  AQA_PACK,
+  EDEXCEL_PACK,
+  OCR_PACK,
 ];
 
 export type { CurriculumPack } from './types';

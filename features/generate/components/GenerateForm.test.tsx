@@ -105,6 +105,10 @@ describe('GenerateForm', () => {
     ['A-Level', /cambridge international as and a level/i],
     ['CAPS (South Africa)', /caps planning language/i],
     ['Common Core', /common core ela and math/i],
+    ['GCSE', /uk gcse planning language/i],
+    ['AQA', /aqa gcse and a-level/i],
+    ['Edexcel', /pearson edexcel gcse and a-level/i],
+    ['OCR', /ocr gcse and a-level/i],
   ] as const)('shows guideline helper text when %s is selected', (curriculum, helper) => {
     render(
       <GenerateForm

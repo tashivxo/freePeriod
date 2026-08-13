@@ -34,21 +34,26 @@ describe('curriculum packs', () => {
     expect(getCurriculumPack('Common Core')?.id).toBe('common-core');
   });
 
+  it('returns packs for GCSE, AQA, Edexcel, and OCR', () => {
+    expect(getCurriculumPack('GCSE')?.id).toBe('gcse');
+    expect(getCurriculumPack('AQA')?.id).toBe('aqa');
+    expect(getCurriculumPack('Edexcel')?.id).toBe('edexcel');
+    expect(getCurriculumPack('OCR')?.id).toBe('ocr');
+  });
+
   it('returns null for unsupported curricula', () => {
     expect(getCurriculumPack('IB')).toBeNull();
     expect(getCurriculumPack('AP')).toBeNull();
-    expect(getCurriculumPack('GCSE')).toBeNull();
-    expect(getCurriculumPack('Edexcel')).toBeNull();
-    expect(getCurriculumPack('AQA')).toBeNull();
-    expect(getCurriculumPack('OCR')).toBeNull();
     expect(getCurriculumPack('')).toBeNull();
   });
 
-  it('does not attach the Cambridge A-Level pack to other exam boards', () => {
+  it('keeps Cambridge A-Level separate from UK exam-board packs', () => {
+    expect(getCurriculumPack('A-Level')?.id).toBe('cambridge-a-level');
+    expect(getCurriculumPack('AQA')?.id).toBe('aqa');
+    expect(getCurriculumPack('Edexcel')?.id).toBe('edexcel');
+    expect(getCurriculumPack('OCR')?.id).toBe('ocr');
     expect(getCurriculumPack('A-Level')?.curriculumValues).toEqual(['A-Level']);
-    expect(getCurriculumPack('Edexcel')).toBeNull();
-    expect(getCurriculumPack('AQA')).toBeNull();
-    expect(getCurriculumPack('OCR')).toBeNull();
+    expect(getCurriculumPack('AQA')?.curriculumValues).toEqual(['AQA']);
   });
 
   it('formats pack prompt text with subject notes when available', () => {
@@ -111,7 +116,16 @@ describe('curriculum packs', () => {
   });
 
   it('does not inject sourceNotes URLs for Cambridge, CAPS, or Common Core packs', () => {
-    for (const name of ['Cambridge IGCSE', 'A-Level', 'CAPS (South Africa)', 'Common Core']) {
+    for (const name of [
+      'Cambridge IGCSE',
+      'A-Level',
+      'CAPS (South Africa)',
+      'Common Core',
+      'GCSE',
+      'AQA',
+      'Edexcel',
+      'OCR',
+    ]) {
       const pack = getCurriculumPack(name);
       expect(pack).not.toBeNull();
       const formatted = formatCurriculumPackForPrompt(pack!, 'English', 'Grade 10');
@@ -144,5 +158,12 @@ describe('curriculum packs', () => {
     expect(igcse).not.toMatch(/\bAO[1-9]\b/);
     expect(aLevel).not.toMatch(/\bAO[1-9]\b/);
     expect(igcse).toContain('plain language');
+  });
+
+  it('does not list numbered assessment-objective codes in UK exam-board packs', () => {
+    for (const name of ['GCSE', 'AQA', 'Edexcel', 'OCR']) {
+      const formatted = formatCurriculumPackForPrompt(getCurriculumPack(name)!, 'Science', 'Grade 10');
+      expect(formatted).not.toMatch(/\bAO[1-9]\b/);
+    }
   });
 });

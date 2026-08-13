@@ -1,7 +1,16 @@
 export type CurriculumPack = {
   id: string;
   curriculumValues: string[];
-  authority: 'UAE_MOE' | 'ADEK' | 'CAMBRIDGE' | 'CAPS' | 'COMMON_CORE';
+  authority:
+    | 'UAE_MOE'
+    | 'ADEK'
+    | 'CAMBRIDGE'
+    | 'CAPS'
+    | 'COMMON_CORE'
+    | 'GCSE'
+    | 'AQA'
+    | 'EDEXCEL'
+    | 'OCR';
   displayName: string;
   coverage: 'guideline';
   lastReviewed: string;
