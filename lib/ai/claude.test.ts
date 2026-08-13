@@ -77,6 +77,16 @@ describe('Claude lesson prompt parsing', () => {
     expect(prompt).not.toContain('MS-PS1-4');
   });
 
+  it('appends curriculum guideline pack instructions when provided', () => {
+    const guidelinePackText = 'Guideline pack: UAE MOE (UAE_MOE)\nDo not invent official outcome or standards codes.';
+    const prompt = buildSystemPrompt(undefined, undefined, guidelinePackText);
+
+    expect(prompt).toContain('--- CURRICULUM GUIDELINE PACK ---');
+    expect(prompt).toContain('Do not invent official standards codes.');
+    expect(prompt).toContain(guidelinePackText);
+    expect(prompt).toContain('--- END CURRICULUM GUIDELINE PACK ---');
+  });
+
   it('does not add language instructions for English default', () => {
     const systemPrompt = buildSystemPrompt();
     const userPrompt = buildUserPrompt({

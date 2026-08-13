@@ -6,6 +6,7 @@ import {
   GEMINI_FREE_MODEL,
   parseLessonContent,
 } from '@/lib/ai';
+import { formatCurriculumPackForPrompt, getCurriculumPack } from '@/lib/curriculum/packs';
 import {
   finalizeLessonContent,
   parsePlanningFieldPatch,
@@ -50,6 +51,10 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
   const useGemini = shouldGenerateWithGemini(generationMode);
   const claudeModel = 'claude-sonnet-4-6';
   const modelUsed = useGemini ? GEMINI_FREE_MODEL : claudeModel;
+  const pack = getCurriculumPack(curriculum);
+  const guidelinePackText = pack
+    ? formatCurriculumPackForPrompt(pack, subject, grade)
+    : undefined;
 
   if (useGemini) {
     const geminiResult = await generateWithGemini({
@@ -60,6 +65,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
       teacherPrompt,
       curriculumText,
       locale,
+      guidelinePackText,
     });
 
     return {
@@ -70,7 +76,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     };
   }
 
-  const systemPrompt = buildSystemPrompt(curriculumText, locale);
+  const systemPrompt = buildSystemPrompt(curriculumText, locale, guidelinePackText);
   const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt, locale });
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 

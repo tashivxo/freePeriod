@@ -16,6 +16,7 @@ type GenerateWithGeminiParams = {
   teacherPrompt: string;
   curriculumText?: string;
   locale?: string;
+  guidelinePackText?: string;
 };
 
 type GenerateWithGeminiResult = {
@@ -54,7 +55,11 @@ export async function generateWithGemini(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: GEMINI_FREE_MODEL });
 
-  const systemInstruction = buildSystemPrompt(params.curriculumText, params.locale);
+  const systemInstruction = buildSystemPrompt(
+    params.curriculumText,
+    params.locale,
+    params.guidelinePackText,
+  );
   const userPrompt = buildUserPrompt({
     subject: params.subject,
     grade: params.grade,
