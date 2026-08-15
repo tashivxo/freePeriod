@@ -100,6 +100,47 @@ describe('fill-generic-template field mapping', () => {
     expect(outXml).toContain('particles that are constantly in motion');
   });
 
+  it('fills a minimal table template with CJK prior knowledge and YaHei east-Asian font', async () => {
+    const chinesePriorKnowledge = '学生应已理解物质由不断运动的粒子组成。';
+    const cjkLesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        priorKnowledge: [chinesePriorKnowledge],
+      },
+    };
+
+    const templateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Module Prior Knowledge</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Module Performance Expectations (PEs)</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+    zip.file('word/document.xml', templateXml);
+    zip.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>');
+    const templateBuffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
+
+    const result = await fillGenericDocxTemplate(templateBuffer, cjkLesson);
+    const outZip = await JSZip.loadAsync(result.buffer);
+    const outXml = await outZip.file('word/document.xml')!.async('string');
+
+    expect(result.filledCount).toBe(2);
+    expect(outXml).toContain(chinesePriorKnowledge);
+    expect(outXml).toContain('w:eastAsia="Microsoft YaHei"');
+  });
+
   it('highlights applicable checkbox options in place', () => {
     const cellXml = `<w:tc><w:p><w:r><w:t>Please highlight all that apply:Analysis / Evaluation / Making connections / Drawing conclusions</w:t></w:r></w:p></w:tc>`;
     const highlighted = highlightCheckboxCell(cellXml, ['Analysis', 'Making connections']);

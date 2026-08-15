@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import type { LessonPlan } from '@/types';
+import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
 const DOCUMENT_XML_PATH = 'word/document.xml';
 const DEFAULT_RESOURCES = 'Whiteboard / projector, teacher-created handout';
@@ -96,7 +97,10 @@ function buildParagraphsXml(referencePara: string, text: string): string {
       if (!trimmed) return `<w:p>${pPrXml}</w:p>`;
       const isBoldLine = trimmed.startsWith('>>');
       const content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
-      const rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPrNoBold;
+      let rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPrNoBold;
+      if (containsCjk(text)) {
+        rPrToUse = ensureEastAsiaRFonts(rPrToUse);
+      }
       return `<w:p>${pPrXml}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(content)}</w:t></w:r></w:p>`;
     })
     .join('');

@@ -128,5 +128,16 @@ describe('Claude lesson prompt parsing', () => {
     const frUser = buildUserPrompt({ ...baseParams, locale: 'fr' });
     expect(frSystem).toContain('Write ALL human-readable JSON string VALUES in French');
     expect(frUser).toContain('- Output language: French (fr)');
+
+    const zhSystem = buildSystemPrompt(undefined, 'zh-Hans');
+    const zhUser = buildUserPrompt({ ...baseParams, locale: 'zh-Hans' });
+    expect(zhSystem).toContain('LANGUAGE OUTPUT REQUIREMENTS');
+    expect(zhSystem).toContain('Write ALL human-readable JSON string VALUES in Simplified Chinese');
+    expect(zhSystem).toContain('Keep ALL JSON object KEYS in English');
+    expect(zhSystem).toContain('"Time:", "Teacher Activity:"');
+    expect(zhSystem).toContain('formal written Simplified Chinese');
+    expect(zhSystem).toContain('Do not use Traditional characters');
+    expect(zhSystem).toContain('Preserve curriculum codes');
+    expect(zhUser).toContain('- Output language: Simplified Chinese (zh-Hans)');
   });
 });

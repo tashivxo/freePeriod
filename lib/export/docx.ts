@@ -15,10 +15,10 @@ import {
 } from 'docx';
 import type { LessonPlan, LessonSection } from '@/types';
 import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
+import { DOCX_RUN_FONT } from './cjk';
 
 const CONTENT_WIDTH = 9360;
 const HEADER_FILL = 'D9D9D9';
-const FONT = 'Calibri';
 const FONT_SIZE = 20;
 const BULLET_REF = 'lesson-plan-bullets';
 const CHECKMARK = '\u2713';
@@ -70,7 +70,7 @@ const MAX_CELL_BULLETS = 4;
 function textRun(text: string, bold = false): TextRun {
   return new TextRun({
     text: prepareCellText(text),
-    font: FONT,
+    font: DOCX_RUN_FONT,
     size: FONT_SIZE,
     bold,
   });
@@ -646,7 +646,7 @@ export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
     styles: {
       default: {
         document: {
-          run: { font: FONT, size: FONT_SIZE },
+          run: { font: DOCX_RUN_FONT, size: FONT_SIZE },
         },
       },
     },
