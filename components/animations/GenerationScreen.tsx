@@ -20,6 +20,17 @@ type StatusStep = {
   done: boolean;
 };
 
+export const WRITING_LESSON_PLAN_STATUS = 'Writing lesson plan…';
+
+export const WRITING_WAIT_MESSAGES = [
+  WRITING_LESSON_PLAN_STATUS,
+  'Drafting objectives and activities…',
+  'Building assessment and differentiation…',
+  'Still working — Quality mode can take a minute…',
+] as const;
+
+export const WRITING_WAIT_CYCLE_MS = 4500;
+
 type GenerationScreenProps = {
   events: GenerateStreamEvent[];
   onComplete: (lessonId: string) => void;
@@ -41,6 +52,7 @@ export function GenerationScreen({
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
   const { ref: errorIconRef, animationDisabled: errorIconMotionDisabled } =
     useMotionSafeIconRef();
+  const [writingWaitIndex, setWritingWaitIndex] = useState(0);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -78,6 +90,26 @@ export function GenerationScreen({
   if (statusSteps.length > 0 && receivedSections.length === 0 && !errorMessage) {
     statusSteps[statusSteps.length - 1].done = false;
   }
+
+  const writingWaitActive =
+    !errorMessage &&
+    receivedSections.length === 0 &&
+    statusSteps.length > 0 &&
+    !statusSteps[statusSteps.length - 1].done &&
+    statusSteps[statusSteps.length - 1].message === WRITING_LESSON_PLAN_STATUS;
+
+  useEffect(() => {
+    if (!writingWaitActive) {
+      setWritingWaitIndex(0);
+      return;
+    }
+
+    const id = window.setInterval(() => {
+      setWritingWaitIndex((index) => index + 1);
+    }, WRITING_WAIT_CYCLE_MS);
+
+    return () => window.clearInterval(id);
+  }, [writingWaitActive]);
 
   // Add section progress
   if (receivedSections.length > 0 && !errorMessage) {
@@ -144,21 +176,36 @@ export function GenerationScreen({
           </div>
         )}
 
-        {statusSteps.map((step, i) => (
-          <div
-            key={i}
-            className="flex items-center justify-center gap-2 text-sm"
-          >
-            {step.done ? (
-              <CheckCircle className="h-4 w-4 text-success" />
-            ) : (
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            )}
-            <span className={step.done ? 'text-text-secondary' : 'text-text-primary font-medium'}>
-              {step.message}
-            </span>
-          </div>
-        ))}
+        {statusSteps.map((step, i) => {
+          const isWritingWait =
+            !step.done && step.message === WRITING_LESSON_PLAN_STATUS;
+          const displayMessage = isWritingWait
+            ? WRITING_WAIT_MESSAGES[writingWaitIndex % WRITING_WAIT_MESSAGES.length]
+            : step.message;
+
+          return (
+            <div
+              key={i}
+              className="flex items-center justify-center gap-2 text-sm"
+            >
+              {step.done ? (
+                <CheckCircle className="h-4 w-4 text-success" />
+              ) : (
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              )}
+              <span className={step.done ? 'text-text-secondary' : 'text-text-primary font-medium'}>
+                {isWritingWait ? (
+                  <>
+                    <span className="sr-only">{WRITING_LESSON_PLAN_STATUS} This can take a minute.</span>
+                    <span aria-hidden="true">{displayMessage}</span>
+                  </>
+                ) : (
+                  displayMessage
+                )}
+              </span>
+            </div>
+          );
+        })}
 
         {receivedSections.length > 0 && !completeEvent && !errorMessage && (
           <p className="text-xs text-text-secondary mt-4">
