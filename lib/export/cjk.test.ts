@@ -10,4 +10,10 @@ describe('CJK export helpers', () => {
     const out = ensureEastAsiaRFonts('<w:rPr></w:rPr>');
     expect(out).toContain(`w:eastAsia="${DOCX_EAST_ASIA_FONT}"`);
   });
+
+  it('creates rPr with eastAsia when input is empty', () => {
+    const out = ensureEastAsiaRFonts('');
+    expect(out).toContain(`w:eastAsia="${DOCX_EAST_ASIA_FONT}"`);
+    expect(out).toContain('<w:rPr>');
+  });
 });

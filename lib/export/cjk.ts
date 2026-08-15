@@ -14,6 +14,9 @@ export const DOCX_RUN_FONT = {
 } as const;
 
 export function ensureEastAsiaRFonts(rPrXml: string): string {
+  if (!rPrXml || !/<w:rPr>/.test(rPrXml)) {
+    return `<w:rPr><w:rFonts w:ascii="${DOCX_LATIN_FONT}" w:hAnsi="${DOCX_LATIN_FONT}" w:eastAsia="${DOCX_EAST_ASIA_FONT}"/></w:rPr>`;
+  }
   if (/w:eastAsia=/.test(rPrXml)) {
     return rPrXml.replace(/w:eastAsia="[^"]*"/, `w:eastAsia="${DOCX_EAST_ASIA_FONT}"`);
   }
