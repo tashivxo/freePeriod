@@ -11,6 +11,8 @@ import { LESSON_SECTION_KEYS } from '@/lib/lesson/sections';
 import type { GenerateRequest, GenerateStreamEvent, GenerationLocale } from '@/types';
 import { GENERATION_LOCALES } from '@/types';
 
+export const maxDuration = 300;
+
 function resolveLocale(raw?: string): GenerationLocale {
   if (raw && GENERATION_LOCALES.includes(raw as GenerationLocale)) {
     return raw as GenerationLocale;

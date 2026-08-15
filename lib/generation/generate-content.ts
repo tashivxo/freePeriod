@@ -78,7 +78,11 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
 
   const systemPrompt = buildSystemPrompt(curriculumText, locale, guidelinePackText);
   const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt, locale });
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY is not set');
+  }
+  const anthropic = new Anthropic({ apiKey });
 
   const messageStream = anthropic.messages.stream({
     model: claudeModel,
