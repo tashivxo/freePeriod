@@ -12,8 +12,9 @@ describe('i18n helpers', () => {
     expect(isLocale('xx')).toBe(false);
   });
 
-  it('getMessages will be registered for zh-Hans in a later task', () => {
-    expect(isLocale('zh-Hans')).toBe(true);
+  it('getMessages returns the zh-Hans dictionary', () => {
+    expect(getMessages('zh-Hans').settings.language).toBe('语言');
+    expect(getMessages('zh-Hans').settings.languageDescription).toContain('教案');
   });
 
   it('getMessages returns dictionaries for each locale', () => {
@@ -52,6 +53,18 @@ describe('LocaleProvider', () => {
     expect(localStorage.getItem('fp-locale')).toBe('ar');
     expect(document.documentElement.lang).toBe('ar');
     expect(document.documentElement.dir).toBe('rtl');
+  });
+
+  it('setLocale applies zh-Hans as ltr', () => {
+    const { result } = renderHook(() => useLocale(), { wrapper: LocaleProvider });
+    act(() => {
+      result.current.setLocale('zh-Hans');
+    });
+    expect(result.current.locale).toBe('zh-Hans');
+    expect(result.current.dir).toBe('ltr');
+    expect(document.documentElement.lang).toBe('zh-Hans');
+    expect(document.documentElement.dir).toBe('ltr');
+    expect(localStorage.getItem('fp-locale')).toBe('zh-Hans');
   });
 
   it('hydrates locale from localStorage on mount', async () => {
