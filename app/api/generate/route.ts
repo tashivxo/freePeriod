@@ -139,51 +139,71 @@ export async function POST(request: NextRequest) {
 
         send({ type: 'status', message: 'Writing lesson plan…' });
 
-        const generated = await generateLessonContent({
-          generationMode,
-          subject,
-          grade,
-          curriculum: curriculum ?? '',
-          duration,
-          teacherPrompt: teacherPrompt ?? '',
-          curriculumText,
-          locale,
-        });
+        const heartbeat = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(': keepalive\n\n'));
+          } catch {
+            clearInterval(heartbeat);
+          }
+        }, 15000);
 
-        modelUsed = generated.modelUsed;
-        const { lessonContent, inputTokens, outputTokens } = generated;
+        const generateStartedAt = Date.now();
+        try {
+          const generated = await generateLessonContent({
+            generationMode,
+            subject,
+            grade,
+            curriculum: curriculum ?? '',
+            duration,
+            teacherPrompt: teacherPrompt ?? '',
+            curriculumText,
+            locale,
+          });
 
-        send({ type: 'status', message: 'Structuring sections…' });
+          console.info('[generate] lesson content ready', {
+            generationMode,
+            modelUsed: generated.modelUsed,
+            durationMs: Date.now() - generateStartedAt,
+            inputTokens: generated.inputTokens,
+            outputTokens: generated.outputTokens,
+          });
 
-        for (const key of LESSON_SECTION_KEYS) {
-          send({ type: 'section', key, data: lessonContent[key] });
+          modelUsed = generated.modelUsed;
+          const { lessonContent, inputTokens, outputTokens } = generated;
+
+          send({ type: 'status', message: 'Structuring sections…' });
+
+          for (const key of LESSON_SECTION_KEYS) {
+            send({ type: 'section', key, data: lessonContent[key] });
+          }
+
+          const persistResult = await persistLessonPlan(supabase, {
+            userId: user.id,
+            title: lessonContent.title,
+            subject,
+            grade,
+            curriculum: curriculum || null,
+            durationMinutes: duration,
+            content: lessonContent,
+            modelUsed,
+            tokenCount: inputTokens + outputTokens,
+            templatePath: templatePath ?? null,
+            generationCount: access.generationCount,
+          });
+
+          if (!persistResult.ok) {
+            send({ type: 'error', message: persistResult.error });
+            return;
+          }
+
+          send({
+            type: 'complete',
+            lessonId: persistResult.lessonId,
+            usage: { inputTokens, outputTokens },
+          });
+        } finally {
+          clearInterval(heartbeat);
         }
-
-        const persistResult = await persistLessonPlan(supabase, {
-          userId: user.id,
-          title: lessonContent.title,
-          subject,
-          grade,
-          curriculum: curriculum || null,
-          durationMinutes: duration,
-          content: lessonContent,
-          modelUsed,
-          tokenCount: inputTokens + outputTokens,
-          templatePath: templatePath ?? null,
-          generationCount: access.generationCount,
-        });
-
-        if (!persistResult.ok) {
-          send({ type: 'error', message: persistResult.error });
-          controller.close();
-          return;
-        }
-
-        send({
-          type: 'complete',
-          lessonId: persistResult.lessonId,
-          usage: { inputTokens, outputTokens },
-        });
       } catch (err: unknown) {
         send({
           type: 'error',

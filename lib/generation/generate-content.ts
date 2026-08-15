@@ -7,11 +7,13 @@ import {
   parseLessonContent,
 } from '@/lib/ai';
 import { formatCurriculumPackForPrompt, getCurriculumPack } from '@/lib/curriculum/packs';
-import {
-  finalizeLessonContent,
-  parsePlanningFieldPatch,
-} from '@/lib/ai/lesson-content-quality';
+import { finalizeLessonContent } from '@/lib/ai/lesson-content-quality';
 import type { LessonSection } from '@/types';
+
+export const QUALITY_CLAUDE_MODEL = 'claude-sonnet-4-6';
+export const QUALITY_MAX_TOKENS = 8192;
+export const QUALITY_THINKING = { type: 'adaptive' as const };
+export const QUALITY_OUTPUT_CONFIG = { effort: 'medium' as const };
 
 export function shouldGenerateWithGemini(mode: 'fast' | 'quality'): boolean {
   return mode === 'fast';
@@ -49,8 +51,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
   } = input;
 
   const useGemini = shouldGenerateWithGemini(generationMode);
-  const claudeModel = 'claude-sonnet-4-6';
-  const modelUsed = useGemini ? GEMINI_FREE_MODEL : claudeModel;
+  const modelUsed = useGemini ? GEMINI_FREE_MODEL : QUALITY_CLAUDE_MODEL;
   const pack = getCurriculumPack(curriculum);
   const guidelinePackText = pack
     ? formatCurriculumPackForPrompt(pack, subject, grade)
@@ -85,9 +86,10 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
   const anthropic = new Anthropic({ apiKey });
 
   const messageStream = anthropic.messages.stream({
-    model: claudeModel,
-    max_tokens: 16384,
-    thinking: { type: 'adaptive' },
+    model: QUALITY_CLAUDE_MODEL,
+    max_tokens: QUALITY_MAX_TOKENS,
+    thinking: QUALITY_THINKING,
+    output_config: QUALITY_OUTPUT_CONFIG,
     system: [
       {
         type: 'text',
@@ -96,6 +98,8 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
       },
     ],
     messages: [{ role: 'user', content: userPrompt }],
+  } as Parameters<typeof anthropic.messages.stream>[0] & {
+    output_config: typeof QUALITY_OUTPUT_CONFIG;
   });
 
   const finalMessage = await messageStream.finalMessage();
@@ -107,7 +111,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
   const parsed = parseLessonContent(fullText);
   if (!parsed) {
     console.error('[generateLessonContent] Failed to parse Claude response', {
-      model: claudeModel,
+      model: QUALITY_CLAUDE_MODEL,
       stopReason: finalMessage.stop_reason,
       preview: fullText.slice(0, 500),
       length: fullText.length,
@@ -119,24 +123,6 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
   const lessonContent = await finalizeLessonContent(parsed, {
     title: parsed.title,
     curriculumText,
-    retry: async (retryPrompt) => {
-      const retryMessage = await anthropic.messages.create({
-        model: claudeModel,
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: userPrompt },
-          { role: 'assistant', content: fullText },
-          { role: 'user', content: retryPrompt },
-        ],
-      });
-      const retryText = retryMessage.content
-        .filter((block): block is Anthropic.Messages.TextBlock => block.type === 'text')
-        .map((block) => block.text)
-        .join('\n')
-        .trim();
-      return parsePlanningFieldPatch(retryText);
-    },
   });
 
   return {
