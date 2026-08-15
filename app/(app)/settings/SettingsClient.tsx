@@ -18,6 +18,7 @@ import { useZenMode } from '@/providers/zen-mode';
 import { useLocale, useT } from '@/providers/locale';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
+import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { cn } from '@/lib/utils';
 import { ExternalLink, LogOut } from 'lucide-react';
@@ -187,16 +188,19 @@ export function SettingsClient({
         </div>
 
         <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-4">
-          <div className="min-w-0">
-            <label
-              htmlFor="zen-mode"
-              className="block text-sm font-body font-medium text-text-primary"
-            >
-              {t('settings.zenMode')}
-            </label>
-            <p className="mt-1 text-sm font-body text-text-secondary">
-              {t('settings.zenModeDescription')}
-            </p>
+          <div className="flex min-w-0 items-start gap-3">
+            <MotionSafeIcon icon={LeafIcon} size={20} className="mt-0.5 text-text-secondary" />
+            <div className="min-w-0">
+              <label
+                htmlFor="zen-mode"
+                className="block text-sm font-body font-medium text-text-primary"
+              >
+                {t('settings.zenMode')}
+              </label>
+              <p className="mt-1 text-sm font-body text-text-secondary">
+                {t('settings.zenModeDescription')}
+              </p>
+            </div>
           </div>
           <Switch
             id="zen-mode"
