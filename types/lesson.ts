@@ -18,9 +18,9 @@ export type LessonSectionKey =
   | 'realWorldConnections'
   | 'plenary';
 
-export type GenerationLocale = 'en' | 'ar' | 'es' | 'fr';
+export type GenerationLocale = 'en' | 'ar' | 'es' | 'fr' | 'zh-Hans';
 
-export const GENERATION_LOCALES: GenerationLocale[] = ['en', 'ar', 'es', 'fr'];
+export const GENERATION_LOCALES: GenerationLocale[] = ['en', 'ar', 'es', 'fr', 'zh-Hans'];
 
 export type GenerateRequest = {
   subject: string;

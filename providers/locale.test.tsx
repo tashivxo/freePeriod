@@ -6,7 +6,14 @@ describe('i18n helpers', () => {
   it('isLocale returns true for supported locales', () => {
     expect(isLocale('en')).toBe(true);
     expect(isLocale('ar')).toBe(true);
+    expect(isLocale('zh-Hans')).toBe(true);
+    expect(isLocale('zh')).toBe(false);
+    expect(isLocale('zh-Hant')).toBe(false);
     expect(isLocale('xx')).toBe(false);
+  });
+
+  it('getMessages will be registered for zh-Hans in a later task', () => {
+    expect(isLocale('zh-Hans')).toBe(true);
   });
 
   it('getMessages returns dictionaries for each locale', () => {
