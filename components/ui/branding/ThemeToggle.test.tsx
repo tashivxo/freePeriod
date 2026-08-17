@@ -61,4 +61,13 @@ describe('ThemeToggle', () => {
     });
     expect(button).toHaveTextContent(getMessages('zh-Hans').landing.tryDarkMode);
   });
+
+  it('keeps a fixed footprint for the floating-label variant', () => {
+    render(<ThemeToggle variant="floating-label" />);
+    const button = screen.getByRole('button', { name: getMessages('en').landing.switchToDarkMode });
+    expect(button).toHaveClass('h-11');
+    expect(button).toHaveClass('w-[14rem]');
+    expect(button).toHaveClass('shrink-0');
+    expect(button).toHaveClass('whitespace-nowrap');
+  });
 });
