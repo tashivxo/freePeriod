@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen, within } from '@/lib/test-utils';
 import { LanguagePicker } from '@/components/ui/LanguagePicker';
-import { LOCALE_LABELS, LOCALES } from '@/lib/i18n';
+import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 
 const setLocale = jest.fn();
-let mockLocale: 'en' | 'ar' | 'es' | 'fr' = 'en';
+let mockLocale: Locale = 'en';
 
 jest.mock('@/providers/locale', () => {
   const messages: Record<string, Record<string, string>> = {
@@ -12,6 +12,7 @@ jest.mock('@/providers/locale', () => {
     ar: { 'settings.language': 'اللغة' },
     es: { 'settings.language': 'Idioma' },
     fr: { 'settings.language': 'Langue' },
+    'zh-Hans': { 'settings.language': '语言' },
   };
   const t = (key: string) => messages[mockLocale][key] ?? key;
   return {

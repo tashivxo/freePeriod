@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
-import { Manrope, Noto_Sans_Arabic } from 'next/font/google';
+import { Manrope, Noto_Sans_Arabic, Noto_Sans_SC } from 'next/font/google';
 import { LocaleProvider } from '@/providers/locale';
 import { ThemeProvider } from '@/providers/theme';
 import { ZenModeProvider } from '@/providers/zen-mode';
@@ -22,6 +22,14 @@ const notoSansArabic = Noto_Sans_Arabic({
   weight: ['400', '500', '600', '700'],
 });
 
+const notoSansSC = Noto_Sans_SC({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-noto-sans-sc',
+  weight: ['400', '500', '600', '700'],
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://freeperiod.co.za'),
   title: 'FreePeriod — AI Lesson Planner',
@@ -35,7 +43,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(manrope.variable, notoSansArabic.variable)}>
+    <html
+      lang="en"
+      className={cn(manrope.variable, notoSansArabic.variable, notoSansSC.variable)}
+    >
       <body>
         <LocaleProvider>
           <ThemeProvider>

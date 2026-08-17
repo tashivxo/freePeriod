@@ -1,4 +1,5 @@
 import { TextEncoder, TextDecoder } from 'util';
+import JSZip from 'jszip';
 import { generateDocx, parseActivityBlock, formatCheckboxItems, inferTeachingStrategies } from '@/lib/export/docx';
 import type { LessonPlan } from '@/types';
 
@@ -138,5 +139,20 @@ describe('docx export', () => {
     const buffer = await generateDocx(sampleLesson);
     expect(buffer.length).toBeGreaterThan(5000);
     expect(buffer.subarray(0, 2).toString()).toBe('PK');
+  });
+
+  it('embeds Microsoft YaHei for CJK lesson titles', async () => {
+    const cjkLesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        title: '能量转化与守恒',
+      },
+    };
+    const buffer = await generateDocx(cjkLesson);
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file('word/document.xml')!.async('string');
+    expect(xml).toContain('Microsoft YaHei');
+    expect(xml).toContain('能量转化与守恒');
   });
 });

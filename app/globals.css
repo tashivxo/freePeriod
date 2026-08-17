@@ -52,6 +52,10 @@
   html[lang="ar"] body {
     font-family: var(--font-noto-sans-arabic), var(--font-manrope), sans-serif;
   }
+
+  html[lang="zh-Hans"] body {
+    font-family: var(--font-noto-sans-sc), var(--font-manrope), sans-serif;
+  }
 }
 
 @theme inline {

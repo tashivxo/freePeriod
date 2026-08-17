@@ -5,6 +5,7 @@ const LOCALE_LANGUAGE_NAMES: Record<GenerationLocale, string> = {
   ar: 'Arabic',
   es: 'Spanish',
   fr: 'French',
+  'zh-Hans': 'Simplified Chinese',
 };
 
 function buildLocaleInstructions(locale?: string): string {
@@ -21,6 +22,14 @@ function buildLocaleInstructions(locale?: string): string {
     instructions += `\n- Use formal Modern Standard Arabic (الفصحى) suitable for teacher professional documents.
 - Preserve curriculum codes and standards identifiers untranslated when they are present in the uploaded curriculum document.
 - Do not invent, translate, or infer curriculum codes or standards identifiers.`;
+  }
+
+  if (locale === 'zh-Hans') {
+    instructions += `\n- Use formal written Simplified Chinese suitable for teacher professional documents (书面语 / 教案用语).
+- Do not use Traditional characters.
+- Preserve curriculum codes and standards identifiers untranslated when they are present in the uploaded curriculum document.
+- Do not invent, translate, or infer curriculum codes or standards identifiers.
+- English proper nouns, product names, and subject terms may remain in English when that is normal in the teaching context.`;
   }
 
   return instructions;
