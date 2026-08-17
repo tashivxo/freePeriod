@@ -15,6 +15,8 @@ describe('i18n helpers', () => {
   it('getMessages returns the zh-Hans dictionary', () => {
     expect(getMessages('zh-Hans').settings.language).toBe('语言');
     expect(getMessages('zh-Hans').settings.languageDescription).toContain('教案');
+    expect(getMessages('zh-Hans').landing.tryDarkMode).toBe('试试深色模式');
+    expect(getMessages('zh-Hans').landing.tryLightMode).toBe('试试浅色模式');
   });
 
   it('getMessages returns dictionaries for each locale', () => {

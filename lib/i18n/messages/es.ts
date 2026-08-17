@@ -77,6 +77,10 @@ export const es: Messages = {
     footerNavAriaLabel: 'Legal y soporte',
     footerContact: 'Contacto',
     footerTagline: 'Hecho por profesores, para profesores.',
+    tryLightMode: 'Probar modo claro',
+    tryDarkMode: 'Probar modo oscuro',
+    switchToLightMode: 'Cambiar al modo claro',
+    switchToDarkMode: 'Cambiar al modo oscuro',
   },
   generate: {
     planLanguageHint: 'Los nuevos planes se escribirán en {language}',

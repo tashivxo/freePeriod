@@ -77,6 +77,10 @@ export const fr: Messages = {
     footerNavAriaLabel: 'Mentions légales et assistance',
     footerContact: 'Contact',
     footerTagline: 'Conçu pour les enseignants, par des enseignants.',
+    tryLightMode: 'Essayer le mode clair',
+    tryDarkMode: 'Essayer le mode sombre',
+    switchToLightMode: 'Passer en mode clair',
+    switchToDarkMode: 'Passer en mode sombre',
   },
   generate: {
     planLanguageHint: 'Les nouveaux plans seront rédigés en {language}',

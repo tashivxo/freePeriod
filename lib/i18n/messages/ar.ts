@@ -77,6 +77,10 @@ export const ar: Messages = {
     footerNavAriaLabel: 'قانوني ودعم',
     footerContact: 'تواصل',
     footerTagline: 'صُنع للمعلمين، من المعلمين.',
+    tryLightMode: 'جرّب الوضع الفاتح',
+    tryDarkMode: 'جرّب الوضع الداكن',
+    switchToLightMode: 'التبديل إلى الوضع الفاتح',
+    switchToDarkMode: 'التبديل إلى الوضع الداكن',
   },
   generate: {
     planLanguageHint: 'ستُكتب الخطط الجديدة بـ {language}',

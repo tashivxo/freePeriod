@@ -5,6 +5,7 @@ import type { CSSProperties, Ref } from 'react';
 import { SunIcon } from '@/components/ui/icons/sun';
 import { MoonIcon } from '@/components/ui/icons/moon';
 import { useTheme } from '@/providers/theme';
+import { useT } from '@/providers/locale';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';
 
@@ -33,6 +34,7 @@ export function ThemeToggle({
   style,
 }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useT();
   const { ref: iconRef, animationDisabled } = useMotionSafeIconRef();
   const internalButtonRef = useRef<HTMLButtonElement>(null);
   const isDark = resolvedTheme === 'dark';
@@ -70,7 +72,7 @@ export function ThemeToggle({
       }}
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={isDark ? t('landing.switchToLightMode') : t('landing.switchToDarkMode')}
       className={cn(
         variant === 'icon'
           ? 'relative inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background text-text-secondary hover:bg-muted hover:text-text-primary transition-[transform,opacity,color,background-color,border-color] active:scale-[0.96]'
@@ -88,7 +90,7 @@ export function ThemeToggle({
             aria-hidden
             className="inline-flex shrink-0 items-center text-current"
           />
-          {variant === 'floating-label' ? 'Try light mode' : null}
+          {variant === 'floating-label' ? t('landing.tryLightMode') : null}
         </>
       ) : (
         <>
@@ -99,7 +101,7 @@ export function ThemeToggle({
             aria-hidden
             className="inline-flex shrink-0 items-center text-current"
           />
-          {variant === 'floating-label' ? 'Try dark mode' : null}
+          {variant === 'floating-label' ? t('landing.tryDarkMode') : null}
         </>
       )}
     </button>

@@ -76,6 +76,10 @@ export const zhHans: Messages = {
     footerNavAriaLabel: '法律与支持',
     footerContact: '联系我们',
     footerTagline: '教师打造，服务教师。',
+    tryLightMode: '试试浅色模式',
+    tryDarkMode: '试试深色模式',
+    switchToLightMode: '切换到浅色模式',
+    switchToDarkMode: '切换到深色模式',
   },
   generate: {
     planLanguageHint: '新教案将以{language}撰写',

@@ -75,6 +75,10 @@ export const en = {
     footerNavAriaLabel: 'Legal and support',
     footerContact: 'Contact',
     footerTagline: 'Built for teachers, by teachers.',
+    tryLightMode: 'Try light mode',
+    tryDarkMode: 'Try dark mode',
+    switchToLightMode: 'Switch to light mode',
+    switchToDarkMode: 'Switch to dark mode',
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
@@ -154,6 +158,10 @@ export type Messages = {
     footerNavAriaLabel: string;
     footerContact: string;
     footerTagline: string;
+    tryLightMode: string;
+    tryDarkMode: string;
+    switchToLightMode: string;
+    switchToDarkMode: string;
   };
   generate: {
     planLanguageHint: string;
