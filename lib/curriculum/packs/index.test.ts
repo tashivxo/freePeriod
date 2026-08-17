@@ -41,6 +41,10 @@ describe('curriculum packs', () => {
     expect(getCurriculumPack('OCR')?.id).toBe('ocr');
   });
 
+  it('returns pack for CBSE (India)', () => {
+    expect(getCurriculumPack('CBSE (India)')?.id).toBe('cbse');
+  });
+
   it('returns null for unsupported curricula', () => {
     expect(getCurriculumPack('IB')).toBeNull();
     expect(getCurriculumPack('AP')).toBeNull();
@@ -165,5 +169,18 @@ describe('curriculum packs', () => {
       const formatted = formatCurriculumPackForPrompt(getCurriculumPack(name)!, 'Science', 'Grade 10');
       expect(formatted).not.toMatch(/\bAO[1-9]\b/);
     }
+  });
+
+  it('formats CBSE pack prompt without URLs, source notes, or AO codes', () => {
+    const pack = getCurriculumPack('CBSE (India)');
+    expect(pack).not.toBeNull();
+
+    const formatted = formatCurriculumPackForPrompt(pack!, 'Mathematics', 'Grade 9');
+
+    expect(formatted).not.toMatch(/https?:\/\//);
+    expect(formatted).not.toContain('Source notes');
+    expect(formatted).not.toMatch(/\bAO[1-9]\b/);
+    expect(formatted).toContain('CBSE');
+    expect(formatted).toContain('not an official curriculum document');
   });
 });

@@ -104,6 +104,7 @@ describe('GenerateForm', () => {
     ['Cambridge IGCSE', /cambridge international igcse/i],
     ['A-Level', /cambridge international as and a level/i],
     ['CAPS (South Africa)', /caps planning language/i],
+    ['CBSE (India)', /cbse planning language/i],
     ['Common Core', /common core ela and math/i],
     ['GCSE', /uk gcse planning language/i],
     ['AQA', /aqa gcse and a-level/i],
