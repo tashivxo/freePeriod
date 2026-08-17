@@ -15,6 +15,7 @@ import {
 } from 'docx';
 import type { LessonPlan, LessonSection } from '@/types';
 import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
+import { formatGradeLabel } from '@/lib/utils/grades';
 
 const CONTENT_WIDTH = 9360;
 const HEADER_FILL = 'D9D9D9';
@@ -487,7 +488,7 @@ function buildHeaderInfoTable(lesson: LessonPlan): Table {
       new TableRow({
         children: [
           makeCell('Grade / Class', TABLE1_WIDTHS[0], { bold: true, shading: true }),
-          makeCell(lesson.grade, TABLE1_WIDTHS[1]),
+          makeCell(formatGradeLabel(lesson.grade), TABLE1_WIDTHS[1]),
           makeCell('Duration', TABLE1_WIDTHS[2], { bold: true, shading: true }),
           makeCell(`${lesson.duration_minutes} minutes`, TABLE1_WIDTHS[3]),
           makeCell('Stream', TABLE1_WIDTHS[4], { bold: true, shading: true }),

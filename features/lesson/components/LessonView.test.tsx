@@ -98,6 +98,12 @@ describe('LessonView', () => {
     (global.fetch as jest.Mock) = jest.fn();
   });
 
+  it('shows formatted grade in the header', () => {
+    render(<LessonView lesson={lesson} />);
+
+    expect(screen.getByText('Science · Grade 9')).toBeInTheDocument();
+  });
+
   it('shows save status text in the header', () => {
     (useDebouncedLessonSave as jest.Mock).mockReturnValue({
       save: mockSave,

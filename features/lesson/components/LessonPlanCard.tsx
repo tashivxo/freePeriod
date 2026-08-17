@@ -7,6 +7,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DeleteIcon } from '@/components/ui/icons/delete';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatGradeLabel } from '@/lib/utils/grades';
 import type { LessonPlan } from '@/types';
 
 export type LessonPlanCardData = Pick<
@@ -48,7 +49,7 @@ export function LessonPlanCard({ lesson, onDelete, showObjective = false }: Less
               <MotionSafeIcon icon={ClockIcon} size={12} />
               {lesson.duration_minutes}m
             </span>
-            <span>{lesson.grade}</span>
+            <span>{formatGradeLabel(lesson.grade)}</span>
           </div>
           {showObjective && lesson.firstObjective && (
             <p className="text-xs font-body text-text-secondary line-clamp-2">

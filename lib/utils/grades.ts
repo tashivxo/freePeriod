@@ -36,15 +36,19 @@ export const GRADES = [
 
 export type Grade = (typeof GRADES)[number];
 
-function gradeLabel(g: string): string {
-  if (g === 'Pre-K') return 'Pre-K';
-  if (g === 'K') return 'Kindergarten';
-  if (/^Year \d+$/.test(g)) return g;
-  return `Grade ${g}`;
+/** Human-readable label for a stored grade value (display only). */
+export function formatGradeLabel(g: string): string {
+  const trimmed = g.trim();
+  if (!trimmed) return '';
+  if (trimmed === 'Pre-K') return 'Pre-K';
+  if (trimmed === 'K') return 'Kindergarten';
+  if (/^Year \d+$/.test(trimmed)) return trimmed;
+  if (/^Grade\s+.+$/.test(trimmed)) return trimmed;
+  return `Grade ${trimmed}`;
 }
 
 /** Dropdown items for grade selectors — human-readable labels, raw values. */
 export const GRADE_ITEMS: DropdownItem[] = (GRADES as readonly string[]).map((g) => ({
-  name: gradeLabel(g),
+  name: formatGradeLabel(g),
   value: g,
 }));

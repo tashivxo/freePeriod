@@ -13,6 +13,7 @@ import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
+import { formatGradeLabel } from '@/lib/utils/grades';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
@@ -228,7 +229,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         <div className="flex flex-wrap items-center gap-4 text-sm font-body text-text-secondary">
           <span className="inline-flex items-center gap-1">
             <MotionSafeIcon icon={BookTextIcon} size={16} />
-            {lesson.subject} · {lesson.grade}
+            {lesson.subject} · {formatGradeLabel(lesson.grade)}
           </span>
           <span className="inline-flex items-center gap-1">
             <MotionSafeIcon icon={ClockIcon} size={16} />
