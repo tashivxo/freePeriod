@@ -3,6 +3,7 @@ import { AQA_PACK } from './aqa';
 import { CAMBRIDGE_A_LEVEL_PACK } from './cambridge-a-level';
 import { CAMBRIDGE_IGCSE_PACK } from './cambridge-igcse';
 import { CAPS_PACK } from './caps';
+import { CBSE_PACK } from './cbse';
 import { COMMON_CORE_PACK } from './common-core';
 import { EDEXCEL_PACK } from './edexcel';
 import { GCSE_PACK } from './gcse';
@@ -16,6 +17,7 @@ const PACKS: CurriculumPack[] = [
   CAMBRIDGE_IGCSE_PACK,
   CAMBRIDGE_A_LEVEL_PACK,
   CAPS_PACK,
+  CBSE_PACK,
   COMMON_CORE_PACK,
   GCSE_PACK,
   AQA_PACK,

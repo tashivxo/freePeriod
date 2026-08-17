@@ -10,7 +10,8 @@ export type CurriculumPack = {
     | 'GCSE'
     | 'AQA'
     | 'EDEXCEL'
-    | 'OCR';
+    | 'OCR'
+    | 'CBSE';
   displayName: string;
   coverage: 'guideline';
   lastReviewed: string;

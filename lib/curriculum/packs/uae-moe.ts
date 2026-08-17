@@ -6,7 +6,7 @@ export const uaeMoePack: CurriculumPack = {
   authority: 'UAE_MOE',
   displayName: 'UAE MOE — Guideline Pack',
   coverage: 'guideline',
-  lastReviewed: '2026-08-13',
+  lastReviewed: '2026-08-17',
   sourceNotes: [
     'This is a practical guideline for UAE MOE-aligned planning, not a reproduction of an official curriculum or a substitute for the current school-issued standards.',
     'The Ministry of Education About Ministry page describes national learning standards, an assessment-for-learning approach, creativity and innovation, and 21st-century skills: https://www.moe.gov.ae/en/about-us/pages/about-ministry.aspx.',
@@ -15,13 +15,15 @@ export const uaeMoePack: CurriculumPack = {
     'The MOE public education-platform announcement identifies Arabic, Mathematics, Science, Islamic Studies, Social Studies, and English as core subjects and describes lesson-level feedback: https://www.moe.gov.ae/En/MediaCenter/News/Pages/AlefPlatforminallUAEPublic.aspx.',
   ],
   applicability: [
+    'Use this as a national-curriculum planning lens for UAE MOE subjects, with the school’s current subject standards and planning template taking precedence.',
     'Dubai and the Northern Emirates commonly use UAE MOE curriculum documents in school planning.',
-    'Abu Dhabi public schools also follow the national MOE curriculum; ADEK regulates schools there and is a separate guideline pack.',
+    'Abu Dhabi public schools also follow the national MOE curriculum; ADEK regulates schools there, but its quality and inspection role is separate from the MOE subject standards.',
   ],
   uiHelperText:
     'Guideline pack for UAE Ministry of Education planning language. Not official or verified. Common in Dubai and the Northern Emirates; Abu Dhabi public schools also follow MOE curriculum under ADEK regulation.',
   terminology: [
-    'Use content standards, performance standards, and learning outcomes as planning anchors when the school provides the relevant current standards.',
+    'Use content standards to identify what should be taught and performance standards to describe what students should demonstrate, when the school provides the relevant current standards.',
+    'Use learning outcomes as student-facing statements derived from the applicable MOE standards, without inventing official codes or labels.',
     'Use assessment for learning to describe evidence gathered during instruction and the teaching decision that follows it.',
     'Use active learning, student-centred learning, creativity, innovation, and problem solving where they accurately describe the lesson.',
     'Use 21st-century skills language such as communication, collaboration, critical thinking, creativity, digital literacy, and self-management.',
@@ -30,6 +32,7 @@ export const uaeMoePack: CurriculumPack = {
   ],
   assessmentStyle: [
     'Begin with a brief diagnostic or retrieval check so the teacher can identify readiness and misconceptions.',
+    'Align checks and success criteria to the lesson objective and the relevant content or performance standard supplied by the school.',
     'Collect visible evidence during the lesson through questioning, observation, mini-whiteboards, think-pair-share, practical work, or a short written response.',
     'State success criteria in student-friendly, observable language and revisit them before the final check.',
     'Use exit evidence to record who is secure, who needs targeted support, and which concept needs reteaching.',
@@ -37,12 +40,12 @@ export const uaeMoePack: CurriculumPack = {
     'Keep assessment records useful for next-step planning rather than treating a single score as the whole picture of progress.',
   ],
   lessonExpectations: [
-    'Write one or more measurable objectives that identify the knowledge, skill, or understanding students will demonstrate by the end of the lesson.',
+    'Write one or more measurable objectives that translate the relevant MOE content or performance standard into knowledge, skill, or understanding students will demonstrate by the end of the lesson.',
     'Make the success criteria observable, concise, and directly matched to the objectives; include the quality or conditions expected where useful.',
     'Open with a purposeful hook, retrieval task, or diagnostic question, then make the learning intention and relevance explicit.',
     'Model the new learning, use guided practice, and provide a clear transition to independent or collaborative application.',
     'Plan purposeful questioning that checks understanding, exposes misconceptions, and gives quieter learners structured opportunities to respond.',
-    'Show planned differentiation through scaffolds, vocabulary or language support, accessible resources, flexible grouping, and appropriate challenge.',
+    'Show planned differentiation and inclusive access through scaffolds, vocabulary or language support, accessible resources, flexible grouping, appropriate challenge, and support for students of determination.',
     'End with an assessment-for-learning check that informs the next lesson, intervention, homework, or enrichment rather than merely closing the period.',
     'Keep the plan observation-ready by naming the teacher actions, student actions, resources, timings, checks for understanding, and adaptations.',
     'Use Arabic and English deliberately according to the subject and school language policy; pre-teach essential bilingual vocabulary without turning translation into the sole learning activity.',
