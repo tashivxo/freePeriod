@@ -16,7 +16,7 @@ Last updated: 22 August 2026.
 | Legal config / env overrides | Done |
 | Build fix (`deletion_scheduled_at` type) | Done |
 | Contact email `support@freeperiod.co.za` | Done (`info@freeperiod.co.za` is an alias; do not use as primary legal contact) |
-| Operator name Jayandree Govender | Done (default in `legalConfig`) |
+| Operator name Jayandree Govender and Tashiv Govender | Done (default in `legalConfig`) |
 | Settings → policy links | Done |
 | Lawyer review | Not done |
 | Production env + cron | Not done |
@@ -37,7 +37,7 @@ Last updated: 22 August 2026.
 
 Configure via `lib/legal/config.ts` or env vars.
 
-- [x] **Operator name:** Jayandree Govender (`LEGAL_OPERATOR_NAME` default in `lib/legal/config.ts`)
+- [x] **Operator name:** Jayandree Govender and Tashiv Govender (`LEGAL_OPERATOR_NAME` default in `lib/legal/config.ts`)
 - [x] **Trading name:** FreePeriod
 - [x] **Physical address:** 17 San Te Fe, Seaward Estates, Ballito, KwaZulu-Natal, South Africa
 - [x] **Contact email in code:** `support@freeperiod.co.za` (default in `legalConfig`; `info@freeperiod.co.za` is a forwarding alias only)
@@ -49,7 +49,7 @@ Configure via `lib/legal/config.ts` or env vars.
 ## Outstanding decisions (blocking final policy sign-off)
 
 - [x] **Data retention:** Option C — 30-day grace period (implemented in code + policies)
-- [x] **Operator name:** Jayandree Govender
+- [x] **Operator name:** Jayandree Govender and Tashiv Govender
 - [ ] **Payment processor at launch** — target Lemon Squeezy; Stripe still live in checkout until migration completes:
   - [ ] **Lemon Squeezy (preferred)** — migration in progress (`lib/lemonsqueezy/`, migration `003_lemon_squeezy_subscriptions.sql`)
   - [x] Stripe (checkout still live in `app/api/checkout/route.ts`) — **current default in policies**
@@ -167,7 +167,7 @@ Configure via `lib/legal/config.ts` or env vars.
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `LEGAL_OPERATOR_NAME` | Optional | Default: Jayandree Govender |
+| `LEGAL_OPERATOR_NAME` | Optional | Default: Jayandree Govender and Tashiv Govender |
 | `LEGAL_CONTACT_EMAIL` | Recommended | Default: `support@freeperiod.co.za` |
 | `LEGAL_PHYSICAL_ADDRESS` | Optional | Override address |
 | `LEGAL_SUPABASE_REGION` | Optional | Default: eu-north-1 (Stockholm, EU) |
@@ -248,7 +248,7 @@ docs/compliance-checklist.md           — this file
 
 1. [x] Build error fixed (`deletion_scheduled_at` Insert type)
 2. [ ] `npm run build` passes + Vercel deploy green
-3. [x] Operator name set (Jayandree Govender)
+3. [x] Operator name set (Jayandree Govender and Tashiv Govender)
 4. [x] Data retention: Option C (30-day grace)
 5. [ ] Payment processor confirmed in policy vs checkout
 6. [x] Contact email active (`support@freeperiod.co.za`)

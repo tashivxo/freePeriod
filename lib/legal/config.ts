@@ -2,7 +2,7 @@
 export const legalConfig = {
   serviceName: 'FreePeriod',
   /** Trading name or registered entity. Set LEGAL_OPERATOR_NAME in env to override. */
-  operatorName: process.env.LEGAL_OPERATOR_NAME ?? 'Jayandree Govender',
+  operatorName: process.env.LEGAL_OPERATOR_NAME ?? 'Jayandree Govender and Tashiv Govender',
   contactEmail: process.env.LEGAL_CONTACT_EMAIL ?? 'support@freeperiod.co.za',
   physicalAddress:
     process.env.LEGAL_PHYSICAL_ADDRESS ??
