@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 
 import {
@@ -13,6 +20,7 @@ import {
 } from '@/lib/i18n';
 
 const STORAGE_KEY = 'fp-locale';
+const COOKIE_MAX_AGE = 31536000;
 
 type TranslateVars = Record<string, string>;
 
@@ -57,20 +65,30 @@ function applyDocumentLocale(locale: Locale) {
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
 }
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+export function LocaleProvider({
+  children,
+  initialLocale = DEFAULT_LOCALE,
+}: {
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  // Always hydrate from the server cookie locale so SSR HTML matches the first client render.
+  // Bootstrap may set document.lang from localStorage when the cookie is missing; sync after paint.
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && isLocale(stored)) {
-      setLocaleState(stored);
-      applyDocumentLocale(stored);
+  useLayoutEffect(() => {
+    const documentLocale = document.documentElement.lang;
+    if (isLocale(documentLocale) && documentLocale !== initialLocale) {
+      setLocaleState(documentLocale);
+      localStorage.setItem(STORAGE_KEY, documentLocale);
+      document.cookie = `${STORAGE_KEY}=${encodeURIComponent(documentLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
     }
-  }, []);
+  }, [initialLocale]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
     localStorage.setItem(STORAGE_KEY, nextLocale);
+    document.cookie = `${STORAGE_KEY}=${encodeURIComponent(nextLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
     applyDocumentLocale(nextLocale);
   }, []);
 

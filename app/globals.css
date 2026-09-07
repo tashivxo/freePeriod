@@ -58,6 +58,21 @@
   }
 }
 
+/* Unlayered so these beat @theme :root tokens; otherwise font-display headings stay Manrope. */
+html[lang="ar"] {
+  --font-display: var(--font-noto-sans-arabic), var(--font-manrope), sans-serif;
+  --font-body: var(--font-noto-sans-arabic), var(--font-manrope), sans-serif;
+  --font-sans: var(--font-noto-sans-arabic), var(--font-manrope), sans-serif;
+}
+
+html[lang="zh-Hans"] {
+  --font-display: var(--font-noto-sans-sc), var(--font-manrope), sans-serif;
+  --font-body: var(--font-noto-sans-sc), var(--font-manrope), sans-serif;
+  --font-sans: var(--font-noto-sans-sc), var(--font-manrope), sans-serif;
+}
+
+/* Locale font overrides must stay unlayered to beat @theme :root tokens. */
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { getMessages, isLocale } from '@/lib/i18n';
 import { LocaleProvider, useLocale, useT } from './locale';
 
@@ -28,6 +28,7 @@ describe('i18n helpers', () => {
 describe('LocaleProvider', () => {
   beforeEach(() => {
     localStorage.clear();
+    document.cookie = 'fp-locale=; Max-Age=0; path=/';
     document.documentElement.lang = 'en';
     document.documentElement.dir = 'ltr';
   });
@@ -53,6 +54,7 @@ describe('LocaleProvider', () => {
     expect(result.current.locale).toBe('ar');
     expect(result.current.dir).toBe('rtl');
     expect(localStorage.getItem('fp-locale')).toBe('ar');
+    expect(document.cookie).toContain('fp-locale=ar');
     expect(document.documentElement.lang).toBe('ar');
     expect(document.documentElement.dir).toBe('rtl');
   });
@@ -69,16 +71,54 @@ describe('LocaleProvider', () => {
     expect(localStorage.getItem('fp-locale')).toBe('zh-Hans');
   });
 
-  it('hydrates locale from localStorage on mount', async () => {
-    localStorage.setItem('fp-locale', 'es');
+  it('keeps initialLocale when document.lang already matches', () => {
+    document.documentElement.lang = 'fr';
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: ({ children }) => (
+        <LocaleProvider initialLocale="fr">{children}</LocaleProvider>
+      ),
+    });
+
+    expect(result.current.locale).toBe('fr');
+  });
+
+  it('syncs to document.lang after mount when it differs from initialLocale', () => {
+    document.documentElement.lang = 'fr';
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: ({ children }) => (
+        <LocaleProvider initialLocale="en">{children}</LocaleProvider>
+      ),
+    });
+
+    expect(result.current.locale).toBe('fr');
+    expect(localStorage.getItem('fp-locale')).toBe('fr');
+    expect(document.cookie).toContain('fp-locale=fr');
+  });
+
+  it('defaults to en when initialLocale is omitted and document lang is empty', () => {
+    document.documentElement.lang = '';
 
     const { result } = renderHook(() => useLocale(), {
       wrapper: LocaleProvider,
     });
 
-    await waitFor(() => {
-      expect(result.current.locale).toBe('es');
+    expect(result.current.locale).toBe('en');
+  });
+
+  it('honors initialLocale from the server cookie when document.lang matches', () => {
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: ({ children }) => (
+        <LocaleProvider initialLocale="ar">{children}</LocaleProvider>
+      ),
     });
+
+    expect(result.current.locale).toBe('ar');
+    expect(result.current.dir).toBe('rtl');
   });
 
   it('useT interpolates message variables', () => {

@@ -43,8 +43,10 @@ export const en = {
     termsOfService: 'Terms of Service',
   },
   landing: {
+    headerHome: 'Home',
     headerPricing: 'Pricing',
     headerSignIn: 'Sign in',
+    backToHome: 'Back to home',
     heroHeadline1: 'Lesson plans in',
     heroHeadlineHighlight: 'seconds,',
     heroHeadline2: 'not hours',
@@ -82,6 +84,52 @@ export const en = {
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
+  },
+  pricing: {
+    title: 'Plans for every classroom',
+    subtitle: "Start free, upgrade when you're ready. No credit card required.",
+    billingPeriodAria: 'Billing period',
+    monthly: 'Monthly',
+    annual: 'Annual',
+    savePercent: 'Save 20%',
+    mostPopular: 'Most Popular',
+    freePrice: 'Free',
+    perMonth: '/mo',
+    billedAnnually: 'Billed as {amount}/yr',
+    trustFooter: 'Paid plans include a 30-day free trial. Cancel anytime. No hidden fees.',
+    checkoutRedirecting: 'Opening checkout…',
+    checkoutSettingUp: 'Setting up checkout…',
+    checkoutError: "Couldn't open checkout — try again",
+    plans: {
+      free: {
+        name: 'Free',
+        description: 'Try FreePeriod with no commitment.',
+        feature1: '3 lesson plans per month',
+        feature2: 'Fast mode',
+        feature3: 'PDF, DOCX, XLSX upload',
+        feature4: 'DOCX export',
+        feature5: 'Filled-in template download',
+        feature6: 'Community support',
+        cta: 'Start for free',
+      },
+      pro: {
+        name: 'Pro',
+        description: 'Weekly planners: up to 20 AI plans a month, Fast and Quality.',
+        feature1: 'Everything in Free',
+        feature2: '20 lesson plans per month',
+        feature3: 'Fast and Quality modes',
+        feature4: 'OCR text extraction',
+        feature5: 'Priority support',
+        cta: 'Start Pro',
+      },
+      pro_plus: {
+        name: 'Pro+',
+        description: 'Daily planners: unlimited lesson plans, no monthly cap.',
+        feature1: 'Unlimited lesson plans',
+        feature2: 'Everything in Pro',
+        cta: 'Start Pro+',
+      },
+    },
   },
 } as const;
 
@@ -129,8 +177,10 @@ export type Messages = {
     termsOfService: string;
   };
   landing: {
+    headerHome: string;
     headerPricing: string;
     headerSignIn: string;
+    backToHome: string;
     heroHeadline1: string;
     heroHeadlineHighlight: string;
     heroHeadline2: string;
@@ -165,5 +215,51 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+  };
+  pricing: {
+    title: string;
+    subtitle: string;
+    billingPeriodAria: string;
+    monthly: string;
+    annual: string;
+    savePercent: string;
+    mostPopular: string;
+    freePrice: string;
+    perMonth: string;
+    billedAnnually: string;
+    trustFooter: string;
+    checkoutRedirecting: string;
+    checkoutSettingUp: string;
+    checkoutError: string;
+    plans: {
+      free: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        feature4: string;
+        feature5: string;
+        feature6: string;
+        cta: string;
+      };
+      pro: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        feature3: string;
+        feature4: string;
+        feature5: string;
+        cta: string;
+      };
+      pro_plus: {
+        name: string;
+        description: string;
+        feature1: string;
+        feature2: string;
+        cta: string;
+      };
+    };
   };
 };

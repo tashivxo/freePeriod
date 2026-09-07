@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
 import { Manrope, Noto_Sans_Arabic, Noto_Sans_SC } from 'next/font/google';
+import { DEFAULT_LOCALE, isLocale, isRtl, type Locale } from '@/lib/i18n';
 import { LocaleProvider } from '@/providers/locale';
 import { ThemeProvider } from '@/providers/theme';
 import { ZenModeProvider } from '@/providers/zen-mode';
@@ -28,6 +30,8 @@ const notoSansSC = Noto_Sans_SC({
   preload: false,
   variable: '--font-noto-sans-sc',
   weight: ['400', '500', '600', '700'],
+  // next/font only exposes latin for this family; the files still cover Hans glyphs.
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -37,18 +41,58 @@ export const metadata: Metadata = {
     'AI lesson planner for teachers. Describe what you need and get a complete, structured lesson plan in seconds. Export to DOCX.',
 };
 
-export default function RootLayout({
+const localeBootstrapScript = `
+  (() => {
+    const locales = ['en', 'ar', 'es', 'fr', 'zh-Hans'];
+    let locale = document.cookie.match(/(?:^|;\\s*)fp-locale=([^;]*)/)?.[1];
+    try {
+      locale = locale ? decodeURIComponent(locale) : undefined;
+    } catch {
+      locale = undefined;
+    }
+    if (!locales.includes(locale)) {
+      try {
+        locale = localStorage.getItem('fp-locale') || undefined;
+      } catch {}
+    }
+    if (locales.includes(locale)) {
+      document.documentElement.lang = locale;
+      document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+      if (!document.cookie.match(/(?:^|;\\s*)fp-locale=/)) {
+        document.cookie = 'fp-locale=' + encodeURIComponent(locale) + '; path=/; max-age=31536000; SameSite=Lax';
+      }
+    }
+  })();
+`;
+
+async function readLocaleCookie(): Promise<Locale> {
+  const raw = (await cookies()).get('fp-locale')?.value;
+  if (!raw) return DEFAULT_LOCALE;
+  try {
+    const decoded = decodeURIComponent(raw);
+    return isLocale(decoded) ? decoded : DEFAULT_LOCALE;
+  } catch {
+    return DEFAULT_LOCALE;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await readLocaleCookie();
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={isRtl(locale) ? 'rtl' : 'ltr'}
+      suppressHydrationWarning
       className={cn(manrope.variable, notoSansArabic.variable, notoSansSC.variable)}
     >
       <body>
-        <LocaleProvider>
+        <script dangerouslySetInnerHTML={{ __html: localeBootstrapScript }} />
+        <LocaleProvider initialLocale={locale}>
           <ThemeProvider>
             <ZenModeProvider>
               <TooltipProvider>{children}</TooltipProvider>

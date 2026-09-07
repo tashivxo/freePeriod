@@ -66,7 +66,7 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle variant="floating-label" />);
     const button = screen.getByRole('button', { name: getMessages('en').landing.switchToDarkMode });
     expect(button).toHaveClass('h-11');
-    expect(button).toHaveClass('w-[14rem]');
+    expect(button).toHaveClass('w-[16rem]');
     expect(button).toHaveClass('shrink-0');
     expect(button).toHaveClass('whitespace-nowrap');
   });

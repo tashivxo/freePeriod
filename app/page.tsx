@@ -9,16 +9,15 @@ import { DownloadIcon } from '@/components/ui/icons/download';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
-import { LanguagePicker } from '@/components/ui/LanguagePicker';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { animate, stagger } from 'animejs';
-import { Logo } from '@/components/ui/branding/Logo';
+import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { ShinyText } from '@/components/ui/effects/ShinyText';
 import { SpotlightCard } from '@/components/ui/effects/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
-import { useT } from '@/providers/locale';
+import { useLocale, useT } from '@/providers/locale';
 import dynamic from 'next/dynamic';
 
 const HeroPictogram = dynamic(
@@ -103,6 +102,11 @@ function getPrefersReducedMotion(): boolean {
 
 export default function HomePage() {
   const t = useT();
+  const { locale } = useLocale();
+  const compactHeadingTypography = locale === 'ar' || locale === 'zh-Hans';
+  const headingTypographyClass = compactHeadingTypography
+    ? 'tracking-normal leading-snug'
+    : 'leading-[1.08] tracking-[-0.02em]';
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -196,41 +200,24 @@ export default function HomePage() {
         </div>
       )}
 
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Logo size="sm" />
-          <nav className="flex items-center gap-2">
-            <LanguagePicker variant="icon" />
-            <Link
-              href="/pricing"
-              className="inline-flex min-h-11 items-center px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
-            >
-              {t('landing.headerPricing')}
-            </Link>
-            <Link
-              href="/sign-in"
-              className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
-            >
-              {t('landing.headerSignIn')}
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <MarketingHeader
+        navLink={{ href: '/pricing', labelKey: 'landing.headerPricing' }}
+      />
 
       <main className="relative">
         <section className="relative z-10 mx-auto max-w-5xl px-6 pt-14 pb-12 sm:pt-16 lg:pt-20 lg:pb-14">
           <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-14">
-            <div ref={heroRef} className="flex-1 text-center lg:text-left">
+            <div ref={heroRef} className="flex-1 text-center lg:text-start">
               <h1
                 data-animate
-                className="font-display text-4xl font-extrabold leading-[1.08] tracking-[-0.02em] text-text-primary sm:text-5xl lg:text-[3.25rem]"
+                className={`font-display text-4xl font-extrabold text-text-primary sm:text-5xl lg:text-[3.25rem] ${headingTypographyClass}`}
                 style={{ opacity: hiddenUntilAnimated }}
               >
                 {t('landing.heroHeadline1')}{' '}
                 <span className="relative whitespace-nowrap text-coral">
                   {t('landing.heroHeadlineHighlight')}
                   <svg
-                    className="absolute -bottom-1 left-0 w-full"
+                    className="absolute -bottom-1 start-0 w-full"
                     viewBox="0 0 200 8"
                     fill="none"
                     aria-hidden
@@ -397,7 +384,7 @@ export default function HomePage() {
       <ThemeToggle
         variant="floating-label"
         buttonRef={toggleRef}
-        wrapperClassName="fixed bottom-6 right-6 z-50"
+        wrapperClassName="fixed bottom-6 end-6 z-50"
         style={{ opacity: hiddenUntilAnimated }}
       />
     </div>

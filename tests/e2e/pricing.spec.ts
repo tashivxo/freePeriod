@@ -1,8 +1,27 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { getMessages } from '../../lib/i18n';
+
+const fr = getMessages('fr');
+
+function planCard(page: Page, name: string) {
+  return page
+    .getByRole('heading', { name, level: 2, exact: true })
+    .locator('xpath=ancestor::div[contains(@class, "rounded-2xl")][1]');
+}
+
+async function clearLocaleStorage(page: Page, context: BrowserContext) {
+  await context.clearCookies();
+  await page.goto('/pricing');
+  await page.evaluate(() => {
+    localStorage.removeItem('fp-locale');
+    document.cookie = 'fp-locale=; Max-Age=0; path=/';
+  });
+  await page.reload();
+}
 
 test.describe('Pricing page', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/pricing');
+  test.beforeEach(async ({ page, context }) => {
+    await clearLocaleStorage(page, context);
   });
 
   // ── Page metadata ───────────────────────────────────────────────
@@ -44,7 +63,7 @@ test.describe('Pricing page', () => {
 
   test('free card shows $0 price as "Free"', async ({ page }) => {
     // Free plan card should show the word "Free" as the price
-    const freeCard = page.locator('[data-card]').first();
+    const freeCard = planCard(page, 'Free');
     await expect(freeCard.getByText('Free').first()).toBeVisible();
   });
 
@@ -52,13 +71,13 @@ test.describe('Pricing page', () => {
     // Ensure monthly is active (default)
     await expect(page.getByRole('tab', { name: 'Monthly' })).toBeVisible();
     // Pro plan price
-    const proCard = page.locator('[data-card]').nth(1);
+    const proCard = planCard(page, 'Pro');
     await expect(proCard.getByText('$9')).toBeVisible();
     await expect(proCard.getByText('/mo')).toBeVisible();
   });
 
   test('pro_plus card shows $12/mo on monthly billing', async ({ page }) => {
-    const plusCard = page.locator('[data-card]').nth(2);
+    const plusCard = planCard(page, 'Pro+');
     await expect(plusCard.getByText('$12')).toBeVisible();
   });
 
@@ -86,7 +105,7 @@ test.describe('Pricing page', () => {
     await page.getByRole('tab', { name: /Annual/i }).click();
     await page.waitForTimeout(100);
 
-    const proCard = page.locator('[data-card]').nth(1);
+    const proCard = planCard(page, 'Pro');
     await expect(proCard.getByText('$7')).toBeVisible();
   });
 
@@ -94,7 +113,7 @@ test.describe('Pricing page', () => {
     await page.getByRole('tab', { name: /Annual/i }).click();
     await page.waitForTimeout(100);
 
-    const plusCard = page.locator('[data-card]').nth(2);
+    const plusCard = planCard(page, 'Pro+');
     await expect(plusCard.getByText('$10')).toBeVisible();
   });
 
@@ -118,7 +137,7 @@ test.describe('Pricing page', () => {
   test('"Start Pro" while unauthenticated redirects to /sign-up?plan=pro', async ({
     page,
   }) => {
-    const proCard = page.locator('[data-card]').nth(1);
+    const proCard = planCard(page, 'Pro');
     const startProBtn = proCard.getByRole('button', { name: 'Start Pro' });
     await expect(startProBtn).toBeVisible();
 
@@ -131,7 +150,7 @@ test.describe('Pricing page', () => {
   test('"Start Pro+" while unauthenticated redirects to /sign-up?plan=pro_plus', async ({
     page,
   }) => {
-    const plusCard = page.locator('[data-card]').nth(2);
+    const plusCard = planCard(page, 'Pro+');
     const startPlusBtn = plusCard.getByRole('button', { name: 'Start Pro+' });
     await expect(startPlusBtn).toBeVisible();
 
@@ -200,12 +219,12 @@ test.describe('Pricing page – colour scheme accessibility', () => {
     test.describe(`${scheme} mode`, () => {
       test.use({ colorScheme: scheme });
 
-      test.beforeEach(async ({ page }) => {
-        await page.goto('/pricing');
+      test.beforeEach(async ({ page, context }) => {
+        await clearLocaleStorage(page, context);
       });
 
       test(`Pro+ CTA uses mustard background in ${scheme} mode`, async ({ page }) => {
-        const plusCard = page.locator('[data-card]').nth(2);
+        const plusCard = planCard(page, 'Pro+');
         const btn = plusCard.getByRole('button', { name: 'Start Pro+' });
         await expect(btn).toBeVisible();
         // Must use the fixed mustard colour — never the theme-adaptive text-primary
@@ -237,18 +256,50 @@ test.describe('Pricing page – colour scheme accessibility', () => {
   }
 });
 
+// ── Locale persistence ────────────────────────────────────────────
+test.describe('Pricing page – locale persistence', () => {
+  test('uses French copy after navigating from the landing page', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.setItem('fp-locale', 'fr');
+      document.cookie = 'fp-locale=fr; path=/; max-age=31536000; SameSite=Lax';
+    });
+    await page.reload();
+
+    await page.getByRole('banner').getByRole('link', { name: fr.landing.headerPricing }).click();
+    await page.waitForURL('**/pricing', { timeout: 8000 });
+
+    await expect(page.getByRole('heading', { name: fr.pricing.title, level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: fr.settings.language })).toBeVisible();
+
+    for (const cta of [
+      page.getByRole('link', { name: fr.pricing.plans.free.cta }),
+      page.getByRole('button', { name: fr.pricing.plans.pro.cta }),
+      page.getByRole('button', { name: fr.pricing.plans.pro_plus.cta }),
+    ]) {
+      const box = await cta.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
 // ── Landing page integration ──────────────────────────────────────
 test.describe('Landing page has Pricing link', () => {
+  test.beforeEach(async ({ page, context }) => {
+    await clearLocaleStorage(page, context);
+  });
+
   test('Pricing link in nav points to /pricing', async ({ page }) => {
     await page.goto('/');
-    const pricingLink = page.getByRole('link', { name: 'Pricing' });
+    const pricingLink = page.getByRole('banner').getByRole('link', { name: 'Pricing' });
     await expect(pricingLink).toBeVisible();
     await expect(pricingLink).toHaveAttribute('href', '/pricing');
   });
 
   test('clicking Pricing nav link navigates to /pricing page', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: 'Pricing' }).click();
+    await page.getByRole('banner').getByRole('link', { name: 'Pricing' }).click();
     await page.waitForURL('**/pricing', { timeout: 8000 });
     await expect(
       page.getByRole('heading', { name: 'Plans for every classroom', level: 1 }),

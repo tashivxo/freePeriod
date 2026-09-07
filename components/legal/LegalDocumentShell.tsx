@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Logo } from '@/components/ui/branding/Logo';
+import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 
 export type LegalTableOfContentsItem = {
@@ -20,17 +19,11 @@ export function LegalDocumentShell({
 }) {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
-          <Logo size="sm" />
-          <Link
-            href="/"
-            className="inline-flex min-h-11 items-center text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
-          >
-            Back to home
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader
+        navLink={{ href: '/', labelKey: 'landing.backToHome' }}
+        maxWidthClass="max-w-3xl"
+        showSignIn={false}
+      />
 
       <main className="mx-auto max-w-3xl px-6 py-12">
         <header className="mb-10 border-b border-border pb-8">

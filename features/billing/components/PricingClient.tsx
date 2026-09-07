@@ -13,86 +13,64 @@ import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MagicCard } from '@/components/ui/effects/magic-card';
-import { Logo } from '@/components/ui/branding/Logo';
+import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
 import { createClient } from '@/lib/supabase/client';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
+import { useLocale, useT } from '@/providers/locale';
 
 const SoftAurora = dynamic(
   () => import('@/components/ui/backgrounds/SoftAurora/SoftAurora'),
   { ssr: false },
 );
 
-interface Plan {
-  id: string;
-  name: string;
+type PlanId = 'free' | 'pro' | 'pro_plus';
+
+interface PlanConfig {
+  id: PlanId;
   Icon: AnimatedIconComponent;
   iconBg: string;
   priceMonthly: number;
   priceAnnual: number;
-  description: string;
-  features: string[];
-  cta: string;
   ctaClass: string;
   href?: string;
   featured?: boolean;
 }
 
-const PLANS: Plan[] = [
+const PLAN_FEATURE_KEYS: Record<PlanId, string[]> = {
+  free: ['feature1', 'feature2', 'feature3', 'feature4', 'feature5', 'feature6'],
+  pro: ['feature1', 'feature2', 'feature3', 'feature4', 'feature5'],
+  pro_plus: ['feature1', 'feature2'],
+};
+
+const PLANS: PlanConfig[] = [
   {
     id: 'free',
-    name: 'Free',
     Icon: BookTextIcon,
     iconBg: 'bg-coral/10',
     priceMonthly: 0,
     priceAnnual: 0,
-    description: 'Perfect for trying out FreePeriod. Get started with no commitment.',
-    features: [
-      '3 lesson plans per month',
-      'Fast mode',
-      'PDF, DOCX, XLSX upload',
-      'DOCX export',
-      'Filled-in template download',
-      'Community support',
-    ],
-    cta: 'Start for free',
     ctaClass:
       'border border-coral text-coral hover:bg-coral/10 focus-visible:ring-2 focus-visible:ring-coral',
     href: '/sign-up',
   },
   {
     id: 'pro',
-    name: 'Pro',
     Icon: SparklesIcon,
     iconBg: 'bg-coral/15',
     priceMonthly: 9,
     priceAnnual: 7,
-    description:
-      'For teachers who plan every week, up to 20 AI lesson plans a month with Fast and Quality modes.',
-    features: [
-      'Everything in Free',
-      '20 lesson plans per month',
-      'Fast and Quality modes',
-      'OCR text extraction',
-      'Priority support',
-    ],
-    cta: 'Start Pro',
     ctaClass:
       'bg-coral hover:bg-coral-dark text-white focus-visible:ring-2 focus-visible:ring-coral',
     featured: true,
   },
   {
     id: 'pro_plus',
-    name: 'Pro+',
     Icon: ZapIcon,
     iconBg: 'bg-coral/10',
     priceMonthly: 12,
     priceAnnual: 10,
-    description:
-      'For teachers who plan every day, unlimited lesson plans with no monthly cap.',
-    features: ['Unlimited lesson plans', 'Everything in Pro'],
-    cta: 'Start Pro+',
     ctaClass:
       'bg-mustard hover:bg-mustard/90 text-text-primary focus-visible:ring-2 focus-visible:ring-mustard',
   },
@@ -103,8 +81,18 @@ function getPrefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+function formatMoney(locale: string, amount: number): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export function PricingClient() {
   const router = useRouter();
+  const t = useT();
+  const { locale } = useLocale();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [checkoutLongWait, setCheckoutLongWait] = useState(false);
@@ -113,6 +101,11 @@ export function PricingClient() {
   const loadingPlanRef = useRef<string | null>(null);
   const { ref: checkoutErrorIconRef, animationDisabled: checkoutErrorIconMotionDisabled } =
     useMotionSafeIconRef();
+
+  const compactHeadingTypography = locale === 'ar' || locale === 'zh-Hans';
+  const headingTypographyClass = compactHeadingTypography
+    ? 'tracking-normal leading-snug'
+    : 'leading-[1.1] tracking-[-0.02em]';
 
   useEffect(() => {
     if (!checkoutError || checkoutErrorIconMotionDisabled) return;
@@ -182,16 +175,14 @@ export function PricingClient() {
           return;
         }
 
-        setCheckoutError(
-          data.error ?? "Couldn't open checkout — try again",
-        );
+        setCheckoutError(data.error ?? t('pricing.checkoutError'));
         clearCheckoutLoading();
       } catch {
-        setCheckoutError("Couldn't open checkout — try again");
+        setCheckoutError(t('pricing.checkoutError'));
         clearCheckoutLoading();
       }
     },
-    [router, isAnnual, clearCheckoutLoading],
+    [router, isAnnual, clearCheckoutLoading, t],
   );
 
   const handleBillingChange = useCallback((annual: boolean) => {
@@ -204,7 +195,7 @@ export function PricingClient() {
       {/* Background aurora */}
       {!prefersReduced && (
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[600px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[600px] overflow-hidden"
         aria-hidden="true"
       >
         <SoftAurora
@@ -226,47 +217,28 @@ export function PricingClient() {
       </div>
       )}
 
-      {/* Public header */}
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <Logo size="sm" />
-          <nav className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center px-3 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary"
-            >
-              Home
-            </Link>
-            <Link
-              href="/sign-in"
-              className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden rounded-xl bg-coral px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral"
-            >
-              Sign in
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <MarketingHeader navLink={{ href: '/', labelKey: 'landing.headerHome' }} />
 
       <main className="relative mx-auto max-w-5xl px-6 pb-24 pt-16">
         {/* Hero section */}
         <div className="mb-16 text-center">
           <h1
-            className="font-display text-4xl font-extrabold leading-[1.1] tracking-[-0.02em] text-text-primary sm:text-5xl"
+            className={`font-display text-4xl font-extrabold text-text-primary sm:text-5xl ${headingTypographyClass}`}
           >
-            Plans for every classroom
+            {t('pricing.title')}
           </h1>
 
           <p
             className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg"
           >
-            Start free, upgrade when you&apos;re ready. No credit card required.
+            {t('pricing.subtitle')}
           </p>
 
           {/* Billing toggle */}
           <div
             role="tablist"
-            aria-label="Billing period"
-            className="mt-8 inline-flex items-center gap-3 rounded-2xl bg-surface p-1.5 shadow-sm ring-1 ring-border/50"
+            aria-label={t('pricing.billingPeriodAria')}
+            className="mt-8 inline-flex max-w-full flex-wrap items-center justify-center gap-3 rounded-2xl bg-surface p-1.5 shadow-sm ring-1 ring-border/50"
           >
             <button
               type="button"
@@ -275,13 +247,13 @@ export function PricingClient() {
               aria-selected={!isAnnual}
               aria-controls="pricing-plans"
               onClick={() => handleBillingChange(false)}
-              className={`rounded-xl px-5 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
+              className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral sm:px-5 ${
                 !isAnnual
                   ? 'bg-coral text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              Monthly
+              {t('pricing.monthly')}
             </button>
             <button
               type="button"
@@ -290,15 +262,15 @@ export function PricingClient() {
               aria-selected={isAnnual}
               aria-controls="pricing-plans"
               onClick={() => handleBillingChange(true)}
-              className={`flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral ${
+              className={`flex flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral sm:px-5 ${
                 isAnnual
                   ? 'bg-coral text-white shadow-sm'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              Annual
+              {t('pricing.annual')}
               <span className="rounded-full bg-mustard/20 px-2 py-0.5 text-xs font-bold text-mustard-dark">
-                Save 20%
+                {t('pricing.savePercent')}
               </span>
             </button>
           </div>
@@ -317,8 +289,17 @@ export function PricingClient() {
             const isActiveLoading = loadingPlan === plan.id;
             const isPaidCtaDisabled = loadingPlan !== null && !plan.href;
             const loadingLabel = checkoutLongWait
-              ? 'Setting up your secure checkout…'
-              : 'Redirecting to checkout…';
+              ? t('pricing.checkoutSettingUp')
+              : t('pricing.checkoutRedirecting');
+            const planPrefix = `pricing.plans.${plan.id}`;
+            const planName = t(`${planPrefix}.name`);
+            const planDescription = t(`${planPrefix}.description`);
+            const planCta = t(`${planPrefix}.cta`);
+            const features = PLAN_FEATURE_KEYS[plan.id].map((key) =>
+              t(`${planPrefix}.${key}`),
+            );
+            const formattedPrice = formatMoney(locale, price);
+            const formattedYearly = formatMoney(locale, price * 12);
 
             return (
               <div
@@ -326,19 +307,19 @@ export function PricingClient() {
                 className={`relative ${plan.featured ? 'ring-2 ring-coral rounded-2xl' : ''}`}
               >
                 {plan.featured && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
-                    <span className="rounded-full bg-coral px-3 py-1 text-xs font-bold text-white shadow-sm">
-                      Most Popular
+                  <div className="absolute -top-3.5 left-1/2 z-10 w-full max-w-[calc(100%-1rem)] -translate-x-1/2 text-center">
+                    <span className="inline-block max-w-full rounded-full bg-coral px-3 py-1 text-xs font-bold leading-tight text-white shadow-sm">
+                      {t('pricing.mostPopular')}
                     </span>
                   </div>
                 )}
 
                 <MagicCard
-                  className="h-full rounded-2xl p-6"
+                  className={`h-full rounded-2xl p-6 ${plan.featured ? 'pt-8' : ''}`}
                   gradientColor={CORAL}
                   gradientOpacity={0.12}
                 >
-                  <div className="flex flex-col h-full">
+                  <div className="flex h-full flex-col">
                     {/* Plan icon + name */}
                     <div className="mb-4 flex items-center gap-3">
                       <div
@@ -346,8 +327,10 @@ export function PricingClient() {
                       >
                         <MotionSafeIcon icon={Icon} size={20} className="text-coral" />
                       </div>
-                      <h2 className="font-display text-xl font-bold text-text-primary">
-                        {plan.name}
+                      <h2
+                        className={`font-display text-xl font-bold text-text-primary ${compactHeadingTypography ? 'tracking-normal leading-snug' : ''}`}
+                      >
+                        {planName}
                       </h2>
                     </div>
 
@@ -355,29 +338,33 @@ export function PricingClient() {
                     <div className="mb-2">
                       {price === 0 ? (
                         <span className="font-display text-4xl font-bold text-text-primary tabular-nums">
-                          Free
+                          {t('pricing.freePrice')}
                         </span>
                       ) : (
-                        <div className="flex items-end gap-1">
+                        <div className="flex flex-wrap items-baseline gap-1">
                           <span className="font-display text-4xl font-bold text-text-primary tabular-nums">
-                            ${price}
+                            {formattedPrice}
                           </span>
-                          <span className="mb-1 text-sm text-text-secondary tabular-nums">/mo</span>
+                          <span className="text-sm text-text-secondary tabular-nums">
+                            {t('pricing.perMonth')}
+                          </span>
                         </div>
                       )}
                       {isAnnual && price > 0 && (
                         <p className="mt-1 text-xs text-text-secondary tabular-nums">
-                          Billed as ${price * 12}/yr
+                          {t('pricing.billedAnnually', { amount: formattedYearly })}
                         </p>
                       )}
                     </div>
 
-                    <p className="mb-6 text-sm text-text-secondary">{plan.description}</p>
+                    <p className="mb-6 min-h-[4.5rem] text-pretty text-sm text-text-secondary">
+                      {planDescription}
+                    </p>
 
                     {/* Features */}
-                    <ul className="space-y-2.5">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2.5">
+                    <ul className="flex-1 space-y-2.5">
+                      {features.map((feature, index) => (
+                        <li key={PLAN_FEATURE_KEYS[plan.id][index]} className="flex items-start gap-2.5">
                           <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-coral/10">
                             <Check size={12} className="text-coral" />
                           </div>
@@ -393,7 +380,7 @@ export function PricingClient() {
                           href={plan.href}
                           className={`relative btn-shine overflow-hidden flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] focus-visible:outline-none ${plan.ctaClass}`}
                         >
-                          {plan.cta}
+                          {planCta}
                         </Link>
                       ) : (
                         <button
@@ -406,10 +393,12 @@ export function PricingClient() {
                           {isActiveLoading ? (
                             <>
                               <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                              <span aria-live="polite">{loadingLabel}</span>
+                              <span className="leading-snug text-pretty" aria-live="polite">
+                                {loadingLabel}
+                              </span>
                             </>
                           ) : (
-                            plan.cta
+                            planCta
                           )}
                         </button>
                       )}
@@ -439,13 +428,13 @@ export function PricingClient() {
 
         {/* Trust footer */}
         <p className="mt-12 text-center text-sm text-text-secondary">
-          Paid plans include a 30-day free trial. Cancel anytime. No hidden fees.
+          {t('pricing.trustFooter')}
         </p>
       </main>
 
       <MarketingFooter />
 
-      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 right-6 z-50" />
+      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 end-6 z-50" />
     </div>
   );
 }

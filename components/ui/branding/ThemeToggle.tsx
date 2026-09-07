@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 /** Fixed footprint for the landing/pricing theme CTA across locales and light/dark labels. */
 export const FLOATING_THEME_TOGGLE_CLASS =
-  'h-11 w-[14rem] shrink-0 justify-center whitespace-nowrap';
+  'h-11 w-[16rem] max-w-[calc(100vw-2rem)] shrink-0 justify-center whitespace-nowrap';
 
 type ThemeToggleProps = {
   variant?: 'icon' | 'floating-label';
