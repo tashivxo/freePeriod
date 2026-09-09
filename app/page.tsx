@@ -179,38 +179,34 @@ export default function HomePage() {
                 {t('landing.heroHeadline2')}
               </TextSwap>
 
-              <TextSwap
-                as="p"
-                swapKey={locale}
-                className="mx-auto mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg lg:mx-0"
-              >
+              <p className="mx-auto mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg lg:mx-0">
                 {t('landing.heroSub')}
-              </TextSwap>
+              </p>
 
               <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
                 <Link
                   href="/sign-up"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl bg-coral px-6 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
                 >
-                  <TextSwap swapKey={locale}>{t('landing.heroCtaPrimary')}</TextSwap>
+                  {t('landing.heroCtaPrimary')}
                 </Link>
                 <Link
                   href="/sign-in"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl border border-border bg-surface px-6 py-3 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                 >
-                  <TextSwap swapKey={locale}>{t('landing.heroCtaSecondary')}</TextSwap>
+                  {t('landing.heroCtaSecondary')}
                 </Link>
               </div>
 
               <div className="mt-5 flex items-center justify-center gap-4 lg:justify-start">
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={ClockIcon} size={14} />
-                  <TextSwap swapKey={locale}>{t('landing.heroStatTime')}</TextSwap>
+                  {t('landing.heroStatTime')}
                 </div>
                 <div className="h-3 w-px bg-border" />
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={BookTextIcon} size={14} />
-                  <TextSwap swapKey={locale}>{t('landing.heroStatFree')}</TextSwap>
+                  {t('landing.heroStatFree')}
                 </div>
               </div>
             </div>
@@ -227,17 +223,11 @@ export default function HomePage() {
         >
           <div className="mb-10 text-center md:mb-12">
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary md:text-4xl">
-              <TextSwap swapKey={locale}>
-                <ShinyText text={t('landing.featuresTitle')} speed={8} />
-              </TextSwap>
+              <ShinyText text={t('landing.featuresTitle')} speed={8} />
             </h2>
-            <TextSwap
-              as="p"
-              swapKey={locale}
-              className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base"
-            >
+            <p className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base">
               {t('landing.featuresSub')}
-            </TextSwap>
+            </p>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2 lg:grid-rows-2 lg:gap-6">
@@ -248,20 +238,12 @@ export default function HomePage() {
               <div className={`mb-5 inline-flex rounded-xl p-3.5 ${LEAD_FEATURE.color}`}>
                 <MotionSafeIcon icon={LeadIcon} size={LEAD_FEATURE.iconSize} />
               </div>
-              <TextSwap
-                as="h3"
-                swapKey={locale}
-                className="mb-3 font-display text-2xl font-semibold text-text-primary"
-              >
+              <h3 className="mb-3 font-display text-2xl font-semibold text-text-primary">
                 {t(LEAD_FEATURE.titleKey)}
-              </TextSwap>
-              <TextSwap
-                as="p"
-                swapKey={locale}
-                className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base"
-              >
+              </h3>
+              <p className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base">
                 {t(LEAD_FEATURE.descriptionKey)}
-              </TextSwap>
+              </p>
             </SpotlightCard>
 
             {SUPPORTING_FEATURES.map(({ icon, iconSize, titleKey, descriptionKey, color }) => (
@@ -273,20 +255,8 @@ export default function HomePage() {
                 <div className={`mb-4 inline-flex rounded-xl p-3 ${color}`}>
                   <MotionSafeIcon icon={icon} size={iconSize} />
                 </div>
-                <TextSwap
-                  as="h3"
-                  swapKey={locale}
-                  className="mb-2 font-display text-lg font-semibold text-text-primary"
-                >
-                  {t(titleKey)}
-                </TextSwap>
-                <TextSwap
-                  as="p"
-                  swapKey={locale}
-                  className="font-body text-sm leading-relaxed text-text-secondary"
-                >
-                  {t(descriptionKey)}
-                </TextSwap>
+                <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{t(titleKey)}</h3>
+                <p className="font-body text-sm leading-relaxed text-text-secondary">{t(descriptionKey)}</p>
               </SpotlightCard>
             ))}
           </div>
@@ -296,36 +266,20 @@ export default function HomePage() {
           <CtaIridescenceBackground prefersReduced={prefersReduced} />
           <div className="relative z-10 mx-auto max-w-4xl px-6">
             <SpotlightCard className="relative rounded-2xl border border-border bg-surface/90 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12 dark:bg-surface/85">
-            <TextSwap
-              as="h2"
-              swapKey={locale}
-              className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl"
-            >
+            <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
               {t('landing.ctaHeadline')}
-            </TextSwap>
-            <TextSwap
-              as="p"
-              swapKey={locale}
-              className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base"
-            >
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base">
               {t('landing.ctaSub')}
-            </TextSwap>
+            </p>
 
             <div className="mx-auto mt-8 max-w-xl border-t border-border pt-8">
-              <TextSwap
-                as="h3"
-                swapKey={locale}
-                className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl"
-              >
+              <h3 className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl">
                 {t('landing.ctaBandTitle')}
-              </TextSwap>
-              <TextSwap
-                as="p"
-                swapKey={locale}
-                className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base"
-              >
+              </h3>
+              <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base">
                 {t('landing.ctaBandSub')}
-              </TextSwap>
+              </p>
             </div>
 
             <ul className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
@@ -338,13 +292,7 @@ export default function HomePage() {
                       <FileText className="h-5 w-5 text-coral" />
                     )}
                   </div>
-                  <TextSwap
-                    as="p"
-                    swapKey={locale}
-                    className="font-body text-sm leading-snug text-text-secondary"
-                  >
-                    {t(textKey)}
-                  </TextSwap>
+                  <p className="font-body text-sm leading-snug text-text-secondary">{t(textKey)}</p>
                 </li>
               ))}
             </ul>
@@ -353,7 +301,7 @@ export default function HomePage() {
               href="/sign-up"
               className="relative btn-shine mt-8 inline-flex min-h-[44px] items-center justify-center overflow-hidden rounded-xl bg-coral px-8 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
             >
-              <TextSwap swapKey={locale}>{t('landing.ctaButton')}</TextSwap>
+              {t('landing.ctaButton')}
             </Link>
           </SpotlightCard>
           </div>
