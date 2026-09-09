@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '@/lib/test-utils';
+import { render, screen, waitFor } from '@/lib/test-utils';
 import { LanguagePicker } from '@/components/ui/LanguagePicker';
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 
@@ -44,6 +44,13 @@ jest.mock('@/components/ui/icons/MotionSafeIcon', () => ({
   ),
 }));
 
+async function openPicker(user: { click: (el: HTMLElement) => Promise<void> }, name: string | RegExp) {
+  await user.click(screen.getByRole('button', { name }));
+  await waitFor(() => {
+    expect(screen.getByRole('menu')).toHaveClass('is-open');
+  });
+}
+
 describe('LanguagePicker', () => {
   beforeEach(() => {
     setLocale.mockClear();
@@ -58,7 +65,7 @@ describe('LanguagePicker', () => {
 
   it('renders native locale names for every LOCALES entry', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
-    await user.click(screen.getByRole('button', { name: 'Language' }));
+    await openPicker(user, 'Language');
     for (const code of LOCALES) {
       expect(screen.getByRole('menuitem', { name: LOCALE_LABELS[code] })).toBeInTheDocument();
     }
@@ -67,7 +74,7 @@ describe('LanguagePicker', () => {
   it('marks the selected locale with coral wash classes and a check', async () => {
     mockLocale = 'es';
     const { user } = render(<LanguagePicker variant="icon" />);
-    await user.click(screen.getByRole('button', { name: 'Idioma' }));
+    await openPicker(user, 'Idioma');
     const selected = screen.getByRole('menuitem', { name: LOCALE_LABELS.es });
     expect(selected.className).toMatch(/primary-light/);
     expect(selected.className).toMatch(/text-coral/);
@@ -76,7 +83,7 @@ describe('LanguagePicker', () => {
 
   it('does not use bg-accent / focus:bg-accent on items', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
-    await user.click(screen.getByRole('button', { name: 'Language' }));
+    await openPicker(user, 'Language');
     for (const item of screen.getAllByRole('menuitem')) {
       expect(item.className).not.toMatch(/bg-accent/);
       expect(item.className).toMatch(/primary-light/);
@@ -85,22 +92,28 @@ describe('LanguagePicker', () => {
 
   it('calls setLocale once when selecting a different locale', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
-    await user.click(screen.getByRole('button', { name: 'Language' }));
+    await openPicker(user, 'Language');
     await user.click(screen.getByRole('menuitem', { name: LOCALE_LABELS.fr }));
     expect(setLocale).toHaveBeenCalledTimes(1);
     expect(setLocale).toHaveBeenCalledWith('fr');
   });
 
-  it('overrides content motion to duration-150 and zoom 0.97', async () => {
+  it('opens an origin-aware t-dropdown from the top-right in LTR', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
-    await user.click(screen.getByRole('button', { name: 'Language' }));
-    const content = document.querySelector('[data-slot="dropdown-menu-content"]');
-    expect(content).toBeTruthy();
-    expect(content!.className).toMatch(/duration-150/);
-    expect(content!.className).toMatch(/zoom-in-\[0\.97\]/);
-    expect(content!.className).toMatch(/zoom-out-\[0\.97\]/);
-    expect(content!.className).not.toMatch(/duration-100/);
-    expect(content!.className).not.toMatch(/zoom-in-95/);
-    expect(content!.className).not.toMatch(/zoom-out-95/);
+    await openPicker(user, 'Language');
+    const menu = screen.getByRole('menu', { name: 'Language' });
+    expect(menu).toHaveClass('t-dropdown');
+    expect(menu).toHaveAttribute('data-origin', 'top-right');
+    expect(menu).toHaveAttribute('data-align', 'end');
+    expect(menu.className).not.toMatch(/transition-all/);
+  });
+
+  it('opens an origin-aware t-dropdown from the top-left in RTL', async () => {
+    mockLocale = 'ar';
+    const { user } = render(<LanguagePicker variant="icon" />);
+    await openPicker(user, 'اللغة');
+    const menu = screen.getByRole('menu', { name: 'اللغة' });
+    expect(menu).toHaveClass('t-dropdown');
+    expect(menu).toHaveAttribute('data-origin', 'top-left');
   });
 });

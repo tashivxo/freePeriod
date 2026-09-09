@@ -61,6 +61,23 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Lesson plans in seconds, not hours');
   });
 
+  it('keeps hero copy visible by default without an opacity:0 rest state', () => {
+    render(<HomePage />);
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toBeVisible();
+    expect(heading).toHaveAttribute('data-hero-focal');
+    expect(heading.style.opacity === '' || heading.style.opacity === '1').toBe(true);
+    expect(heading).toHaveClass('t-text-swap');
+    expect(heading).not.toHaveClass('is-exit');
+  });
+
+  it('does not hide the floating theme toggle behind an entrance opacity', () => {
+    render(<HomePage />);
+    const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
+    expect(toggle).toBeVisible();
+    expect(toggle.style.opacity === '' || toggle.style.opacity === '1').toBe(true);
+  });
+
   it('renders the language picker in the sticky header', () => {
     render(<HomePage />);
     expect(screen.getByRole('button', { name: /language/i })).toBeInTheDocument();

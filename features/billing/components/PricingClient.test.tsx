@@ -51,7 +51,7 @@ function renderPricing(locale: Locale = 'en') {
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
 
   return render(
-    <LocaleProvider>
+    <LocaleProvider initialLocale={locale}>
       <PricingClient />
     </LocaleProvider>,
   );
@@ -211,5 +211,57 @@ describe('PricingClient', () => {
 
     expect(document.documentElement.lang).toBe('ar');
     expect(document.documentElement.dir).toBe('rtl');
+  });
+
+  it('keeps the pricing heading visible by default without an opacity:0 rest state', () => {
+    renderPricing();
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toBeVisible();
+    expect(heading).toHaveAttribute('data-hero-focal');
+    expect(heading).toHaveClass('t-text-swap');
+    expect(heading).not.toHaveClass('is-exit');
+    expect(heading.style.opacity === '' || heading.style.opacity === '1').toBe(true);
+    expect(screen.getByText(en.pricing.subtitle).tagName).toBe('P');
+    expect(screen.getByText(en.pricing.subtitle)).not.toHaveClass('t-text-swap');
+  });
+
+  it('keeps the heading visible and updates copy when locale changes', async () => {
+    const ar = getMessages('ar');
+    const { user } = render(
+      <LocaleProvider initialLocale="en">
+        <LocaleControls />
+        <PricingClient />
+      </LocaleProvider>,
+    );
+
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading).toBeVisible();
+    expect(heading).toHaveTextContent(en.pricing.title);
+
+    await user.click(screen.getByRole('button', { name: 'Set Arabic' }));
+
+    await waitFor(() => {
+      expect(heading).toHaveTextContent(ar.pricing.title);
+    });
+    expect(heading).toBeVisible();
+    expect(Number(heading.style.opacity || '1')).toBeGreaterThan(0);
+    expect(screen.getByText(ar.pricing.subtitle)).toBeVisible();
+  });
+
+  it('renders an interruptible theme toggle that switches to dark', async () => {
+    const mockSetTheme = jest.fn();
+    mockedUseTheme.mockReturnValue({
+      theme: 'light',
+      setTheme: mockSetTheme,
+      resolvedTheme: 'light',
+    });
+
+    const { user, container } = renderPricing();
+    const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
+    expect(toggle).toBeVisible();
+    expect(container.querySelector('.t-icon-swap')).toHaveAttribute('data-state', 'a');
+
+    await user.click(toggle);
+    expect(mockSetTheme).toHaveBeenCalledWith('dark');
   });
 });

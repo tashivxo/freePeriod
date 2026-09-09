@@ -16,49 +16,32 @@ export function HeroPictogram() {
     const mark = markRef.current;
     if (!wrap || !mark) return;
 
+    wrap.style.opacity = '1';
+    wrap.style.transform = 'none';
+    wrap.style.willChange = 'auto';
+
     if (mq.matches) {
-      wrap.style.opacity = '1';
-      wrap.style.transform = 'scale(1)';
-      wrap.style.willChange = 'auto';
       mark.style.willChange = 'auto';
       return;
     }
 
-    wrap.style.willChange = 'transform, opacity';
     mark.style.willChange = 'transform';
-
-    const entrance = animate(wrap, {
-      scale: [0.94, 1],
-      opacity: [0, 1],
-      duration: 650,
-      easing: 'easeOutCubic',
-      complete: () => {
-        wrap.style.willChange = 'auto';
-        mark.style.willChange = 'auto';
-      },
-    });
 
     const breathe = animate(mark, {
       scale: [1, 1.035, 1],
       duration: 3200,
-      delay: 700,
       loop: true,
       easing: 'easeInOutSine',
     });
 
     return () => {
       try {
-        entrance.pause();
-      } catch {
-        /* ignore */
-      }
-      try {
         breathe.pause();
       } catch {
         /* ignore */
       }
-      wrap.style.willChange = 'auto';
       mark.style.willChange = 'auto';
+      wrap.style.willChange = 'auto';
     };
   }, []);
 
@@ -66,7 +49,6 @@ export function HeroPictogram() {
     <div
       ref={wrapRef}
       className="relative flex h-44 w-44 items-center justify-center sm:h-48 sm:w-48"
-      style={{ opacity: 0 }}
       aria-hidden="true"
       data-testid="animated-logo"
     >

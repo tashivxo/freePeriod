@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { legalConfig } from '@/lib/legal/config';
-import { useT } from '@/providers/locale';
+import { useLocale } from '@/providers/locale';
 
 export function MarketingFooter() {
-  const t = useT();
+  const { t } = useLocale();
   const year = new Date().getFullYear();
 
   const links: { href: string; label: string; external?: boolean }[] = [
