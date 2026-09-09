@@ -3,8 +3,9 @@
 import Link from 'next/link';
 
 import { LanguagePicker } from '@/components/ui/LanguagePicker';
+import { TextSwap } from '@/components/ui/TextSwap';
 import { Logo } from '@/components/ui/branding/Logo';
-import { useT } from '@/providers/locale';
+import { useLocale } from '@/providers/locale';
 
 type MarketingHeaderProps = {
   navLink: {
@@ -20,7 +21,7 @@ export function MarketingHeader({
   maxWidthClass = 'max-w-5xl',
   showSignIn = true,
 }: MarketingHeaderProps) {
-  const t = useT();
+  const { t, locale } = useLocale();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
@@ -36,14 +37,14 @@ export function MarketingHeader({
             href={navLink.href}
             className="inline-flex min-h-11 items-center px-2 py-2 text-sm font-body text-text-secondary transition-colors hover:text-text-primary sm:px-3"
           >
-            {t(navLink.labelKey)}
+            <TextSwap swapKey={locale}>{t(navLink.labelKey)}</TextSwap>
           </Link>
           {showSignIn ? (
             <Link
               href="/sign-in"
               className="relative btn-shine inline-flex min-h-11 items-center overflow-hidden whitespace-nowrap rounded-xl bg-coral px-2.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral sm:px-4"
             >
-              {t('landing.headerSignIn')}
+              <TextSwap swapKey={locale}>{t('landing.headerSignIn')}</TextSwap>
             </Link>
           ) : null}
         </nav>

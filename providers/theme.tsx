@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useLayoutEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -18,24 +18,43 @@ const ThemeContext = createContext<ThemeContextValue>({
   resolvedTheme: 'light',
 });
 
+function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem('fp-theme');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+  } catch {
+    /* ignore */
+  }
+  return 'light';
+}
+
+function resolveTheme(theme: Theme): ResolvedTheme {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return theme;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
+  const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('fp-theme') as Theme | null;
-    if (stored && (stored === 'light' || stored === 'dark' || stored === 'system')) {
-      setThemeState(stored);
-    }
-  }, []);
-
-  useEffect(() => {
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const resolved: ResolvedTheme =
-      theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
+  useLayoutEffect(() => {
+    const stored = readStoredTheme();
+    setThemeState(stored);
+    const resolved = resolveTheme(stored);
     setResolvedTheme(resolved);
     document.documentElement.classList.toggle('dark', resolved === 'dark');
-  }, [theme]);
+    setReady(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!ready) return;
+    const resolved = resolveTheme(theme);
+    setResolvedTheme(resolved);
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
+  }, [theme, ready]);
 
   function setTheme(t: Theme) {
     setThemeState(t);

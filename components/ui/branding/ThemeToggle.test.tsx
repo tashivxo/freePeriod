@@ -70,4 +70,12 @@ describe('ThemeToggle', () => {
     expect(button).toHaveClass('shrink-0');
     expect(button).toHaveClass('whitespace-nowrap');
   });
+
+  it('keeps both theme icons mounted for an interruptible swap', () => {
+    const { container } = render(<ThemeToggle variant="icon" />);
+    const swap = container.querySelector('.t-icon-swap');
+    expect(swap).toBeTruthy();
+    expect(swap).toHaveAttribute('data-state', 'a');
+    expect(swap?.querySelectorAll('.t-icon')).toHaveLength(2);
+  });
 });

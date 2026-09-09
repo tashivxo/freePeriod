@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { legalConfig } from '@/lib/legal/config';
-import { useT } from '@/providers/locale';
+import { TextSwap } from '@/components/ui/TextSwap';
+import { useLocale } from '@/providers/locale';
 
 export function MarketingFooter() {
-  const t = useT();
+  const { t, locale } = useLocale();
   const year = new Date().getFullYear();
 
   const links: { href: string; label: string; external?: boolean }[] = [
@@ -29,7 +30,7 @@ export function MarketingFooter() {
                 href={link.href}
                 className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
               >
-                {link.label}
+                <TextSwap swapKey={locale}>{link.label}</TextSwap>
               </a>
             ) : (
               <Link
@@ -37,13 +38,14 @@ export function MarketingFooter() {
                 href={link.href}
                 className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
               >
-                {link.label}
+                <TextSwap swapKey={locale}>{link.label}</TextSwap>
               </Link>
             )
           )}
         </nav>
         <p className="font-body text-sm text-text-secondary">
-          © {year} {legalConfig.serviceName}. {t('landing.footerTagline')}
+          © {year} {legalConfig.serviceName}.{' '}
+          <TextSwap swapKey={locale}>{t('landing.footerTagline')}</TextSwap>
         </p>
       </div>
     </footer>

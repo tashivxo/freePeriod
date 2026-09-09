@@ -15,6 +15,7 @@ import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MagicCard } from '@/components/ui/effects/magic-card';
 import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
+import { TextSwap } from '@/components/ui/TextSwap';
 import { createClient } from '@/lib/supabase/client';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
@@ -214,6 +215,7 @@ export function PricingClient() {
           enableMouseInteraction={false}
           mouseInfluence={0}
         />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/25 via-background/45 to-background dark:from-background/40 dark:via-background/60 dark:to-background" />
       </div>
       )}
 
@@ -222,17 +224,21 @@ export function PricingClient() {
       <main className="relative mx-auto max-w-5xl px-6 pb-24 pt-16">
         {/* Hero section */}
         <div className="mb-16 text-center">
-          <h1
+          <TextSwap
+            as="h1"
+            swapKey={locale}
             className={`font-display text-4xl font-extrabold text-text-primary sm:text-5xl ${headingTypographyClass}`}
           >
             {t('pricing.title')}
-          </h1>
+          </TextSwap>
 
-          <p
+          <TextSwap
+            as="p"
+            swapKey={locale}
             className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg"
           >
             {t('pricing.subtitle')}
-          </p>
+          </TextSwap>
 
           {/* Billing toggle */}
           <div

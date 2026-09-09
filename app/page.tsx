@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { PenToolIcon } from '@/components/ui/icons/pen-tool';
 import { SparklesIcon } from '@/components/ui/icons/sparkles';
@@ -11,9 +11,9 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
-import { animate, stagger } from 'animejs';
 import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
+import { TextSwap } from '@/components/ui/TextSwap';
 import { ShinyText } from '@/components/ui/effects/ShinyText';
 import { SpotlightCard } from '@/components/ui/effects/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
@@ -107,11 +107,7 @@ export default function HomePage() {
   const headingTypographyClass = compactHeadingTypography
     ? 'tracking-normal leading-snug'
     : 'leading-[1.08] tracking-[-0.02em]';
-  const heroRef = useRef<HTMLDivElement>(null);
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const toggleRef = useRef<HTMLButtonElement>(null);
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
-  const hiddenUntilAnimated = prefersReduced ? 1 : 0;
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -120,60 +116,6 @@ export default function HomePage() {
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-
-  useEffect(() => {
-    if (prefersReduced) return;
-
-    if (heroRef.current) {
-      const targets = Array.from(heroRef.current.querySelectorAll('[data-animate]'));
-      if (targets.length > 0) {
-        animate(targets, {
-          translateY: [20, 0],
-          opacity: [0, 1],
-          duration: 600,
-          delay: stagger(100),
-          easing: 'easeOutCubic',
-        });
-      }
-    }
-
-    if (toggleRef.current) {
-      animate(toggleRef.current, {
-        translateY: [20, 0],
-        opacity: [0, 1],
-        duration: 600,
-        delay: 1000,
-        easing: 'easeOutCubic',
-      });
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const cards = Array.from(entry.target.querySelectorAll('[data-feature]'));
-            if (cards.length > 0) {
-              animate(cards, {
-                translateY: [24, 0],
-                opacity: [0, 1],
-                duration: 600,
-                delay: stagger(80),
-                easing: 'easeOutCubic',
-              });
-            }
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (featuresRef.current) {
-      observer.observe(featuresRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [prefersReduced]);
 
   const LeadIcon = LEAD_FEATURE.icon;
 
@@ -197,6 +139,7 @@ export default function HomePage() {
             enableMouseInteraction={true}
             mouseInfluence={0.25}
           />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/25 via-background/45 to-background dark:from-background/40 dark:via-background/60 dark:to-background" />
         </div>
       )}
 
@@ -207,11 +150,12 @@ export default function HomePage() {
       <main className="relative">
         <section className="relative z-10 mx-auto max-w-5xl px-6 pt-14 pb-12 sm:pt-16 lg:pt-20 lg:pb-14">
           <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-14">
-            <div ref={heroRef} className="flex-1 text-center lg:text-start">
-              <h1
-                data-animate
+            <div className="flex-1 text-center lg:text-start">
+              <TextSwap
+                as="h1"
+                swapKey={locale}
+                data-hero-focal=""
                 className={`font-display text-4xl font-extrabold text-text-primary sm:text-5xl lg:text-[3.25rem] ${headingTypographyClass}`}
-                style={{ opacity: hiddenUntilAnimated }}
               >
                 {t('landing.heroHeadline1')}{' '}
                 <span className="relative whitespace-nowrap text-coral">
@@ -233,48 +177,40 @@ export default function HomePage() {
                   </svg>
                 </span>{' '}
                 {t('landing.heroHeadline2')}
-              </h1>
+              </TextSwap>
 
-              <p
-                data-animate
+              <TextSwap
+                as="p"
+                swapKey={locale}
                 className="mx-auto mt-5 max-w-lg font-body text-base leading-relaxed text-text-secondary sm:text-lg lg:mx-0"
-                style={{ opacity: hiddenUntilAnimated }}
               >
                 {t('landing.heroSub')}
-              </p>
+              </TextSwap>
 
-              <div
-                data-animate
-                className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start"
-                style={{ opacity: hiddenUntilAnimated }}
-              >
+              <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
                 <Link
                   href="/sign-up"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl bg-coral px-6 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
                 >
-                  {t('landing.heroCtaPrimary')}
+                  <TextSwap swapKey={locale}>{t('landing.heroCtaPrimary')}</TextSwap>
                 </Link>
                 <Link
                   href="/sign-in"
                   className="relative btn-shine inline-flex min-h-[44px] items-center gap-2 overflow-hidden rounded-xl border border-border bg-surface px-6 py-3 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
                 >
-                  {t('landing.heroCtaSecondary')}
+                  <TextSwap swapKey={locale}>{t('landing.heroCtaSecondary')}</TextSwap>
                 </Link>
               </div>
 
-              <div
-                data-animate
-                className="mt-5 flex items-center justify-center gap-4 lg:justify-start"
-                style={{ opacity: hiddenUntilAnimated }}
-              >
+              <div className="mt-5 flex items-center justify-center gap-4 lg:justify-start">
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={ClockIcon} size={14} />
-                  {t('landing.heroStatTime')}
+                  <TextSwap swapKey={locale}>{t('landing.heroStatTime')}</TextSwap>
                 </div>
                 <div className="h-3 w-px bg-border" />
                 <div className="flex items-center gap-1.5 text-xs font-body text-text-secondary">
                   <MotionSafeIcon icon={BookTextIcon} size={14} />
-                  {t('landing.heroStatFree')}
+                  <TextSwap swapKey={locale}>{t('landing.heroStatFree')}</TextSwap>
                 </div>
               </div>
             </div>
@@ -287,45 +223,70 @@ export default function HomePage() {
 
         <section
           id="features"
-          ref={featuresRef}
           className="relative z-10 mx-auto max-w-5xl px-6 py-16 md:py-20"
         >
           <div className="mb-10 text-center md:mb-12">
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary md:text-4xl">
-              <ShinyText text={t('landing.featuresTitle')} speed={8} />
+              <TextSwap swapKey={locale}>
+                <ShinyText text={t('landing.featuresTitle')} speed={8} />
+              </TextSwap>
             </h2>
-            <p className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base">
+            <TextSwap
+              as="p"
+              swapKey={locale}
+              className="mx-auto mt-3 max-w-xl font-body text-sm text-text-secondary md:text-base"
+            >
               {t('landing.featuresSub')}
-            </p>
+            </TextSwap>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2 lg:grid-rows-2 lg:gap-6">
             <SpotlightCard
               data-feature
-              className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-7 backdrop-blur transition-colors hover:border-coral/50 lg:row-span-2 lg:p-9"
+              className="group relative overflow-hidden rounded-2xl border border-border bg-surface/80 p-7 backdrop-blur transition-colors hover:border-coral/50 lg:row-span-2 lg:p-9 dark:bg-surface/75"
             >
               <div className={`mb-5 inline-flex rounded-xl p-3.5 ${LEAD_FEATURE.color}`}>
                 <MotionSafeIcon icon={LeadIcon} size={LEAD_FEATURE.iconSize} />
               </div>
-              <h3 className="mb-3 font-display text-2xl font-semibold text-text-primary">
+              <TextSwap
+                as="h3"
+                swapKey={locale}
+                className="mb-3 font-display text-2xl font-semibold text-text-primary"
+              >
                 {t(LEAD_FEATURE.titleKey)}
-              </h3>
-              <p className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base">
+              </TextSwap>
+              <TextSwap
+                as="p"
+                swapKey={locale}
+                className="max-w-md font-body text-sm leading-relaxed text-text-secondary md:text-base"
+              >
                 {t(LEAD_FEATURE.descriptionKey)}
-              </p>
+              </TextSwap>
             </SpotlightCard>
 
             {SUPPORTING_FEATURES.map(({ icon, iconSize, titleKey, descriptionKey, color }) => (
               <SpotlightCard
                 key={titleKey}
                 data-feature
-                className="group relative overflow-hidden rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur transition-colors hover:border-coral/50 md:p-7"
+                className="group relative overflow-hidden rounded-2xl border border-border bg-surface/80 p-6 backdrop-blur transition-colors hover:border-coral/50 md:p-7 dark:bg-surface/75"
               >
                 <div className={`mb-4 inline-flex rounded-xl p-3 ${color}`}>
                   <MotionSafeIcon icon={icon} size={iconSize} />
                 </div>
-                <h3 className="mb-2 font-display text-lg font-semibold text-text-primary">{t(titleKey)}</h3>
-                <p className="font-body text-sm leading-relaxed text-text-secondary">{t(descriptionKey)}</p>
+                <TextSwap
+                  as="h3"
+                  swapKey={locale}
+                  className="mb-2 font-display text-lg font-semibold text-text-primary"
+                >
+                  {t(titleKey)}
+                </TextSwap>
+                <TextSwap
+                  as="p"
+                  swapKey={locale}
+                  className="font-body text-sm leading-relaxed text-text-secondary"
+                >
+                  {t(descriptionKey)}
+                </TextSwap>
               </SpotlightCard>
             ))}
           </div>
@@ -334,21 +295,37 @@ export default function HomePage() {
         <section className="relative z-10 overflow-hidden py-16 md:py-20">
           <CtaIridescenceBackground prefersReduced={prefersReduced} />
           <div className="relative z-10 mx-auto max-w-4xl px-6">
-            <SpotlightCard className="relative rounded-2xl border border-border bg-surface/80 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12">
-            <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl">
+            <SpotlightCard className="relative rounded-2xl border border-border bg-surface/90 p-8 text-center backdrop-blur transition-colors hover:border-coral/50 md:p-12 dark:bg-surface/85">
+            <TextSwap
+              as="h2"
+              swapKey={locale}
+              className="font-display text-2xl font-bold tracking-tight text-text-primary md:text-3xl"
+            >
               {t('landing.ctaHeadline')}
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base">
+            </TextSwap>
+            <TextSwap
+              as="p"
+              swapKey={locale}
+              className="mx-auto mt-3 max-w-lg font-body text-sm text-text-secondary md:text-base"
+            >
               {t('landing.ctaSub')}
-            </p>
+            </TextSwap>
 
             <div className="mx-auto mt-8 max-w-xl border-t border-border pt-8">
-              <h3 className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl">
+              <TextSwap
+                as="h3"
+                swapKey={locale}
+                className="font-display text-lg font-semibold tracking-tight text-text-primary md:text-xl"
+              >
                 {t('landing.ctaBandTitle')}
-              </h3>
-              <p className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base">
+              </TextSwap>
+              <TextSwap
+                as="p"
+                swapKey={locale}
+                className="mt-2 font-body text-sm leading-relaxed text-text-secondary md:text-base"
+              >
                 {t('landing.ctaBandSub')}
-              </p>
+              </TextSwap>
             </div>
 
             <ul className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
@@ -361,7 +338,13 @@ export default function HomePage() {
                       <FileText className="h-5 w-5 text-coral" />
                     )}
                   </div>
-                  <p className="font-body text-sm leading-snug text-text-secondary">{t(textKey)}</p>
+                  <TextSwap
+                    as="p"
+                    swapKey={locale}
+                    className="font-body text-sm leading-snug text-text-secondary"
+                  >
+                    {t(textKey)}
+                  </TextSwap>
                 </li>
               ))}
             </ul>
@@ -370,7 +353,7 @@ export default function HomePage() {
               href="/sign-up"
               className="relative btn-shine mt-8 inline-flex min-h-[44px] items-center justify-center overflow-hidden rounded-xl bg-coral px-8 py-3 font-body text-sm font-semibold text-white shadow-sm transition-colors hover:bg-coral-dark"
             >
-              {t('landing.ctaButton')}
+              <TextSwap swapKey={locale}>{t('landing.ctaButton')}</TextSwap>
             </Link>
           </SpotlightCard>
           </div>
@@ -383,9 +366,7 @@ export default function HomePage() {
 
       <ThemeToggle
         variant="floating-label"
-        buttonRef={toggleRef}
         wrapperClassName="fixed bottom-6 end-6 z-50"
-        style={{ opacity: hiddenUntilAnimated }}
       />
     </div>
   );

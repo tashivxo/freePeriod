@@ -51,7 +51,7 @@ function renderPricing(locale: Locale = 'en') {
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
 
   return render(
-    <LocaleProvider>
+    <LocaleProvider initialLocale={locale}>
       <PricingClient />
     </LocaleProvider>,
   );

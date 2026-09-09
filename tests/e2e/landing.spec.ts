@@ -50,4 +50,34 @@ test.describe('Landing page', () => {
     const getStartedLink = page.getByRole('link', { name: 'Get started free' });
     await expect(getStartedLink).toHaveAttribute('href', '/sign-up');
   });
+
+  test('locale switch keeps hero visible and updates copy', async ({ page }) => {
+    const hero = page.getByRole('heading', { level: 1 });
+    await expect(hero).toBeVisible();
+    const initialOpacity = await hero.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(initialOpacity)).toBeGreaterThan(0);
+
+    await page.getByRole('button', { name: /language/i }).click();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveClass(/t-dropdown/);
+    await expect(menu).toHaveAttribute('data-origin', 'top-right');
+    await page.getByRole('menuitem', { name: 'Español' }).click();
+
+    await expect(hero).toBeVisible();
+    await expect(hero).toContainText(/Planes de clase en/i);
+    const afterOpacity = await hero.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(afterOpacity)).toBeGreaterThan(0);
+  });
+
+  test('theme toggle swaps icons without hiding the control', async ({ page }) => {
+    const toggle = page.getByRole('button', { name: /switch to dark mode/i });
+    await expect(toggle).toBeVisible();
+    await expect(toggle.locator('.t-icon-swap')).toHaveAttribute('data-state', 'a');
+    await toggle.click();
+    await expect(page.getByRole('button', { name: /switch to light mode/i })).toBeVisible();
+    await expect(page.locator('.t-icon-swap').first()).toHaveAttribute('data-state', 'b');
+    const darkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+    expect(darkClass).toBe(true);
+  });
 });

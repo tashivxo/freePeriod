@@ -14,7 +14,7 @@
   --color-mustard-dark: #D4A52E;
   --color-background: #FFFBF7;
   --color-text-primary: var(--text-primary, #1A1A2E);
-  --color-text-secondary: var(--text-secondary, #4B5563);
+  --color-text-secondary: var(--text-secondary, #374151);
   --color-error: #EF4444;
   --color-success: #10B981;
 
@@ -130,11 +130,17 @@ html[lang="zh-Hans"] {
   --modal-scale: 0.96;
   --modal-scale-close: 0.96;
   --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* transitions-dev — text swap (locale copy) */
+  --text-swap-dur: 200ms;
+  --text-swap-exit-dur: 120ms;
+  --text-swap-translate-y: 8px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: cubic-bezier(0.16, 1, 0.3, 1);
   /* transitions-dev — icon swap */
   --icon-swap-dur: 200ms;
   --icon-swap-blur: 2px;
-  --icon-swap-start-scale: 0.25;
-  --icon-swap-ease: ease-in-out;
+  --icon-swap-start-scale: 0.85;
+  --icon-swap-ease: ease-out;
   /* transitions-dev — panel reveal */
   --panel-open-dur: 400ms;
   --panel-close-dur: 350ms;
@@ -159,7 +165,7 @@ html[lang="zh-Hans"] {
   --secondary: #FEF3C7;
   --secondary-foreground: #1A1A2E;
   --muted: #F3F4F6;
-  --muted-foreground: #4B5563;
+  --muted-foreground: #374151;
   --accent: #F7C34B;
   --accent-foreground: #1A1A2E;
   --destructive: oklch(0.577 0.245 27.325);
@@ -181,7 +187,7 @@ html[lang="zh-Hans"] {
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --text-primary: #1A1A2E;
-  --text-secondary: #4B5563;
+  --text-secondary: #374151;
   --surface: #FFFFFF;
   --color-background-elevated: #FFFFFF;
   --color-primary-light: #FFB8D0;
@@ -201,7 +207,7 @@ html[lang="zh-Hans"] {
   --secondary: color-mix(in srgb, var(--color-mustard) 22%, transparent);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: #d1d5db;
   --accent: var(--color-mustard);
   --accent-foreground: #1A1A2E;
   --destructive: oklch(0.704 0.191 22.216);
@@ -222,7 +228,7 @@ html[lang="zh-Hans"] {
   --sidebar-border: oklch(1 0 0 / 15%);
   --sidebar-ring: oklch(0.75 0.14 1);
   --text-primary: #F0F4FF;
-  --text-secondary: #B0BEC5;
+  --text-secondary: #d1d5db;
   --surface: oklch(0.205 0 0);
   --color-background-elevated: oklch(0.205 0 0);
   --color-primary-light: #FFB8D0;
@@ -233,13 +239,90 @@ html[lang="zh-Hans"] {
   to { transform: translateX(320%) skewX(-15deg); }
 }
 
-/* SSR-safe: PRM users never see opacity:0 before JS matchMedia hydrates */
+/* Visible by default so locale remounts / failed JS never leave copy hidden. */
+[data-animate],
+[data-motion-enter],
+[data-hero-focal] {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-animate],
-  [data-motion-enter] {
+  [data-motion-enter],
+  [data-hero-focal] {
     opacity: 1 !important;
     transform: none !important;
+    filter: none !important;
+    animation: none !important;
   }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-hero-focal] {
+    transition:
+      opacity 280ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @starting-style {
+    [data-hero-focal] {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+}
+
+/* transitions-dev — text swap (locale copy) */
+.t-text-swap {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.t-text-swap.is-exit {
+  opacity: 0;
+  transform: translateY(calc(var(--text-swap-translate-y) * -0.5));
+  filter: blur(var(--text-swap-blur));
+  transition:
+    transform var(--text-swap-exit-dur) ease-out,
+    opacity var(--text-swap-exit-dur) ease-out,
+    filter var(--text-swap-exit-dur) ease-out;
+  will-change: transform, opacity, filter;
+}
+
+.t-text-swap.is-enter-start {
+  opacity: 0;
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  transition: none;
+}
+
+.t-text-swap.is-enter {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    opacity var(--text-swap-dur) var(--text-swap-ease),
+    filter var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap,
+  .t-text-swap.is-exit,
+  .t-text-swap.is-enter-start,
+  .t-text-swap.is-enter {
+    transition: none !important;
+    filter: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
+[dir="rtl"] .t-dropdown[data-side="bottom"][data-align="end"] {
+  transform-origin: top left;
 }
 
 /* transitions-dev — menu dropdown */
@@ -267,6 +350,9 @@ html[lang="zh-Hans"] {
 }
 .t-dropdown[data-side="bottom"][data-align="end"] {
   transform-origin: top right;
+}
+.t-dropdown[data-origin="top-left"] {
+  transform-origin: top left;
 }
 .t-dropdown[data-origin="top-right"] {
   transform-origin: top right;

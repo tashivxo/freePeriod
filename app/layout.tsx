@@ -43,6 +43,15 @@ export const metadata: Metadata = {
 
 const localeBootstrapScript = `
   (() => {
+    try {
+      const storedTheme = localStorage.getItem('fp-theme');
+      const theme = storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system'
+        ? storedTheme
+        : 'light';
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+      document.documentElement.classList.toggle('dark', resolved === 'dark');
+    } catch {}
     const locales = ['en', 'ar', 'es', 'fr', 'zh-Hans'];
     let locale = document.cookie.match(/(?:^|;\\s*)fp-locale=([^;]*)/)?.[1];
     try {
