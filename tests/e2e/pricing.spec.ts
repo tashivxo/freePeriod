@@ -306,3 +306,49 @@ test.describe('Landing page has Pricing link', () => {
     ).toBeVisible();
   });
 });
+
+test.describe('Pricing page – locale and theme motion', () => {
+  test.beforeEach(async ({ page, context }) => {
+    await clearLocaleStorage(page, context);
+  });
+
+  test('locale switch keeps the heading visible and updates copy', async ({ page }) => {
+    await page.goto('/pricing');
+    const heading = page.getByRole('heading', { level: 1 });
+    await expect(heading).toBeVisible();
+    const initialOpacity = await heading.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(initialOpacity)).toBeGreaterThan(0);
+    await expect(heading).toHaveClass(/t-text-swap/);
+
+    await page.getByRole('button', { name: /language/i }).click();
+    const menu = page.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await expect(menu).toHaveClass(/t-dropdown/);
+    await page.getByRole('menuitem', { name: 'Español' }).click();
+
+    await expect(heading).toBeVisible();
+    await expect(heading).toContainText(/Planes para cada aula/i);
+    const afterOpacity = await heading.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(afterOpacity)).toBeGreaterThan(0);
+    await expect(page.getByText(/Empieza gratis y mejora cuando quieras/i)).toBeVisible();
+  });
+
+  test('theme toggle works from pricing without hiding the heading', async ({ page }) => {
+    await page.goto('/pricing');
+    const heading = page.getByRole('heading', { level: 1 });
+    await expect(heading).toBeVisible();
+
+    const toggle = page.getByRole('button', { name: /switch to dark mode/i });
+    await expect(toggle).toBeVisible();
+    await expect(toggle.locator('.t-icon-swap')).toHaveAttribute('data-state', 'a');
+    await toggle.click();
+
+    await expect(page.getByRole('button', { name: /switch to light mode/i })).toBeVisible();
+    await expect(page.locator('.t-icon-swap').first()).toHaveAttribute('data-state', 'b');
+    const darkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
+    expect(darkClass).toBe(true);
+    await expect(heading).toBeVisible();
+    const opacity = await heading.evaluate((el) => getComputedStyle(el).opacity);
+    expect(Number(opacity)).toBeGreaterThan(0);
+  });
+});

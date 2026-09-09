@@ -227,18 +227,15 @@ export function PricingClient() {
           <TextSwap
             as="h1"
             swapKey={locale}
+            data-hero-focal=""
             className={`font-display text-4xl font-extrabold text-text-primary sm:text-5xl ${headingTypographyClass}`}
           >
             {t('pricing.title')}
           </TextSwap>
 
-          <TextSwap
-            as="p"
-            swapKey={locale}
-            className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg"
-          >
+          <p className="mx-auto mt-4 max-w-xl font-body text-base leading-relaxed text-text-secondary sm:text-lg">
             {t('pricing.subtitle')}
-          </TextSwap>
+          </p>
 
           {/* Billing toggle */}
           <div
