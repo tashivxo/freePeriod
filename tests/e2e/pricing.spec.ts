@@ -98,7 +98,20 @@ test.describe('Pricing page', () => {
   });
 
   test('"Save 20%" badge is visible on Annual button', async ({ page }) => {
-    await expect(page.getByText('Save 20%')).toBeVisible();
+    const annualTab = page.getByRole('tab', { name: /Annual/i });
+    const badge = annualTab.getByText('Save 20%');
+
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveClass(/bg-mustard\/20/);
+    await expect(badge).toHaveClass(/text-mustard-dark/);
+
+    await annualTab.click();
+    await page.waitForTimeout(100);
+
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveClass(/bg-mustard/);
+    await expect(badge).not.toHaveClass(/bg-mustard\/20/);
+    await expect(badge).toHaveClass(/text-text-primary/);
   });
 
   test('switching to Annual updates Pro price to $7', async ({ page }) => {

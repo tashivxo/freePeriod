@@ -314,7 +314,7 @@ export default function HomePage() {
 
       <ThemeToggle
         variant="floating-label"
-        wrapperClassName="fixed bottom-6 end-6 z-50"
+        wrapperClassName="fixed bottom-6 end-4 z-50"
       />
     </div>
   );
