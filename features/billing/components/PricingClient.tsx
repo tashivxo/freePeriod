@@ -269,7 +269,13 @@ export function PricingClient() {
               }`}
             >
               {t('pricing.annual')}
-              <span className="rounded-full bg-mustard/20 px-2 py-0.5 text-xs font-bold text-mustard-dark">
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                  isAnnual
+                    ? 'bg-mustard text-text-primary'
+                    : 'bg-mustard/20 text-mustard-dark'
+                }`}
+              >
                 {t('pricing.savePercent')}
               </span>
             </button>
@@ -434,7 +440,7 @@ export function PricingClient() {
 
       <MarketingFooter />
 
-      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 end-6 z-50" />
+      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 end-4 z-50" />
     </div>
   );
 }

@@ -109,6 +109,21 @@ describe('PricingClient', () => {
     );
   });
 
+  it('updates Save badge contrast when annual tab is selected', async () => {
+    const { user } = renderPricing();
+    const annualTab = screen.getByRole('tab', { name: new RegExp(en.pricing.annual, 'i') });
+    const badge = screen.getByText(en.pricing.savePercent);
+
+    expect(badge).toHaveClass('bg-mustard/20');
+    expect(badge).toHaveClass('text-mustard-dark');
+
+    await user.click(annualTab);
+
+    expect(badge).toHaveClass('bg-mustard');
+    expect(badge).toHaveClass('text-text-primary');
+    expect(badge).not.toHaveClass('bg-mustard/20');
+  });
+
   it('shows paid-plan trial copy without implying Free is a trial', () => {
     renderPricing();
 

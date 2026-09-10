@@ -9,9 +9,8 @@ import { useT } from '@/providers/locale';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';
 
-/** Fixed footprint for the landing/pricing theme CTA across locales and light/dark labels. */
-export const FLOATING_THEME_TOGGLE_CLASS =
-  'h-11 w-[16rem] max-w-[calc(100vw-2rem)] shrink-0 justify-center whitespace-nowrap';
+/** Fixed footprint for the landing/pricing floating theme CTA. */
+export const FLOATING_THEME_TOGGLE_CLASS = 'h-11 w-11 shrink-0 justify-center';
 
 type ThemeToggleProps = {
   variant?: 'icon' | 'floating-label';
@@ -42,7 +41,7 @@ export function ThemeToggle({
   const { ref: iconRef, animationDisabled } = useMotionSafeIconRef();
   const internalButtonRef = useRef<HTMLButtonElement>(null);
   const isDark = resolvedTheme === 'dark';
-  const iconSize = variant === 'icon' ? 18 : 16;
+  const iconSize = 18;
 
   useEffect(() => {
     if (animationDisabled) return;
@@ -81,7 +80,7 @@ export function ThemeToggle({
         variant === 'icon'
           ? 'relative inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background text-text-secondary hover:bg-muted hover:text-text-primary transition-[transform,opacity,color,background-color,border-color] active:scale-[0.96]'
           : cn(
-              'relative btn-shine flex items-center gap-2 overflow-hidden rounded-full border border-border bg-surface px-4 font-body text-sm font-medium text-text-primary shadow-lg transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15',
+              'relative btn-shine flex items-center overflow-hidden rounded-full border border-border bg-surface text-text-primary shadow-lg transition-[transform,color,background-color,border-color] hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral active:scale-[0.96] dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15',
               FLOATING_THEME_TOGGLE_CLASS,
             ),
         className,
@@ -89,27 +88,21 @@ export function ThemeToggle({
       style={style}
     >
       {isDark ? (
-        <>
-          <SunIcon
-            ref={iconRef}
-            size={iconSize}
-            animationDisabled={animationDisabled}
-            aria-hidden
-            className="inline-flex shrink-0 items-center text-current"
-          />
-          {variant === 'floating-label' ? t('landing.tryLightMode') : null}
-        </>
+        <SunIcon
+          ref={iconRef}
+          size={iconSize}
+          animationDisabled={animationDisabled}
+          aria-hidden
+          className="inline-flex shrink-0 items-center text-current"
+        />
       ) : (
-        <>
-          <MoonIcon
-            ref={iconRef}
-            size={iconSize}
-            animationDisabled={animationDisabled}
-            aria-hidden
-            className="inline-flex shrink-0 items-center text-current"
-          />
-          {variant === 'floating-label' ? t('landing.tryDarkMode') : null}
-        </>
+        <MoonIcon
+          ref={iconRef}
+          size={iconSize}
+          animationDisabled={animationDisabled}
+          aria-hidden
+          className="inline-flex shrink-0 items-center text-current"
+        />
       )}
     </button>
   );

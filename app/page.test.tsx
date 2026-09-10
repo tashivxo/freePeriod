@@ -72,14 +72,15 @@ describe('HomePage', () => {
   });
 
   describe('floating dark mode toggle', () => {
-    it('renders "Try dark mode" button in light mode', () => {
+    it('renders icon-only dark mode toggle in light mode', () => {
       render(<HomePage />);
       const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
       expect(toggle).toBeInTheDocument();
-      expect(toggle).toHaveTextContent('Try dark mode');
+      expect(toggle).not.toHaveTextContent('Try dark mode');
+      expect(toggle).not.toHaveTextContent('Try light mode');
     });
 
-    it('renders "Try light mode" button when in dark mode', () => {
+    it('renders icon-only light mode toggle when in dark mode', () => {
       mockedUseTheme.mockReturnValue({
         theme: 'dark',
         setTheme: mockSetTheme,
@@ -88,7 +89,8 @@ describe('HomePage', () => {
       render(<HomePage />);
       const toggle = screen.getByRole('button', { name: /switch to light mode/i });
       expect(toggle).toBeInTheDocument();
-      expect(toggle).toHaveTextContent('Try light mode');
+      expect(toggle).not.toHaveTextContent('Try light mode');
+      expect(toggle).not.toHaveTextContent('Try dark mode');
     });
 
     it('calls setTheme("dark") when clicked in light mode', async () => {

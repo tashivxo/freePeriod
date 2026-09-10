@@ -384,7 +384,7 @@ export default function HomePage() {
       <ThemeToggle
         variant="floating-label"
         buttonRef={toggleRef}
-        wrapperClassName="fixed bottom-6 end-6 z-50"
+        wrapperClassName="fixed bottom-6 end-4 z-50"
         style={{ opacity: hiddenUntilAnimated }}
       />
     </div>
