@@ -132,4 +132,13 @@ export const zhHans: Messages = {
       },
     },
   },
+  auth: {
+    confirmPassword: '确认密码',
+    confirmPasswordRequired: '请确认您的密码',
+    passwordsDoNotMatch: '两次输入的密码不一致',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
+    showConfirmPassword: '显示确认密码',
+    hideConfirmPassword: '隐藏确认密码',
+  },
 };

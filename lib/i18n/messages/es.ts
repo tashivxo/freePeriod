@@ -134,4 +134,13 @@ export const es: Messages = {
       },
     },
   },
+  auth: {
+    confirmPassword: 'Confirmar contraseña',
+    confirmPasswordRequired: 'Confirma tu contraseña',
+    passwordsDoNotMatch: 'Las contraseñas no coinciden',
+    showPassword: 'Mostrar contraseña',
+    hidePassword: 'Ocultar contraseña',
+    showConfirmPassword: 'Mostrar confirmación de contraseña',
+    hideConfirmPassword: 'Ocultar confirmación de contraseña',
+  },
 };

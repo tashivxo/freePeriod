@@ -134,4 +134,13 @@ export const ar: Messages = {
       },
     },
   },
+  auth: {
+    confirmPassword: 'تأكيد كلمة المرور',
+    confirmPasswordRequired: 'يرجى تأكيد كلمة المرور',
+    passwordsDoNotMatch: 'كلمتا المرور غير متطابقتين',
+    showPassword: 'إظهار كلمة المرور',
+    hidePassword: 'إخفاء كلمة المرور',
+    showConfirmPassword: 'إظهار تأكيد كلمة المرور',
+    hideConfirmPassword: 'إخفاء تأكيد كلمة المرور',
+  },
 };

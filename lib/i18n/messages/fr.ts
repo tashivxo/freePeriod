@@ -134,4 +134,13 @@ export const fr: Messages = {
       },
     },
   },
+  auth: {
+    confirmPassword: 'Confirmer le mot de passe',
+    confirmPasswordRequired: 'Veuillez confirmer votre mot de passe',
+    passwordsDoNotMatch: 'Les mots de passe ne correspondent pas',
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
+    showConfirmPassword: 'Afficher la confirmation du mot de passe',
+    hideConfirmPassword: 'Masquer la confirmation du mot de passe',
+  },
 };

@@ -131,6 +131,15 @@ export const en = {
       },
     },
   },
+  auth: {
+    confirmPassword: 'Confirm password',
+    confirmPasswordRequired: 'Please confirm your password',
+    passwordsDoNotMatch: 'Passwords do not match',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    showConfirmPassword: 'Show confirm password',
+    hideConfirmPassword: 'Hide confirm password',
+  },
 } as const;
 
 export type Messages = {
@@ -261,5 +270,14 @@ export type Messages = {
         cta: string;
       };
     };
+  };
+  auth: {
+    confirmPassword: string;
+    confirmPasswordRequired: string;
+    passwordsDoNotMatch: string;
+    showPassword: string;
+    hidePassword: string;
+    showConfirmPassword: string;
+    hideConfirmPassword: string;
   };
 };

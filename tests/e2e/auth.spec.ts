@@ -75,7 +75,20 @@ test.describe('Sign-up page', () => {
     await expect(page.getByLabel('Full Name')).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.locator('input#password')).toBeVisible();
+    await expect(page.getByLabel(/confirm password/i)).toBeVisible();
+    await expect(page.locator('#confirm-password')).toBeVisible();
     await expect(page.getByRole('button', { name: /create account/i })).toBeVisible();
+  });
+
+  test('shows mismatch error and stays on sign-up when passwords differ', async ({ page }) => {
+    await page.getByLabel('Full Name').fill('Jane Doe');
+    await page.getByLabel('Email').fill('jane@example.com');
+    await page.locator('input#password').fill('password123');
+    await page.locator('#confirm-password').fill('differentpass');
+    await page.getByRole('radio').click();
+    await page.getByRole('button', { name: /create account/i }).click();
+    await expect(page.getByText(/passwords do not match/i)).toBeVisible();
+    await expect(page).toHaveURL('/sign-up');
   });
 
   test('"Sign in" link navigates to /sign-in', async ({ page }) => {
