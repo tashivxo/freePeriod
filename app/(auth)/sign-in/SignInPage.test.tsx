@@ -47,6 +47,11 @@ describe('SignInPage', () => {
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
+  it('does not render a confirm password field', () => {
+    render(<SignInPage />);
+    expect(screen.queryByLabelText(/confirm password/i)).toBeNull();
+  });
+
   it('renders a sign-in submit button', () => {
     render(<SignInPage />);
     expect(

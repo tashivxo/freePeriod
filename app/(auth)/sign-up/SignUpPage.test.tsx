@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@/lib/test-utils';
+import { LocaleProvider } from '@/providers/locale';
 
 jest.mock('@/lib/auth/check-email-availability', () => ({
   checkEmailAvailability: jest.fn().mockResolvedValue('available'),
@@ -24,6 +25,22 @@ import { SignUpPage } from './SignUpPage';
 import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
 
+function renderSignUpPage() {
+  return render(
+    <LocaleProvider initialLocale="en">
+      <SignUpPage />
+    </LocaleProvider>,
+  );
+}
+
+async function fillMatchingPasswords(
+  user: ReturnType<typeof renderSignUpPage>['user'],
+  password = 'password123',
+) {
+  await user.type(screen.getByLabelText('Password'), password);
+  await user.type(screen.getByLabelText(/^confirm password$/i), password);
+}
+
 describe('SignUpPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -31,35 +48,40 @@ describe('SignUpPage', () => {
   });
 
   it('renders the sign-up heading', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     expect(
       screen.getByRole('heading', { name: /create your account/i }),
     ).toBeInTheDocument();
   });
 
   it('renders name, email and password inputs', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
+  it('renders confirm password input', () => {
+    renderSignUpPage();
+    expect(screen.getByLabelText(/^confirm password$/i)).toBeInTheDocument();
+  });
+
   it('renders a sign-up submit button', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     expect(
       screen.getByRole('button', { name: /create account/i }),
     ).toBeInTheDocument();
   });
 
   it('renders Google OAuth button', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     expect(
       screen.getByRole('button', { name: /continue with google/i }),
     ).toBeInTheDocument();
   });
 
   it('renders a link to sign-in page', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute(
       'href',
       '/sign-in',
@@ -67,18 +89,19 @@ describe('SignUpPage', () => {
   });
 
   it('shows validation errors when fields are empty', async () => {
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.click(screen.getByRole('button', { name: /create account/i }));
     expect(screen.getByText(/name is required/i)).toBeInTheDocument();
     expect(screen.getByText(/email is required/i)).toBeInTheDocument();
     expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+    expect(screen.getByText(/please confirm your password/i)).toBeInTheDocument();
   });
 
   it('requires accepting terms before sign-up', async () => {
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('button', { name: /create account/i }));
     expect(
       screen.getByText(/you must agree to the terms of service and privacy policy/i),
@@ -86,14 +109,36 @@ describe('SignUpPage', () => {
   });
 
   it('shows validation error for short password', async () => {
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), '123');
+    await fillMatchingPasswords(user, '123');
     await user.click(screen.getByRole('button', { name: /create account/i }));
     expect(
       screen.getByText(/password must be at least 8 characters/i),
     ).toBeInTheDocument();
+  });
+
+  it('shows mismatch error and does not call signUp when passwords differ', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn();
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+    });
+
+    const { user } = renderSignUpPage();
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.type(screen.getByLabelText(/^confirm password$/i), 'differentpass');
+    await user.click(screen.getByRole('radio'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
+    expect(mockSignUp).not.toHaveBeenCalled();
   });
 
   it('calls signUp on valid submit', async () => {
@@ -109,10 +154,10 @@ describe('SignUpPage', () => {
       },
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -137,7 +182,7 @@ describe('SignUpPage', () => {
     });
     (checkEmailAvailability as jest.Mock).mockResolvedValue('taken');
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/email/i), 'taken@test.com');
     jest.advanceTimersByTime(400);
 
@@ -148,7 +193,7 @@ describe('SignUpPage', () => {
     expect(screen.getByRole('button', { name: /create account/i })).toBeDisabled();
 
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -169,10 +214,10 @@ describe('SignUpPage', () => {
       },
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -193,10 +238,10 @@ describe('SignUpPage', () => {
       },
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -234,10 +279,10 @@ describe('SignUpPage', () => {
       }),
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -272,10 +317,10 @@ describe('SignUpPage', () => {
       }),
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -296,10 +341,10 @@ describe('SignUpPage', () => {
       },
     });
 
-    const { user } = render(<SignUpPage />);
+    const { user } = renderSignUpPage();
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
-    await user.type(screen.getByLabelText('Password'), 'password123');
+    await fillMatchingPasswords(user);
     await user.click(screen.getByRole('radio'));
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
@@ -309,21 +354,34 @@ describe('SignUpPage', () => {
   });
 
   it('renders Google button with same coral styling as Create Account button', () => {
-    render(<SignUpPage />);
+    renderSignUpPage();
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });
     expect(googleBtn.className).toContain('bg-primary');
   });
 
-  it('renders eye toggle button with aria-label "Show password"', () => {
-    render(<SignUpPage />);
-    expect(screen.getByRole('button', { name: /show password/i })).toBeInTheDocument();
+  it('renders two distinct eye toggle buttons', () => {
+    renderSignUpPage();
+    expect(
+      screen.getByRole('button', { name: /^show password$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /show confirm password/i }),
+    ).toBeInTheDocument();
   });
 
-  it('clicking eye toggle changes password input type from password to text', async () => {
-    const { user } = render(<SignUpPage />);
+  it('clicking password eye toggle changes password input type from password to text', async () => {
+    const { user } = renderSignUpPage();
     const passwordInput = screen.getByLabelText('Password');
     expect(passwordInput).toHaveAttribute('type', 'password');
-    await user.click(screen.getByRole('button', { name: /show password/i }));
+    await user.click(screen.getByRole('button', { name: /^show password$/i }));
     expect(passwordInput).toHaveAttribute('type', 'text');
+  });
+
+  it('clicking confirm password eye toggle reveals confirm password', async () => {
+    const { user } = renderSignUpPage();
+    const confirmInput = screen.getByLabelText(/^confirm password$/i);
+    expect(confirmInput).toHaveAttribute('type', 'password');
+    await user.click(screen.getByRole('button', { name: /show confirm password/i }));
+    expect(confirmInput).toHaveAttribute('type', 'text');
   });
 });

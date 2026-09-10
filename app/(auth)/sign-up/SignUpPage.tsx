@@ -14,16 +14,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
+import { useT } from '@/providers/locale';
 
 const EMAIL_CHECK_DEBOUNCE_MS = 400;
 
 export function SignUpPage() {
   const router = useRouter();
+  const t = useT();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [serverError, setServerError] = useState('');
   const [termsError, setTermsError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
@@ -81,6 +90,11 @@ export function SignUpPage() {
       newErrors.password = 'Password is required';
     } else if (password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
+    }
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = t('auth.confirmPasswordRequired');
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = t('auth.passwordsDoNotMatch');
     }
     if (emailTaken) {
       newErrors.email = EMAIL_ALREADY_EXISTS;
@@ -259,11 +273,34 @@ export function SignUpPage() {
             endAdornment={
               <button
                 type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 onClick={() => setShowPassword((v) => !v)}
                 className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+          />
+          <Input
+            id="confirm-password"
+            label={t('auth.confirmPassword')}
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            error={errors.confirmPassword}
+            autoComplete="new-password"
+            endAdornment={
+              <button
+                type="button"
+                aria-label={
+                  showConfirmPassword
+                    ? t('auth.hideConfirmPassword')
+                    : t('auth.showConfirmPassword')
+                }
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             }
           />
