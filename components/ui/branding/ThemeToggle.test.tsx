@@ -47,30 +47,28 @@ describe('ThemeToggle', () => {
     mockLocale = 'en';
   });
 
-  it('exposes English switch-to-dark-mode accessible name without visible try-* copy', () => {
+  it('shows English try-dark-mode copy on the landing control', () => {
     render(<ThemeToggle variant="floating-label" />);
     const button = screen.getByRole('button', { name: getMessages('en').landing.switchToDarkMode });
-    expect(button).not.toHaveTextContent(getMessages('en').landing.tryDarkMode);
-    expect(button).not.toHaveTextContent(getMessages('en').landing.tryLightMode);
+    expect(button).toHaveTextContent(getMessages('en').landing.tryDarkMode);
   });
 
-  it('exposes Simplified Chinese accessible name without visible try-* copy when locale is zh-Hans', () => {
+  it('shows Simplified Chinese try-dark-mode copy when locale is zh-Hans', () => {
     mockLocale = 'zh-Hans';
     render(<ThemeToggle variant="floating-label" />);
     const button = screen.getByRole('button', {
       name: getMessages('zh-Hans').landing.switchToDarkMode,
     });
-    expect(button).not.toHaveTextContent(getMessages('zh-Hans').landing.tryDarkMode);
-    expect(button).not.toHaveTextContent(getMessages('zh-Hans').landing.tryLightMode);
+    expect(button).toHaveTextContent(getMessages('zh-Hans').landing.tryDarkMode);
   });
 
   it('keeps a fixed footprint for the floating-label variant', () => {
     render(<ThemeToggle variant="floating-label" />);
     const button = screen.getByRole('button', { name: getMessages('en').landing.switchToDarkMode });
     expect(button).toHaveClass('h-11');
-    expect(button).toHaveClass('w-11');
+    expect(button).toHaveClass('w-[16rem]');
     expect(button).toHaveClass('shrink-0');
-    expect(button).not.toHaveClass('w-[16rem]');
+    expect(button).toHaveClass('whitespace-nowrap');
   });
 
   it('keeps both theme icons mounted for an interruptible swap', () => {
