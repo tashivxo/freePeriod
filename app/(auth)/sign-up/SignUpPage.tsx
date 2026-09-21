@@ -8,7 +8,10 @@ import { createClient } from '@/lib/supabase/client';
 import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/auth/email';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { signInWithGoogle } from '@/lib/auth/google';
+import { TERMS_REQUIRED_MESSAGE } from '@/lib/auth/terms';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
+import { ChipRadio } from '@/components/ui/ChipRadio';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,7 +103,7 @@ export function SignUpPage() {
     if (emailTaken) {
       newErrors.email = EMAIL_ALREADY_EXISTS;
     }
-    setTermsError(acceptedTerms ? '' : 'You must agree to the Terms of Service and Privacy Policy.');
+    setTermsError(acceptedTerms ? '' : TERMS_REQUIRED_MESSAGE);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0 && acceptedTerms;
   }
@@ -184,21 +187,14 @@ export function SignUpPage() {
   async function handleGoogleLogin() {
     if (authBusy) return;
     if (!acceptedTerms) {
-      setTermsError('You must agree to the Terms of Service and Privacy Policy.');
+      setTermsError(TERMS_REQUIRED_MESSAGE);
       return;
     }
     setAuthBusy(true);
     setServerError('');
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'openid email profile',
-      },
-    });
-    if (error) {
-      setServerError(mapAuthError(error.message));
+    const { errorMessage } = await signInWithGoogle();
+    if (errorMessage) {
+      setServerError(errorMessage);
       setAuthBusy(false);
     }
   }
@@ -316,24 +312,17 @@ export function SignUpPage() {
               role="radiogroup"
               aria-label="Terms agreement"
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={acceptedTerms}
-                aria-invalid={termsError ? true : undefined}
+              <ChipRadio
+                checked={acceptedTerms}
                 aria-label="I agree to the Terms of Service and Privacy Policy"
-                onClick={() => {
+                aria-invalid={Boolean(termsError)}
+                onSelect={() => {
                   setAcceptedTerms(true);
                   setTermsError('');
                 }}
-                className={`min-h-[44px] shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                  acceptedTerms
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-border bg-background text-text-primary hover:border-coral'
-                }`}
               >
                 I agree
-              </button>
+              </ChipRadio>
               <span
                 className="cursor-pointer text-sm font-body text-text-secondary"
                 onClick={() => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { ChipRadio } from '@/components/ui/ChipRadio';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -301,20 +302,13 @@ function StepSubjects({
 
       <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Subject">
         {SUBJECTS.map((subject) => (
-          <button
+          <ChipRadio
             key={subject}
-            type="button"
-            role="radio"
-            aria-checked={selectedSubject === subject}
-            onClick={() => onSelect(subject)}
-            className={`min-h-[44px] rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-              selectedSubject === subject
-                ? 'border-primary bg-primary text-white'
-                : 'border-border bg-background text-text-primary hover:border-coral'
-            }`}
+            checked={selectedSubject === subject}
+            onSelect={() => onSelect(subject)}
           >
             {subject}
-          </button>
+          </ChipRadio>
         ))}
       </div>
 

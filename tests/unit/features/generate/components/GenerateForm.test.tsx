@@ -1,0 +1,402 @@
+import { render, screen, waitFor } from '@/tests/helpers';
+
+// --- Mocks ---
+
+const mockUpload = jest.fn().mockResolvedValue({
+  data: { path: 'user-123/curriculum/syllabus.pdf' },
+  error: null,
+});
+const mockRemove = jest.fn().mockResolvedValue({ data: null, error: null });
+const mockSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-123' }, error: null });
+const mockSelectChain = jest.fn(() => ({ single: mockSingle }));
+const mockDbInsert = jest.fn(() => ({ select: mockSelectChain }));
+const mockFromDb = jest.fn(() => ({ insert: mockDbInsert }));
+
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({
+        data: { user: { id: 'user-123' } },
+        error: null,
+      }),
+    },
+    from: mockFromDb,
+    storage: {
+      from: jest.fn(() => ({
+        upload: mockUpload,
+        remove: mockRemove,
+      })),
+    },
+  })),
+}));
+
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+import { GenerateForm } from '@/features/generate/components/GenerateForm';
+
+// --- Constants ---
+
+const GRADES = [
+  'Pre-K', 'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5',
+  'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12',
+];
+
+const defaults = { subject: 'Mathematics', grade: '9', curriculum: 'CAPS (South Africa)' };
+
+// --- Tests ---
+
+describe('GenerateForm', () => {
+  const onSubmit = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    // Mock fetch used by uploadFile to call /api/parse-document
+    (global as { fetch: unknown }).fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ text: 'Parsed curriculum text' }) });
+  });
+
+  // ---- Rendering ----
+
+  it('renders form heading', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(
+      screen.getByRole('heading', { name: /generate a lesson/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the curriculum accuracy notice before generation', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByRole('note', { name: /curriculum accuracy notice/i })).toHaveTextContent(
+      /verify the plan against your official requirements/i,
+    );
+  });
+
+  it('shows UAE MOE helper text when UAE MOE is selected', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum: 'UAE MOE' }}
+      />,
+    );
+
+    expect(screen.getByText(/guideline pack/i)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/abu dhabi public schools also/i)).toBeInTheDocument();
+    expect(screen.getByText(/under ADEK regulation/i)).toBeInTheDocument();
+  });
+
+  it('shows ADEK helper text when ADEK (Abu Dhabi) is selected', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+
+    await user.click(screen.getByLabelText(/^curriculum$/i));
+    await user.click(screen.getByRole('option', { name: 'ADEK (Abu Dhabi)' }));
+
+    expect(screen.getByText(/guideline pack for ADEK/i)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['Cambridge IGCSE', /cambridge international igcse/i],
+    ['A-Level', /cambridge international as and a level/i],
+    ['CAPS (South Africa)', /caps planning language/i],
+    ['CBSE (India)', /cbse planning language/i],
+    ['Common Core', /common core ela and math/i],
+    ['GCSE', /uk gcse planning language/i],
+    ['AQA', /aqa gcse and a-level/i],
+    ['Edexcel', /pearson edexcel gcse and a-level/i],
+    ['OCR', /ocr gcse and a-level/i],
+  ] as const)('shows guideline helper text when %s is selected', (curriculum, helper) => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum }}
+      />,
+    );
+
+    expect(screen.getByText(helper)).toBeInTheDocument();
+    expect(screen.getByText(/not official or verified/i)).toBeInTheDocument();
+  });
+
+  it('does not show guideline helper text for IB', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={{ subject: 'Mathematics', grade: 'Grade 9', curriculum: 'IB' }}
+      />,
+    );
+
+    expect(screen.queryByText(/guideline pack/i)).not.toBeInTheDocument();
+  });
+
+  // ---- Pre-filling defaults ----
+
+  it('pre-fills subject from defaults', () => {
+    render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Subject').textContent?.trim()).toBe('Mathematics');
+  });
+
+  it('pre-fills grade from defaults', () => {
+    render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Grade').textContent?.trim()).toBe('Grade 9');
+  });
+
+  it('pre-fills curriculum from defaults', () => {
+    render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
+    // Radix Select shows selected value as text in the trigger button (not .value)
+    expect(screen.getByLabelText('Curriculum').textContent?.trim()).toBe('CAPS (South Africa)');
+  });
+
+  // ---- Dropdowns ----
+
+  it('renders grade dropdown with all options', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^grade$/i));
+    for (const grade of GRADES) {
+      expect(screen.getByRole('option', { name: grade })).toBeInTheDocument();
+    }
+  });
+
+  it('renders duration dropdown with preset options and Custom', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^duration$/i));
+    for (const label of ['30 min', '45 min', '60 min', '90 min', '120 min']) {
+      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('option', { name: /custom/i })).toBeInTheDocument();
+  });
+
+  it('shows custom duration input when Custom is selected', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^duration$/i));
+    await user.click(screen.getByRole('option', { name: 'Custom' }));
+    expect(screen.getByLabelText(/how long is the lesson/i)).toBeInTheDocument();
+  });
+
+  // ---- Teacher prompt ----
+
+  it('renders teacher prompt textarea', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(
+      screen.getByLabelText(/any specific focus or requirements/i),
+    ).toBeInTheDocument();
+  });
+
+  // ---- File upload zones ----
+
+  it('renders curriculum document upload zone with accepted types', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByText('Curriculum Document')).toBeInTheDocument();
+    const input = screen.getByLabelText(/upload curriculum document/i);
+    expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.jpg,.png');
+  });
+
+  it('renders lesson plan template upload zone with accepted types', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();
+    const input = screen.getByLabelText(/upload lesson plan template/i);
+    expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx');
+  });
+
+  it('shows file preview after uploading curriculum document', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File(['content'], 'syllabus.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.upload(
+      screen.getByLabelText(/upload curriculum document/i),
+      file,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
+      expect(screen.getByText('PDF')).toBeInTheDocument();
+    });
+  });
+
+  it('removes uploaded file when remove button is clicked', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File(['content'], 'syllabus.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.upload(
+      screen.getByLabelText(/upload curriculum document/i),
+      file,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
+    });
+
+    await user.click(
+      screen.getByRole('button', { name: /remove syllabus\.pdf/i }),
+    );
+
+    expect(screen.queryByText('syllabus.pdf')).not.toBeInTheDocument();
+  });
+
+  // ---- Validation & submission ----
+
+  it('rejects multiple subjects in a custom subject value', async () => {
+    const onSubmit = jest.fn();
+    const { user } = render(
+      <GenerateForm defaults={{ subject: 'Mathematics, Science' }} onSubmit={onSubmit} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    expect(await screen.findByText(/please enter one subject only/i)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('disables Generate button when subject is empty', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByRole('button', { name: /generate/i })).toBeDisabled();
+  });
+
+  it('enables Generate button when subject is filled', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^subject$/i));
+    await user.click(screen.getByRole('option', { name: 'Science' }));
+    expect(screen.getByRole('button', { name: /generate/i })).toBeEnabled();
+  });
+
+  it('shows inline grade error and does not submit when grade is missing', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    await user.click(screen.getByLabelText(/^subject$/i));
+    await user.click(screen.getByRole('option', { name: 'Science' }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/please select a grade/i);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('shows inline duration error when custom duration is empty', async () => {
+    const { user } = render(
+      <GenerateForm onSubmit={onSubmit} defaults={defaults} />,
+    );
+
+    await user.click(screen.getByLabelText(/^duration$/i));
+    await user.click(screen.getByRole('option', { name: 'Custom' }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter a duration between/i);
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('uses text-base on the teacher prompt textarea', () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    expect(screen.getByLabelText(/any specific focus or requirements/i)).toHaveClass(
+      'text-base',
+    );
+  });
+
+  it('shows Fast and Quality; Quality disabled for free', async () => {
+    const { user } = render(<GenerateForm userPlan="free" onSubmit={onSubmit} />);
+    expect(screen.getByRole('button', { name: /generation mode: fast/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /generation mode: fast/i }));
+    expect(screen.getByRole('option', { name: /quality/i })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  it('allows Quality for pro', async () => {
+    const { user } = render(<GenerateForm userPlan="pro" onSubmit={onSubmit} />);
+
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    expect(screen.getByRole('option', { name: /quality/i })).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
+  it('allows Quality for pro+ without an upgrade prompt', async () => {
+    const { user } = render(<GenerateForm userPlan="pro_plus" onSubmit={onSubmit} />);
+
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    const qualityOption = screen.getByRole('option', { name: /quality/i });
+    expect(qualityOption).not.toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(qualityOption);
+    expect(screen.queryByRole('dialog', { name: /upgrade to pro/i })).not.toBeInTheDocument();
+  });
+
+  it('calls onSubmit with form data when Generate is clicked', async () => {
+    const { user } = render(
+      <GenerateForm onSubmit={onSubmit} defaults={defaults} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subject: 'Mathematics',
+        grade: '9',
+        curriculum: 'CAPS (South Africa)',
+        duration: 60,
+        teacherPrompt: '',
+        curriculumDocPath: null,
+        templatePath: null,
+        generationMode: 'fast',
+      }),
+    );
+  });
+
+  it('submits fast when pro selects Fast mode', async () => {
+    const { user } = render(
+      <GenerateForm onSubmit={onSubmit} userPlan="pro" defaults={defaults} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generation mode/i }));
+    await user.click(screen.getByRole('option', { name: /fast/i }));
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generationMode: 'fast',
+      }),
+    );
+  });
+
+  it('awaits async onSubmit before clearing local submitting state', async () => {
+    let resolveSubmit: (() => void) | undefined;
+    const pendingSubmit = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
+
+    const { user } = render(
+      <GenerateForm onSubmit={pendingSubmit} defaults={defaults} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+
+    resolveSubmit?.();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /generate lesson plan/i })).toBeEnabled();
+    });
+  });
+
+  it('stays busy when parent isGenerating is true', () => {
+    render(
+      <GenerateForm onSubmit={onSubmit} defaults={defaults} isGenerating />,
+    );
+
+    expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+  });
+});

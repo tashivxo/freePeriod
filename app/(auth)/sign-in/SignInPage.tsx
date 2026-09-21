@@ -7,6 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { createClient } from '@/lib/supabase/client';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { signInWithGoogle } from '@/lib/auth/google';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -117,16 +118,9 @@ export function SignInPage() {
     if (authBusy) return;
     setAuthBusy(true);
     setServerError('');
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: 'openid email profile',
-      },
-    });
-    if (error) {
-      setServerError(mapAuthError(error.message));
+    const { errorMessage } = await signInWithGoogle();
+    if (errorMessage) {
+      setServerError(errorMessage);
       setAuthBusy(false);
     }
   }
