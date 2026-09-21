@@ -7,6 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { createClient } from '@/lib/supabase/client';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -258,14 +259,7 @@ export function SignInPage() {
         </div>
 
         <div className="space-y-3">
-          <Button
-            className="w-full"
-            onClick={handleGoogleLogin}
-            type="button"
-            disabled={authBusy}
-          >
-            Continue with Google
-          </Button>
+          <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
 
           <Button
             variant="ghost"

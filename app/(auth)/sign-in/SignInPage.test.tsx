@@ -159,10 +159,13 @@ describe('SignInPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders Google button with same coral styling as Sign In button', () => {
+  it('renders Google button with logo and non-primary styling', () => {
     render(<SignInPage />);
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });
-    expect(googleBtn.className).toContain('bg-primary');
+    expect(googleBtn.className).not.toContain('bg-primary');
+    expect(googleBtn.querySelector('img')?.getAttribute('src')).toMatch(
+      /brand(\/|%2F)google-g\.png/,
+    );
   });
 
   it('renders eye toggle button with aria-label "Show password"', () => {

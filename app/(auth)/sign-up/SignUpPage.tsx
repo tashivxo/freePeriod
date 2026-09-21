@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/auth/email';
 import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -182,6 +183,10 @@ export function SignUpPage() {
 
   async function handleGoogleLogin() {
     if (authBusy) return;
+    if (!acceptedTerms) {
+      setTermsError('You must agree to the Terms of Service and Privacy Policy.');
+      return;
+    }
     setAuthBusy(true);
     setServerError('');
     const supabase = createClient();
@@ -306,20 +311,37 @@ export function SignUpPage() {
           />
 
           <div className="space-y-1.5">
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-body text-text-secondary">
-              <input
-                type="radio"
-                name="acceptedTerms"
-                value="yes"
-                checked={acceptedTerms}
-                onChange={() => {
+            <div
+              className="flex min-h-11 items-center gap-3"
+              role="radiogroup"
+              aria-label="Terms agreement"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={acceptedTerms}
+                aria-invalid={termsError ? true : undefined}
+                aria-label="I agree to the Terms of Service and Privacy Policy"
+                onClick={() => {
                   setAcceptedTerms(true);
                   setTermsError('');
                 }}
-                className="h-5 w-5 shrink-0 rounded-full border-border text-coral focus:ring-coral"
-              />
-              <span>
-                I agree to the{' '}
+                className={`min-h-[44px] shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  acceptedTerms
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-border bg-background text-text-primary hover:border-coral'
+                }`}
+              >
+                I agree
+              </button>
+              <span
+                className="cursor-pointer text-sm font-body text-text-secondary"
+                onClick={() => {
+                  setAcceptedTerms(true);
+                  setTermsError('');
+                }}
+              >
+                to the{' '}
                 <Link href="/terms" className="text-coral font-semibold hover:underline" target="_blank">
                   Terms of Service
                 </Link>{' '}
@@ -328,7 +350,7 @@ export function SignUpPage() {
                   Privacy Policy
                 </Link>
               </span>
-            </label>
+            </div>
             {termsError && (
               <p role="alert" className="px-1 text-sm text-error">
                 {termsError}
@@ -347,14 +369,7 @@ export function SignUpPage() {
           <div className="flex-1 h-px bg-text-secondary/20" />
         </div>
 
-        <Button
-          className="w-full"
-          onClick={handleGoogleLogin}
-          type="button"
-          disabled={authBusy}
-        >
-          Continue with Google
-        </Button>
+        <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
 
         <p className="text-center text-xs font-body text-text-secondary">
           By continuing with Google, you agree to our{' '}

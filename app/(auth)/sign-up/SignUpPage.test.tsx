@@ -353,10 +353,72 @@ describe('SignUpPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders Google button with same coral styling as Create Account button', () => {
+  it('renders Google button with logo and non-primary styling', () => {
     renderSignUpPage();
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });
-    expect(googleBtn.className).toContain('bg-primary');
+    expect(googleBtn.className).not.toContain('bg-primary');
+    expect(googleBtn.querySelector('img')?.getAttribute('src')).toMatch(
+      /brand(\/|%2F)google-g\.png/,
+    );
+  });
+
+  it('renders the onboarding-style terms radio unchecked', () => {
+    renderSignUpPage();
+    const termsRadio = screen.getByRole('radio', {
+      name: /i agree to the terms of service and privacy policy/i,
+    });
+    expect(termsRadio).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('link', { name: /terms of service/i })).toHaveAttribute(
+      'href',
+      '/terms',
+    );
+    expect(screen.getAllByRole('link', { name: /privacy policy/i })[0]).toHaveAttribute(
+      'href',
+      '/privacy',
+    );
+  });
+
+  it('requires accepting terms before Continue with Google', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockOAuth = jest.fn();
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: jest.fn(),
+        signInWithOAuth: mockOAuth,
+      },
+    });
+
+    const { user } = renderSignUpPage();
+    await user.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    expect(
+      screen.getByText(/you must agree to the terms of service and privacy policy/i),
+    ).toBeInTheDocument();
+    expect(mockOAuth).not.toHaveBeenCalled();
+  });
+
+  it('starts Google OAuth after the terms radio is selected', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockOAuth = jest.fn().mockResolvedValue({ data: {}, error: null });
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: jest.fn(),
+        signInWithOAuth: mockOAuth,
+      },
+    });
+
+    const { user } = renderSignUpPage();
+    await user.click(screen.getByRole('radio'));
+    expect(screen.getByRole('radio')).toHaveAttribute('aria-checked', 'true');
+    await user.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    expect(mockOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: expect.stringContaining('/auth/callback'),
+        scopes: 'openid email profile',
+      },
+    });
   });
 
   it('renders two distinct eye toggle buttons', () => {
