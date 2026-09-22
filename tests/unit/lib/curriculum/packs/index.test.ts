@@ -77,7 +77,7 @@ describe('curriculum packs', () => {
     expect(pack).not.toBeNull();
 
     const guidelinePackText = formatCurriculumPackForPrompt(pack!, 'Science', 'Grade 5');
-    const prompt = buildSystemPrompt(undefined, undefined, guidelinePackText);
+    const prompt = buildSystemPrompt(undefined, guidelinePackText);
 
     expect(prompt).toContain('--- CURRICULUM GUIDELINE PACK ---');
     expect(prompt).toContain('--- END CURRICULUM GUIDELINE PACK ---');

@@ -92,8 +92,16 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     };
   }
 
-  const systemPrompt = buildSystemPrompt(curriculumText, locale, guidelinePackText);
-  const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt, locale });
+  const systemPrompt = buildSystemPrompt(locale, guidelinePackText);
+  const userPrompt = buildUserPrompt({
+    subject,
+    grade,
+    curriculum,
+    duration,
+    teacherPrompt,
+    curriculumText,
+    locale,
+  });
   const outputConfig = resolveQualityOutputConfig({ teacherPrompt, curriculumText });
   if (outputConfig.effort === 'low') {
     console.info('[generateLessonContent] Large user input; using low effort', {

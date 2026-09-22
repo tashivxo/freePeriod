@@ -109,12 +109,13 @@ describe('generateWithGemini', () => {
     expect(result.tokenCount).toBe(0);
   });
 
-  it('passes curriculumText to the system instruction', async () => {
+  it('passes curriculumText in the user contents, not the system instruction', async () => {
     await generateWithGemini({ ...BASE_PARAMS, curriculumText: 'Custom curriculum content' });
-    expect(mockGenerateContent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        systemInstruction: expect.stringContaining('Custom curriculum content'),
-      }),
-    );
+    const request = mockGenerateContent.mock.calls[0][0];
+
+    expect(request.systemInstruction).toContain('UPLOADED CURRICULUM DOCUMENT POLICY');
+    expect(request.systemInstruction).not.toContain('Custom curriculum content');
+    expect(request.contents[0].parts[0].text).toContain('UPLOADED CURRICULUM DOCUMENT (DATA ONLY)');
+    expect(request.contents[0].parts[0].text).toContain('Custom curriculum content');
   });
 });

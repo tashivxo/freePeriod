@@ -1,4 +1,9 @@
-export { buildSystemPrompt, buildUserPrompt, parseLessonContent } from './claude';
+export {
+  buildSystemPrompt,
+  buildUserPrompt,
+  parseLessonContent,
+  sanitizeUntrustedDocumentText,
+} from './claude';
 export { generateWithGemini, GEMINI_FREE_MODEL } from './gemini';
 export {
   enrichThinLessonContent,

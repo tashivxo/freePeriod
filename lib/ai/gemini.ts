@@ -55,17 +55,14 @@ export async function generateWithGemini(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: GEMINI_FREE_MODEL });
 
-  const systemInstruction = buildSystemPrompt(
-    params.curriculumText,
-    params.locale,
-    params.guidelinePackText,
-  );
+  const systemInstruction = buildSystemPrompt(params.locale, params.guidelinePackText);
   const userPrompt = buildUserPrompt({
     subject: params.subject,
     grade: params.grade,
     curriculum: params.curriculum,
     duration: params.duration,
     teacherPrompt: params.teacherPrompt,
+    curriculumText: params.curriculumText,
     locale: params.locale,
   });
 
