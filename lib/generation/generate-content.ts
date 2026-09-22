@@ -14,6 +14,21 @@ export const QUALITY_CLAUDE_MODEL = 'claude-sonnet-4-6';
 export const QUALITY_MAX_TOKENS = 8192;
 export const QUALITY_THINKING = { type: 'disabled' as const };
 export const QUALITY_OUTPUT_CONFIG = { effort: 'medium' as const };
+/** Teacher prompt + uploaded curriculum text at or above this uses low effort. */
+export const QUALITY_LOW_EFFORT_USER_CHARS = 80_000;
+
+export type QualityOutputConfig = { effort: 'low' | 'medium' };
+
+export function resolveQualityOutputConfig(userText: {
+  teacherPrompt: string;
+  curriculumText?: string;
+}): QualityOutputConfig {
+  const userChars = userText.teacherPrompt.length + (userText.curriculumText?.length ?? 0);
+  if (userChars >= QUALITY_LOW_EFFORT_USER_CHARS) {
+    return { effort: 'low' };
+  }
+  return QUALITY_OUTPUT_CONFIG;
+}
 
 export function shouldGenerateWithGemini(mode: 'fast' | 'quality'): boolean {
   return mode === 'fast';
@@ -79,6 +94,12 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
 
   const systemPrompt = buildSystemPrompt(curriculumText, locale, guidelinePackText);
   const userPrompt = buildUserPrompt({ subject, grade, curriculum, duration, teacherPrompt, locale });
+  const outputConfig = resolveQualityOutputConfig({ teacherPrompt, curriculumText });
+  if (outputConfig.effort === 'low') {
+    console.info('[generateLessonContent] Large user input; using low effort', {
+      userChars: teacherPrompt.length + (curriculumText?.length ?? 0),
+    });
+  }
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) {
     throw new Error('ANTHROPIC_API_KEY is not set');
@@ -89,7 +110,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     model: QUALITY_CLAUDE_MODEL,
     max_tokens: QUALITY_MAX_TOKENS,
     thinking: QUALITY_THINKING,
-    output_config: QUALITY_OUTPUT_CONFIG,
+    output_config: outputConfig,
     system: [
       {
         type: 'text',
@@ -99,7 +120,7 @@ export async function generateLessonContent(input: GenerateContentInput): Promis
     ],
     messages: [{ role: 'user', content: userPrompt }],
   } as Parameters<typeof anthropic.messages.stream>[0] & {
-    output_config: typeof QUALITY_OUTPUT_CONFIG;
+    output_config: QualityOutputConfig;
   });
 
   const finalMessage = await messageStream.finalMessage();

@@ -1,9 +1,11 @@
 import {
   generateLessonContent,
   QUALITY_CLAUDE_MODEL,
+  QUALITY_LOW_EFFORT_USER_CHARS,
   QUALITY_MAX_TOKENS,
   QUALITY_OUTPUT_CONFIG,
   QUALITY_THINKING,
+  resolveQualityOutputConfig,
   shouldGenerateWithGemini,
 } from '@/lib/generation/generate-content';
 
@@ -45,6 +47,23 @@ describe('Quality mode Claude caps', () => {
     expect(QUALITY_MAX_TOKENS).toBe(8192);
     expect(QUALITY_THINKING).toEqual({ type: 'disabled' });
     expect(QUALITY_OUTPUT_CONFIG).toEqual({ effort: 'medium' });
+    expect(QUALITY_LOW_EFFORT_USER_CHARS).toBe(80_000);
+  });
+
+  it('keeps medium effort until the user prompt and curriculum text are huge', () => {
+    expect(
+      resolveQualityOutputConfig({
+        teacherPrompt: 'Include pair work',
+        curriculumText: 'x'.repeat(QUALITY_LOW_EFFORT_USER_CHARS - 'Include pair work'.length - 1),
+      }),
+    ).toEqual({ effort: 'medium' });
+
+    expect(
+      resolveQualityOutputConfig({
+        teacherPrompt: '',
+        curriculumText: 'x'.repeat(QUALITY_LOW_EFFORT_USER_CHARS),
+      }),
+    ).toEqual({ effort: 'low' });
   });
 });
 
@@ -116,6 +135,35 @@ describe('generateLessonContent', () => {
       expect(result.lessonContent.title).toBe('Fractions on a Number Line');
       expect(result.inputTokens).toBe(120);
       expect(result.outputTokens).toBe(340);
+    } finally {
+      if (original === undefined) {
+        delete process.env.ANTHROPIC_API_KEY;
+      } else {
+        process.env.ANTHROPIC_API_KEY = original;
+      }
+    }
+  });
+
+  it('uses low effort when the user curriculum text is huge', async () => {
+    const original = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    try {
+      await generateLessonContent({
+        generationMode: 'quality',
+        subject: 'Mathematics',
+        grade: '5',
+        curriculum: 'Common Core',
+        duration: 60,
+        teacherPrompt: 'Focus on number lines',
+        curriculumText: 'x'.repeat(QUALITY_LOW_EFFORT_USER_CHARS),
+      });
+
+      expect(mockMessagesStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thinking: { type: 'disabled' },
+          output_config: { effort: 'low' },
+        }),
+      );
     } finally {
       if (original === undefined) {
         delete process.env.ANTHROPIC_API_KEY;
