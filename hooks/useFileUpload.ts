@@ -7,7 +7,7 @@ import type { UploadType } from '@/types';
 interface UseFileUploadProps {
   bucket?: string;
   uploadType: UploadType;
-  onParsed?: (uploadId: string) => void;
+  onParsed?: (uploadId: string, text: string) => void;
   accept?: string;
 }
 
@@ -15,6 +15,7 @@ interface UseFileUploadReturn {
   file: File | null;
   storagePath: string | null;
   uploadId: string | null;
+  parsedText: string | null;
   isUploading: boolean;
   error: string | null;
   handleFile: (file: File) => Promise<void>;
@@ -30,6 +31,7 @@ export function useFileUpload({
   const [file, setFile] = useState<File | null>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
   const [uploadId, setUploadId] = useState<string | null>(null);
+  const [parsedText, setParsedText] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -111,7 +113,8 @@ export function useFileUpload({
       setFile(incoming);
       setStoragePath(path);
       setUploadId(newUploadId);
-      onParsed?.(newUploadId);
+      setParsedText(parsedData.text);
+      onParsed?.(newUploadId, parsedData.text);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -124,6 +127,7 @@ export function useFileUpload({
       setFile(null);
       setStoragePath(null);
       setUploadId(null);
+      setParsedText(null);
       return;
     }
 
@@ -137,6 +141,7 @@ export function useFileUpload({
       setFile(null);
       setStoragePath(null);
       setUploadId(null);
+      setParsedText(null);
       setError(null);
     }
   };
@@ -145,6 +150,7 @@ export function useFileUpload({
     file,
     storagePath,
     uploadId,
+    parsedText,
     isUploading,
     error,
     handleFile,

@@ -1,50 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
-import * as XLSX from 'xlsx';
 import { extractTextFromImage } from '@/lib/ocr/tesseract';
-
-type ParsedContent = {
-  text: string;
-  type: 'docx' | 'pdf' | 'xlsx' | 'image';
-  metadata?: Record<string, unknown>;
-};
+import { parseDocx } from '@/lib/parse/parse-docx';
+import { parsePdf } from '@/lib/parse/parse-pdf';
+import { parseXlsx } from '@/lib/parse/parse-xlsx';
+import type { ParsedContent } from '@/lib/parse/types';
 
 function getFileType(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() ?? '';
-}
-
-async function parseDocx(buffer: Buffer): Promise<ParsedContent> {
-  const result = await mammoth.extractRawText({ buffer });
-  return { text: result.value.trim(), type: 'docx' };
-}
-
-async function parsePdf(buffer: Buffer): Promise<ParsedContent> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  const result = await parser.getText();
-  let text = result.text.trim();
-
-  if (text.length < 20) {
-    text = await extractTextFromImage(buffer);
-    return { text, type: 'pdf', metadata: { ocr: true } };
-  }
-
-  return { text, type: 'pdf', metadata: { pages: result.total } };
-}
-
-function parseXlsx(buffer: Buffer): ParsedContent {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
-  const sheets: string[] = [];
-
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) continue;
-    const csv = XLSX.utils.sheet_to_csv(sheet);
-    sheets.push(`--- ${sheetName} ---\n${csv}`);
-  }
-
-  return { text: sheets.join('\n\n').trim(), type: 'xlsx', metadata: { sheets: workbook.SheetNames } };
 }
 
 async function parseImage(buffer: Buffer): Promise<ParsedContent> {

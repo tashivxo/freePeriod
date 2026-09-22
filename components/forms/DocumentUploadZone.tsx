@@ -33,7 +33,7 @@ export function DocumentUploadZone({
   const inputId = useId();
   const sectionHeading = SECTION_HEADINGS[uploadType];
 
-  const { file, storagePath, isUploading, error, handleFile, removeFile } = useFileUpload({
+  const { file, storagePath, parsedText, isUploading, error, handleFile, removeFile } = useFileUpload({
     uploadType,
     accept,
   });
@@ -138,6 +138,21 @@ export function DocumentUploadZone({
           void handleFile(selected);
         }}
       />
+
+      {uploadType === 'curriculum_doc' && parsedText && (
+        <div
+          role="region"
+          aria-label="Extracted curriculum text"
+          className="max-h-64 overflow-y-auto rounded-lg border border-border bg-background p-3"
+        >
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
+            Extracted text sent to generation
+          </p>
+          <pre className="whitespace-pre-wrap break-words text-sm text-text-primary">
+            {parsedText}
+          </pre>
+        </div>
+      )}
 
       {error && (
         <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">

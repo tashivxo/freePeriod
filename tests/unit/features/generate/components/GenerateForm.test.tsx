@@ -218,6 +218,9 @@ describe('GenerateForm', () => {
     await waitFor(() => {
       expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
       expect(screen.getByText('PDF')).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: 'Extracted curriculum text' })).toHaveTextContent(
+        'Parsed curriculum text',
+      );
     });
   });
 
