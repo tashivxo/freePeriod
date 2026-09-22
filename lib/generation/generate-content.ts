@@ -12,7 +12,7 @@ import type { LessonSection } from '@/types';
 
 export const QUALITY_CLAUDE_MODEL = 'claude-sonnet-4-6';
 export const QUALITY_MAX_TOKENS = 8192;
-export const QUALITY_THINKING = { type: 'adaptive' as const };
+export const QUALITY_THINKING = { type: 'disabled' as const };
 export const QUALITY_OUTPUT_CONFIG = { effort: 'medium' as const };
 
 export function shouldGenerateWithGemini(mode: 'fast' | 'quality'): boolean {

@@ -43,7 +43,7 @@ describe('Quality mode Claude caps', () => {
   it('exports capped request constants', () => {
     expect(QUALITY_CLAUDE_MODEL).toBe('claude-sonnet-4-6');
     expect(QUALITY_MAX_TOKENS).toBe(8192);
-    expect(QUALITY_THINKING).toEqual({ type: 'adaptive' });
+    expect(QUALITY_THINKING).toEqual({ type: 'disabled' });
     expect(QUALITY_OUTPUT_CONFIG).toEqual({ effort: 'medium' });
   });
 });
