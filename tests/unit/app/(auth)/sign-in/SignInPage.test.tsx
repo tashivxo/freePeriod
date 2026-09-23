@@ -5,7 +5,6 @@ jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
       signInWithPassword: jest.fn().mockResolvedValue({ data: {}, error: null }),
-      signInWithOtp: jest.fn().mockResolvedValue({ data: {}, error: null }),
       signInWithOAuth: jest.fn().mockResolvedValue({ data: {}, error: null }),
       getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     },
@@ -66,11 +65,12 @@ describe('SignInPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders magic link option', () => {
+  it('does not render a magic link option', () => {
     render(<SignInPage />);
     expect(
-      screen.getByRole('button', { name: /send magic link/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /magic link/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/check your email for a magic link/i)).toBeNull();
   });
 
   it('renders a link to sign-up page', () => {
@@ -91,7 +91,7 @@ describe('SignInPage', () => {
     mockSearchParams.set('error', 'auth_callback_failed');
     render(<SignInPage />);
     expect(
-      screen.getByText(/that sign-in link is invalid or has expired/i),
+      screen.getByText(/that sign-in request is invalid or has expired/i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /request a new password reset/i }),
@@ -112,7 +112,6 @@ describe('SignInPage', () => {
     (createClient as jest.Mock).mockReturnValue({
       auth: {
         signInWithPassword: mockSignIn,
-        signInWithOtp: jest.fn(),
         signInWithOAuth: jest.fn(),
         getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
@@ -144,7 +143,6 @@ describe('SignInPage', () => {
     (createClient as jest.Mock).mockReturnValue({
       auth: {
         signInWithPassword: mockSignIn,
-        signInWithOtp: jest.fn(),
         signInWithOAuth: jest.fn(),
       },
     });
@@ -207,7 +205,6 @@ describe('SignInPage', () => {
     createClient.mockReturnValue({
       auth: {
         signInWithPassword: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
-        signInWithOtp: jest.fn(),
         signInWithOAuth: jest.fn(),
         getUser: jest.fn().mockResolvedValue({ data: { user: { id: '1' } }, error: null }),
       },
