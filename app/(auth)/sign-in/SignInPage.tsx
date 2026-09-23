@@ -26,7 +26,6 @@ export function SignInPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const callbackFailed = searchParams.get('error') === 'auth_callback_failed';
   const { ref: callbackErrorIconRef, animationDisabled: callbackErrorIconMotionDisabled } =
     useMotionSafeIconRef();
@@ -93,27 +92,6 @@ export function SignInPage() {
     router.push(searchParams.get('next') ?? '/dashboard');
   }
 
-  async function handleMagicLink() {
-    setServerError('');
-    if (!email.trim()) {
-      setErrors({ email: 'Email is required' });
-      return;
-    }
-    if (authBusy) return;
-
-    setAuthBusy(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    setAuthBusy(false);
-
-    if (error) {
-      setServerError(mapAuthError(error.message));
-      return;
-    }
-
-    setMagicLinkSent(true);
-  }
-
   async function handleGoogleLogin() {
     if (authBusy) return;
     setAuthBusy(true);
@@ -141,138 +119,128 @@ export function SignInPage() {
         </div>
 
         <Card className="border-border/60 shadow-sm">
-          <CardContent className="space-y-5 p-6">
+          <CardContent className="p-6">
+        {(callbackFailed || serverError) && (
+          <div className="mb-5 space-y-3">
+            {callbackFailed && (
+              <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+                <XIcon
+                  ref={callbackErrorIconRef}
+                  size={20}
+                  animationDisabled={callbackErrorIconMotionDisabled}
+                  aria-hidden
+                  className="mt-0.5 shrink-0"
+                />
+                <p className="text-sm">
+                  That sign-in request is invalid or has expired. Try signing in below, or{' '}
+                  <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
+                    request a new password reset
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
 
-        {callbackFailed && (
-          <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
-            <XIcon
-              ref={callbackErrorIconRef}
-              size={20}
-              animationDisabled={callbackErrorIconMotionDisabled}
-              aria-hidden
-              className="mt-0.5 shrink-0"
-            />
-            <p className="text-sm">
-              That sign-in link is invalid or has expired. Try signing in below, or{' '}
-              <Link href="/forgot-password" className="font-semibold text-coral hover:underline">
-                request a new password reset
-              </Link>
-              .
-            </p>
+            {serverError && (
+              <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
+                <XIcon
+                  ref={serverErrorIconRef}
+                  size={20}
+                  animationDisabled={serverErrorIconMotionDisabled}
+                  aria-hidden
+                  className="mt-0.5 shrink-0"
+                />
+                <p className="text-sm">{serverError}</p>
+              </div>
+            )}
           </div>
         )}
 
-        {serverError && (
-          <div role="alert" className="flex items-start gap-3 rounded-xl bg-error/10 p-3 text-error">
-            <XIcon
-              ref={serverErrorIconRef}
-              size={20}
-              animationDisabled={serverErrorIconMotionDisabled}
-              aria-hidden
-              className="mt-0.5 shrink-0"
-            />
-            <p className="text-sm">{serverError}</p>
-          </div>
-        )}
-
-        {magicLinkSent && (
-          <div role="status" className="p-3 rounded-xl bg-success/10 text-success text-sm text-center">
-            Check your email for a magic link!
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            autoComplete="email"
-          />
-          <div className="space-y-1">
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="space-y-4">
             <Input
-              label="Password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={errors.password}
-              autoComplete="current-password"
-              endAdornment={
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              }
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email}
+              autoComplete="email"
             />
-            <div className="flex justify-end">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-text-secondary hover:text-coral transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="remember-me"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(!!checked)}
-                className="data-checked:bg-coral"
-                aria-label="Remember me"
-                aria-describedby="remember-me-hint"
+            <div className="space-y-1">
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password}
+                autoComplete="current-password"
+                endAdornment={
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center text-text-secondary transition-colors hover:text-text-primary"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
               />
-              <label
-                htmlFor="remember-me"
-                className="cursor-pointer select-none font-body text-sm text-text-secondary"
-              >
-                Remember me
-              </label>
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-text-secondary hover:text-coral transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
-            <p id="remember-me-hint" className="pl-12 text-xs text-text-secondary">
-              You stay signed in on this browser until you sign out.
-            </p>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(!!checked)}
+                  className="data-checked:bg-coral"
+                  aria-label="Remember me"
+                  aria-describedby="remember-me-hint"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="cursor-pointer select-none font-body text-sm text-text-secondary"
+                >
+                  Remember me
+                </label>
+              </div>
+              <p id="remember-me-hint" className="pl-12 text-xs text-text-secondary">
+                You stay signed in on this browser until you sign out.
+              </p>
+            </div>
           </div>
 
-          <Button type="submit" className="w-full" isLoading={authBusy}>
+          <Button
+            type="submit"
+            className="mt-6 w-full min-h-11 sm:min-h-11"
+            isLoading={authBusy}
+          >
             Sign in
           </Button>
         </form>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-text-secondary/20" />
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-text-secondary/20" />
           <span className="text-sm text-text-secondary">or</span>
-          <div className="flex-1 h-px bg-text-secondary/20" />
+          <div className="h-px flex-1 bg-text-secondary/20" />
         </div>
 
-        <div className="space-y-3">
-          <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
+        <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
 
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={handleMagicLink}
-            type="button"
-            disabled={authBusy}
-          >
-            Send magic link
-          </Button>
-        </div>
-
-        <p className="text-center text-sm font-body text-text-secondary">
+        <p className="mt-6 text-center text-sm font-body text-text-secondary">
           Don&apos;t have an account?{' '}
           <Link href="/sign-up" className="text-coral font-semibold hover:underline">
             Sign up
           </Link>
         </p>
-
           </CardContent>
         </Card>
       </div>

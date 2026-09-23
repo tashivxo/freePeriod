@@ -18,9 +18,9 @@ test.describe('Sign-in page', () => {
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 
-  test('renders social auth options', async ({ page }) => {
+  test('renders Google OAuth option without magic link', async ({ page }) => {
     await expect(page.getByRole('button', { name: /continue with google/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /magic link/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /magic link/i })).toHaveCount(0);
   });
 
   test('"Sign up" link navigates to /sign-up', async ({ page }) => {

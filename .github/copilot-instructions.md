@@ -102,7 +102,7 @@ proxy.ts                      # Next.js 16 request proxy (auth redirects)
 - Use `@supabase/ssr` for creating client (browser) and server (route handler/middleware) Supabase instances
 - **RLS on all tables**: every table policy must check `auth.uid() = user_id`
 - **Storage**: private bucket `uploads`, 10MB file limit
-- **Auth providers**: email/password, magic link, Google OAuth (with `drive.readonly` scope)
+- **Auth providers**: email/password and Google OAuth (with `drive.readonly` scope)
 - **Environment variables** (`.env.local`):
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
