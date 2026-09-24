@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import type { LessonPlan } from '@/types';
+import { formatGradeLabel } from '@/lib/utils/grades';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
 const DOCUMENT_XML_PATH = 'word/document.xml';
@@ -450,10 +451,41 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
     for (const label of labels) map.set(normalizeLabel(label), v);
   };
 
-  set(['Module Title', 'Lesson Title', 'Lesson(s) Title', 'Lesson Plan Title', 'Title'], c.title || lesson.title);
+  set(
+    [
+      'Module Title',
+      'Lesson Title',
+      'Lesson(s) Title',
+      'Lesson Plan Title',
+      'Title',
+      'Topic',
+      'Lesson Topic',
+      'Theme',
+      'Lesson Theme',
+    ],
+    c.title || lesson.title,
+  );
+  set(['Subject'], lesson.subject);
+  set(['Grade', 'Grade Level', 'Class', 'Year Group'], formatGradeLabel(lesson.grade));
+  set(
+    ['Duration', 'Time Allocation', 'Lesson Duration'],
+    lesson.duration_minutes ? `${lesson.duration_minutes} minutes` : undefined,
+  );
   set(['Essential Question', 'Essential Question(s)'], c.essentialQuestion);
   set(
-    ['Lesson Objective', 'Lesson Objective(s)', 'Learning Objectives', 'Objectives', 'Lesson Objectives'],
+    [
+      'Lesson Objective',
+      'Lesson Objective(s)',
+      'Learning Objectives',
+      'Objectives',
+      'Lesson Objectives',
+      'Learning Outcomes',
+      'Learning Intentions',
+      'Aims',
+      'Aim',
+      'Outcomes',
+      'WALT',
+    ],
     joinBullets(c.objectives),
   );
   set(['Success Criteria', 'Success Criteria(s)'], joinBullets(c.successCriteria));
@@ -483,13 +515,27 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
     ['Lesson Key Vocabulary', 'Key Vocabulary', 'New Vocabulary', 'Vocabulary'],
     joinBullets(c.vocabulary),
   );
-  set(['Hook', 'Engage', 'Do Now', 'Anticipatory Set'], c.hook);
+  set(
+    ['Hook', 'Engage', 'Do Now', 'Anticipatory Set', 'Introduction', 'Starter', 'Warm-up', 'Warm Up', 'Warmup'],
+    c.hook,
+  );
   const allActivities = [
     ...(c.mainActivities ?? []),
     ...(c.guidedPractice ?? []),
     ...(c.independentPractice ?? []),
   ];
-  set(['Activities', 'Main Activities', 'Lesson Activities'], joinBlocks(allActivities));
+  set(
+    [
+      'Activities',
+      'Main Activities',
+      'Lesson Activities',
+      'Main Activity',
+      'Development',
+      'Lesson Development',
+      'Presentation',
+    ],
+    joinBlocks(allActivities),
+  );
   set(['Guided Practice'], joinBlocks(c.guidedPractice));
   set(['Independent Practice'], joinBlocks(c.independentPractice));
   set(
@@ -505,7 +551,10 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   );
   set(['EL Support', 'SEN'], joinBullets(c.differentiation?.support));
   set(['G&T', 'Gifted & Talented (G&T)'], joinBullets(c.differentiation?.extension));
-  set(['Plenary', 'Evaluate', 'Exit Ticket', 'Closure'], c.plenary);
+  set(
+    ['Plenary', 'Evaluate', 'Exit Ticket', 'Closure', 'Conclusion', 'Wrap-up', 'Wrap Up', 'Recap', 'Summary'],
+    c.plenary,
+  );
   set(['Materials', 'Resources'], DEFAULT_RESOURCES);
   set(['Real World Connections', 'UAE Links'], joinBullets(c.realWorldConnections));
   set(

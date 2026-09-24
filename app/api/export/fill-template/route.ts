@@ -7,9 +7,36 @@ import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
+import {
+  TEMPLATE_UNFILLED_CODE,
+  TEMPLATE_UNFILLED_ERROR,
+  isMeaningfulFill,
+  templateDataAppearsInText,
+} from '@/lib/export/fill-template-result';
 import type { LessonPlan, LessonSection } from '@/types';
 
 export { buildTemplateData };
+
+const DOCX_CONTENT_TYPE =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const XLSX_CONTENT_TYPE =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+function unfilledTemplateResponse() {
+  return NextResponse.json(
+    { error: TEMPLATE_UNFILLED_ERROR, code: TEMPLATE_UNFILLED_CODE },
+    { status: 422 },
+  );
+}
+
+function filledFileResponse(buffer: Buffer, filename: string, contentType: string) {
+  return new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -30,7 +57,7 @@ export async function POST(request: NextRequest) {
   // Fetch the lesson — must belong to the authenticated user
   const { data: lesson, error: lessonError } = await supabase
     .from('lesson_plans')
-    .select('id, title, content, template_path, user_id')
+    .select('id, title, subject, grade, duration_minutes, content, template_path, user_id')
     .eq('id', lessonId)
     .eq('user_id', user.id)
     .single();
@@ -69,35 +96,40 @@ export async function POST(request: NextRequest) {
     const xml = (await zip.file('word/document.xml')?.async('string')) ?? '';
     const cmdDelimCount = (xml.match(/\+\+\+/g) || []).length;
 
-    let filledBuffer: Buffer;
-
     if (cmdDelimCount > 0) {
       // Template authored with docx-templates command syntax (e.g. +++INS field+++)
-      filledBuffer = Buffer.from(
+      const filledBuffer = Buffer.from(
         await createReport({ template: templateBuffer, data: templateData, failFast: false }),
       );
-    } else {
-      // Plain form-style template (labels in table cells, blank cells for values) —
-      // fill by matching known field labels to the adjacent empty cell.
-      const result = await fillGenericDocxTemplate(templateBuffer, {
-        title: lesson.title,
-        content: lesson.content as LessonSection,
-      } as LessonPlan);
-      filledBuffer = result.buffer;
+      const filledZip = await JSZip.loadAsync(filledBuffer);
+      const filledXml = (await filledZip.file('word/document.xml')?.async('string')) ?? '';
+      const remainingDelims = (filledXml.match(/\+\+\+/g) || []).length;
+      // Unchanged +++ count and no lesson text in the output means nothing filled.
+      if (
+        remainingDelims >= cmdDelimCount &&
+        !templateDataAppearsInText(filledXml, templateData)
+      ) {
+        return unfilledTemplateResponse();
+      }
+      return filledFileResponse(filledBuffer, filename, DOCX_CONTENT_TYPE);
     }
 
-    return new NextResponse(new Uint8Array(filledBuffer), {
-      headers: {
-        'Content-Type':
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-      },
-    });
+    // Plain form-style template (labels in table cells, blank cells for values) —
+    // fill by matching known field labels to the adjacent empty cell.
+    const result = await fillGenericDocxTemplate(templateBuffer, {
+      ...lesson,
+      content: lesson.content as LessonSection,
+    } as LessonPlan);
+    if (!isMeaningfulFill(result.filledCount, result.matchedLabels)) {
+      return unfilledTemplateResponse();
+    }
+    return filledFileResponse(result.buffer, filename, DOCX_CONTENT_TYPE);
   }
 
   // ---------- XLSX ----------
   if (ext === 'xlsx' || ext === 'xls') {
     const workbook = XLSX.read(templateBuffer, { type: 'buffer' });
+    let replaceCount = 0;
 
     for (const sheetName of workbook.SheetNames) {
       const sheet = workbook.Sheets[sheetName];
@@ -113,20 +145,18 @@ export async function POST(request: NextRequest) {
           if (val !== cell.v) {
             cell.v = val;
             cell.w = val;
+            replaceCount += 1;
           }
         }
       }
     }
 
-    const out = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    if (replaceCount === 0) {
+      return unfilledTemplateResponse();
+    }
 
-    return new NextResponse(new Uint8Array(out), {
-      headers: {
-        'Content-Type':
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-      },
-    });
+    const out = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return filledFileResponse(out as Buffer, filename, XLSX_CONTENT_TYPE);
   }
 
   if (ext === 'pdf') {

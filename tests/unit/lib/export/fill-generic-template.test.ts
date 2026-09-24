@@ -171,4 +171,45 @@ describe('fill-generic-template field mapping', () => {
       'Classification performance task',
     );
   });
+
+  it('maps daily English / school-form labels used on generic templates', () => {
+    const map = buildFieldMap(sampleLesson);
+
+    expect(map.get(normalizeLabel('Topic'))).toBe('Exploring States of Matter');
+    expect(map.get(normalizeLabel('Learning Outcomes'))).toContain('particle motion');
+    expect(map.get(normalizeLabel('Introduction'))).toContain('Demo ice melting');
+    expect(map.get(normalizeLabel('Development'))).toContain('Model particle diagrams');
+    expect(map.get(normalizeLabel('Conclusion'))).toContain('Summarize');
+    expect(map.get(normalizeLabel('Subject'))).toBe('Science');
+    expect(map.get(normalizeLabel('Grade'))).toBe('Grade 6');
+  });
+
+  it('returns filledCount 0 and the original buffer when no labels match', async () => {
+    const templateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>School crest</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+    zip.file('word/document.xml', templateXml);
+    zip.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>');
+    const templateBuffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
+
+    const result = await fillGenericDocxTemplate(templateBuffer, sampleLesson);
+
+    expect(result.filledCount).toBe(0);
+    expect(result.matchedLabels).toEqual([]);
+    const outZip = await JSZip.loadAsync(result.buffer);
+    const outXml = await outZip.file('word/document.xml')!.async('string');
+    expect(outXml).not.toContain('Exploring States of Matter');
+    expect(outXml).toContain('School crest');
+  });
 });
