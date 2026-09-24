@@ -4,7 +4,10 @@ import { extractTextFromImage } from '@/lib/ocr/tesseract';
 import { parseDocx } from '@/lib/parse/parse-docx';
 import { parsePdf } from '@/lib/parse/parse-pdf';
 import { parseXlsx } from '@/lib/parse/parse-xlsx';
-import type { ParsedContent } from '@/lib/parse/types';
+import { requiresExtractedText, type ParsedContent } from '@/lib/parse/types';
+import type { UploadType } from '@/types';
+
+export const maxDuration = 120;
 
 function getFileType(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() ?? '';
@@ -26,9 +29,25 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const storagePath: string = body.storagePath;
   const uploadId: string | undefined = body.uploadId;
+  let uploadType: UploadType | undefined =
+    body.uploadType === 'template' || body.uploadType === 'curriculum_doc'
+      ? body.uploadType
+      : undefined;
 
   if (!storagePath) {
     return NextResponse.json({ error: 'storagePath is required' }, { status: 400 });
+  }
+
+  if (uploadId && !uploadType) {
+    const { data: uploadRow } = await supabase
+      .from('uploads')
+      .select('type')
+      .eq('id', uploadId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (uploadRow?.type === 'template' || uploadRow?.type === 'curriculum_doc') {
+      uploadType = uploadRow.type;
+    }
   }
 
   const { data: fileData, error: downloadError } = await supabase.storage
@@ -78,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 
-  if (!parsed.text.trim()) {
+  if (!parsed.text.trim() && requiresExtractedText(uploadType)) {
     const errorMessage = 'No readable text was found in this document. Please upload a clearer curriculum file.';
     if (uploadId) {
       await supabase

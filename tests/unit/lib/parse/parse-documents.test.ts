@@ -2,6 +2,13 @@ import * as XLSX from 'xlsx';
 import { filterDocxXml } from '@/lib/parse/parse-docx';
 import { parseXlsx, sheetToVisibleCsv } from '@/lib/parse/parse-xlsx';
 import { removeNonVisibleCharacters } from '@/lib/parse/filter-visible-text';
+import { requiresExtractedText } from '@/lib/parse/types';
+
+it('requires extracted text for curriculum docs but not templates', () => {
+  expect(requiresExtractedText('curriculum_doc')).toBe(true);
+  expect(requiresExtractedText(undefined)).toBe(true);
+  expect(requiresExtractedText('template')).toBe(false);
+});
 
 it('removes non-rendering Unicode controls without removing document whitespace', () => {
   expect(removeNonVisibleCharacters('Visible\u200B text\twith\nbreaks')).toBe(

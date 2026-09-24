@@ -255,6 +255,70 @@ describe('GenerateClient', () => {
     expect(screen.queryByRole('heading', { name: /upgrade to pro/i })).not.toBeInTheDocument();
   });
 
+  it('surfaces an error when the stream ends without completing', async () => {
+    const toBytes = (value: string) => Uint8Array.from(value, (char) => char.charCodeAt(0));
+    const chunks = ['data: {"type":"status","message":"Starting generation…"}\n\n'];
+    let chunkIndex = 0;
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (chunkIndex < chunks.length) {
+              return { done: false, value: toBytes(chunks[chunkIndex++]) };
+            }
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/generation stopped before the lesson was saved/i),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('completes when the final SSE event has no trailing newline', async () => {
+    const toBytes = (value: string) => Uint8Array.from(value, (char) => char.charCodeAt(0));
+    const chunks = [
+      'data: {"type":"status","message":"Starting generation…"}\n\n',
+      'data: {"type":"complete","lessonId":"lesson-flush","usage":{"inputTokens":1,"outputTokens":2}}',
+    ];
+    let chunkIndex = 0;
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (chunkIndex < chunks.length) {
+              return { done: false, value: toBytes(chunks[chunkIndex++]) };
+            }
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    });
+
+    const { user } = render(<GenerateClient defaults={defaults} />);
+
+    await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/lesson/lesson-flush');
+    });
+  });
+
   it('surfaces stream errors with Try again recovery', async () => {
     const toBytes = (value: string) => Uint8Array.from(value, (char) => char.charCodeAt(0));
     const chunks = [

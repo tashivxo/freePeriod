@@ -54,10 +54,18 @@ describe('GenerateForm', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    // Mock fetch used by uploadFile to call /api/parse-document
-    (global as { fetch: unknown }).fetch = jest
-      .fn()
-      .mockResolvedValue({ ok: true, json: async () => ({ text: 'Parsed curriculum text' }) });
+    (global as { fetch: unknown }).fetch = jest.fn(
+      async (_url: string, init?: { body?: BodyInit | null }) => {
+        const parsed =
+          typeof init?.body === 'string'
+            ? (JSON.parse(init.body) as { uploadType?: string })
+            : {};
+        if (parsed.uploadType === 'template') {
+          return { ok: true, json: async () => ({ text: '' }) };
+        }
+        return { ok: true, json: async () => ({ text: 'Parsed curriculum text' }) };
+      },
+    );
   });
 
   // ---- Rendering ----
@@ -222,6 +230,65 @@ describe('GenerateForm', () => {
         'Parsed curriculum text',
       );
     });
+  });
+
+  it('accepts a blank lesson-plan template and shows success', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File([''], 'Blank Daily English lesson plan template.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    await user.upload(
+      screen.getByLabelText(/upload lesson plan template/i),
+      file,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Blank Daily English lesson plan template.docx'),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/uploaded\. ready to generate/i)).toBeInTheDocument();
+    });
+  });
+
+  it('keeps a failed curriculum file visible and does not claim success', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: '' }),
+    });
+
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File(['content'], 'syllabus.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.upload(
+      screen.getByLabelText(/upload curriculum document/i),
+      file,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no readable text/i);
+    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
+    expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
+  });
+
+  it('disables generate while a document is still uploading', async () => {
+    (global.fetch as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    const { user } = render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
+    const file = new File(['content'], 'syllabus.pdf', {
+      type: 'application/pdf',
+    });
+
+    await user.upload(
+      screen.getByLabelText(/upload curriculum document/i),
+      file,
+    );
+
+    expect(
+      await screen.findByRole('button', { name: /waiting for upload/i }),
+    ).toBeDisabled();
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('removes uploaded file when remove button is clicked', async () => {

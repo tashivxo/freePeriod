@@ -187,6 +187,7 @@ export async function POST(request: NextRequest) {
             content: lessonContent,
             modelUsed,
             tokenCount: inputTokens + outputTokens,
+            curriculumDocPath: curriculumDocPath ?? null,
             templatePath: templatePath ?? null,
             generationCount: access.generationCount,
           });

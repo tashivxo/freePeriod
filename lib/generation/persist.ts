@@ -11,6 +11,7 @@ export type PersistLessonInput = {
   content: LessonSection;
   modelUsed: string;
   tokenCount: number;
+  curriculumDocPath: string | null;
   templatePath: string | null;
   generationCount: number;
 };
@@ -18,6 +19,64 @@ export type PersistLessonInput = {
 export type PersistLessonResult =
   | { ok: true; lessonId: string }
   | { ok: false; error: string };
+
+type LinkTarget = {
+  path: string;
+  type: 'curriculum_doc' | 'template';
+};
+
+export async function linkUploadsToLesson(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    lessonId: string;
+    curriculumDocPath: string | null;
+    templatePath: string | null;
+  },
+): Promise<PersistLessonResult> {
+  const targets: LinkTarget[] = [];
+  if (input.curriculumDocPath) {
+    targets.push({ path: input.curriculumDocPath, type: 'curriculum_doc' });
+  }
+  if (input.templatePath) {
+    targets.push({ path: input.templatePath, type: 'template' });
+  }
+
+  for (const target of targets) {
+    const { data, error } = await supabase
+      .from('uploads')
+      .update({ lesson_id: input.lessonId })
+      .eq('storage_path', target.path)
+      .eq('user_id', input.userId)
+      .eq('type', target.type)
+      .select('id')
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('[generate] Failed to link upload to lesson', {
+        userId: input.userId,
+        lessonId: input.lessonId,
+        storagePath: target.path,
+        type: target.type,
+        error: error
+          ? {
+              code: error.code,
+              message: error.message,
+              details: error.details,
+              hint: error.hint,
+            }
+          : null,
+      });
+      return {
+        ok: false,
+        error:
+          'The lesson was saved, but an uploaded file could not be linked to it. Open History to find the lesson, or try again.',
+      };
+    }
+  }
+
+  return { ok: true, lessonId: input.lessonId };
+}
 
 export async function persistLessonPlan(
   supabase: SupabaseClient<Database>,
@@ -61,6 +120,16 @@ export async function persistLessonPlan(
     .from('users')
     .update({ generation_count: input.generationCount + 1 })
     .eq('id', input.userId);
+
+  const linkResult = await linkUploadsToLesson(supabase, {
+    userId: input.userId,
+    lessonId: lessonPlan.id,
+    curriculumDocPath: input.curriculumDocPath,
+    templatePath: input.templatePath,
+  });
+  if (!linkResult.ok) {
+    return linkResult;
+  }
 
   return { ok: true, lessonId: lessonPlan.id };
 }

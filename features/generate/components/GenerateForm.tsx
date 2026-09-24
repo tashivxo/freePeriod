@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
@@ -91,6 +91,8 @@ export function GenerateForm({
   const [teacherPrompt, setTeacherPrompt] = useState('');
   const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
   const [templatePath, setTemplatePath] = useState<string | null>(null);
+  const [curriculumUploading, setCurriculumUploading] = useState(false);
+  const [templateUploading, setTemplateUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [generationMode, setGenerationMode] = useState<GenerationMode>(() =>
@@ -117,7 +119,21 @@ export function GenerateForm({
     localStorage.setItem(GENERATION_MODE_STORAGE_KEY, mode);
   };
 
-  const busy = isGenerating || isSubmitting;
+  const uploadsBusy = curriculumUploading || templateUploading;
+  const busy = isGenerating || isSubmitting || uploadsBusy;
+
+  const handleCurriculumComplete = useCallback((path: string) => {
+    setCurriculumDocPath(path);
+  }, []);
+  const handleCurriculumRemove = useCallback(() => {
+    setCurriculumDocPath(null);
+  }, []);
+  const handleTemplateComplete = useCallback((path: string) => {
+    setTemplatePath(path);
+  }, []);
+  const handleTemplateRemove = useCallback(() => {
+    setTemplatePath(null);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +160,10 @@ export function GenerateForm({
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      return;
+    }
+
+    if (uploadsBusy) {
       return;
     }
 
@@ -341,15 +361,17 @@ export function GenerateForm({
           label="Upload curriculum document"
           accept={CURRICULUM_DOC_ACCEPT}
           uploadType="curriculum_doc"
-          onUploadComplete={(p) => setCurriculumDocPath(p)}
-          onRemove={() => setCurriculumDocPath(null)}
+          onUploadComplete={handleCurriculumComplete}
+          onRemove={handleCurriculumRemove}
+          onBusyChange={setCurriculumUploading}
         />
         <DocumentUploadZone
           label="Upload lesson plan template"
           accept={TEMPLATE_ACCEPT}
           uploadType="template"
-          onUploadComplete={(p) => setTemplatePath(p)}
-          onRemove={() => setTemplatePath(null)}
+          onUploadComplete={handleTemplateComplete}
+          onRemove={handleTemplateRemove}
+          onBusyChange={setTemplateUploading}
         />
 
         {/* Generation mode */}
@@ -375,7 +397,7 @@ export function GenerateForm({
           isLoading={busy}
           className="w-full mt-6"
         >
-          {busy ? 'Generating...' : (
+          {uploadsBusy && !isGenerating ? 'Waiting for upload…' : busy ? 'Generating...' : (
             <>
               <Plus className="h-5 w-5 mr-2" />
               Generate Lesson Plan
