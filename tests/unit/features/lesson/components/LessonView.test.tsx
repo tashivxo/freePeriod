@@ -50,12 +50,20 @@ jest.mock('@/hooks/useFileUpload', () => ({
   })),
 }));
 
+jest.mock('@/lib/download-blob', () => ({
+  downloadBlob: jest.fn(),
+}));
+
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { downloadBlob } from '@/lib/download-blob';
 import {
+  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
+  BTN_USE_SHARED_TEMPLATE,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
+import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
 const lesson: LessonPlan = {
@@ -237,5 +245,52 @@ describe('LessonView', () => {
         alert.textContent?.includes('Export service unavailable'),
       )).toBe(true);
     });
+  });
+
+  it('does not download an unfilled template and keeps the FreePeriod fallback available', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ error: TEMPLATE_UNFILLED_ERROR, code: 'TEMPLATE_UNFILLED' }),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(screen.getByText(TEMPLATE_UNFILLED_ERROR)).toBeInTheDocument();
+    });
+    expect(downloadBlob).not.toHaveBeenCalled();
+    expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
+  });
+
+  it('downloads the filled blob when fill-template returns 200', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(['filled-docx'], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(downloadBlob).toHaveBeenCalledWith(
+        expect.any(Blob),
+        'Photosynthesis-filled.docx',
+      );
+    });
+    expect(screen.queryByText(TEMPLATE_UNFILLED_ERROR)).not.toBeInTheDocument();
   });
 });
