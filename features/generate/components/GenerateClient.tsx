@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { drainSseEvents } from '@/lib/generation/sse';
 import { useLocale } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
 import type { Locale } from '@/lib/i18n';
@@ -62,7 +63,7 @@ export function GenerateClient({
     setEvents([]);
 
     const surfaceError = (message: string) => {
-      setEvents([{ type: 'error', message }]);
+      setEvents((prev) => [...prev, { type: 'error', message }]);
       setPhase('error');
       abortRef.current = null;
     };
@@ -97,37 +98,48 @@ export function GenerateClient({
       const decoder = new TextDecoder();
       let buffer = '';
       let terminalError = false;
+      let sawComplete = false;
+
+      const applyEvents = (incoming: GenerateStreamEvent[]) => {
+        if (incoming.length === 0) return;
+        setEvents((prev) => [...prev, ...incoming]);
+        for (const event of incoming) {
+          if (event.type === 'error') {
+            terminalError = true;
+            setPhase('error');
+            abortRef.current = null;
+          }
+          if (event.type === 'complete') {
+            sawComplete = true;
+          }
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          buffer += decoder.decode();
+          const flushed = drainSseEvents(buffer, true);
+          applyEvents(flushed.events);
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data: ')) continue;
-          const json = trimmed.slice(6);
-          try {
-            const event = JSON.parse(json) as GenerateStreamEvent;
-            setEvents((prev) => [...prev, event]);
-            if (event.type === 'error') {
-              terminalError = true;
-              setPhase('error');
-              abortRef.current = null;
-            }
-          } catch {
-            // Skip malformed lines
-          }
-        }
+        const drained = drainSseEvents(buffer);
+        buffer = drained.rest;
+        applyEvents(drained.events);
 
         if (terminalError) break;
       }
 
-      if (!terminalError && abortRef.current === controller) {
+      if (!terminalError && !sawComplete && abortRef.current === controller) {
+        surfaceError(
+          'Generation stopped before the lesson was saved. Please try again.',
+        );
+        return;
+      }
+
+      if (abortRef.current === controller) {
         abortRef.current = null;
       }
     } catch (err: unknown) {

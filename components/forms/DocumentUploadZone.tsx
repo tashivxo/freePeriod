@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
@@ -16,11 +16,17 @@ interface DocumentUploadZoneProps {
   uploadType: UploadType;
   onUploadComplete: (storagePath: string) => void;
   onRemove: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 const SECTION_HEADINGS: Record<UploadType, string> = {
   curriculum_doc: 'Curriculum Document',
   template: 'Lesson Plan Template',
+};
+
+const PHASE_LABEL: Record<string, string> = {
+  uploading: 'Uploading…',
+  parsing: 'Reading document…',
 };
 
 export function DocumentUploadZone({
@@ -29,14 +35,16 @@ export function DocumentUploadZone({
   uploadType,
   onUploadComplete,
   onRemove,
+  onBusyChange,
 }: DocumentUploadZoneProps) {
   const inputId = useId();
   const sectionHeading = SECTION_HEADINGS[uploadType];
 
-  const { file, storagePath, parsedText, isUploading, error, handleFile, removeFile } = useFileUpload({
+  const { file, storagePath, parsedText, isUploading, phase, error, handleFile, removeFile } = useFileUpload({
     uploadType,
     accept,
   });
+  const hadPathRef = useRef(false);
 
   const { ref: errorIconRef, animationDisabled: errorIconMotionDisabled } =
     useMotionSafeIconRef();
@@ -46,12 +54,20 @@ export function DocumentUploadZone({
     errorIconRef.current?.startAnimation();
   }, [error, errorIconMotionDisabled, errorIconRef]);
 
-  // Notify parent when storagePath is set after a successful upload
+  useEffect(() => {
+    onBusyChange?.(isUploading);
+  }, [isUploading, onBusyChange]);
+
+  // Notify parent when storagePath is set after a successful upload; clear if it drops.
   useEffect(() => {
     if (storagePath) {
+      hadPathRef.current = true;
       onUploadComplete(storagePath);
+    } else if (hadPathRef.current) {
+      hadPathRef.current = false;
+      onRemove();
     }
-  }, [storagePath, onUploadComplete]);
+  }, [storagePath, onUploadComplete, onRemove]);
 
   const handleRemove = async () => {
     await removeFile();
@@ -87,7 +103,7 @@ export function DocumentUploadZone({
               className="text-[var(--color-text-secondary)]"
             />
             <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              {isUploading ? 'Uploading…' : 'Click to upload'}
+              {PHASE_LABEL[phase] ?? 'Click to upload'}
             </span>
             <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               {accept.split(',').join(', ')}
@@ -109,6 +125,7 @@ export function DocumentUploadZone({
               style={{ color: 'var(--color-text-primary)' }}
             >
               {file.name}
+              {PHASE_LABEL[phase] ? ` — ${PHASE_LABEL[phase]}` : ''}
             </span>
             <button
               type="button"
@@ -136,6 +153,7 @@ export function DocumentUploadZone({
           const selected = e.target.files?.[0];
           if (!selected) return;
           void handleFile(selected);
+          e.target.value = '';
         }}
       />
 
@@ -152,6 +170,12 @@ export function DocumentUploadZone({
             {parsedText}
           </pre>
         </div>
+      )}
+
+      {phase === 'ready' && !error && (
+        <p role="status" className="text-sm text-success">
+          Uploaded. Ready to generate.
+        </p>
       )}
 
       {error && (
