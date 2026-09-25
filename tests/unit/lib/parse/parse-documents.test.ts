@@ -5,7 +5,11 @@ import * as XLSX from 'xlsx';
 import { filterDocxXml, parseDocx } from '@/lib/parse/parse-docx';
 import { parseXlsx, sheetToVisibleCsv } from '@/lib/parse/parse-xlsx';
 import { removeNonVisibleCharacters } from '@/lib/parse/filter-visible-text';
-import { parseFailureMessage, UnsupportedFileTypeError } from '@/lib/parse/parse-uploaded-file';
+import {
+  parseFailureMessage,
+  parseUploadedFile,
+  UnsupportedFileTypeError,
+} from '@/lib/parse/parse-uploaded-file';
 import { requiresExtractedText } from '@/lib/parse/types';
 
 it('requires extracted text for curriculum docs but not templates', () => {
@@ -87,7 +91,7 @@ describe('DOCX visibility filtering', () => {
 
   it('parses a blank lesson-plan template as empty text instead of failing', async () => {
     const buffer = await makeDocx('<w:p><w:r><w:t></w:t></w:r></w:p>');
-    const parsed = await parseDocx(buffer);
+    const parsed = await parseUploadedFile(buffer, 'Blank Daily English lesson plan template.docx');
 
     expect(parsed.type).toBe('docx');
     expect(parsed.text.trim()).toBe('');

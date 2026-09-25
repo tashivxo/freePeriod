@@ -1,42 +1,25 @@
 /**
  * @jest-environment node
  */
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 import { ensurePdfJsDomPolyfill } from '@/lib/parse/ensure-pdfjs-dom-polyfill';
-import { parsePdf } from '@/lib/parse/parse-pdf';
-import { parseUploadedFile } from '@/lib/parse/parse-uploaded-file';
 
-jest.mock('@/lib/ocr/tesseract', () => ({
-  extractTextFromImage: jest.fn(async () => {
-    throw new Error('OCR should not run for text PDFs');
-  }),
-}));
+const helpersDir = path.join(process.cwd(), 'tests/unit/lib/parse/helpers');
+const blockCanvas = path.join(helpersDir, 'block-canvas.cjs');
+const importPdfjs = path.join(helpersDir, 'import-pdfjs.mts');
+const runParsePdf = path.join(helpersDir, 'run-parse-pdf.mts');
 
-function buildMinimalTextPdf(text: string): Buffer {
-  const escaped = text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-  const stream = `BT /F1 18 Tf 72 720 Td (${escaped}) Tj ET`;
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
-    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`,
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-  ];
-
-  let body = '%PDF-1.4\n';
-  const offsets = [0];
-  for (const [index, object] of objects.entries()) {
-    offsets.push(Buffer.byteLength(body));
-    body += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  }
-
-  const xrefPos = Buffer.byteLength(body);
-  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (let i = 1; i < offsets.length; i += 1) {
-    xref += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
-  }
-
-  body += `${xref}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`;
-  return Buffer.from(body);
+function runNode(script: string, args: string[] = []) {
+  return spawnSync(
+    process.execPath,
+    ['--experimental-strip-types', '--require', blockCanvas, script, ...args],
+    {
+      encoding: 'utf8',
+      cwd: process.cwd(),
+      env: { ...process.env, NODE_NO_WARNINGS: '1' },
+    },
+  );
 }
 
 type DomMatrixCtor = {
@@ -52,13 +35,9 @@ function getDomMatrix(): DomMatrixCtor | undefined {
   return (globalThis as { DOMMatrix?: DomMatrixCtor }).DOMMatrix;
 }
 
-function clearDomMatrix() {
-  Reflect.deleteProperty(globalThis, 'DOMMatrix');
-}
-
 describe('pdfjs Node polyfill', () => {
   it('defines DOMMatrix so pdfjs can evaluate without a browser or canvas', () => {
-    clearDomMatrix();
+    Reflect.deleteProperty(globalThis, 'DOMMatrix');
     expect(getDomMatrix()).toBeUndefined();
 
     ensurePdfJsDomPolyfill();
@@ -71,7 +50,7 @@ describe('pdfjs Node polyfill', () => {
   });
 
   it('can import parsePdf after DOMMatrix is cleared', async () => {
-    clearDomMatrix();
+    Reflect.deleteProperty(globalThis, 'DOMMatrix');
     ensurePdfJsDomPolyfill();
     const loaded = await import('@/lib/parse/parse-pdf');
     expect(typeof loaded.parsePdf).toBe('function');
@@ -79,26 +58,24 @@ describe('pdfjs Node polyfill', () => {
   });
 });
 
-describe('parsePdf in Node', () => {
-  it('extracts readable text from a text PDF', async () => {
-    const buffer = buildMinimalTextPdf('Curriculum photosynthesis lesson for grade 8');
-    const parsed = await parsePdf(buffer);
-
-    expect(parsed.type).toBe('pdf');
-    expect(parsed.metadata?.ocr).not.toBe(true);
-    expect(parsed.text.toLowerCase()).toContain('photosynthesis');
+describe('pdfjs on a Vercel-like Node runtime (no canvas)', () => {
+  it('crashes at module evaluation when DOMMatrix is missing', () => {
+    const result = runNode(importPdfjs, ['crash']);
+    expect(result.status).not.toBe(0);
+    expect(`${result.stderr}\n${result.stdout}`).toMatch(/DOMMatrix is not defined/);
   });
 
-  it('parses PDFs through the lazy upload dispatcher without requiring a browser DOMMatrix', async () => {
-    clearDomMatrix();
-    ensurePdfJsDomPolyfill();
+  it('imports pdfjs after the JS DOMMatrix polyfill without requiring canvas', () => {
+    const result = runNode(importPdfjs, ['polyfill']);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('pdfjs-loaded:function');
+  });
 
-    const parsed = await parseUploadedFile(
-      buildMinimalTextPdf('Student centred lesson with formative assessment'),
-      'G 8 G T1 Unit 1 lesson 2.pdf',
-    );
-
-    expect(parsed.type).toBe('pdf');
-    expect(parsed.text.toLowerCase()).toContain('formative');
+  it('extracts readable text from a curriculum PDF without DOMMatrix or canvas', () => {
+    const result = runNode(runParsePdf);
+    expect(result.status).toBe(0);
+    const parsed = JSON.parse(result.stdout.trim()) as { text: string; pages: number };
+    expect(parsed.pages).toBe(1);
+    expect(parsed.text.toLowerCase()).toContain('photosynthesis');
   });
 });
