@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
+import { contentDispositionAttachment } from '@/lib/export/content-disposition';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
 import {
@@ -33,7 +34,7 @@ function filledFileResponse(buffer: Buffer, filename: string, contentType: strin
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': contentType,
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': contentDispositionAttachment(filename),
     },
   });
 }

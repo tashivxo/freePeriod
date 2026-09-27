@@ -63,7 +63,7 @@ import {
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
-import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
+import { TEMPLATE_UNFILLED_CODE, TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
 const lesson: LessonPlan = {
@@ -263,11 +263,63 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(screen.getByText(TEMPLATE_UNFILLED_ERROR)).toBeInTheDocument();
+      expect(
+        screen.getByText(`${TEMPLATE_UNFILLED_ERROR} (${TEMPLATE_UNFILLED_CODE})`),
+      ).toBeInTheDocument();
     });
     expect(downloadBlob).not.toHaveBeenCalled();
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
+  });
+
+  it('shows the API error and code on the red banner when fill-template fails', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        error: 'The template file could not be read.',
+        code: 'TEMPLATE_DOWNLOAD_FAILED',
+      }),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('The template file could not be read. (TEMPLATE_DOWNLOAD_FAILED)'),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Failed to export filled template')).not.toBeInTheDocument();
+    expect(downloadBlob).not.toHaveBeenCalled();
+  });
+
+  it('keeps a generic banner when fill-template returns a non-JSON 500', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error('Unexpected token < in JSON');
+      },
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert').textContent).toContain('Failed to export filled template');
+    });
+    expect(screen.queryByText(/at fillTemplate/)).not.toBeInTheDocument();
   });
 
   it('downloads the filled blob when fill-template returns 200', async () => {

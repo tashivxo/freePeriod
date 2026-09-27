@@ -14,6 +14,7 @@ import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { formatGradeLabel } from '@/lib/utils/grades';
+import { formatExportFailureMessage } from '@/lib/export/export-error';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
@@ -34,8 +35,8 @@ type LessonViewProps = {
 
 async function readExportError(response: Response, fallback: string): Promise<string> {
   try {
-    const data = (await response.json()) as { error?: string };
-    return data.error ?? fallback;
+    const data = (await response.json()) as { error?: unknown; code?: unknown };
+    return formatExportFailureMessage(data, fallback);
   } catch {
     return fallback;
   }
