@@ -41,6 +41,148 @@ function cellWidthDxa(cellXml: string): number {
   return match ? parseInt(match[1], 10) : 0;
 }
 
+/** True when `idx` starts an OOXML element named `localName` (not a longer prefix like `tcPr`). */
+function isWordTagOpen(xml: string, idx: number, localName: string): boolean {
+  const tag = `<${localName}`;
+  if (!xml.startsWith(tag, idx)) return false;
+  const next = xml[idx + tag.length];
+  return next === '>' || next === ' ' || next === '/' || next === '\t' || next === '\n';
+}
+
+function findWordTagOpen(xml: string, localName: string, from: number): number {
+  const tag = `<${localName}`;
+  let i = from;
+  while (i < xml.length) {
+    const idx = xml.indexOf(tag, i);
+    if (idx < 0) return -1;
+    if (isWordTagOpen(xml, idx, localName)) return idx;
+    i = idx + tag.length;
+  }
+  return -1;
+}
+
+function findMatchingWordClose(xml: string, contentStart: number, localName: string): number {
+  const close = `</${localName}>`;
+  let depth = 0;
+  let i = contentStart;
+  while (i < xml.length) {
+    const nextOpen = findWordTagOpen(xml, localName, i);
+    const nextClose = xml.indexOf(close, i);
+    if (nextClose < 0) return -1;
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1;
+      i = nextOpen + localName.length + 2;
+    } else {
+      if (depth === 0) return nextClose;
+      depth -= 1;
+      i = nextClose + close.length;
+    }
+  }
+  return -1;
+}
+
+type XmlSegment = { index: number; xml: string };
+
+/** Direct children only — nested `w:tbl` / `w:tr` / `w:tc` are left inside their parent cell. */
+function topLevelWordTags(xml: string, localName: string): XmlSegment[] {
+  const segments: XmlSegment[] = [];
+  const close = `</${localName}>`;
+  let i = 0;
+  while (i < xml.length) {
+    const start = findWordTagOpen(xml, localName, i);
+    if (start < 0) break;
+    const openEnd = xml.indexOf('>', start);
+    if (openEnd < 0) break;
+    const closeIdx = findMatchingWordClose(xml, openEnd + 1, localName);
+    if (closeIdx < 0) break;
+    const end = closeIdx + close.length;
+    segments.push({ index: start, xml: xml.slice(start, end) });
+    i = end;
+  }
+  return segments;
+}
+
+function replaceTopLevelWordTags(
+  xml: string,
+  localName: string,
+  replacer: (segmentXml: string) => string,
+): string {
+  const segments = topLevelWordTags(xml, localName);
+  if (segments.length === 0) return xml;
+  let result = '';
+  let lastEnd = 0;
+  for (const segment of segments) {
+    result += xml.slice(lastEnd, segment.index) + replacer(segment.xml);
+    lastEnd = segment.index + segment.xml.length;
+  }
+  return result + xml.slice(lastEnd);
+}
+
+function stripTrailingParenthetical(text: string): string {
+  return text.replace(/\s*\([^)]*\)\s*$/g, '').trim();
+}
+
+/** Exact cell text, first line, and first line without a trailing "(…)" hint. */
+function labelCandidatesFromCell(cellXml: string): string[] {
+  const full = cellPlainText(cellXml);
+  const firstLine = (full.split('\n')[0] ?? '').trim();
+  return [
+    ...new Set(
+      [normalizeLabel(full), normalizeLabel(firstLine), normalizeLabel(stripTrailingParenthetical(firstLine))].filter(
+        Boolean,
+      ),
+    ),
+  ];
+}
+
+function lookupMappedField(
+  cellXml: string,
+  labelMap: Map<string, string>,
+): { key: string; value: string } | undefined {
+  for (const candidate of labelCandidatesFromCell(cellXml)) {
+    const value = labelMap.get(candidate);
+    if (value) return { key: candidate, value };
+  }
+  return undefined;
+}
+
+function getCheckboxSelectionsForCell(cellXml: string, lesson: LessonPlan): string[] | null {
+  for (const candidate of labelCandidatesFromCell(cellXml)) {
+    const selections = getCheckboxSelections(candidate, lesson);
+    if (selections) return selections;
+  }
+  return null;
+}
+
+/** Single short line with no sentence punctuation — a column heading, not sample body copy. */
+function looksLikeColumnHeader(text: string): boolean {
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length !== 1) return false;
+  const line = lines[0];
+  if (line.length > 48) return false;
+  if (/[.?!]/.test(line)) return false;
+  return true;
+}
+
+/**
+ * Adjacent cells that already have sample/stub text are still fillable. Skip
+ * narrow tracking columns (Time), checkbox grids, nested tables, other known
+ * labels, and short column headings.
+ */
+function isFillableValueCell(cellXml: string | undefined, labelMap: Map<string, string>): cellXml is string {
+  if (!cellXml) return false;
+  if (cellWidthDxa(cellXml) < MIN_VALUE_CELL_WIDTH_DXA) return false;
+  if (cellXml.includes('<w:tbl>')) return false;
+  if (isCheckboxValueCell(cellXml)) return false;
+  if (lookupMappedField(cellXml, labelMap)) return false;
+  const text = cellPlainText(cellXml);
+  if (text.length > 0 && looksLikeColumnHeader(text)) return false;
+  return true;
+}
+
 // A real "value" cell needs enough width to hold free text (e.g. Essential Question's
 // value cell is 12828 dxa). Narrow tracking columns — like this template's vertically
 // merged "Time" column at 1038 dxa — are too small to be a legitimate fill target,
@@ -187,18 +329,6 @@ function highlightCheckboxCell(cellXml: string, selections: string[]): string {
   ];
 
   return replaceCellParagraphs(cellXml, lines.join('\n'));
-}
-
-/** Injects text into an (empty) table cell by replacing its first paragraph with one
- * paragraph per line (see buildParagraphsXml). Used when the cell is a dedicated,
- * currently-empty value slot next to a label cell. */
-function injectTextIntoCell(cellXml: string, text: string): string {
-  const paraMatch = cellXml.match(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/);
-  if (!paraMatch) return cellXml;
-
-  const paragraphsXml = buildParagraphsXml(paraMatch[0], text);
-  if (!paragraphsXml) return cellXml;
-  return cellXml.replace(paraMatch[0], paragraphsXml);
 }
 
 /** Appends text as new paragraphs at the end of a cell that already contains a label
@@ -466,7 +596,7 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
     c.title || lesson.title,
   );
   set(['Subject'], lesson.subject);
-  set(['Grade', 'Grade Level', 'Class', 'Year Group'], formatGradeLabel(lesson.grade));
+  set(['Grade', 'Grade Level', 'Class', 'Year Group', 'Grade/Class'], formatGradeLabel(lesson.grade));
   set(
     ['Duration', 'Time Allocation', 'Lesson Duration'],
     lesson.duration_minutes ? `${lesson.duration_minutes} minutes` : undefined,
@@ -512,7 +642,7 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   );
   set(['Key Concepts'], joinBullets(c.keyConcepts));
   set(
-    ['Lesson Key Vocabulary', 'Key Vocabulary', 'New Vocabulary', 'Vocabulary'],
+    ['Lesson Key Vocabulary', 'Key Vocabulary', 'New Vocabulary', 'New Vocabulary (if any)', 'Vocabulary'],
     joinBullets(c.vocabulary),
   );
   set(
@@ -533,6 +663,8 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
       'Development',
       'Lesson Development',
       'Presentation',
+      'Demonstration of Learning',
+      'Activation',
     ],
     joinBlocks(allActivities),
   );
@@ -552,7 +684,18 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
   set(['EL Support', 'SEN'], joinBullets(c.differentiation?.support));
   set(['G&T', 'Gifted & Talented (G&T)'], joinBullets(c.differentiation?.extension));
   set(
-    ['Plenary', 'Evaluate', 'Exit Ticket', 'Closure', 'Conclusion', 'Wrap-up', 'Wrap Up', 'Recap', 'Summary'],
+    [
+      'Plenary',
+      'Evaluate',
+      'Exit Ticket',
+      'Closure',
+      'Conclusion',
+      'Wrap-up',
+      'Wrap Up',
+      'Recap',
+      'Summary',
+      'Consolidation / Review',
+    ],
     c.plenary,
   );
   set(['Materials', 'Resources'], DEFAULT_RESOURCES);
@@ -579,9 +722,11 @@ export type FillGenericTemplateResult = {
 
 /**
  * Fills a plain (non-command) DOCX template by locating known field labels in its
- * table cells and writing lesson content into the adjacent empty cell in the same row.
- * This supports templates that were designed for a human to type into, rather than
- * templates authored with docx-templates command syntax (e.g. +++INS field+++).
+ * table cells and writing lesson content into the adjacent value cell in the same row,
+ * even when that cell already has sample or stub text. Nested tables (checkbox grids
+ * inside a cell) are walked without truncating the parent table. This supports
+ * templates designed for a human to type into, rather than templates authored with
+ * docx-templates command syntax (e.g. +++INS field+++).
  */
 export async function fillGenericDocxTemplate(
   templateBuffer: Buffer,
@@ -596,48 +741,43 @@ export async function fillGenericDocxTemplate(
   let filledCount = 0;
   const matchedLabels: string[] = [];
 
-  const newXml = xml.replace(/<w:tbl>[\s\S]*?<\/w:tbl>/g, (tblMatch) =>
-    tblMatch.replace(/<w:tr\b[^>]*>[\s\S]*?<\/w:tr>/g, (rowMatch) => {
-      const cellMatches = [...rowMatch.matchAll(/<w:tc>[\s\S]*?<\/w:tc>/g)];
+  const newXml = replaceTopLevelWordTags(xml, 'w:tbl', (tblMatch) =>
+    replaceTopLevelWordTags(tblMatch, 'w:tr', (rowMatch) => {
+      const cellMatches = topLevelWordTags(rowMatch, 'w:tc');
       if (cellMatches.length < 1) return rowMatch;
 
-      const cellsXml = cellMatches.map((m) => m[0]);
-      const cellsLabel = cellsXml.map((cellXml) => normalizeLabel(cellPlainText(cellXml)));
+      const cellsXml = cellMatches.map((m) => m.xml);
       let changed = false;
 
       for (let i = 0; i < cellsXml.length; i++) {
-        const checkboxSelections = getCheckboxSelections(cellsLabel[i], lesson);
+        const checkboxSelections = getCheckboxSelectionsForCell(cellsXml[i], lesson);
         const valueCell = cellsXml[i + 1];
         if (checkboxSelections && valueCell && isCheckboxValueCell(valueCell)) {
           cellsXml[i + 1] = highlightCheckboxCell(valueCell, checkboxSelections);
           changed = true;
           filledCount += 1;
-          matchedLabels.push(cellsLabel[i]);
+          matchedLabels.push(labelCandidatesFromCell(cellsXml[i])[0] ?? '');
           continue;
         }
 
-        const mapped = labelMap.get(cellsLabel[i]);
+        const mapped = lookupMappedField(cellsXml[i], labelMap);
         if (!mapped) continue;
 
-        if (ALWAYS_APPEND_LABELS.has(cellsLabel[i])) {
-          cellsXml[i] = appendParagraphsToCell(cellsXml[i], mapped);
+        const fullLabel = normalizeLabel(cellPlainText(cellsXml[i]));
+        if (ALWAYS_APPEND_LABELS.has(mapped.key) || ALWAYS_APPEND_LABELS.has(fullLabel)) {
+          cellsXml[i] = appendParagraphsToCell(cellsXml[i], mapped.value);
           changed = true;
           filledCount += 1;
-          matchedLabels.push(cellsLabel[i]);
+          matchedLabels.push(mapped.key);
           continue;
         }
 
         const nextCell = cellsXml[i + 1];
-        const nextIsEmptyValueCell =
-          nextCell !== undefined &&
-          cellPlainText(nextCell).length === 0 &&
-          cellWidthDxa(nextCell) >= MIN_VALUE_CELL_WIDTH_DXA;
-
-        if (nextIsEmptyValueCell) {
-          cellsXml[i + 1] = injectTextIntoCell(nextCell, mapped);
+        if (isFillableValueCell(nextCell, labelMap)) {
+          cellsXml[i + 1] = replaceCellParagraphs(nextCell, mapped.value);
           changed = true;
           filledCount += 1;
-          matchedLabels.push(cellsLabel[i]);
+          matchedLabels.push(mapped.key);
           continue;
         }
 
@@ -645,10 +785,10 @@ export async function fillGenericDocxTemplate(
         // a narrow tracking column like "Time". If the label's own cell is wide, treat
         // it as a combined label+value cell and append the content below the label.
         if (cellWidthDxa(cellsXml[i]) >= MIN_SELF_FILL_LABEL_WIDTH_DXA) {
-          cellsXml[i] = appendParagraphsToCell(cellsXml[i], mapped);
+          cellsXml[i] = appendParagraphsToCell(cellsXml[i], mapped.value);
           changed = true;
           filledCount += 1;
-          matchedLabels.push(cellsLabel[i]);
+          matchedLabels.push(mapped.key);
         }
       }
 
@@ -658,7 +798,7 @@ export async function fillGenericDocxTemplate(
       let lastEnd = 0;
       cellMatches.forEach((m, i) => {
         result += rowMatch.slice(lastEnd, m.index) + cellsXml[i];
-        lastEnd = (m.index ?? 0) + m[0].length;
+        lastEnd = m.index + m.xml.length;
       });
       result += rowMatch.slice(lastEnd);
       return result;

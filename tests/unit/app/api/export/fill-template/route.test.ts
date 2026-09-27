@@ -173,6 +173,26 @@ describe('POST /api/export/fill-template', () => {
     expect(mockFillGeneric).toHaveBeenCalled();
   });
 
+  it('returns 422 when generic fill only wrote title and duration', async () => {
+    const templateBuffer = await makeDocxBuffer(
+      '<?xml version="1.0"?><w:document><w:body><w:tbl></w:tbl></w:body></w:document>',
+    );
+    mockDownloadedBuffer(templateBuffer);
+    mockFillGeneric.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 2,
+      matchedLabels: ['lesson title', 'duration'],
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: TEMPLATE_UNFILLED_ERROR,
+      code: TEMPLATE_UNFILLED_CODE,
+    });
+  });
+
   it('returns 422 when the only fill is the hardcoded Materials default', async () => {
     const templateBuffer = await makeDocxBuffer(
       '<?xml version="1.0"?><w:document><w:body><w:tbl></w:tbl></w:body></w:document>',
