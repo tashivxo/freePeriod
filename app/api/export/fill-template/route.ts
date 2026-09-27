@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { contentDispositionAttachment } from '@/lib/export/content-disposition';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
+import { mapTemplateExportError } from '@/lib/export/map-error';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
@@ -82,13 +83,14 @@ export async function POST(request: NextRequest) {
     .download(lesson.template_path);
 
   if (downloadError || !fileData) {
-    return NextResponse.json({ error: 'Failed to download template' }, { status: 500 });
+    return NextResponse.json(mapTemplateExportError(downloadError), { status: 500 });
   }
 
-  const templateBuffer = Buffer.from(await fileData.arrayBuffer());
-  const ext = lesson.template_path.split('.').pop()?.toLowerCase() ?? '';
-  const templateData = buildTemplateData(lesson.content as LessonSection);
-  const filename = `${lesson.title || 'lesson-plan'}-filled.${ext}`;
+  try {
+    const templateBuffer = Buffer.from(await fileData.arrayBuffer());
+    const ext = lesson.template_path.split('.').pop()?.toLowerCase() ?? '';
+    const templateData = buildTemplateData(lesson.content as LessonSection);
+    const filename = `${lesson.title || 'lesson-plan'}-filled.${ext}`;
 
   // ---------- DOCX ----------
   if (ext === 'docx') {
@@ -168,5 +170,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ error: 'Unsupported template format' }, { status: 400 });
+    return NextResponse.json({ error: 'Unsupported template format' }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json(mapTemplateExportError(error), { status: 500 });
+  }
 }

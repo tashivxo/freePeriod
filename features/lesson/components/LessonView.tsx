@@ -15,11 +15,9 @@ import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template
 import { downloadBlob } from '@/lib/download-blob';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import {
-  FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-  mapFillTemplateError,
-  mapLessonExportError,
-  type ExportErrorBody,
-} from '@/lib/export/export-error';
+  isSafeExportErrorMessage,
+  TEMPLATE_DOWNLOAD_FAILED_ERROR,
+} from '@/lib/export/map-error';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
@@ -38,11 +36,12 @@ type LessonViewProps = {
   lesson: LessonPlan;
 };
 
-async function readErrorBody(response: Response): Promise<ExportErrorBody | null> {
+async function readExportError(response: Response, fallback: string): Promise<string> {
   try {
-    return (await response.json()) as ExportErrorBody;
+    const data = (await response.json()) as { error?: unknown };
+    return isSafeExportErrorMessage(data.error) ? data.error : fallback;
   } catch {
-    return null;
+    return fallback;
   }
 }
 
@@ -120,10 +119,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         });
 
         if (!response.ok) {
-          const message = mapLessonExportError(
-            await readErrorBody(response),
-            'Failed to export lesson',
-          );
+          const message = await readExportError(response, 'Failed to export lesson');
           if (options?.fromDialog) {
             setDialogActionError(message);
           } else {
@@ -163,7 +159,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         });
 
         if (!response.ok) {
-          const message = mapFillTemplateError(response.status, await readErrorBody(response));
+          const message = await readExportError(response, TEMPLATE_DOWNLOAD_FAILED_ERROR);
           if (options?.fromDialog) {
             setDialogActionError(message);
           } else {
@@ -176,7 +172,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
         return true;
       } catch {
-        const message = FILLED_TEMPLATE_DOWNLOAD_MESSAGE;
+        const message = TEMPLATE_DOWNLOAD_FAILED_ERROR;
         if (options?.fromDialog) {
           setDialogActionError(message);
         } else {
