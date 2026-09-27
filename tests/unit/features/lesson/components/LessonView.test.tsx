@@ -63,7 +63,11 @@ import {
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
-import { TEMPLATE_UNFILLED_CODE, TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
+import {
+  FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
+  FILLED_TEMPLATE_UNFILLED_MESSAGE,
+} from '@/lib/export/export-error';
+import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
 const lesson: LessonPlan = {
@@ -263,16 +267,18 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(`${TEMPLATE_UNFILLED_ERROR} (${TEMPLATE_UNFILLED_CODE})`),
-      ).toBeInTheDocument();
+      expect(screen.getByText(FILLED_TEMPLATE_UNFILLED_MESSAGE)).toBeInTheDocument();
     });
+    const details = screen.getByText('Details').closest('details');
+    expect(details).not.toHaveAttribute('open');
+    expect(details).toHaveTextContent('HTTP 422 · TEMPLATE_UNFILLED');
+    expect(screen.queryByText(TEMPLATE_UNFILLED_ERROR)).not.toBeInTheDocument();
     expect(downloadBlob).not.toHaveBeenCalled();
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
   });
 
-  it('shows the API error and code on the red banner when fill-template fails', async () => {
+  it('shows a short download message and hides the code until Details is opened', async () => {
     const withTemplate = {
       ...lesson,
       template_path: 'user-1/template/plan.docx',
@@ -291,15 +297,17 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText('The template file could not be read. (TEMPLATE_DOWNLOAD_FAILED)'),
-      ).toBeInTheDocument();
+      expect(screen.getByText(FILLED_TEMPLATE_DOWNLOAD_MESSAGE)).toBeInTheDocument();
     });
-    expect(screen.queryByText('Failed to export filled template')).not.toBeInTheDocument();
+    const details = screen.getByText('Details').closest('details');
+    expect(details).not.toHaveAttribute('open');
+    expect(details).toHaveTextContent('TEMPLATE_DOWNLOAD_FAILED');
+    await user.click(screen.getByText('Details'));
+    expect(details).toHaveAttribute('open');
     expect(downloadBlob).not.toHaveBeenCalled();
   });
 
-  it('keeps a generic banner when fill-template returns a non-JSON 500', async () => {
+  it('does not show a TypeError when fill-template returns a non-JSON 500', async () => {
     const withTemplate = {
       ...lesson,
       template_path: 'user-1/template/plan.docx',
@@ -308,7 +316,9 @@ describe('LessonView', () => {
       ok: false,
       status: 500,
       json: async () => {
-        throw new Error('Unexpected token < in JSON');
+        throw new Error(
+          'TypeError: Cannot convert argument to a ByteString because the character at index 69 has a value of 8212',
+        );
       },
     });
 
@@ -317,9 +327,34 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(screen.getByRole('alert').textContent).toContain('Failed to export filled template');
+      expect(screen.getByRole('alert')).toHaveTextContent(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
     });
-    expect(screen.queryByText(/at fillTemplate/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/TypeError|ByteString/)).not.toBeInTheDocument();
+    expect(screen.getByText('Details').closest('details')).toHaveTextContent('HTTP 500');
+  });
+
+  it('hides a ByteString TypeError returned in the fill-template JSON body', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        error:
+          'TypeError: Cannot convert argument to a ByteString because the character at index 69 has a value of 8212 which is greater than 255.',
+      }),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(screen.getByText(FILLED_TEMPLATE_DOWNLOAD_MESSAGE)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/TypeError|ByteString|8212/)).not.toBeInTheDocument();
   });
 
   it('downloads the filled blob when fill-template returns 200', async () => {

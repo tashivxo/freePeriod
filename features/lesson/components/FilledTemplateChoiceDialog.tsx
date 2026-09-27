@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
+import type { ExportFailureNotice } from '@/lib/export/export-error';
+import { ExportErrorAlert } from '@/features/lesson/components/ExportErrorAlert';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
@@ -39,7 +41,7 @@ type FilledTemplateChoiceDialogProps = {
   onTemplateAttached: (templatePath: string) => void;
   freePeriodLoading: boolean;
   sharedTemplateLoading: boolean;
-  dialogActionError?: string | null;
+  dialogActionError?: ExportFailureNotice | null;
 };
 
 function getModalCloseMs(): number {
@@ -104,7 +106,11 @@ export function FilledTemplateChoiceDialog({
     noTemplateIconRef.current?.startAnimation();
   }, [noTemplateIconMotionDisabled, noTemplateIconRef, open, variant]);
 
-  const activeActionError = dialogActionError ?? uploadError ?? attachError;
+  const activeActionError = useMemo((): ExportFailureNotice | null => {
+    if (dialogActionError) return dialogActionError;
+    const message = uploadError ?? attachError;
+    return message ? { message, detail: null } : null;
+  }, [attachError, dialogActionError, uploadError]);
   useEffect(() => {
     if (!activeActionError || actionErrorIconMotionDisabled) return;
     actionErrorIconRef.current?.startAnimation();
@@ -224,18 +230,14 @@ export function FilledTemplateChoiceDialog({
               {showPdfNote ? (
                 <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
               ) : null}
-              {activeActionError && (
-                <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
-                  <XIcon
-                    ref={actionErrorIconRef}
-                    size={24}
-                    animationDisabled={actionErrorIconMotionDisabled}
-                    aria-hidden
-                    className="mt-0.5 shrink-0"
-                  />
-                  <p className="font-body text-sm text-error">{activeActionError}</p>
-                </div>
-              )}
+              {activeActionError ? (
+                <ExportErrorAlert
+                  message={activeActionError.message}
+                  detail={activeActionError.detail}
+                  iconRef={actionErrorIconRef}
+                  iconAnimationDisabled={actionErrorIconMotionDisabled}
+                />
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4">
