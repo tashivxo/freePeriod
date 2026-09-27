@@ -1,73 +1,50 @@
 import {
-  describeFillTemplateFailure,
-  describeLessonExportFailure,
   FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-  FILLED_TEMPLATE_UNFILLED_MESSAGE,
+  mapFillTemplateError,
+  mapLessonExportError,
 } from '@/lib/export/export-error';
 import { TEMPLATE_UNFILLED_CODE, TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 
 const BYTESTRING_ERROR =
   'TypeError: Cannot convert argument to a ByteString because the character at index 69 has a value of 8212 which is greater than 255.';
 
-describe('describeFillTemplateFailure', () => {
-  it('uses the short unfilled copy and hides the code in details', () => {
+describe('mapFillTemplateError', () => {
+  it('uses the API unfilled message when the code is TEMPLATE_UNFILLED', () => {
     expect(
-      describeFillTemplateFailure(422, {
+      mapFillTemplateError(422, {
         error: TEMPLATE_UNFILLED_ERROR,
         code: TEMPLATE_UNFILLED_CODE,
       }),
-    ).toEqual({
-      message: FILLED_TEMPLATE_UNFILLED_MESSAGE,
-      detail: 'HTTP 422 · TEMPLATE_UNFILLED',
-    });
+    ).toBe(TEMPLATE_UNFILLED_ERROR);
   });
 
-  it('uses the download copy for a 500 and keeps a safe server note in details', () => {
+  it('uses the download message for HTTP 500 and drops a TypeError', () => {
+    expect(mapFillTemplateError(500, { error: BYTESTRING_ERROR })).toBe(
+      FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
+    );
+    expect(mapFillTemplateError(500, { error: 'Error\n    at fillTemplate' })).toBe(
+      FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
+    );
+    expect(mapFillTemplateError(500, null)).toBe(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
+    expect(FILLED_TEMPLATE_DOWNLOAD_MESSAGE).not.toMatch(/TypeError|ByteString/);
+  });
+
+  it('shows a safe client error from the API', () => {
     expect(
-      describeFillTemplateFailure(500, {
-        error: 'The template file could not be read.',
-        code: 'TEMPLATE_DOWNLOAD_FAILED',
-      }),
-    ).toEqual({
-      message: FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-      detail: 'HTTP 500 · TEMPLATE_DOWNLOAD_FAILED\nThe template file could not be read.',
-    });
-  });
-
-  it('drops a ByteString TypeError from both the headline and the details', () => {
-    expect(describeFillTemplateFailure(500, { error: BYTESTRING_ERROR })).toEqual({
-      message: FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-      detail: 'HTTP 500',
-    });
-    expect(describeFillTemplateFailure(500, { error: 'Error\n    at fillTemplate' })).toEqual({
-      message: FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-      detail: 'HTTP 500',
-    });
-  });
-
-  it('keeps a specific client error as the headline', () => {
-    expect(
-      describeFillTemplateFailure(400, {
+      mapFillTemplateError(400, {
         error: 'PDF template download is not supported. Upload a DOCX or XLSX template instead.',
       }),
-    ).toEqual({
-      message: 'PDF template download is not supported. Upload a DOCX or XLSX template instead.',
-      detail: null,
-    });
+    ).toBe('PDF template download is not supported. Upload a DOCX or XLSX template instead.');
   });
 });
 
-describe('describeLessonExportFailure', () => {
-  it('shows a safe API message and ignores a runtime exception', () => {
-    expect(describeLessonExportFailure(500, { error: 'Export service unavailable' })).toEqual({
-      message: 'Export service unavailable',
-      detail: null,
-    });
-    expect(describeLessonExportFailure(500, { error: BYTESTRING_ERROR }).message).toBe(
-      'Couldn’t download this lesson. Try again.',
+describe('mapLessonExportError', () => {
+  it('shows a safe API error and replaces a runtime exception with the fallback', () => {
+    expect(mapLessonExportError({ error: 'Export service unavailable' }, 'Failed to export lesson')).toBe(
+      'Export service unavailable',
     );
-    expect(describeLessonExportFailure(500, { error: BYTESTRING_ERROR }).detail).not.toContain(
-      'TypeError',
+    expect(mapLessonExportError({ error: BYTESTRING_ERROR }, 'Failed to export lesson')).toBe(
+      'Failed to export lesson',
     );
   });
 });

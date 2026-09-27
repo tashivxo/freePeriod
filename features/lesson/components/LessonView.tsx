@@ -8,22 +8,21 @@ import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
+import { XIcon } from '@/components/ui/icons/x';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import {
-  describeFillTemplateFailure,
-  describeLessonExportFailure,
   FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
+  mapFillTemplateError,
+  mapLessonExportError,
   type ExportErrorBody,
-  type ExportFailureNotice,
 } from '@/lib/export/export-error';
 import { buildExportFilename } from '@/lib/export/filename';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
-import { ExportErrorAlert } from '@/features/lesson/components/ExportErrorAlert';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import {
   FilledTemplateChoiceDialog,
@@ -55,11 +54,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [fillLoading, setFillLoading] = useState(false);
-  const [exportError, setExportError] = useState<ExportFailureNotice | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const { ref: exportErrorIconRef, animationDisabled: exportErrorIconMotionDisabled } =
     useMotionSafeIconRef();
   const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
-  const [dialogActionError, setDialogActionError] = useState<ExportFailureNotice | null>(null);
+  const [dialogActionError, setDialogActionError] = useState<string | null>(null);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
     Partial<Record<LessonSectionKey, number>>
   >({});
@@ -121,11 +120,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         });
 
         if (!response.ok) {
-          const notice = describeLessonExportFailure(response.status, await readErrorBody(response));
+          const message = mapLessonExportError(
+            await readErrorBody(response),
+            'Failed to export lesson',
+          );
           if (options?.fromDialog) {
-            setDialogActionError(notice);
+            setDialogActionError(message);
           } else {
-            setExportError(notice);
+            setExportError(message);
           }
           return false;
         }
@@ -133,14 +135,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
         return true;
       } catch {
-        const notice: ExportFailureNotice = {
-          message: 'Failed to export lesson. Check your connection and try again.',
-          detail: null,
-        };
+        const message = 'Failed to export lesson. Check your connection and try again.';
         if (options?.fromDialog) {
-          setDialogActionError(notice);
+          setDialogActionError(message);
         } else {
-          setExportError(notice);
+          setExportError(message);
         }
         return false;
       } finally {
@@ -164,11 +163,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         });
 
         if (!response.ok) {
-          const notice = describeFillTemplateFailure(response.status, await readErrorBody(response));
+          const message = mapFillTemplateError(response.status, await readErrorBody(response));
           if (options?.fromDialog) {
-            setDialogActionError(notice);
+            setDialogActionError(message);
           } else {
-            setExportError(notice);
+            setExportError(message);
           }
           return false;
         }
@@ -177,14 +176,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         downloadBlob(await response.blob(), `${lesson.title || 'lesson-plan'}-filled.${ext}`);
         return true;
       } catch {
-        const notice: ExportFailureNotice = {
-          message: FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-          detail: null,
-        };
+        const message = FILLED_TEMPLATE_DOWNLOAD_MESSAGE;
         if (options?.fromDialog) {
-          setDialogActionError(notice);
+          setDialogActionError(message);
         } else {
-          setExportError(notice);
+          setExportError(message);
         }
         return false;
       } finally {
@@ -290,13 +286,16 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </Button>
         </div>
         {exportError ? (
-          <ExportErrorAlert
-            className="mt-3"
-            message={exportError.message}
-            detail={exportError.detail}
-            iconRef={exportErrorIconRef}
-            iconAnimationDisabled={exportErrorIconMotionDisabled}
-          />
+          <div role="alert" className="mt-3 flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+            <XIcon
+              ref={exportErrorIconRef}
+              size={24}
+              animationDisabled={exportErrorIconMotionDisabled}
+              aria-hidden
+              className="mt-0.5 shrink-0"
+            />
+            <p className="font-body text-sm text-error">{exportError}</p>
+          </div>
         ) : null}
       </div>
 

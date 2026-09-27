@@ -63,10 +63,7 @@ import {
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
-import {
-  FILLED_TEMPLATE_DOWNLOAD_MESSAGE,
-  FILLED_TEMPLATE_UNFILLED_MESSAGE,
-} from '@/lib/export/export-error';
+import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
@@ -267,18 +264,15 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(screen.getByText(FILLED_TEMPLATE_UNFILLED_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent(TEMPLATE_UNFILLED_ERROR);
     });
-    const details = screen.getByText('Details').closest('details');
-    expect(details).not.toHaveAttribute('open');
-    expect(details).toHaveTextContent('HTTP 422 · TEMPLATE_UNFILLED');
-    expect(screen.queryByText(TEMPLATE_UNFILLED_ERROR)).not.toBeInTheDocument();
+    expect(screen.queryByText(/TypeError|at fillTemplate/)).not.toBeInTheDocument();
     expect(downloadBlob).not.toHaveBeenCalled();
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
   });
 
-  it('shows a short download message and hides the code until Details is opened', async () => {
+  it('shows the download message in the shared alert when fill-template returns 500', async () => {
     const withTemplate = {
       ...lesson,
       template_path: 'user-1/template/plan.docx',
@@ -297,13 +291,10 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(screen.getByText(FILLED_TEMPLATE_DOWNLOAD_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
     });
-    const details = screen.getByText('Details').closest('details');
-    expect(details).not.toHaveAttribute('open');
-    expect(details).toHaveTextContent('TEMPLATE_DOWNLOAD_FAILED');
-    await user.click(screen.getByText('Details'));
-    expect(details).toHaveAttribute('open');
+    expect(screen.queryByText('The template file could not be read.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/TypeError|ByteString/)).not.toBeInTheDocument();
     expect(downloadBlob).not.toHaveBeenCalled();
   });
 
@@ -330,7 +321,6 @@ describe('LessonView', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
     });
     expect(screen.queryByText(/TypeError|ByteString/)).not.toBeInTheDocument();
-    expect(screen.getByText('Details').closest('details')).toHaveTextContent('HTTP 500');
   });
 
   it('hides a ByteString TypeError returned in the fill-template JSON body', async () => {
