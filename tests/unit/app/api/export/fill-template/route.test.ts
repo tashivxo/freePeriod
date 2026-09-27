@@ -77,11 +77,11 @@ function authUser() {
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
 }
 
-function lessonRow(templatePath: string) {
+function lessonRow(templatePath: string, title = 'Story Elements') {
   mockLessonSingle.mockResolvedValue({
     data: {
       id: 'lesson-1',
-      title: 'Story Elements',
+      title,
       content: lessonContent,
       template_path: templatePath,
       user_id: 'user-1',
@@ -166,6 +166,7 @@ describe('POST /api/export/fill-template', () => {
     const response = await postFill();
 
     expect(response.status).toBe(422);
+    expect(response.headers.get('Content-Type')).toContain('application/json');
     await expect(response.json()).resolves.toEqual({
       error: TEMPLATE_UNFILLED_ERROR,
       code: TEMPLATE_UNFILLED_CODE,
@@ -274,6 +275,42 @@ describe('POST /api/export/fill-template', () => {
     );
     expect(response.headers.get('Content-Disposition')).toContain('Story Elements-filled.docx');
     const bytes = Buffer.from(await response.arrayBuffer());
+    expect(bytes.equals(filledBuffer)).toBe(true);
+  });
+
+  it('returns a DOCX with a ByteString-safe disposition for a Unicode lesson title', async () => {
+    const title = 'Story Elements — plot, character, and theme…';
+    lessonRow('user-1/template/plan.docx', title);
+    const templateBuffer = await makeDocxBuffer(
+      '<?xml version="1.0"?><w:document><w:body><w:tbl></w:tbl></w:body></w:document>',
+    );
+    const filledBuffer = await makeDocxBuffer(
+      '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>Identify elements</w:t></w:r></w:p></w:body></w:document>',
+    );
+    mockDownloadedBuffer(templateBuffer);
+    mockFillGeneric.mockResolvedValue({
+      buffer: filledBuffer,
+      filledCount: 2,
+      matchedLabels: ['objectives', 'hook'],
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    expect(disposition).toContain(
+      'filename="Story Elements - plot, character, and theme...-filled.docx"',
+    );
+    expect(disposition).toContain("filename*=UTF-8''");
+    expect(disposition).toContain('%E2%80%94');
+    expect(disposition).toContain('%E2%80%A6');
+    expect([...disposition].every((char) => char.charCodeAt(0) <= 255)).toBe(true);
+    expect(() => new Headers({ 'Content-Disposition': disposition })).not.toThrow();
+    const bytes = Buffer.from(await response.arrayBuffer());
+    expect(bytes.subarray(0, 2).toString('utf8')).toBe('PK');
     expect(bytes.equals(filledBuffer)).toBe(true);
   });
 });

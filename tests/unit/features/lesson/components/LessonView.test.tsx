@@ -63,6 +63,7 @@ import {
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
+import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
@@ -263,11 +264,46 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
 
     await waitFor(() => {
-      expect(screen.getByText(TEMPLATE_UNFILLED_ERROR)).toBeInTheDocument();
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(
+        'Couldn’t fill this template — some sections didn’t map. Try the FreePeriod template, or re-upload yours.',
+      );
+      expect(alert).toHaveClass('bg-error/10', 'text-error');
+      expect(alert.querySelector('svg')).toBeInTheDocument();
     });
+    expect(screen.queryByText(/TypeError|at fillTemplate/)).not.toBeInTheDocument();
     expect(downloadBlob).not.toHaveBeenCalled();
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
+  });
+
+  it('uses the shared animated alert and teacher-friendly copy for a 500', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({
+        error:
+          'TypeError: Cannot convert argument to a ByteString because the character at index 69 has a value of 8212',
+        code: 'CONTENT_DISPOSITION_FAILED',
+      }),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: /download filled template/i }));
+    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
+    });
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveClass('bg-error/10', 'text-error');
+    expect(alert.querySelector('svg')).toBeInTheDocument();
+    expect(alert).not.toHaveTextContent(/TypeError|ByteString|CONTENT_DISPOSITION_FAILED/);
+    expect(downloadBlob).not.toHaveBeenCalled();
   });
 
   it('downloads the filled blob when fill-template returns 200', async () => {
