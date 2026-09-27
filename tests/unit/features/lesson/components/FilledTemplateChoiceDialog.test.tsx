@@ -1,11 +1,12 @@
 import { render, screen } from '@/tests/helpers';
 import {
+  BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN,
+  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
   BTN_UPLOAD_ONE_NOW,
   BTN_USE_SHARED_TEMPLATE,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_PDF_MESSAGE,
+  FILLED_TEMPLATE_PDF_NOTE,
 } from '@/features/lesson/components/filled-template-copy';
 import { FilledTemplateChoiceDialog } from '@/features/lesson/components/FilledTemplateChoiceDialog';
 
@@ -27,6 +28,7 @@ jest.mock('@/hooks/useFileUpload', () => ({
 
 describe('FilledTemplateChoiceDialog', () => {
   const onOpenChange = jest.fn();
+  const onFreePeriodDownload = jest.fn();
   const onUseSharedTemplate = jest.fn();
   const onTemplateAttached = jest.fn();
 
@@ -34,57 +36,67 @@ describe('FilledTemplateChoiceDialog', () => {
     jest.clearAllMocks();
   });
 
-  function renderDialog(
-    variant: 'has-template' | 'no-template' | 'not-fillable',
-    notFillableKind?: 'pdf' | 'other',
-  ) {
-    return render(
+  it('shows has-template copy and actions when a fillable template exists', () => {
+    render(
       <FilledTemplateChoiceDialog
         open
         onOpenChange={onOpenChange}
         lessonId="lesson-1"
-        variant={variant}
-        notFillableKind={notFillableKind}
+        variant="has-template"
+        showPdfNote={false}
+        onFreePeriodDownload={onFreePeriodDownload}
         onUseSharedTemplate={onUseSharedTemplate}
         onTemplateAttached={onTemplateAttached}
+        freePeriodLoading={false}
         sharedTemplateLoading={false}
       />,
     );
-  }
-
-  it('offers only the shared template when a fillable template exists', () => {
-    renderDialog('has-template');
 
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_TEMPLATE })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: BTN_UPLOAD_ONE_NOW })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /upload one now/i })).not.toBeInTheDocument();
   });
 
-  it('prompts for a DOCX/XLSX upload when no template exists', () => {
-    renderDialog('no-template');
+  it('shows no-template copy and actions when no fillable template exists', () => {
+    render(
+      <FilledTemplateChoiceDialog
+        open
+        onOpenChange={onOpenChange}
+        lessonId="lesson-1"
+        variant="no-template"
+        showPdfNote={false}
+        onFreePeriodDownload={onFreePeriodDownload}
+        onUseSharedTemplate={onUseSharedTemplate}
+        onTemplateAttached={onTemplateAttached}
+        freePeriodLoading={false}
+        sharedTemplateLoading={false}
+      />,
+    );
 
     expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: BTN_USE_SHARED_TEMPLATE })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN }),
+    ).toBeInTheDocument();
   });
 
-  it('treats a PDF as not fillable and offers a DOCX/XLSX upload', () => {
-    renderDialog('not-fillable', 'pdf');
+  it('shows PDF note in no-template variant when showPdfNote is true', () => {
+    render(
+      <FilledTemplateChoiceDialog
+        open
+        onOpenChange={onOpenChange}
+        lessonId="lesson-1"
+        variant="no-template"
+        showPdfNote
+        onFreePeriodDownload={onFreePeriodDownload}
+        onUseSharedTemplate={onUseSharedTemplate}
+        onTemplateAttached={onTemplateAttached}
+        freePeriodLoading={false}
+        sharedTemplateLoading={false}
+      />,
+    );
 
-    expect(screen.getByText(FILLED_TEMPLATE_PDF_MESSAGE)).toBeInTheDocument();
-    expect(screen.queryByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
-  });
-
-  it('treats other non-fillable files as not fillable', () => {
-    renderDialog('not-fillable', 'other');
-
-    expect(screen.getByText(FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE)).toBeInTheDocument();
-    expect(screen.queryByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).not.toBeInTheDocument();
-    expect(screen.queryByText(FILLED_TEMPLATE_PDF_MESSAGE)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
+    expect(screen.getByText(FILLED_TEMPLATE_PDF_NOTE)).toBeInTheDocument();
   });
 });
