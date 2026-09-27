@@ -14,9 +14,17 @@ describe('isMeaningfulFill', () => {
     expect(isMeaningfulFill(2, ['Resources', 'materials'])).toBe(false);
   });
 
-  it('accepts a fill that wrote at least one real lesson field', () => {
+  it('rejects fills that only wrote header fields such as title and duration', () => {
+    expect(isMeaningfulFill(2, ['lesson title', 'duration'])).toBe(false);
+    expect(isMeaningfulFill(3, ['materials', 'lesson title', 'duration'])).toBe(false);
+    expect(isMeaningfulFill(1, ['topic'])).toBe(false);
+  });
+
+  it('accepts a fill that wrote at least one body field', () => {
     expect(isMeaningfulFill(1, ['objectives'])).toBe(true);
-    expect(isMeaningfulFill(2, ['materials', 'lesson title'])).toBe(true);
+    expect(isMeaningfulFill(1, ['essential questions'])).toBe(true);
+    expect(isMeaningfulFill(2, ['lesson title', 'learning objectives'])).toBe(true);
+    expect(isMeaningfulFill(2, ['duration', 'new vocabulary'])).toBe(true);
   });
 });
 

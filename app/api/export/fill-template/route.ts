@@ -114,8 +114,9 @@ export async function POST(request: NextRequest) {
       return filledFileResponse(filledBuffer, filename, DOCX_CONTENT_TYPE);
     }
 
-    // Plain form-style template (labels in table cells, blank cells for values) —
-    // fill by matching known field labels to the adjacent empty cell.
+    // Plain form-style template (labels in table cells, value cells that may
+    // already contain sample/stub text) — fill by matching known field labels
+    // to the adjacent value cell.
     const result = await fillGenericDocxTemplate(templateBuffer, {
       ...lesson,
       content: lesson.content as LessonSection,
