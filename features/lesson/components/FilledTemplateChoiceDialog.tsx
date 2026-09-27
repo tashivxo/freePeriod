@@ -224,7 +224,7 @@ export function FilledTemplateChoiceDialog({
               {showPdfNote ? (
                 <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
               ) : null}
-              {activeActionError && (
+              {activeActionError ? (
                 <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
                   <XIcon
                     ref={actionErrorIconRef}
@@ -235,7 +235,7 @@ export function FilledTemplateChoiceDialog({
                   />
                   <p className="font-body text-sm text-error">{activeActionError}</p>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4">

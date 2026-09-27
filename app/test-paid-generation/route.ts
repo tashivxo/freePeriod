@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
+import { contentDispositionAttachment } from '@/lib/export/content-disposition';
 import { generateLessonContent } from '@/lib/generation/generate-content';
 import { generateDocx } from '@/lib/export/docx';
 import {
@@ -41,7 +42,7 @@ async function serveSavedDocx(filename: string): Promise<Response> {
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Disposition': `attachment; filename="${safeName}"`,
+      'Content-Disposition': contentDispositionAttachment(safeName),
     },
   });
 }

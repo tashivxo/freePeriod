@@ -1,7 +1,7 @@
 export const TEMPLATE_UNFILLED_CODE = 'TEMPLATE_UNFILLED';
 
 export const TEMPLATE_UNFILLED_ERROR =
-  "We couldn't fill this template because none of its fields matched your lesson. Use “Download a FreePeriod template” for a filled lesson plan, or upload a DOCX/XLSX template with labels such as Lesson Title, Objectives, or Activities.";
+  'Couldn’t fill this template — some sections didn’t map. Try the FreePeriod template, or re-upload yours.';
 
 const HEADER_ONLY_LABELS = new Set([
   'materials',
