@@ -160,6 +160,22 @@ describe('PATCH /api/lessons/[id]/template', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Invalid template path' });
   });
 
+  it('rejects PDF and other non-fillable template uploads at intake', async () => {
+    const pdfResponse = await patchRequest('user-1/template/plan.pdf');
+
+    expect(pdfResponse.status).toBe(400);
+    await expect(pdfResponse.json()).resolves.toEqual({
+      error: 'Template must be a DOCX or XLSX file',
+    });
+
+    const otherResponse = await patchRequest('user-1/template/plan.pages');
+
+    expect(otherResponse.status).toBe(400);
+    await expect(otherResponse.json()).resolves.toEqual({
+      error: 'Template must be a DOCX or XLSX file',
+    });
+  });
+
   it('returns 400 when no matching template upload row exists', async () => {
     uploadVerifyMaybeSingle.mockResolvedValue({ data: null, error: null });
 

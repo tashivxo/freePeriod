@@ -11,7 +11,7 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
-import { getTemplateAttachmentKind } from '@/lib/lesson/template-path';
+import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import {
@@ -25,7 +25,6 @@ import { SectionCard } from '@/features/lesson/components/SectionCard';
 import {
   FilledTemplateChoiceDialog,
   type FilledTemplateDialogVariant,
-  type NotFillableTemplateKind,
 } from '@/features/lesson/components/FilledTemplateChoiceDialog';
 import { FILL_MY_TEMPLATE_LABEL } from '@/features/lesson/components/filled-template-copy';
 import { Button } from '@/components/ui/Button';
@@ -64,14 +63,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     Partial<Record<LessonSectionKey, number>>
   >({});
 
-  const attachmentKind = getTemplateAttachmentKind(lesson.template_path);
-  const filledTemplateVariant: FilledTemplateDialogVariant =
-    attachmentKind === 'fillable'
-      ? 'has-template'
-      : attachmentKind === 'none'
-        ? 'no-template'
-        : 'not-fillable';
-  const notFillableKind: NotFillableTemplateKind = attachmentKind === 'pdf' ? 'pdf' : 'other';
+  const filledTemplateVariant: FilledTemplateDialogVariant = isFillableTemplatePath(
+    lesson.template_path,
+  )
+    ? 'has-template'
+    : 'no-template';
 
   const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
     lesson.id,
@@ -174,7 +170,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     [lesson.id, lesson.template_path, lesson.title],
   );
 
-  const handleSharedTemplateFromDialog = useCallback(async () => {
+  const handleFillTemplateFromDialog = useCallback(async () => {
     setDialogActionError(null);
     const ok = await handleFillTemplate({ fromDialog: true });
     if (ok) {
@@ -281,8 +277,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         dialogActionError={dialogActionError}
         lessonId={lesson.id}
         variant={filledTemplateVariant}
-        notFillableKind={notFillableKind}
-        onUseSharedTemplate={handleSharedTemplateFromDialog}
+        onFillTemplate={handleFillTemplateFromDialog}
         onTemplateAttached={handleTemplateAttached}
         sharedTemplateLoading={fillLoading}
       />

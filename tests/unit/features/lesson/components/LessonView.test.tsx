@@ -58,12 +58,11 @@ import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { downloadBlob } from '@/lib/download-blob';
 import {
+  BTN_FILL_TEMPLATE,
   BTN_UPLOAD_ONE_NOW,
-  BTN_USE_SHARED_TEMPLATE,
   FILL_MY_TEMPLATE_LABEL,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_PDF_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
 import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
@@ -166,7 +165,7 @@ describe('LessonView', () => {
 
     expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: BTN_USE_SHARED_TEMPLATE })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: BTN_FILL_TEMPLATE })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
   });
 
@@ -180,21 +179,8 @@ describe('LessonView', () => {
     await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
 
     expect(screen.getByText(FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_FILL_TEMPLATE })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: BTN_UPLOAD_ONE_NOW })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
-  });
-
-  it('treats PDF and other attachments as not fillable, not as no template', async () => {
-    const { user } = render(
-      <LessonView lesson={{ ...lesson, template_path: 'user-1/template/plan.pdf' }} />,
-    );
-
-    await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
-
-    expect(screen.getByText(FILLED_TEMPLATE_PDF_MESSAGE)).toBeInTheDocument();
-    expect(screen.queryByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
   });
 
@@ -263,7 +249,7 @@ describe('LessonView', () => {
 
     const { user } = render(<LessonView lesson={withTemplate} />);
     await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
-    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+    await user.click(screen.getByRole('button', { name: BTN_FILL_TEMPLATE }));
 
     await waitFor(() => {
       const alert = screen.getByRole('alert');
@@ -294,7 +280,7 @@ describe('LessonView', () => {
 
     const { user } = render(<LessonView lesson={withTemplate} />);
     await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
-    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+    await user.click(screen.getByRole('button', { name: BTN_FILL_TEMPLATE }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(FILLED_TEMPLATE_DOWNLOAD_MESSAGE);
@@ -319,7 +305,7 @@ describe('LessonView', () => {
 
     const { user } = render(<LessonView lesson={withTemplate} />);
     await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
-    await user.click(screen.getByRole('button', { name: BTN_USE_SHARED_TEMPLATE }));
+    await user.click(screen.getByRole('button', { name: BTN_FILL_TEMPLATE }));
 
     await waitFor(() => {
       expect(downloadBlob).toHaveBeenCalledWith(

@@ -17,26 +17,20 @@ import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
   BTN_UPLOAD_ONE_NOW,
-  BTN_USE_SHARED_TEMPLATE,
+  BTN_FILL_TEMPLATE,
   FILL_MY_TEMPLATE_LABEL,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_PDF_MESSAGE,
 } from './filled-template-copy';
 
-export type FilledTemplateDialogVariant = 'has-template' | 'no-template' | 'not-fillable';
-
-export type NotFillableTemplateKind = 'pdf' | 'other';
+export type FilledTemplateDialogVariant = 'has-template' | 'no-template';
 
 type FilledTemplateChoiceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lessonId: string;
   variant: FilledTemplateDialogVariant;
-  /** Selects PDF vs other-file copy when `variant` is `not-fillable`. */
-  notFillableKind?: NotFillableTemplateKind;
-  onUseSharedTemplate: () => void | Promise<void>;
+  onFillTemplate: () => void | Promise<void>;
   onTemplateAttached: (templatePath: string) => void;
   sharedTemplateLoading: boolean;
   dialogActionError?: string | null;
@@ -59,8 +53,7 @@ export function FilledTemplateChoiceDialog({
   onOpenChange,
   lessonId,
   variant,
-  notFillableKind = 'other',
-  onUseSharedTemplate,
+  onFillTemplate,
   onTemplateAttached,
   sharedTemplateLoading,
   dialogActionError = null,
@@ -215,11 +208,7 @@ export function FilledTemplateChoiceDialog({
                     className="mt-0.5 shrink-0"
                   />
                   <DialogDescription className="font-body text-sm text-error">
-                    {variant === 'no-template'
-                      ? FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE
-                      : notFillableKind === 'pdf'
-                        ? FILLED_TEMPLATE_PDF_MESSAGE
-                        : FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE}
+                    {FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE}
                   </DialogDescription>
                 </div>
               )}
@@ -243,10 +232,10 @@ export function FilledTemplateChoiceDialog({
                   type="button"
                   variant="outline"
                   className={footerButtonClassName}
-                  onClick={() => void onUseSharedTemplate()}
+                  onClick={() => void onFillTemplate()}
                   isLoading={sharedTemplateLoading}
                 >
-                  {BTN_USE_SHARED_TEMPLATE}
+                  {BTN_FILL_TEMPLATE}
                 </Button>
               ) : (
                 <>
