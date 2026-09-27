@@ -1,7 +1,7 @@
 export const TEMPLATE_UNFILLED_CODE = 'TEMPLATE_UNFILLED';
 
 export const TEMPLATE_UNFILLED_ERROR =
-  'Couldn’t fill this template — some sections didn’t map. Try the FreePeriod template, or re-upload yours.';
+  'Couldn’t fill this template — some sections didn’t map. Use Download DOCX for a Free Period lesson plan, or re-upload yours.';
 
 const HEADER_ONLY_LABELS = new Set([
   'materials',

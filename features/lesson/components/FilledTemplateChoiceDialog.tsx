@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
@@ -17,27 +16,28 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
-  BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN,
-  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
   BTN_UPLOAD_ONE_NOW,
   BTN_USE_SHARED_TEMPLATE,
+  FILL_MY_TEMPLATE_LABEL,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
+  FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_PDF_NOTE,
+  FILLED_TEMPLATE_PDF_MESSAGE,
 } from './filled-template-copy';
 
-export type FilledTemplateDialogVariant = 'has-template' | 'no-template';
+export type FilledTemplateDialogVariant = 'has-template' | 'no-template' | 'not-fillable';
+
+export type NotFillableTemplateKind = 'pdf' | 'other';
 
 type FilledTemplateChoiceDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lessonId: string;
   variant: FilledTemplateDialogVariant;
-  showPdfNote: boolean;
-  onFreePeriodDownload: () => void | Promise<void>;
+  /** Selects PDF vs other-file copy when `variant` is `not-fillable`. */
+  notFillableKind?: NotFillableTemplateKind;
   onUseSharedTemplate: () => void | Promise<void>;
   onTemplateAttached: (templatePath: string) => void;
-  freePeriodLoading: boolean;
   sharedTemplateLoading: boolean;
   dialogActionError?: string | null;
 };
@@ -59,11 +59,9 @@ export function FilledTemplateChoiceDialog({
   onOpenChange,
   lessonId,
   variant,
-  showPdfNote,
-  onFreePeriodDownload,
+  notFillableKind = 'other',
   onUseSharedTemplate,
   onTemplateAttached,
-  freePeriodLoading,
   sharedTemplateLoading,
   dialogActionError = null,
 }: FilledTemplateChoiceDialogProps) {
@@ -74,7 +72,7 @@ export function FilledTemplateChoiceDialog({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isAttaching, setIsAttaching] = useState(false);
   const attachedPathRef = useRef<string | null>(null);
-  const { ref: noTemplateIconRef, animationDisabled: noTemplateIconMotionDisabled } =
+  const { ref: noticeIconRef, animationDisabled: noticeIconMotionDisabled } =
     useMotionSafeIconRef();
   const { ref: actionErrorIconRef, animationDisabled: actionErrorIconMotionDisabled } =
     useMotionSafeIconRef();
@@ -100,9 +98,9 @@ export function FilledTemplateChoiceDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!open || variant !== 'no-template' || noTemplateIconMotionDisabled) return;
-    noTemplateIconRef.current?.startAnimation();
-  }, [noTemplateIconMotionDisabled, noTemplateIconRef, open, variant]);
+    if (!open || variant === 'has-template' || noticeIconMotionDisabled) return;
+    noticeIconRef.current?.startAnimation();
+  }, [noticeIconMotionDisabled, noticeIconRef, open, variant]);
 
   const activeActionError = dialogActionError ?? uploadError ?? attachError;
   useEffect(() => {
@@ -198,7 +196,7 @@ export function FilledTemplateChoiceDialog({
           >
             <div className="flex flex-col gap-4 p-6">
               <DialogTitle className="font-display text-lg font-semibold text-text-primary">
-                Download filled template
+                {FILL_MY_TEMPLATE_LABEL}
               </DialogTitle>
               {variant === 'has-template' ? (
                 <DialogDescription className="font-body text-sm text-text-secondary">
@@ -210,20 +208,21 @@ export function FilledTemplateChoiceDialog({
                   className="flex gap-3 rounded-xl bg-error/10 p-3 text-error"
                 >
                   <XIcon
-                    ref={noTemplateIconRef}
+                    ref={noticeIconRef}
                     size={24}
-                    animationDisabled={noTemplateIconMotionDisabled}
+                    animationDisabled={noticeIconMotionDisabled}
                     aria-hidden
                     className="mt-0.5 shrink-0"
                   />
                   <DialogDescription className="font-body text-sm text-error">
-                    {FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE}
+                    {variant === 'no-template'
+                      ? FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE
+                      : notFillableKind === 'pdf'
+                        ? FILLED_TEMPLATE_PDF_MESSAGE
+                        : FILLED_TEMPLATE_NOT_FILLABLE_MESSAGE}
                   </DialogDescription>
                 </div>
               )}
-              {showPdfNote ? (
-                <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
-              ) : null}
               {activeActionError ? (
                 <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
                   <XIcon
@@ -240,26 +239,15 @@ export function FilledTemplateChoiceDialog({
 
             <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4">
               {variant === 'has-template' ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className={footerButtonClassName}
-                    onClick={() => void onFreePeriodDownload()}
-                    isLoading={freePeriodLoading}
-                  >
-                    {BTN_DOWNLOAD_FREEPERIOD_TEMPLATE}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={footerButtonClassName}
-                    onClick={() => void onUseSharedTemplate()}
-                    isLoading={sharedTemplateLoading}
-                  >
-                    {BTN_USE_SHARED_TEMPLATE}
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={footerButtonClassName}
+                  onClick={() => void onUseSharedTemplate()}
+                  isLoading={sharedTemplateLoading}
+                >
+                  {BTN_USE_SHARED_TEMPLATE}
+                </Button>
               ) : (
                 <>
                   <Button
@@ -284,16 +272,6 @@ export function FilledTemplateChoiceDialog({
                       e.target.value = '';
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={footerButtonClassName}
-                    onClick={() => void onFreePeriodDownload()}
-                    isLoading={freePeriodLoading}
-                  >
-                    <MotionSafeIcon icon={DownloadIcon} size={16} parentHover parentFocus />
-                    {BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN}
-                  </Button>
                 </>
               )}
             </div>
