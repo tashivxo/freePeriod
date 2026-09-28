@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   parseFailureMessage,
   parseUploadedFile,
@@ -11,6 +12,11 @@ import {
   isFillableTemplatePath,
   isTemplateStoragePath,
 } from '@/lib/lesson/template-path';
+import {
+  isOwnedStoragePath,
+  logStorageDownloadError,
+  teacherStorageReadError,
+} from '@/lib/parse/storage-download';
 import type { UploadType } from '@/types';
 
 export const runtime = 'nodejs';
@@ -63,15 +69,20 @@ export async function POST(request: NextRequest) {
       return jsonError('storagePath is required', 400);
     }
 
-    if (uploadId && !uploadType) {
+    let ownedRowPath: string | null = null;
+
+    if (uploadId) {
       const { data: uploadRow } = await supabase
         .from('uploads')
-        .select('type')
+        .select('type, storage_path')
         .eq('id', uploadId)
         .eq('user_id', user.id)
         .maybeSingle();
       if (uploadRow?.type === 'template' || uploadRow?.type === 'curriculum_doc') {
-        uploadType = uploadRow.type;
+        if (!uploadType) uploadType = uploadRow.type;
+      }
+      if (typeof uploadRow?.storage_path === 'string') {
+        ownedRowPath = uploadRow.storage_path;
       }
     }
 
@@ -82,12 +93,43 @@ export async function POST(request: NextRequest) {
       return jsonError(getTemplateUploadError(storagePath), 400);
     }
 
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('uploads')
-      .download(storagePath);
+    if (!isOwnedStoragePath(user.id, storagePath, ownedRowPath) && !ownedRowPath) {
+      const { data: pathRow } = await supabase
+        .from('uploads')
+        .select('storage_path')
+        .eq('user_id', user.id)
+        .eq('storage_path', storagePath)
+        .maybeSingle();
+      if (typeof pathRow?.storage_path === 'string') {
+        ownedRowPath = pathRow.storage_path;
+      }
+    }
+
+    if (!isOwnedStoragePath(user.id, storagePath, ownedRowPath)) {
+      return jsonError(teacherStorageReadError(uploadType, storagePath), 403);
+    }
+
+    // Service role bypasses storage RLS after the ownership check above.
+    let fileData: Blob | null = null;
+    let downloadError: unknown = null;
+    try {
+      const admin = createAdminClient();
+      const result = await admin.storage.from('uploads').download(storagePath);
+      fileData = result.data;
+      downloadError = result.error;
+    } catch (error) {
+      logStorageDownloadError({ storagePath, uploadId, uploadType, error });
+      return jsonError(teacherStorageReadError(uploadType, storagePath), 502);
+    }
 
     if (downloadError || !fileData) {
-      return jsonError('Failed to download file', 404);
+      logStorageDownloadError({
+        storagePath,
+        uploadId,
+        uploadType,
+        error: downloadError ?? { message: 'Empty file data' },
+      });
+      return jsonError(teacherStorageReadError(uploadType, storagePath), 502);
     }
 
     const buffer = Buffer.from(await fileData.arrayBuffer());

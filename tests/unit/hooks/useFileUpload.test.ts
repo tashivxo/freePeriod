@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
-import { useFileUpload } from '@/hooks/useFileUpload';
+import { slugifyFileStem, useFileUpload } from '@/hooks/useFileUpload';
 
 const mockUpload = jest.fn();
 const mockRemove = jest.fn();
@@ -189,5 +189,35 @@ describe('useFileUpload', () => {
     expect(result.current.phase).toBe('error');
     expect(result.current.storagePath).toBeNull();
     expect(result.current.error).toMatch(/no readable text/i);
+  });
+
+  it('slugifies filename stems so new storage keys have no spaces', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'template', accept: '.docx' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(
+        templateFile('Blank Daily English lesson plan template.docx'),
+      );
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^user-123\/template\/blank-daily-english-lesson-plan-template-\d+\.docx$/,
+      ),
+      expect.any(File),
+    );
+    expect(result.current.phase).toBe('ready');
+  });
+});
+
+describe('slugifyFileStem', () => {
+  it('replaces spaces and punctuation without changing an already-safe stem', () => {
+    expect(slugifyFileStem('Blank Daily English lesson plan template')).toBe(
+      'blank-daily-english-lesson-plan-template',
+    );
+    expect(slugifyFileStem('unit')).toBe('unit');
+    expect(slugifyFileStem('   ')).toBe('file');
   });
 });
