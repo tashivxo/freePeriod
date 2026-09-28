@@ -4,8 +4,10 @@
 const mockGetUser = jest.fn();
 const mockUploadUpdate = jest.fn();
 const mockUploadMaybeSingle = jest.fn();
-const mockStorageDownload = jest.fn();
+const mockUserStorageDownload = jest.fn();
+const mockAdminStorageDownload = jest.fn();
 const mockParseUploadedFile = jest.fn();
+const mockCreateAdminClient = jest.fn();
 
 jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(async () => ({
@@ -26,10 +28,14 @@ jest.mock('@/lib/supabase/server', () => ({
     })),
     storage: {
       from: jest.fn(() => ({
-        download: mockStorageDownload,
+        download: mockUserStorageDownload,
       })),
     },
   })),
+}));
+
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: (...args: unknown[]) => mockCreateAdminClient(...args),
 }));
 
 jest.mock('@/lib/parse/parse-uploaded-file', () => {
@@ -42,6 +48,10 @@ jest.mock('@/lib/parse/parse-uploaded-file', () => {
 
 import { POST } from '@/app/api/parse-document/route';
 import { UnsupportedFileTypeError } from '@/lib/parse/parse-uploaded-file';
+import {
+  DOCUMENT_STORAGE_READ_ERROR,
+  TEMPLATE_STORAGE_READ_ERROR,
+} from '@/lib/parse/storage-download';
 
 function request(body: Record<string, unknown>) {
   return new Request('http://localhost/api/parse-document', {
@@ -59,7 +69,15 @@ describe('POST /api/parse-document', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
-    mockStorageDownload.mockResolvedValue({ data: fileBlob(), error: null });
+    mockUserStorageDownload.mockResolvedValue({ data: fileBlob(), error: null });
+    mockAdminStorageDownload.mockResolvedValue({ data: fileBlob(), error: null });
+    mockCreateAdminClient.mockReturnValue({
+      storage: {
+        from: jest.fn(() => ({
+          download: mockAdminStorageDownload,
+        })),
+      },
+    });
     mockUploadUpdate.mockResolvedValue({ data: null, error: null });
     mockUploadMaybeSingle.mockResolvedValue({ data: null, error: null });
   });
@@ -69,6 +87,8 @@ describe('POST /api/parse-document', () => {
     const res = await POST(request({ storagePath: 'x.pdf' }));
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: 'Unauthorized' });
+    expect(mockCreateAdminClient).not.toHaveBeenCalled();
+    expect(mockAdminStorageDownload).not.toHaveBeenCalled();
   });
 
   it('rejects a PDF template before downloading or parsing it', async () => {
@@ -84,7 +104,9 @@ describe('POST /api/parse-document', () => {
     expect(await res.json()).toEqual({
       error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     });
-    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockCreateAdminClient).not.toHaveBeenCalled();
+    expect(mockAdminStorageDownload).not.toHaveBeenCalled();
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
     expect(mockParseUploadedFile).not.toHaveBeenCalled();
   });
 
@@ -100,8 +122,32 @@ describe('POST /api/parse-document', () => {
     expect(await res.json()).toEqual({
       error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     });
-    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockCreateAdminClient).not.toHaveBeenCalled();
+    expect(mockAdminStorageDownload).not.toHaveBeenCalled();
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
     expect(mockParseUploadedFile).not.toHaveBeenCalled();
+  });
+
+  it('downloads via the admin client after verifying the path belongs to the user', async () => {
+    mockParseUploadedFile.mockResolvedValue({
+      text: '',
+      type: 'docx',
+      metadata: { droppedRunCount: 0 },
+    });
+    const storagePath = 'user-1/template/Blank Daily English lesson plan template.docx';
+
+    const res = await POST(
+      request({
+        storagePath,
+        uploadId: 'upload-1',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockCreateAdminClient).toHaveBeenCalledTimes(1);
+    expect(mockAdminStorageDownload).toHaveBeenCalledWith(storagePath);
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
   });
 
   it('returns parsed JSON for a blank template without requiring extracted text', async () => {
@@ -182,8 +228,37 @@ describe('POST /api/parse-document', () => {
     expect(await res.json()).toEqual({ error: 'Unsupported file type: bin' });
   });
 
-  it('returns 404 JSON when the file cannot be downloaded', async () => {
-    mockStorageDownload.mockResolvedValue({ data: null, error: { message: 'missing' } });
+  it('returns 502 teacher copy when a template cannot be downloaded, without leaking storage errors', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockAdminStorageDownload.mockResolvedValue({
+      data: null,
+      error: { message: 'Object not found', statusCode: '404' },
+    });
+
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/Blank Daily English lesson plan template.docx',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toEqual({ error: TEMPLATE_STORAGE_READ_ERROR });
+    expect(JSON.stringify(body)).not.toMatch(/Object not found|Failed to download file/i);
+    expect(consoleError).toHaveBeenCalled();
+    expect(JSON.stringify(consoleError.mock.calls)).toMatch(/Object not found/);
+    expect(JSON.stringify(consoleError.mock.calls)).toMatch(/404/);
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('returns 502 teacher copy when a curriculum document cannot be downloaded', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockAdminStorageDownload.mockResolvedValue({
+      data: null,
+      error: { message: 'missing', statusCode: 400 },
+    });
 
     const res = await POST(
       request({
@@ -192,7 +267,69 @@ describe('POST /api/parse-document', () => {
       }),
     );
 
-    expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: 'Failed to download file' });
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: DOCUMENT_STORAGE_READ_ERROR });
+    expect(res.status).not.toBe(404);
+    consoleError.mockRestore();
+  });
+
+  it('returns 502 teacher copy when the admin client cannot be created', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockCreateAdminClient.mockImplementation(() => {
+      throw new Error('Supabase admin client is not configured');
+    });
+
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/plan.docx',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: TEMPLATE_STORAGE_READ_ERROR });
+    expect(JSON.stringify(consoleError.mock.calls)).toMatch(
+      /Supabase admin client is not configured/,
+    );
+    consoleError.mockRestore();
+  });
+
+  it('allows download when an uploads row matches even without a user-id path prefix', async () => {
+    mockParseUploadedFile.mockResolvedValue({
+      text: '',
+      type: 'docx',
+      metadata: {},
+    });
+    mockUploadMaybeSingle.mockResolvedValue({
+      data: { type: 'template', storage_path: 'legacy/blank.docx' },
+      error: null,
+    });
+
+    const res = await POST(
+      request({
+        storagePath: 'legacy/blank.docx',
+        uploadId: 'upload-legacy',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockAdminStorageDownload).toHaveBeenCalledWith('legacy/blank.docx');
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
+  });
+
+  it('rejects another user path before the admin download', async () => {
+    const res = await POST(
+      request({
+        storagePath: 'other-user/template/secret.docx',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: TEMPLATE_STORAGE_READ_ERROR });
+    expect(mockCreateAdminClient).not.toHaveBeenCalled();
+    expect(mockAdminStorageDownload).not.toHaveBeenCalled();
+    expect(mockUserStorageDownload).not.toHaveBeenCalled();
   });
 });

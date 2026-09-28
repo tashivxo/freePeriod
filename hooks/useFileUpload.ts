@@ -37,6 +37,17 @@ type StoredAttempt = {
   path: string;
 };
 
+/** Storage object key stem — ASCII, no spaces. Existing objects are unchanged. */
+export function slugifyFileStem(stem: string): string {
+  const slug = stem
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+  return slug || 'file';
+}
+
 function parseTimeoutError(): Error {
   return new Error(
     'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
@@ -145,7 +156,7 @@ export function useFileUpload({
 
         const ext = incoming.name.split('.').pop() ?? 'bin';
         const stem = incoming.name.replace(/\.[^.]+$/, '');
-        path = `${userId}/${uploadType}/${stem}-${Date.now()}.${ext}`;
+        path = `${userId}/${uploadType}/${slugifyFileStem(stem)}-${Date.now()}.${ext}`;
 
         const { error: storageError } = await supabase.storage
           .from(bucket)

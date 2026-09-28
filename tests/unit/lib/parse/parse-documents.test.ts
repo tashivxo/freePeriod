@@ -41,9 +41,11 @@ it('does not statically import pdf-parse or tesseract from the parse route', () 
     path.join(process.cwd(), 'app/api/parse-document/route.ts'),
     'utf8',
   );
-  expect(source).not.toMatch(/from ['"]pdf-parse['"]/);
-  expect(source).not.toMatch(/from ['"]@\/lib\/parse\/parse-pdf['"]/);
-  expect(source).not.toMatch(/from ['"]@\/lib\/ocr\/tesseract['"]/);
+    expect(source).not.toMatch(/from ['"]pdf-parse['"]/);
+    expect(source).not.toMatch(/from ['"]@\/lib\/parse\/parse-pdf['"]/);
+    expect(source).not.toMatch(/from ['"]@\/lib\/ocr\/tesseract['"]/);
+    expect(source).toMatch(/createAdminClient/);
+    expect(source).not.toMatch(/Failed to download file/);
 });
 
 it('returns a JSON-safe message for DOMMatrix module-load crashes', () => {
