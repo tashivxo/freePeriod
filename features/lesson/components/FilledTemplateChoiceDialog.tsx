@@ -7,23 +7,21 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { getTemplateFileRejection } from '@/lib/lesson/template-path';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
-  BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN,
-  BTN_DOWNLOAD_FREEPERIOD_TEMPLATE,
   BTN_UPLOAD_ONE_NOW,
-  BTN_USE_SHARED_TEMPLATE,
+  BTN_FILL_TEMPLATE,
+  FILL_MY_TEMPLATE_LABEL,
   FILLED_TEMPLATE_HAS_TEMPLATE_MESSAGE,
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
-  FILLED_TEMPLATE_PDF_NOTE,
 } from './filled-template-copy';
 
 export type FilledTemplateDialogVariant = 'has-template' | 'no-template';
@@ -33,11 +31,8 @@ type FilledTemplateChoiceDialogProps = {
   onOpenChange: (open: boolean) => void;
   lessonId: string;
   variant: FilledTemplateDialogVariant;
-  showPdfNote: boolean;
-  onFreePeriodDownload: () => void | Promise<void>;
-  onUseSharedTemplate: () => void | Promise<void>;
+  onFillTemplate: () => void | Promise<void>;
   onTemplateAttached: (templatePath: string) => void;
-  freePeriodLoading: boolean;
   sharedTemplateLoading: boolean;
   dialogActionError?: string | null;
 };
@@ -59,11 +54,8 @@ export function FilledTemplateChoiceDialog({
   onOpenChange,
   lessonId,
   variant,
-  showPdfNote,
-  onFreePeriodDownload,
-  onUseSharedTemplate,
+  onFillTemplate,
   onTemplateAttached,
-  freePeriodLoading,
   sharedTemplateLoading,
   dialogActionError = null,
 }: FilledTemplateChoiceDialogProps) {
@@ -74,7 +66,7 @@ export function FilledTemplateChoiceDialog({
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isAttaching, setIsAttaching] = useState(false);
   const attachedPathRef = useRef<string | null>(null);
-  const { ref: noTemplateIconRef, animationDisabled: noTemplateIconMotionDisabled } =
+  const { ref: noticeIconRef, animationDisabled: noticeIconMotionDisabled } =
     useMotionSafeIconRef();
   const { ref: actionErrorIconRef, animationDisabled: actionErrorIconMotionDisabled } =
     useMotionSafeIconRef();
@@ -100,9 +92,9 @@ export function FilledTemplateChoiceDialog({
   }, [open]);
 
   useEffect(() => {
-    if (!open || variant !== 'no-template' || noTemplateIconMotionDisabled) return;
-    noTemplateIconRef.current?.startAnimation();
-  }, [noTemplateIconMotionDisabled, noTemplateIconRef, open, variant]);
+    if (!open || variant === 'has-template' || noticeIconMotionDisabled) return;
+    noticeIconRef.current?.startAnimation();
+  }, [noticeIconMotionDisabled, noticeIconRef, open, variant]);
 
   const activeActionError = dialogActionError ?? uploadError ?? attachError;
   useEffect(() => {
@@ -198,7 +190,7 @@ export function FilledTemplateChoiceDialog({
           >
             <div className="flex flex-col gap-4 p-6">
               <DialogTitle className="font-display text-lg font-semibold text-text-primary">
-                Download filled template
+                {FILL_MY_TEMPLATE_LABEL}
               </DialogTitle>
               {variant === 'has-template' ? (
                 <DialogDescription className="font-body text-sm text-text-secondary">
@@ -210,9 +202,9 @@ export function FilledTemplateChoiceDialog({
                   className="flex gap-3 rounded-xl bg-error/10 p-3 text-error"
                 >
                   <XIcon
-                    ref={noTemplateIconRef}
+                    ref={noticeIconRef}
                     size={24}
-                    animationDisabled={noTemplateIconMotionDisabled}
+                    animationDisabled={noticeIconMotionDisabled}
                     aria-hidden
                     className="mt-0.5 shrink-0"
                   />
@@ -221,9 +213,6 @@ export function FilledTemplateChoiceDialog({
                   </DialogDescription>
                 </div>
               )}
-              {showPdfNote ? (
-                <p className="text-sm text-text-secondary">{FILLED_TEMPLATE_PDF_NOTE}</p>
-              ) : null}
               {activeActionError ? (
                 <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
                   <XIcon
@@ -240,26 +229,15 @@ export function FilledTemplateChoiceDialog({
 
             <div className="flex flex-col gap-2 border-t border-border bg-muted/40 p-4">
               {variant === 'has-template' ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className={footerButtonClassName}
-                    onClick={() => void onFreePeriodDownload()}
-                    isLoading={freePeriodLoading}
-                  >
-                    {BTN_DOWNLOAD_FREEPERIOD_TEMPLATE}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={footerButtonClassName}
-                    onClick={() => void onUseSharedTemplate()}
-                    isLoading={sharedTemplateLoading}
-                  >
-                    {BTN_USE_SHARED_TEMPLATE}
-                  </Button>
-                </>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={footerButtonClassName}
+                  onClick={() => void onFillTemplate()}
+                  isLoading={sharedTemplateLoading}
+                >
+                  {BTN_FILL_TEMPLATE}
+                </Button>
               ) : (
                 <>
                   <Button
@@ -279,21 +257,16 @@ export function FilledTemplateChoiceDialog({
                     className="sr-only"
                     onChange={(e) => {
                       const selected = e.target.files?.[0];
-                      if (!selected) return;
-                      void handleFile(selected);
                       e.target.value = '';
+                      if (!selected) return;
+                      const rejection = getTemplateFileRejection(selected);
+                      if (rejection) {
+                        setAttachError(rejection);
+                        return;
+                      }
+                      void handleFile(selected);
                     }}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={footerButtonClassName}
-                    onClick={() => void onFreePeriodDownload()}
-                    isLoading={freePeriodLoading}
-                  >
-                    <MotionSafeIcon icon={DownloadIcon} size={16} parentHover parentFocus />
-                    {BTN_DOWNLOAD_FREEPERIOD_GENERATED_LESSON_PLAN}
-                  </Button>
                 </>
               )}
             </div>

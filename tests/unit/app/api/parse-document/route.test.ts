@@ -71,6 +71,39 @@ describe('POST /api/parse-document', () => {
     expect(await res.json()).toEqual({ error: 'Unauthorized' });
   });
 
+  it('rejects a PDF template before downloading or parsing it', async () => {
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/pr15-test.pdf',
+        uploadId: 'upload-template',
+        uploadType: 'template',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockParseUploadedFile).not.toHaveBeenCalled();
+  });
+
+  it('rejects a PDF in a template storage path even without uploadType', async () => {
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/pr15-test.pdf',
+        uploadId: 'upload-template',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockParseUploadedFile).not.toHaveBeenCalled();
+  });
+
   it('returns parsed JSON for a blank template without requiring extracted text', async () => {
     mockParseUploadedFile.mockResolvedValue({
       text: '',

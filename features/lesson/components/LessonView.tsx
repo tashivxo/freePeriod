@@ -11,7 +11,7 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
 import { contentToString } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
-import { isFillableTemplatePath, isPdfTemplatePath } from '@/lib/lesson/template-path';
+import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import {
@@ -26,6 +26,7 @@ import {
   FilledTemplateChoiceDialog,
   type FilledTemplateDialogVariant,
 } from '@/features/lesson/components/FilledTemplateChoiceDialog';
+import { FILL_MY_TEMPLATE_LABEL } from '@/features/lesson/components/filled-template-copy';
 import { Button } from '@/components/ui/Button';
 import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import type { LessonPlan, LessonSectionKey } from '@/types';
@@ -62,11 +63,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     Partial<Record<LessonSectionKey, number>>
   >({});
 
-  const hasFillableTemplate = isFillableTemplatePath(lesson.template_path);
-  const filledTemplateVariant: FilledTemplateDialogVariant = hasFillableTemplate
+  const filledTemplateVariant: FilledTemplateDialogVariant = isFillableTemplatePath(
+    lesson.template_path,
+  )
     ? 'has-template'
     : 'no-template';
-  const showPdfNote = Boolean(lesson.template_path && isPdfTemplatePath(lesson.template_path));
 
   const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
     lesson.id,
@@ -105,45 +106,28 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, [zenMode]);
 
-  const handleExport = useCallback(
-    async (options?: { fromDialog?: boolean }): Promise<boolean> => {
-      setExportLoading(true);
-      if (!options?.fromDialog) {
-        setExportError(null);
-      }
-      try {
-        const response = await fetch('/api/export', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
-        });
+  const handleExport = useCallback(async () => {
+    setExportLoading(true);
+    setExportError(null);
+    try {
+      const response = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
+      });
 
-        if (!response.ok) {
-          const message = await readExportError(response, 'Failed to export lesson');
-          if (options?.fromDialog) {
-            setDialogActionError(message);
-          } else {
-            setExportError(message);
-          }
-          return false;
-        }
-
-        downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
-        return true;
-      } catch {
-        const message = 'Failed to export lesson. Check your connection and try again.';
-        if (options?.fromDialog) {
-          setDialogActionError(message);
-        } else {
-          setExportError(message);
-        }
-        return false;
-      } finally {
-        setExportLoading(false);
+      if (!response.ok) {
+        setExportError(await readExportError(response, 'Failed to export lesson'));
+        return;
       }
-    },
-    [lesson.id, lesson.subject],
-  );
+
+      downloadBlob(await response.blob(), buildExportFilename(lesson.subject));
+    } catch {
+      setExportError('Failed to export lesson. Check your connection and try again.');
+    } finally {
+      setExportLoading(false);
+    }
+  }, [lesson.id, lesson.subject]);
 
   const handleFillTemplate = useCallback(
     async (options?: { fromDialog?: boolean }): Promise<boolean> => {
@@ -186,15 +170,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     [lesson.id, lesson.template_path, lesson.title],
   );
 
-  const handleFreePeriodFromDialog = useCallback(async () => {
-    setDialogActionError(null);
-    const ok = await handleExport({ fromDialog: true });
-    if (ok) {
-      setFilledTemplateDialogOpen(false);
-    }
-  }, [handleExport]);
-
-  const handleSharedTemplateFromDialog = useCallback(async () => {
+  const handleFillTemplateFromDialog = useCallback(async () => {
     setDialogActionError(null);
     const ok = await handleFillTemplate({ fromDialog: true });
     if (ok) {
@@ -278,7 +254,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             onClick={() => handleFilledTemplateDialogOpenChange(true)}
           >
             <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
-            Download filled template
+            {FILL_MY_TEMPLATE_LABEL}
           </Button>
         </div>
         {exportError ? (
@@ -301,11 +277,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         dialogActionError={dialogActionError}
         lessonId={lesson.id}
         variant={filledTemplateVariant}
-        showPdfNote={showPdfNote}
-        onFreePeriodDownload={handleFreePeriodFromDialog}
-        onUseSharedTemplate={handleSharedTemplateFromDialog}
+        onFillTemplate={handleFillTemplateFromDialog}
         onTemplateAttached={handleTemplateAttached}
-        freePeriodLoading={exportLoading}
         sharedTemplateLoading={fillLoading}
       />
 

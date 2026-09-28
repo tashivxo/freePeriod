@@ -33,7 +33,8 @@ export async function parseUploadedFile(
       const { parsePdf } = await import('./parse-pdf');
       return parsePdf(buffer);
     }
-    case 'xlsx': {
+    case 'xlsx':
+    case 'xls': {
       const { parseXlsx } = await import('./parse-xlsx');
       return parseXlsx(buffer);
     }

@@ -1,12 +1,61 @@
+export const FILLABLE_TEMPLATE_ACCEPT = '.docx,.xlsx,.xls';
+
+const FILLABLE_TEMPLATE_EXTENSIONS = new Set(['docx', 'xlsx', 'xls']);
+const PDF_MIME_TYPES = new Set(['application/pdf', 'application/x-pdf']);
+
+export type TemplateFileLike = {
+  name?: string | null;
+  type?: string | null;
+};
+
 export function getTemplateExtension(templatePath: string | null | undefined): string {
-  return templatePath?.split('.').pop()?.toLowerCase() ?? '';
+  const cleaned = templatePath?.split(/[?#]/)[0]?.trim() ?? '';
+  if (!cleaned) return '';
+  const fileName = cleaned.split(/[\\/]/).pop() ?? '';
+  const dot = fileName.lastIndexOf('.');
+  if (dot <= 0 || dot === fileName.length - 1) return '';
+  return fileName.slice(dot + 1).toLowerCase();
 }
 
 export function isFillableTemplatePath(templatePath: string | null | undefined): boolean {
-  const ext = getTemplateExtension(templatePath);
-  return ext === 'docx' || ext === 'xlsx' || ext === 'xls';
+  return FILLABLE_TEMPLATE_EXTENSIONS.has(getTemplateExtension(templatePath));
 }
 
-export function isPdfTemplatePath(templatePath: string | null | undefined): boolean {
-  return getTemplateExtension(templatePath) === 'pdf';
+export function isTemplateStoragePath(storagePath: string | null | undefined): boolean {
+  return /(?:^|\/)template\//i.test(storagePath?.trim() ?? '');
+}
+
+export function getTemplateUploadError(
+  templatePath: string,
+  mimeType?: string | null,
+): string {
+  const ext = getTemplateExtension(templatePath);
+  const mime = mimeType?.trim().toLowerCase() ?? '';
+  const uploaded = ext
+    ? `.${ext}`
+    : PDF_MIME_TYPES.has(mime) || mime.includes('pdf')
+      ? '.pdf'
+      : 'file';
+  return `Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a ${uploaded}.`;
+}
+
+function isNonFillableTemplateMime(mimeType: string | null | undefined): boolean {
+  const mime = mimeType?.trim().toLowerCase() ?? '';
+  if (!mime) return false;
+  return (
+    PDF_MIME_TYPES.has(mime) ||
+    mime.includes('pdf') ||
+    mime.startsWith('image/') ||
+    mime.startsWith('text/')
+  );
+}
+
+/** Returns a reject message, or null when the file may be uploaded as a template. */
+export function getTemplateFileRejection(file: TemplateFileLike): string | null {
+  const name = file.name?.trim() ?? '';
+  const mime = file.type?.trim() ?? '';
+  if (isNonFillableTemplateMime(mime) || !isFillableTemplatePath(name)) {
+    return getTemplateUploadError(name, mime);
+  }
+  return null;
 }
