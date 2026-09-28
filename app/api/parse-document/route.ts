@@ -9,6 +9,7 @@ import { requiresExtractedText, type ParsedContent } from '@/lib/parse/types';
 import {
   getTemplateUploadError,
   isFillableTemplatePath,
+  isTemplateStoragePath,
 } from '@/lib/lesson/template-path';
 import type { UploadType } from '@/types';
 
@@ -74,7 +75,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (uploadType === 'template' && !isFillableTemplatePath(storagePath)) {
+    if (
+      (uploadType === 'template' || isTemplateStoragePath(storagePath)) &&
+      !isFillableTemplatePath(storagePath)
+    ) {
       return jsonError(getTemplateUploadError(storagePath), 400);
     }
 

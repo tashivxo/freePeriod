@@ -88,6 +88,22 @@ describe('POST /api/parse-document', () => {
     expect(mockParseUploadedFile).not.toHaveBeenCalled();
   });
 
+  it('rejects a PDF in a template storage path even without uploadType', async () => {
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/pr15-test.pdf',
+        uploadId: 'upload-template',
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: 'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+    });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockParseUploadedFile).not.toHaveBeenCalled();
+  });
+
   it('returns parsed JSON for a blank template without requiring extracted text', async () => {
     mockParseUploadedFile.mockResolvedValue({
       text: '',

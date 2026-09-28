@@ -13,6 +13,7 @@ import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { getTemplateFileRejection } from '@/lib/lesson/template-path';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
@@ -256,9 +257,14 @@ export function FilledTemplateChoiceDialog({
                     className="sr-only"
                     onChange={(e) => {
                       const selected = e.target.files?.[0];
-                      if (!selected) return;
-                      void handleFile(selected);
                       e.target.value = '';
+                      if (!selected) return;
+                      const rejection = getTemplateFileRejection(selected);
+                      if (rejection) {
+                        setAttachError(rejection);
+                        return;
+                      }
+                      void handleFile(selected);
                     }}
                   />
                 </>

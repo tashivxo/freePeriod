@@ -3,10 +3,7 @@
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { requiresExtractedText } from '@/lib/parse/types';
-import {
-  getTemplateUploadError,
-  isFillableTemplatePath,
-} from '@/lib/lesson/template-path';
+import { getTemplateFileRejection } from '@/lib/lesson/template-path';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -29,6 +26,7 @@ interface UseFileUploadReturn {
   phase: UploadPhase;
   error: string | null;
   handleFile: (file: File) => Promise<void>;
+  rejectFile: (message: string) => void;
   removeFile: () => Promise<void>;
 }
 
@@ -84,13 +82,25 @@ export function useFileUpload({
   const inFlightRef = useRef(false);
   const storedAttemptRef = useRef<StoredAttempt | null>(null);
 
+  const rejectFile = (message: string) => {
+    inFlightRef.current = false;
+    setIsUploading(false);
+    setFile(null);
+    setStoragePath(null);
+    setParsedText(null);
+    setPhase('error');
+    setError(message);
+  };
+
   const handleFile = async (incoming: File) => {
     if (inFlightRef.current) return;
 
-    if (uploadType === 'template' && !isFillableTemplatePath(incoming.name)) {
-      setPhase('error');
-      setError(getTemplateUploadError(incoming.name));
-      return;
+    if (uploadType === 'template') {
+      const rejection = getTemplateFileRejection(incoming);
+      if (rejection) {
+        rejectFile(rejection);
+        return;
+      }
     }
 
     if (accept) {
@@ -248,6 +258,7 @@ export function useFileUpload({
     phase,
     error,
     handleFile,
+    rejectFile,
     removeFile,
   };
 }

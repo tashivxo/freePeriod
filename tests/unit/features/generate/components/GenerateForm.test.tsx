@@ -224,6 +224,7 @@ describe('GenerateForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
     );
+    expect(screen.queryByText(/pr15-test\.pdf/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /waiting for upload/i })).not.toBeInTheDocument();
     expect(mockUpload).not.toHaveBeenCalled();

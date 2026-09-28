@@ -7,6 +7,7 @@ import { XIcon } from '@/components/ui/icons/x';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
+import { getTemplateFileRejection } from '@/lib/lesson/template-path';
 import { cn } from '@/lib/utils';
 import type { UploadType } from '@/types';
 
@@ -40,7 +41,7 @@ export function DocumentUploadZone({
   const inputId = useId();
   const sectionHeading = SECTION_HEADINGS[uploadType];
 
-  const { file, storagePath, parsedText, isUploading, phase, error, handleFile, removeFile } = useFileUpload({
+  const { file, storagePath, parsedText, isUploading, phase, error, handleFile, rejectFile, removeFile } = useFileUpload({
     uploadType,
     accept,
   });
@@ -151,9 +152,16 @@ export function DocumentUploadZone({
         className="sr-only"
         onChange={(e) => {
           const selected = e.target.files?.[0];
-          if (!selected) return;
-          void handleFile(selected);
           e.target.value = '';
+          if (!selected) return;
+          if (uploadType === 'template') {
+            const rejection = getTemplateFileRejection(selected);
+            if (rejection) {
+              rejectFile(rejection);
+              return;
+            }
+          }
+          void handleFile(selected);
         }}
       />
 

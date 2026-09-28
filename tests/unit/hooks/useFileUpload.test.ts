@@ -150,6 +150,27 @@ describe('useFileUpload', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it('rejects a PDF template by MIME even when the filename has no extension', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(
+        new File(['%PDF-1.7'], 'pr15-test', { type: 'application/pdf' }),
+      );
+    });
+
+    expect(result.current.phase).toBe('error');
+    expect(result.current.error).toBe(
+      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+    );
+    expect(result.current.file).toBeNull();
+    expect(result.current.isUploading).toBe(false);
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('keeps a failed curriculum file visible and does not mark it ready', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
