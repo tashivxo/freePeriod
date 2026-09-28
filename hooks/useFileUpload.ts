@@ -3,6 +3,10 @@
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { requiresExtractedText } from '@/lib/parse/types';
+import {
+  getTemplateUploadError,
+  isFillableTemplatePath,
+} from '@/lib/lesson/template-path';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -83,7 +87,11 @@ export function useFileUpload({
   const handleFile = async (incoming: File) => {
     if (inFlightRef.current) return;
 
-    setError(null);
+    if (uploadType === 'template' && !isFillableTemplatePath(incoming.name)) {
+      setPhase('error');
+      setError(getTemplateUploadError(incoming.name));
+      return;
+    }
 
     if (accept) {
       const accepted = accept.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -98,6 +106,7 @@ export function useFileUpload({
       }
     }
 
+    setError(null);
     inFlightRef.current = true;
     setIsUploading(true);
     setFile(incoming);

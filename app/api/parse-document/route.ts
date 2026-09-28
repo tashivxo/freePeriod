@@ -6,6 +6,10 @@ import {
   UnsupportedFileTypeError,
 } from '@/lib/parse/parse-uploaded-file';
 import { requiresExtractedText, type ParsedContent } from '@/lib/parse/types';
+import {
+  getTemplateUploadError,
+  isFillableTemplatePath,
+} from '@/lib/lesson/template-path';
 import type { UploadType } from '@/types';
 
 export const runtime = 'nodejs';
@@ -68,6 +72,10 @@ export async function POST(request: NextRequest) {
       if (uploadRow?.type === 'template' || uploadRow?.type === 'curriculum_doc') {
         uploadType = uploadRow.type;
       }
+    }
+
+    if (uploadType === 'template' && !isFillableTemplatePath(storagePath)) {
+      return jsonError(getTemplateUploadError(storagePath), 400);
     }
 
     const { data: fileData, error: downloadError } = await supabase.storage

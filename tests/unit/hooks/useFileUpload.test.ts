@@ -112,6 +112,44 @@ describe('useFileUpload', () => {
     expect(result.current.storagePath).toMatch(/template\/blank-/);
   });
 
+  it.each(['blank.DOCX', 'blank.XLSX', 'blank.XLS'])(
+    'accepts a case-insensitive %s template extension',
+    async (name) => {
+      const { result } = renderHook(() =>
+        useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+      );
+
+      await act(async () => {
+        await result.current.handleFile(templateFile(name));
+      });
+
+      expect(result.current.phase).toBe('ready');
+      expect(result.current.error).toBeNull();
+      expect(mockUpload).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('rejects a PDF template before upload or parsing starts', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(pdfFile('pr15-test.pdf'));
+    });
+
+    expect(result.current.phase).toBe('error');
+    expect(result.current.error).toBe(
+      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+    );
+    expect(result.current.file).toBeNull();
+    expect(result.current.isUploading).toBe(false);
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockInsertSingle).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('keeps a failed curriculum file visible and does not mark it ready', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,

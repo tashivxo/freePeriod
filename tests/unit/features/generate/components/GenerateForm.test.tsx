@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@/tests/helpers';
+import { fireEvent } from '@testing-library/react';
 
 // --- Mocks ---
 
@@ -209,7 +210,24 @@ describe('GenerateForm', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();
     const input = screen.getByLabelText(/upload lesson plan template/i);
-    expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx');
+    expect(input).toHaveAttribute('accept', '.docx,.xlsx,.xls');
+  });
+
+  it('rejects a PDF template immediately without reading or waiting for upload', async () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File(['%PDF-1.7'], 'pr15-test.pdf', { type: 'application/pdf' });
+
+    fireEvent.change(screen.getByLabelText(/upload lesson plan template/i), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+    );
+    expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /waiting for upload/i })).not.toBeInTheDocument();
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('shows file preview after uploading curriculum document', async () => {

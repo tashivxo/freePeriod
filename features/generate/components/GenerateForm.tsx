@@ -14,6 +14,7 @@ import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCurriculumPack } from '@/lib/curriculum/packs';
+import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
 import type { Plan } from '@/types';
 
 const GENERATION_MODE_STORAGE_KEY = 'fp-generation-mode';
@@ -34,7 +35,7 @@ const DURATION_ITEMS = [
 ];
 
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
-const TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx';
+const TEMPLATE_ACCEPT = FILLABLE_TEMPLATE_ACCEPT;
 
 type FieldErrors = {
   subject?: string;
