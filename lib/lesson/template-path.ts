@@ -30,12 +30,13 @@ export function getTemplateUploadError(
   mimeType?: string | null,
 ): string {
   const ext = getTemplateExtension(templatePath);
-  if (ext) return `Only .docx, .xlsx, or .xls — you uploaded a .${ext}.`;
   const mime = mimeType?.trim().toLowerCase() ?? '';
-  if (PDF_MIME_TYPES.has(mime) || mime.includes('pdf')) {
-    return 'Only .docx, .xlsx, or .xls — you uploaded a .pdf.';
-  }
-  return 'Only .docx, .xlsx, or .xls — you uploaded a file.';
+  const uploaded = ext
+    ? `.${ext}`
+    : PDF_MIME_TYPES.has(mime) || mime.includes('pdf')
+      ? '.pdf'
+      : 'file';
+  return `Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a ${uploaded}.`;
 }
 
 function isNonFillableTemplateMime(mimeType: string | null | undefined): boolean {

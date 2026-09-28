@@ -82,7 +82,7 @@ describe('POST /api/parse-document', () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
-      error: 'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     });
     expect(mockStorageDownload).not.toHaveBeenCalled();
     expect(mockParseUploadedFile).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('POST /api/parse-document', () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
-      error: 'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     });
     expect(mockStorageDownload).not.toHaveBeenCalled();
     expect(mockParseUploadedFile).not.toHaveBeenCalled();

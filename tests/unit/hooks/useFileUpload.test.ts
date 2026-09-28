@@ -141,7 +141,7 @@ describe('useFileUpload', () => {
 
     expect(result.current.phase).toBe('error');
     expect(result.current.error).toBe(
-      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     );
     expect(result.current.file).toBeNull();
     expect(result.current.isUploading).toBe(false);
@@ -163,7 +163,7 @@ describe('useFileUpload', () => {
 
     expect(result.current.phase).toBe('error');
     expect(result.current.error).toBe(
-      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     );
     expect(result.current.file).toBeNull();
     expect(result.current.isUploading).toBe(false);

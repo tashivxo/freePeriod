@@ -64,7 +64,7 @@ describe('DocumentUploadZone template intake', () => {
     });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     );
     expect(screen.queryByText(/pr15-test\.pdf/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();

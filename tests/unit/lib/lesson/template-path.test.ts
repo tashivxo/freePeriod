@@ -16,19 +16,21 @@ describe('template-path intake helpers', () => {
     expect(isFillableTemplatePath('pr15-test.pdf')).toBe(false);
     expect(isFillableTemplatePath('notes.txt')).toBe(false);
     expect(getTemplateUploadError('pr15-test.pdf')).toBe(
-      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     );
   });
 
   it('rejects PDFs by MIME even when the filename is missing an extension', () => {
     expect(
       getTemplateFileRejection({ name: 'pr15-test', type: 'application/pdf' }),
-    ).toBe('Only .docx, .xlsx, or .xls — you uploaded a .pdf.');
+    ).toBe(
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    );
   });
 
   it('rejects a PDF named like a template even if MIME is empty', () => {
     expect(getTemplateFileRejection({ name: 'pr15-test.pdf', type: '' })).toBe(
-      'Only .docx, .xlsx, or .xls — you uploaded a .pdf.',
+      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
     );
   });
 
