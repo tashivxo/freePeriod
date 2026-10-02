@@ -4,13 +4,105 @@ import { TextEncoder, TextDecoder } from 'util';
 import {
   buildFieldMap,
   fillGenericDocxTemplate,
+  getCheckboxSelections,
   highlightCheckboxCell,
   normalizeLabel,
+  cellPlainText,
 } from '@/lib/export/fill-generic-template';
 import { isMeaningfulFill } from '@/lib/export/fill-template-result';
 import type { LessonPlan } from '@/types';
 
 Object.assign(globalThis, { TextEncoder, TextDecoder });
+
+function isWordTagOpen(xml: string, idx: number, localName: string): boolean {
+  const tag = `<${localName}`;
+  if (!xml.startsWith(tag, idx)) return false;
+  const next = xml[idx + tag.length];
+  return next === '>' || next === ' ' || next === '/' || next === '\t' || next === '\n';
+}
+
+function findWordTagOpen(xml: string, localName: string, from: number): number {
+  const tag = `<${localName}`;
+  let i = from;
+  while (i < xml.length) {
+    const idx = xml.indexOf(tag, i);
+    if (idx < 0) return -1;
+    if (isWordTagOpen(xml, idx, localName)) return idx;
+    i = idx + tag.length;
+  }
+  return -1;
+}
+
+function findMatchingWordClose(xml: string, contentStart: number, localName: string): number {
+  const close = `</${localName}>`;
+  let depth = 0;
+  let i = contentStart;
+  while (i < xml.length) {
+    const nextOpen = findWordTagOpen(xml, localName, i);
+    const nextClose = xml.indexOf(close, i);
+    if (nextClose < 0) return -1;
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1;
+      i = nextOpen + localName.length + 2;
+    } else {
+      if (depth === 0) return nextClose;
+      depth -= 1;
+      i = nextClose + close.length;
+    }
+  }
+  return -1;
+}
+
+function topLevelXml(xml: string, localName: string): string[] {
+  const close = `</${localName}>`;
+  const segments: string[] = [];
+  let i = 0;
+  while (i < xml.length) {
+    const start = findWordTagOpen(xml, localName, i);
+    if (start < 0) break;
+    const openEnd = xml.indexOf('>', start);
+    if (openEnd < 0) break;
+    const closeIdx = findMatchingWordClose(xml, openEnd + 1, localName);
+    if (closeIdx < 0) break;
+    const end = closeIdx + close.length;
+    segments.push(xml.slice(start, end));
+    i = end;
+  }
+  return segments;
+}
+
+function rowCells(xml: string): string[][] {
+  return topLevelXml(xml, 'w:tbl').flatMap((tbl) =>
+    topLevelXml(tbl, 'w:tr').map((row) => topLevelXml(row, 'w:tc').map((cell) => cellPlainText(cell))),
+  );
+}
+
+function valueCellXmlForLabel(xml: string, label: string): string | undefined {
+  const needle = label.toLowerCase();
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (cellPlainText(cells[0]).toLowerCase().includes(needle)) return cells[1];
+    }
+  }
+  return undefined;
+}
+
+async function fillXml(templateXml: string, lesson: LessonPlan = sampleLesson) {
+  const JSZip = (await import('jszip')).default;
+  const zip = new JSZip();
+  zip.file('word/document.xml', templateXml);
+  zip.file(
+    '[Content_Types].xml',
+    '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"></Types>',
+  );
+  const templateBuffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
+  const result = await fillGenericDocxTemplate(templateBuffer, lesson);
+  const outZip = await JSZip.loadAsync(result.buffer);
+  const outXml = await outZip.file('word/document.xml')!.async('string');
+  return { result, outXml };
+}
 
 const sampleLesson: LessonPlan = {
   id: 'test-id',
@@ -51,7 +143,9 @@ const sampleLesson: LessonPlan = {
     vocabulary: ['Phase — a distinct form of matter such as solid, liquid, or gas'],
     hook: 'Time: 5 min\nTeacher Activity: Demo ice melting\nLearner Activity & Success Criteria: Observe and predict\nFormative Assessment: Pair share\nResources: Ice, beaker',
     mainActivities: ['Time: 20 min\nTeacher Activity: Model particle diagrams\nLearner Activity & Success Criteria: Draw models\nFormative Assessment: Gallery walk\nResources: Whiteboard'],
-    guidedPractice: [],
+    guidedPractice: [
+      'Time: 15 min\nTeacher Activity: Circulate and prompt particle comparisons\nLearner Activity & Success Criteria: Complete practice diagrams\nFormative Assessment: Spot checks\nResources: Practice sheet',
+    ],
     independentPractice: [],
     formativeAssessment: ['Exit ticket describing particle changes during evaporation'],
     differentiation: { support: ['Provide annotated particle diagrams'], extension: ['Research sublimation examples'] },
@@ -358,5 +452,210 @@ describe('fill-generic-template field mapping', () => {
     expect(outXml).toContain('Model particle diagrams');
     expect(outXml).not.toContain('Visual media in the UAE');
     expect(outXml).not.toContain('Couch potato');
+
+    const activityRow = rowCells(outXml).find((cells) =>
+      cells[1]?.includes('Activation (Introducing New Content)'),
+    );
+    const demoRow = rowCells(outXml).find((cells) =>
+      cells[1]?.includes('Demonstration of Learning'),
+    );
+    expect(activityRow).toBeDefined();
+    expect(demoRow).toBeDefined();
+    expect(activityRow![1]).toContain('Model particle diagrams');
+    expect(activityRow![2]).toContain('Draw models');
+    expect(activityRow![2]).not.toMatch(/Teacher Activity:/i);
+    expect(activityRow![3]).toContain('Gallery walk');
+    expect(activityRow![4]).toContain('Whiteboard');
+    expect(demoRow![1]).toContain('Circulate and prompt particle comparisons');
+    expect(demoRow![1]).not.toContain('Model particle diagrams');
+    expect(`${activityRow![1]} ${activityRow![2]} ${activityRow![3]}`).not.toMatch(
+      /Time:[\s\S]*Teacher Activity:[\s\S]*Learner Activity[\s\S]*Formative Assessment:/i,
+    );
+
+    const adaptive = valueCellXmlForLabel(outXml, 'Adaptive Teaching / Differentiation') ?? '';
+    const adaptiveText = cellPlainText(adaptive);
+    const priorIdx = adaptiveText.indexOf('Prior knowledge:');
+    const particlesIdx = adaptiveText.indexOf('particles that are constantly in motion');
+    const towardsIdx = adaptiveText.indexOf('Working Towards Mastery');
+    const supportIdx = adaptiveText.indexOf('Provide annotated particle diagrams');
+    const depthIdx = adaptiveText.indexOf('Mastery with Greater Depth');
+    const extensionIdx = adaptiveText.indexOf('Research sublimation examples');
+    const senIdx = adaptiveText.indexOf('Special Educational Needs');
+    expect(particlesIdx).toBeGreaterThan(priorIdx);
+    expect(particlesIdx).toBeLessThan(towardsIdx);
+    expect(supportIdx).toBeGreaterThan(towardsIdx);
+    expect(supportIdx).toBeLessThan(senIdx);
+    expect(extensionIdx).toBeGreaterThan(depthIdx);
+    expect(extensionIdx).toBeLessThan(senIdx);
+
+    const skills = valueCellXmlForLabel(outXml, 'Targeted Learning Skills') ?? '';
+    const strategies = valueCellXmlForLabel(outXml, 'Teaching Strategies') ?? '';
+    const assessment = valueCellXmlForLabel(outXml, 'Formative Assessment Methods') ?? '';
+    const seating = valueCellXmlForLabel(outXml, 'Seating Arrangements') ?? '';
+    const digital = valueCellXmlForLabel(outXml, 'Digital Pedagogy') ?? '';
+    expect(skills).toMatch(/w14:checked w14:val="1"/);
+    expect(strategies).toMatch(/w14:checked w14:val="1"/);
+    expect(assessment).toMatch(/w14:checked w14:val="1"/);
+    expect(seating).toMatch(/w14:checked w14:val="1"/);
+    expect(seating).toContain('\u2612');
+    expect(digital).toMatch(/w14:checked w14:val="1"/);
+  });
+
+  it('writes activity columns per phase instead of dumping the blob into one cell', async () => {
+    const templateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Time</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Teacher activity</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Learner activity &amp; Success Criteria</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Formative assessment</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Learning materials /resources</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>How are you unpacking, modelling, explaining?</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>What are the learners doing</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>How are you assessing</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Manipulatives</w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Do Now (Starter Activity)</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Activation (Introducing New Content)</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t>Demonstration of Learning (Practice)</w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+        <w:tc><w:p><w:r><w:t></w:t></w:r></w:p></w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+
+    const { outXml } = await fillXml(templateXml);
+    const rows = rowCells(outXml);
+    const doNow = rows.find((cells) => cells[1]?.includes('Do Now (Starter Activity)'));
+    const activation = rows.find((cells) => cells[1]?.includes('Activation (Introducing New Content)'));
+    const demo = rows.find((cells) => cells[1]?.includes('Demonstration of Learning'));
+    expect(doNow?.[1]).toContain('Demo ice melting');
+    expect(doNow?.[2]).toContain('Observe and predict');
+    expect(doNow?.[3]).toContain('Pair share');
+    expect(activation?.[0]).toContain('20 min');
+    expect(activation?.[1]).toContain('Model particle diagrams');
+    expect(activation?.[2]).toContain('Draw models');
+    expect(activation?.[2]).not.toMatch(/Teacher Activity:/);
+    expect(activation?.[3]).toContain('Gallery walk');
+    expect(activation?.[4]).toContain('Whiteboard');
+    expect(demo?.[1]).toContain('Circulate and prompt particle comparisons');
+    expect(demo?.[1]).not.toContain('Model particle diagrams');
+    expect(demo?.[2]).toContain('Complete practice diagrams');
+  });
+
+  it('places differentiation bullets under matching Adaptive Teaching headings', async () => {
+    const templateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Adaptive Teaching / Differentiation</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr>
+          <w:p><w:r><w:t>Prior knowledge:</w:t></w:r></w:p>
+          <w:p><w:r><w:t></w:t></w:r></w:p>
+          <w:p><w:r><w:t>Working Towards Mastery (all):</w:t></w:r></w:p>
+          <w:p><w:r><w:t></w:t></w:r></w:p>
+          <w:p><w:r><w:t>Working At Mastery (most):</w:t></w:r></w:p>
+          <w:p><w:r><w:t></w:t></w:r></w:p>
+          <w:p><w:r><w:t>Mastery with Greater Depth (some):</w:t></w:r></w:p>
+          <w:p><w:r><w:t></w:t></w:r></w:p>
+          <w:p><w:r><w:t>Other adaptive teaching strategies:</w:t></w:r></w:p>
+          <w:p><w:r><w:t></w:t></w:r></w:p>
+          <w:p><w:r><w:t>Special Educational Needs (SEN registered), Learning Support (LS), Gifted &amp; Talented (G&amp;T):</w:t></w:r></w:p>
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+
+    const { outXml } = await fillXml(templateXml);
+    const adaptive = cellPlainText(valueCellXmlForLabel(outXml, 'Adaptive Teaching / Differentiation') ?? '');
+    const priorIdx = adaptive.indexOf('Prior knowledge:');
+    const particlesIdx = adaptive.indexOf('particles that are constantly in motion');
+    const towardsIdx = adaptive.indexOf('Working Towards Mastery');
+    const supportIdx = adaptive.indexOf('Provide annotated particle diagrams');
+    const senIdx = adaptive.indexOf('Special Educational Needs');
+    expect(particlesIdx).toBeGreaterThan(priorIdx);
+    expect(particlesIdx).toBeLessThan(towardsIdx);
+    expect(supportIdx).toBeGreaterThan(towardsIdx);
+    expect(supportIdx).toBeLessThan(senIdx);
+    expect(adaptive.indexOf('I can explain how particle motion')).toBeGreaterThan(
+      adaptive.indexOf('Working At Mastery'),
+    );
+    expect(adaptive.indexOf('Research sublimation examples')).toBeGreaterThan(
+      adaptive.indexOf('Mastery with Greater Depth'),
+    );
+  });
+
+  it('checks Word checkbox SDTs and seating boxes for Formal categories', async () => {
+    const box = (label: string) =>
+      `<w:p><w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/><w14:checkedState w14:val="2612" w14:font="MS Gothic"/><w14:uncheckedState w14:val="2610" w14:font="MS Gothic"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>\u2610</w:t></w:r></w:sdtContent></w:sdt><w:r><w:t xml:space="preserve"> ${label}</w:t></w:r></w:p>`;
+
+    const templateXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml">
+  <w:body>
+    <w:tbl>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Teaching Strategies</w:t></w:r></w:p></w:tc>
+        <w:tc>
+          <w:p><w:r><w:t>Please highlight all that apply:</w:t></w:r></w:p>
+          ${box('Scaffolding')}
+          ${box('Differentiated Learning')}
+          ${box('Group Work')}
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Seating Arrangements</w:t></w:r></w:p></w:tc>
+        <w:tc>
+          <w:p><w:r><w:t>Please highlight all that apply:</w:t></w:r></w:p>
+          ${box('Individual')}
+          ${box('Pairs')}
+          ${box('Groups (mixed levels)')}
+        </w:tc>
+      </w:tr>
+      <w:tr>
+        <w:tc><w:p><w:r><w:t>Formative Assessment Methods</w:t></w:r></w:p></w:tc>
+        <w:tc>
+          <w:p><w:r><w:t>Please highlight all that apply:</w:t></w:r></w:p>
+          ${box('Exit Tickets')}
+          ${box('Quiz')}
+        </w:tc>
+      </w:tr>
+    </w:tbl>
+  </w:body>
+</w:document>`;
+
+    const { outXml } = await fillXml(templateXml);
+    const strategies = valueCellXmlForLabel(outXml, 'Teaching Strategies') ?? '';
+    const seating = valueCellXmlForLabel(outXml, 'Seating Arrangements') ?? '';
+    const assessment = valueCellXmlForLabel(outXml, 'Formative Assessment Methods') ?? '';
+    expect(strategies).toMatch(/w14:checked w14:val="1"/);
+    expect(seating).toMatch(/w14:checked w14:val="1"/);
+    expect(seating).toContain('\u2612');
+    expect(assessment).toMatch(/w14:checked w14:val="1"/);
+    expect(getCheckboxSelections(normalizeLabel('Targeted Learning Skills'), sampleLesson)?.length).toBeGreaterThan(
+      0,
+    );
   });
 });
