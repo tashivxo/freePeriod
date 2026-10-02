@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 import type { LessonPlan } from '@/types';
+import { inferTeachingStrategies, parseActivityBlock } from '@/lib/export/docx';
+import { formatICanStatements } from '@/lib/export/lesson-document';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
@@ -116,6 +118,193 @@ function replaceTopLevelWordTags(
     lastEnd = segment.index + segment.xml.length;
   }
   return result + xml.slice(lastEnd);
+}
+
+function rebuildRow(rowMatch: string, cellMatches: XmlSegment[], cellsXml: string[]): string {
+  let result = '';
+  let lastEnd = 0;
+  cellMatches.forEach((m, i) => {
+    result += rowMatch.slice(lastEnd, m.index) + cellsXml[i];
+    lastEnd = m.index + m.xml.length;
+  });
+  return result + rowMatch.slice(lastEnd);
+}
+
+type ParsedActivityFields = ReturnType<typeof parseActivityBlock>;
+
+function isActivityHeaderRow(cellsXml: string[]): boolean {
+  if (cellsXml.length < 5) return false;
+  const texts = cellsXml.map((cell) => normalizeLabel(cellPlainText(cell)));
+  const hasTime = texts.some((text) => text === 'time' || text.startsWith('time '));
+  const hasTeacher = texts.some((text) => text.includes('teacher activity'));
+  const hasLearner = texts.some((text) => text.includes('learner activity'));
+  const hasFormative = texts.some((text) => text.includes('formative'));
+  const hasMaterials = texts.some((text) => text.includes('material') || text.includes('resource'));
+  return hasTime && hasTeacher && hasLearner && hasFormative && hasMaterials;
+}
+
+function isActivityInstructionRow(cellsXml: string[]): boolean {
+  if (cellsXml.length < 5) return false;
+  return /how are you unpacking/i.test(cellPlainText(cellsXml[1] ?? ''));
+}
+
+function activityPhaseKind(
+  teacherCellXml: string,
+): 'hook' | 'activation' | 'demonstration' | 'plenary' | null {
+  const label = normalizeLabel(cellPlainText(teacherCellXml).split('\n')[0] ?? '');
+  if (/do now|starter/.test(label)) return 'hook';
+  if (/activation|introducing new content/.test(label)) return 'activation';
+  if (/demonstration of learning|\bpractice\b/.test(label)) return 'demonstration';
+  if (/consolidation|plenary|\breview\b/.test(label)) return 'plenary';
+  return null;
+}
+
+function isActivityTableRow(cellsXml: string[]): boolean {
+  if (cellsXml.length < 5) return false;
+  return (
+    isActivityHeaderRow(cellsXml) ||
+    isActivityInstructionRow(cellsXml) ||
+    activityPhaseKind(cellsXml[1] ?? '') != null
+  );
+}
+
+function mergeParsedActivities(items: string[], fallbackTime: string): ParsedActivityFields | null {
+  const parsed = items
+    .map((item) => parseActivityBlock(item, fallbackTime))
+    .filter((item) => Boolean(item.teacher || item.learner || item.assessment || item.resources));
+  if (parsed.length === 0) return null;
+  const join = (values: string[]) =>
+    values
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join('\n\n');
+  return {
+    time: parsed.map((item) => item.time).find((value) => value.trim()) || fallbackTime,
+    teacher: join(parsed.map((item) => item.teacher)),
+    learner: join(parsed.map((item) => item.learner)),
+    assessment: join(parsed.map((item) => item.assessment)),
+    resources: join(parsed.map((item) => item.resources)),
+  };
+}
+
+function activitySourceForPhase(
+  kind: NonNullable<ReturnType<typeof activityPhaseKind>>,
+  content: LessonPlan['content'],
+): { items: string[]; fallbackTime: string; label: string } | null {
+  if (kind === 'hook') {
+    return content.hook ? { items: [content.hook], fallbackTime: '5 min', label: 'do now' } : null;
+  }
+  if (kind === 'activation') {
+    const item = content.mainActivities?.[0];
+    return item ? { items: [item], fallbackTime: '', label: 'activation' } : null;
+  }
+  if (kind === 'demonstration') {
+    const items = [
+      ...(content.mainActivities ?? []).slice(1),
+      ...(content.guidedPractice ?? []),
+      ...(content.independentPractice ?? []),
+    ].filter(Boolean);
+    if (items.length === 0) return null;
+    return { items, fallbackTime: '', label: 'demonstration of learning' };
+  }
+  return content.plenary
+    ? { items: [content.plenary], fallbackTime: '5 min', label: 'consolidation / review' }
+    : null;
+}
+
+function keepHeadingAndWriteBody(cellXml: string, body: string): string {
+  if (!body.trim()) return cellXml;
+  const paras = topLevelWordTags(cellXml, 'w:p');
+  if (paras.length === 0) return replaceCellParagraphs(cellXml, body);
+  const heading = paras[0].xml;
+  const bodyXml = buildParagraphsXml(heading, body);
+  const withoutParas = cellXml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, '');
+  return withoutParas.replace('</w:tc>', `${heading}${bodyXml}</w:tc>`);
+}
+
+function fillActivityPhaseRow(
+  cellsXml: string[],
+  parsed: ParsedActivityFields,
+  content: LessonPlan['content'],
+): string[] {
+  const formativePool = content.formativeAssessment ?? [];
+  const time = parsed.time.trim();
+  const teacher = parsed.teacher.trim();
+  const learner = parsed.learner.trim() || formatICanStatements(content.successCriteria) || '';
+  const assessment = parsed.assessment.trim() || formativePool[0] || '';
+  const resources = parsed.resources.trim() || DEFAULT_RESOURCES;
+
+  const next = [...cellsXml];
+  if (time) next[0] = replaceCellParagraphs(next[0], time);
+  if (teacher) next[1] = keepHeadingAndWriteBody(next[1], teacher);
+  if (learner) next[2] = replaceCellParagraphs(next[2], learner);
+  if (assessment) next[3] = replaceCellParagraphs(next[3], assessment);
+  if (resources) next[4] = replaceCellParagraphs(next[4], resources);
+  return next;
+}
+
+function isAdaptiveHeadingCell(cellXml: string): boolean {
+  const text = normalizeLabel(cellPlainText(cellXml));
+  return text.includes('working towards mastery') && (text.includes('prior knowledge') || text.includes('greater depth'));
+}
+
+function isAdaptiveLabelCell(cellXml: string): boolean {
+  const label = normalizeLabel(cellPlainText(cellXml).split('\n')[0] ?? '');
+  return (
+    label.includes('adaptive teaching') ||
+    label === 'differentiation' ||
+    label === 'differentiated instruction'
+  );
+}
+
+function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): string[] {
+  const text = normalizeLabel(heading);
+  if (text.startsWith('prior knowledge')) {
+    if (text.includes('working towards') || text.includes('greater depth')) return [];
+    return content.priorKnowledge ?? [];
+  }
+  if (text.includes('working towards mastery')) return content.differentiation?.support ?? [];
+  if (text.includes('working at mastery')) return content.successCriteria ?? [];
+  if (text.includes('greater depth')) return content.differentiation?.extension ?? [];
+  if (text.includes('other adaptive')) return content.realWorldConnections ?? [];
+  if (text.includes('sen') || text.includes('learning support') || text.includes('gifted')) {
+    return [
+      ...(content.differentiation?.support ?? []).map((item) => `SEN/LS: ${item}`),
+      ...(content.differentiation?.extension ?? []).map((item) => `G&T: ${item}`),
+    ];
+  }
+  return [];
+}
+
+function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']): string {
+  const paras = topLevelWordTags(cellXml, 'w:p');
+  if (paras.length === 0) return cellXml;
+
+  const insertions: Array<{ afterIndex: number; xml: string }> = [];
+  paras.forEach((para, index) => {
+    const heading = cellPlainText(para.xml);
+    if (!heading) return;
+    const items = adaptiveHeadingItems(heading, content);
+    if (items.length === 0) return;
+    const bullets = items.map((item) => `• ${item}`).join('\n');
+    insertions.push({ afterIndex: index, xml: buildParagraphsXml(para.xml, bullets) });
+  });
+  if (insertions.length === 0) return cellXml;
+
+  const insertionByIndex = new Map<number, string>();
+  for (const insertion of insertions) {
+    insertionByIndex.set(insertion.afterIndex, insertion.xml);
+  }
+
+  let result = '';
+  let lastEnd = 0;
+  paras.forEach((para, index) => {
+    result += cellXml.slice(lastEnd, para.index) + para.xml;
+    const extra = insertionByIndex.get(index);
+    if (extra) result += extra;
+    lastEnd = para.index + para.xml.length;
+  });
+  return result + cellXml.slice(lastEnd);
 }
 
 function stripTrailingParenthetical(text: string): string {
@@ -331,6 +520,74 @@ function highlightCheckboxCell(cellXml: string, selections: string[]): string {
   return replaceCellParagraphs(cellXml, lines.join('\n'));
 }
 
+function isCheckboxGridCell(cellXml: string): boolean {
+  return cellXml.includes('w14:checkbox') || cellXml.includes('\u2610') || isCheckboxValueCell(cellXml);
+}
+
+function setSdtCheckboxChecked(sdtXml: string): string {
+  return sdtXml
+    .replace(/<w14:checked w14:val="0"\s*\/>/g, '<w14:checked w14:val="1"/>')
+    .replace(/\u2610/g, '\u2612');
+}
+
+function checkParagraphIfSelected(
+  pXml: string,
+  selections: string[],
+): { xml: string; checked: boolean } {
+  const text = cellPlainText(pXml)
+    .replace(/[\u2610\u2611\u2612]/g, '')
+    .trim();
+  if (
+    !text ||
+    /^please highlight/i.test(text) ||
+    /^if [‘'"]other/i.test(text) ||
+    /^intended purpose/i.test(text) ||
+    /^purposeful use/i.test(text) ||
+    /^is a digital tool required/i.test(text)
+  ) {
+    return { xml: pXml, checked: false };
+  }
+  const hasBox = pXml.includes('w14:checkbox') || pXml.includes('\u2610');
+  if (!hasBox || !optionIsSelected(text, selections)) {
+    return { xml: pXml, checked: false };
+  }
+
+  let xml = pXml;
+  if (xml.includes('<w:sdt>')) {
+    xml = replaceTopLevelWordTags(xml, 'w:sdt', (sdt) =>
+      sdt.includes('w14:checkbox') ? setSdtCheckboxChecked(sdt) : sdt,
+    );
+  }
+  xml = xml.replace(/\u2610/g, '\u2612');
+  return { xml, checked: true };
+}
+
+function fillCheckboxGridCell(
+  cellXml: string,
+  selections: string[],
+): { xml: string; checkedCount: number } {
+  if (selections.length === 0) return { xml: cellXml, checkedCount: 0 };
+
+  const hasStructuredBoxes = cellXml.includes('w14:checkbox') || cellXml.includes('\u2610');
+  if (hasStructuredBoxes) {
+    let checkedCount = 0;
+    let xml = replaceTopLevelWordTags(cellXml, 'w:p', (pXml) => {
+      const result = checkParagraphIfSelected(pXml, selections);
+      if (result.checked) checkedCount += 1;
+      return result.xml;
+    });
+    if (/is a digital tool required/i.test(cellPlainText(cellXml))) {
+      xml = xml.replace(/Yes \/ No/g, 'Yes');
+    }
+    return { xml, checkedCount };
+  }
+
+  if (isCheckboxValueCell(cellXml)) {
+    return { xml: highlightCheckboxCell(cellXml, selections), checkedCount: 1 };
+  }
+  return { xml: cellXml, checkedCount: 0 };
+}
+
 /** Appends text as new paragraphs at the end of a cell that already contains a label
  * (e.g. "Activities"), for templates where the label and its value share one wide cell
  * instead of the value living in a separate adjacent cell. */
@@ -484,6 +741,68 @@ function matchSeatingSelections(lesson: LessonPlan): string[] {
   return ['Pairs', 'Groups (mixed levels)'];
 }
 
+function matchTargetedLearningSkills(lesson: LessonPlan): string[] {
+  const blob = lessonTextBlob(lesson);
+  const matched: string[] = [];
+  if (/collaborat|communication|pair|group|interact/.test(blob)) {
+    matched.push('Interactions, collaboration and communication skills');
+  }
+  if (/critical|analy|evaluat/.test(blob)) matched.push('Critical Thinking');
+  if (/problem|solve|design/.test(blob)) matched.push('Problem Solving');
+  if (/technolog|digital|projector|phet|whiteboard/.test(blob)) {
+    matched.push('Use of learning technologies');
+  }
+  if (/connect/.test(blob)) matched.push('Making connections between areas of learning');
+  if (/real world|world around|application/.test(blob)) {
+    matched.push('Application of learning to the world');
+  }
+  if (/research|enquir|investigat/.test(blob)) matched.push('Enquiry/Research');
+  if (matched.length > 0) return [...new Set(matched)];
+  return ['Critical Thinking', 'Making connections between areas of learning'];
+}
+
+function matchFormativeAssessmentMethods(lesson: LessonPlan): string[] {
+  const haystack = lessonTextBlob(lesson);
+  const matched: string[] = [];
+  if (/think\s*\/\s*pair|pair share|think.pair/.test(haystack)) matched.push('Think/Pair/Share');
+  if (/self-eval|self eval/.test(haystack)) matched.push('Student Self-evaluation');
+  if (/peer/.test(haystack)) matched.push('Peer-assessment');
+  if (/verbal|oral feedback/.test(haystack)) matched.push('Verbal Feedback');
+  if (/written feedback/.test(haystack)) matched.push('Written Feedback');
+  if (/\bquiz/.test(haystack)) matched.push('Quiz');
+  if (/journal/.test(haystack)) matched.push('Learning Journals');
+  if (/reflection log/.test(haystack)) matched.push('Reflection Logs');
+  if (/exit ticket/.test(haystack)) matched.push('Exit Tickets');
+  if (/traffic light/.test(haystack)) matched.push('Traffic Light Cards');
+  if (/observ/.test(haystack)) matched.push('Observations');
+  if (matched.length > 0) return matched;
+  return ['Exit Tickets', 'Verbal Feedback'];
+}
+
+function lessonUsesDigitalTools(lesson: LessonPlan): boolean {
+  return /projector|phet|digital|chromebook|tablet|platform|online|simulation|kahoot|quizlet|powerpoint|slides|video|interactive|whiteboard|computer/.test(
+    lessonTextBlob(lesson),
+  );
+}
+
+function matchDigitalPedagogy(lesson: LessonPlan): string[] {
+  if (!lessonUsesDigitalTools(lesson)) return [];
+  return [
+    'Increase engagement and active participation',
+    'Clearly linked to the lesson objective',
+    'Integrated into the activity',
+  ];
+}
+
+function matchInnovationSelections(lesson: LessonPlan): string[] {
+  const extra: string[] = [];
+  const blob = lessonTextBlob(lesson);
+  if (/technolog|digital|projector|whiteboard/.test(blob)) extra.push('Use of learning technologies');
+  if (/creat|innovat|design/.test(blob)) extra.push('Creativity and innovation');
+  if (/\bai\b/.test(blob)) extra.push('AI');
+  return [...new Set([...matchTwentyFirstCenturySelections(lesson), ...extra])];
+}
+
 function deriveFiveEPhases(content: LessonPlan['content']): string {
   const phases: string[] = [];
   if (content.hook) phases.push('Engage');
@@ -527,6 +846,15 @@ type CheckboxFieldConfig = {
   getSelections: (lesson: LessonPlan) => string[];
 };
 
+function checkboxLabelsMatch(cellLabel: string, candidate: string): boolean {
+  const a = cellLabel;
+  const b = normalizeLabel(candidate);
+  if (a === b) return true;
+  if (b.length >= 12 && a.includes(b)) return true;
+  if (a.length >= 12 && b.includes(a)) return true;
+  return false;
+}
+
 const CHECKBOX_FIELDS: CheckboxFieldConfig[] = [
   {
     labels: [
@@ -541,16 +869,42 @@ const CHECKBOX_FIELDS: CheckboxFieldConfig[] = [
     getSelections: matchScientificMethodSelections,
   },
   {
-    labels: ['Higher-Order Thinking Focus', 'Higher Order Thinking Focus', 'Higher-Order Thinking'],
+    labels: [
+      'Higher-Order Thinking Focus',
+      'Higher Order Thinking Focus',
+      'Higher-Order Thinking',
+      'Higher Order Thinking Skills',
+    ],
     getSelections: (lesson) => inferHigherOrderThinking(lesson.content.objectives),
   },
   {
-    labels: ['21st Century Skills / Global Competencies', '21st Century Skills', 'Global Competencies'],
-    getSelections: matchTwentyFirstCenturySelections,
+    labels: [
+      'Innovation / 21st Century Skills / Global Competencies',
+      '21st Century Skills / Global Competencies',
+      '21st Century Skills',
+      'Global Competencies',
+    ],
+    getSelections: matchInnovationSelections,
   },
   {
-    labels: ['Cross-Curricular Connections'],
+    labels: ['Cross-Curricular Connections', 'Cross Curricular Links'],
     getSelections: matchCrossCurricularSelections,
+  },
+  {
+    labels: ['Targeted Learning Skills'],
+    getSelections: matchTargetedLearningSkills,
+  },
+  {
+    labels: ['Teaching Strategies'],
+    getSelections: (lesson) => inferTeachingStrategies(lesson.content),
+  },
+  {
+    labels: ['Formative Assessment Methods'],
+    getSelections: matchFormativeAssessmentMethods,
+  },
+  {
+    labels: ['Digital Pedagogy & Tool Integration', 'Digital Pedagogy'],
+    getSelections: matchDigitalPedagogy,
   },
   {
     labels: ['Seating Arrangements'],
@@ -560,7 +914,7 @@ const CHECKBOX_FIELDS: CheckboxFieldConfig[] = [
 
 function getCheckboxSelections(label: string, lesson: LessonPlan): string[] | null {
   const config = CHECKBOX_FIELDS.find((field) =>
-    field.labels.some((candidate) => normalizeLabel(candidate) === label),
+    field.labels.some((candidate) => checkboxLabelsMatch(label, candidate)),
   );
   return config ? config.getSelections(lesson) : null;
 }
@@ -746,19 +1100,48 @@ export async function fillGenericDocxTemplate(
       const cellMatches = topLevelWordTags(rowMatch, 'w:tc');
       if (cellMatches.length < 1) return rowMatch;
 
-      const cellsXml = cellMatches.map((m) => m.xml);
+      let cellsXml = cellMatches.map((m) => m.xml);
+
+      if (isActivityTableRow(cellsXml)) {
+        if (isActivityHeaderRow(cellsXml) || isActivityInstructionRow(cellsXml)) {
+          return rowMatch;
+        }
+        const kind = activityPhaseKind(cellsXml[1] ?? '');
+        if (!kind) return rowMatch;
+        const source = activitySourceForPhase(kind, lesson.content);
+        if (!source) return rowMatch;
+        const parsed = mergeParsedActivities(source.items, source.fallbackTime);
+        if (!parsed) return rowMatch;
+        cellsXml = fillActivityPhaseRow(cellsXml, parsed, lesson.content);
+        filledCount += 1;
+        matchedLabels.push(source.label);
+        return rebuildRow(rowMatch, cellMatches, cellsXml);
+      }
+
       let changed = false;
 
       for (let i = 0; i < cellsXml.length; i++) {
-        const checkboxSelections = getCheckboxSelectionsForCell(cellsXml[i], lesson);
         const valueCell = cellsXml[i + 1];
-        if (checkboxSelections && valueCell && isCheckboxValueCell(valueCell)) {
-          cellsXml[i + 1] = highlightCheckboxCell(valueCell, checkboxSelections);
+
+        if (isAdaptiveLabelCell(cellsXml[i]) && valueCell && isAdaptiveHeadingCell(valueCell)) {
+          cellsXml[i + 1] = fillAdaptiveHeadingCell(valueCell, lesson.content);
+          changed = true;
+          filledCount += 1;
+          matchedLabels.push('adaptive teaching / differentiation');
+          continue;
+        }
+
+        const checkboxSelections = getCheckboxSelectionsForCell(cellsXml[i], lesson);
+        if (checkboxSelections && valueCell && isCheckboxGridCell(valueCell)) {
+          const filled = fillCheckboxGridCell(valueCell, checkboxSelections);
+          cellsXml[i + 1] = filled.xml;
           changed = true;
           filledCount += 1;
           matchedLabels.push(labelCandidatesFromCell(cellsXml[i])[0] ?? '');
           continue;
         }
+
+        if (isAdaptiveHeadingCell(cellsXml[i])) continue;
 
         const mapped = lookupMappedField(cellsXml[i], labelMap);
         if (!mapped) continue;
@@ -793,15 +1176,7 @@ export async function fillGenericDocxTemplate(
       }
 
       if (!changed) return rowMatch;
-
-      let result = '';
-      let lastEnd = 0;
-      cellMatches.forEach((m, i) => {
-        result += rowMatch.slice(lastEnd, m.index) + cellsXml[i];
-        lastEnd = m.index + m.xml.length;
-      });
-      result += rowMatch.slice(lastEnd);
-      return result;
+      return rebuildRow(rowMatch, cellMatches, cellsXml);
     }),
   );
 
