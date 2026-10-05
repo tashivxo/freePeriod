@@ -444,6 +444,7 @@ html[lang="zh-Hans"] {
   opacity: 0;
   filter: blur(var(--icon-swap-blur));
   transform: scale(var(--icon-swap-start-scale));
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
