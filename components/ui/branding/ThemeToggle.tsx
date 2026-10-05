@@ -54,22 +54,53 @@ export function ThemeToggle({
     const button = internalButtonRef.current;
     if (!button) return;
 
+    const visibleRef = isDark ? sunRef : moonRef;
+    const hiddenRef = isDark ? moonRef : sunRef;
+
+    const startVisible = () => {
+      hiddenRef.current?.stopAnimation();
+      visibleRef.current?.startAnimation();
+    };
+
+    const stopAll = () => {
+      sunRef.current?.stopAnimation();
+      moonRef.current?.stopAnimation();
+    };
+
     const handleFocusIn = () => {
-      (isDark ? sunRef : moonRef).current?.startAnimation();
+      startVisible();
     };
 
     const handleFocusOut = (event: FocusEvent) => {
       if (!button.contains(event.relatedTarget as Node | null)) {
-        sunRef.current?.stopAnimation();
-        moonRef.current?.stopAnimation();
+        stopAll();
       }
+    };
+
+    const handleMouseEnter = () => {
+      startVisible();
+    };
+
+    const handleMouseLeave = () => {
+      stopAll();
     };
 
     button.addEventListener('focusin', handleFocusIn);
     button.addEventListener('focusout', handleFocusOut);
+    button.addEventListener('mouseenter', handleMouseEnter);
+    button.addEventListener('mouseleave', handleMouseLeave);
+
+    // Theme flips while the pointer is still over the control (settings click).
+    // Re-run the visible icon so the newly shown sun/moon does not stay static.
+    if (button.matches(':hover') || button.contains(document.activeElement)) {
+      startVisible();
+    }
+
     return () => {
       button.removeEventListener('focusin', handleFocusIn);
       button.removeEventListener('focusout', handleFocusOut);
+      button.removeEventListener('mouseenter', handleMouseEnter);
+      button.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [animationDisabled, isDark, moonRef, sunRef]);
 
@@ -95,7 +126,7 @@ export function ThemeToggle({
       style={style}
     >
       <span
-        className="t-icon-swap inline-flex shrink-0 items-center justify-center"
+        className="t-icon-swap pointer-events-none inline-flex shrink-0 items-center justify-center"
         data-state={isDark ? 'b' : 'a'}
         aria-hidden
       >
