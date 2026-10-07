@@ -1,4 +1,5 @@
 import {
+  FILLABLE_TEMPLATE_ACCEPT,
   getTemplateFileRejection,
   getTemplateUploadError,
   isFillableTemplatePath,
@@ -6,31 +7,44 @@ import {
 } from '@/lib/lesson/template-path';
 
 describe('template-path intake helpers', () => {
-  it('accepts fillable extensions case-insensitively', () => {
+  it('accepts fillable extensions case-insensitively, including PDF', () => {
     expect(isFillableTemplatePath('plan.DOCX')).toBe(true);
     expect(isFillableTemplatePath('user/template/plan.xlsx')).toBe(true);
     expect(isFillableTemplatePath('plan.xls')).toBe(true);
+    expect(isFillableTemplatePath('pr15-test.pdf')).toBe(true);
+    expect(isFillableTemplatePath('user-1/template/plan.PDF')).toBe(true);
   });
 
-  it('rejects PDF and other non-fillable names', () => {
-    expect(isFillableTemplatePath('pr15-test.pdf')).toBe(false);
+  it('exposes PDF in the file-picker accept list', () => {
+    expect(FILLABLE_TEMPLATE_ACCEPT).toBe('.pdf,.docx,.xlsx,.xls');
+  });
+
+  it('rejects other non-fillable names', () => {
     expect(isFillableTemplatePath('notes.txt')).toBe(false);
-    expect(getTemplateUploadError('pr15-test.pdf')).toBe(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    expect(isFillableTemplatePath('scan.png')).toBe(false);
+    expect(getTemplateUploadError('notes.txt')).toBe(
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
     );
   });
 
-  it('rejects PDFs by MIME even when the filename is missing an extension', () => {
+  it('accepts PDFs by MIME even when the filename is missing an extension', () => {
+    expect(getTemplateFileRejection({ name: 'pr15-test', type: 'application/pdf' })).toBeNull();
+  });
+
+  it('accepts a PDF named like a template even if MIME is empty', () => {
+    expect(getTemplateFileRejection({ name: 'pr15-test.pdf', type: '' })).toBeNull();
+  });
+
+  it('still rejects images and plain text as templates', () => {
     expect(
-      getTemplateFileRejection({ name: 'pr15-test', type: 'application/pdf' }),
+      getTemplateFileRejection({ name: 'scan.png', type: 'image/png' }),
     ).toBe(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .png.',
     );
-  });
-
-  it('rejects a PDF named like a template even if MIME is empty', () => {
-    expect(getTemplateFileRejection({ name: 'pr15-test.pdf', type: '' })).toBe(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    expect(
+      getTemplateFileRejection({ name: 'notes.txt', type: 'text/plain' }),
+    ).toBe(
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
     );
   });
 

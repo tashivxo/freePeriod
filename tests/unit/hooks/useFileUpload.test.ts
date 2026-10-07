@@ -112,15 +112,17 @@ describe('useFileUpload', () => {
     expect(result.current.storagePath).toMatch(/template\/blank-/);
   });
 
-  it.each(['blank.DOCX', 'blank.XLSX', 'blank.XLS'])(
+  it.each(['blank.DOCX', 'blank.XLSX', 'blank.XLS', 'blank.PDF'])(
     'accepts a case-insensitive %s template extension',
     async (name) => {
       const { result } = renderHook(() =>
-        useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+        useFileUpload({ uploadType: 'template', accept: '.pdf,.docx,.xlsx,.xls' }),
       );
 
       await act(async () => {
-        await result.current.handleFile(templateFile(name));
+        await result.current.handleFile(
+          name.toLowerCase().endsWith('.pdf') ? pdfFile(name) : templateFile(name),
+        );
       });
 
       expect(result.current.phase).toBe('ready');
@@ -130,29 +132,26 @@ describe('useFileUpload', () => {
     },
   );
 
-  it('rejects a PDF template before upload or parsing starts', async () => {
+  it('uploads a PDF template instead of rejecting it at intake', async () => {
     const { result } = renderHook(() =>
-      useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+      useFileUpload({ uploadType: 'template', accept: '.pdf,.docx,.xlsx,.xls' }),
     );
 
     await act(async () => {
       await result.current.handleFile(pdfFile('pr15-test.pdf'));
     });
 
-    expect(result.current.phase).toBe('error');
-    expect(result.current.error).toBe(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
-    );
-    expect(result.current.file).toBeNull();
-    expect(result.current.isUploading).toBe(false);
-    expect(mockUpload).not.toHaveBeenCalled();
-    expect(mockInsertSingle).not.toHaveBeenCalled();
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(result.current.phase).toBe('ready');
+    expect(result.current.error).toBeNull();
+    expect(result.current.file?.name).toBe('pr15-test.pdf');
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(mockInsertSingle).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects a PDF template by MIME even when the filename has no extension', async () => {
+  it('accepts a PDF template by MIME even when the filename has no extension', async () => {
     const { result } = renderHook(() =>
-      useFileUpload({ uploadType: 'template', accept: '.docx,.xlsx,.xls' }),
+      useFileUpload({ uploadType: 'template', accept: '.pdf,.docx,.xlsx,.xls' }),
     );
 
     await act(async () => {
@@ -161,9 +160,26 @@ describe('useFileUpload', () => {
       );
     });
 
+    expect(result.current.phase).toBe('ready');
+    expect(result.current.error).toBeNull();
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('still rejects a plain-text template before upload or parsing starts', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'template', accept: '.pdf,.docx,.xlsx,.xls' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(
+        new File(['hello'], 'notes.txt', { type: 'text/plain' }),
+      );
+    });
+
     expect(result.current.phase).toBe('error');
     expect(result.current.error).toBe(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
     );
     expect(result.current.file).toBeNull();
     expect(result.current.isUploading).toBe(false);

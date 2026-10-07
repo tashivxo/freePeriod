@@ -160,19 +160,26 @@ describe('PATCH /api/lessons/[id]/template', () => {
     await expect(response.json()).resolves.toEqual({ error: 'Invalid template path' });
   });
 
-  it('rejects PDF and other non-fillable template uploads at intake', async () => {
-    const pdfResponse = await patchRequest('user-1/template/plan.pdf');
-
-    expect(pdfResponse.status).toBe(400);
-    await expect(pdfResponse.json()).resolves.toEqual({
-      error: 'Template must be a DOCX or XLSX file',
+  it('accepts a PDF template path at intake', async () => {
+    lessonUpdateSingle.mockResolvedValue({
+      data: { id: 'lesson-1', template_path: 'user-1/template/plan.pdf' },
+      error: null,
     });
 
+    const pdfResponse = await patchRequest('user-1/template/plan.pdf');
+
+    expect(pdfResponse.status).toBe(200);
+    await expect(pdfResponse.json()).resolves.toEqual({
+      lesson: { id: 'lesson-1', template_path: 'user-1/template/plan.pdf' },
+    });
+  });
+
+  it('rejects other non-fillable template uploads at intake', async () => {
     const otherResponse = await patchRequest('user-1/template/plan.pages');
 
     expect(otherResponse.status).toBe(400);
     await expect(otherResponse.json()).resolves.toEqual({
-      error: 'Template must be a DOCX or XLSX file',
+      error: 'Template must be a PDF, DOCX, or XLSX file',
     });
   });
 

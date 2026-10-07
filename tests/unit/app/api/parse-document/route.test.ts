@@ -91,7 +91,13 @@ describe('POST /api/parse-document', () => {
     expect(mockAdminStorageDownload).not.toHaveBeenCalled();
   });
 
-  it('rejects a PDF template before downloading or parsing it', async () => {
+  it('parses a PDF template without requiring extracted text', async () => {
+    mockParseUploadedFile.mockResolvedValue({
+      text: '',
+      type: 'pdf',
+      metadata: { pages: 1 },
+    });
+
     const res = await POST(
       request({
         storagePath: 'user-1/template/pr15-test.pdf',
@@ -100,17 +106,25 @@ describe('POST /api/parse-document', () => {
       }),
     );
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
-      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+      text: '',
+      type: 'pdf',
+      metadata: { pages: 1 },
+      preview: '',
     });
-    expect(mockCreateAdminClient).not.toHaveBeenCalled();
-    expect(mockAdminStorageDownload).not.toHaveBeenCalled();
-    expect(mockUserStorageDownload).not.toHaveBeenCalled();
-    expect(mockParseUploadedFile).not.toHaveBeenCalled();
+    expect(mockCreateAdminClient).toHaveBeenCalledTimes(1);
+    expect(mockAdminStorageDownload).toHaveBeenCalledWith('user-1/template/pr15-test.pdf');
+    expect(mockParseUploadedFile).toHaveBeenCalled();
   });
 
-  it('rejects a PDF in a template storage path even without uploadType', async () => {
+  it('parses a PDF in a template storage path even without uploadType', async () => {
+    mockParseUploadedFile.mockResolvedValue({
+      text: 'Lesson Title',
+      type: 'pdf',
+      metadata: { pages: 1 },
+    });
+
     const res = await POST(
       request({
         storagePath: 'user-1/template/pr15-test.pdf',
@@ -118,9 +132,24 @@ describe('POST /api/parse-document', () => {
       }),
     );
 
+    expect(res.status).toBe(200);
+    expect(mockAdminStorageDownload).toHaveBeenCalledWith('user-1/template/pr15-test.pdf');
+    expect(mockParseUploadedFile).toHaveBeenCalled();
+  });
+
+  it('rejects a non-fillable template before downloading or parsing it', async () => {
+    const res = await POST(
+      request({
+        storagePath: 'user-1/template/notes.txt',
+        uploadId: 'upload-template',
+        uploadType: 'template',
+      }),
+    );
+
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({
-      error: 'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+      error:
+        'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
     });
     expect(mockCreateAdminClient).not.toHaveBeenCalled();
     expect(mockAdminStorageDownload).not.toHaveBeenCalled();
