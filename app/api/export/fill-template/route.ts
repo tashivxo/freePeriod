@@ -18,8 +18,6 @@ import {
 } from '@/lib/export/fill-template-result';
 import type { LessonPlan, LessonSection } from '@/types';
 
-export { buildTemplateData };
-
 const DOCX_CONTENT_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const XLSX_CONTENT_TYPE =

@@ -51,7 +51,8 @@ jest.mock('xlsx', () => ({
   write: jest.fn(),
 }));
 
-import { POST, buildTemplateData } from '@/app/api/export/fill-template/route';
+import { POST } from '@/app/api/export/fill-template/route';
+import { buildTemplateData } from '@/lib/lesson/template-data';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
