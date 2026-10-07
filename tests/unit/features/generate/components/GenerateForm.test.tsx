@@ -210,10 +210,10 @@ describe('GenerateForm', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();
     const input = screen.getByLabelText(/upload lesson plan template/i);
-    expect(input).toHaveAttribute('accept', '.docx,.xlsx,.xls');
+    expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.xls');
   });
 
-  it('rejects a PDF template immediately without reading or waiting for upload', async () => {
+  it('accepts a PDF template and shows it as uploaded', async () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     const file = new File(['%PDF-1.7'], 'pr15-test.pdf', { type: 'application/pdf' });
 
@@ -221,10 +221,27 @@ describe('GenerateForm', () => {
       target: { files: [file] },
     });
 
+    await waitFor(() => {
+      expect(screen.getByText('pr15-test.pdf')).toBeInTheDocument();
+      expect(screen.getByText(/uploaded\. ready to generate/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(mockUpload).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it('still rejects a plain-text template immediately without reading or waiting for upload', async () => {
+    render(<GenerateForm onSubmit={onSubmit} />);
+    const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
+
+    fireEvent.change(screen.getByLabelText(/upload lesson plan template/i), {
+      target: { files: [file] },
+    });
+
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
     );
-    expect(screen.queryByText(/pr15-test\.pdf/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/notes\.txt/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /waiting for upload/i })).not.toBeInTheDocument();
     expect(mockUpload).not.toHaveBeenCalled();

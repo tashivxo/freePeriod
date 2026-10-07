@@ -13,7 +13,7 @@ import { XIcon } from '@/components/ui/icons/x';
 import { Button } from '@/components/ui/Button';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
-import { getTemplateFileRejection } from '@/lib/lesson/template-path';
+import { FILLABLE_TEMPLATE_ACCEPT, getTemplateFileRejection } from '@/lib/lesson/template-path';
 import { cn } from '@/lib/utils';
 import { useZenMode } from '@/providers/zen-mode';
 import {
@@ -73,7 +73,7 @@ export function FilledTemplateChoiceDialog({
 
   const { storagePath, isUploading, error: uploadError, handleFile } = useFileUpload({
     uploadType: 'template',
-    accept: '.docx,.xlsx,.xls',
+    accept: FILLABLE_TEMPLATE_ACCEPT,
   });
 
   useEffect(() => {
@@ -253,7 +253,7 @@ export function FilledTemplateChoiceDialog({
                   <input
                     id={inputId}
                     type="file"
-                    accept=".docx,.xlsx,.xls"
+                    accept={FILLABLE_TEMPLATE_ACCEPT}
                     className="sr-only"
                     onChange={(e) => {
                       const selected = e.target.files?.[0];

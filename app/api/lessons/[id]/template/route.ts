@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   if (!isFillableTemplatePath(templatePath)) {
     return NextResponse.json(
-      { error: 'Template must be a DOCX or XLSX file' },
+      { error: 'Template must be a PDF, DOCX, or XLSX file' },
       { status: 400 },
     );
   }

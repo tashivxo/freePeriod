@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { requiresExtractedText } from '@/lib/parse/types';
-import { getTemplateFileRejection } from '@/lib/lesson/template-path';
+import { getTemplateFileRejection, isPdfTemplateMime } from '@/lib/lesson/template-path';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -118,7 +118,9 @@ export function useFileUpload({
       const accepted = accept.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
       const nameParts = incoming.name.split('.');
       const ext = nameParts.length > 1 ? `.${nameParts.pop()!.toLowerCase()}` : '';
-      if (!accepted.includes(ext)) {
+      const matchesAccept =
+        accepted.includes(ext) || (accepted.includes('.pdf') && isPdfTemplateMime(incoming.type));
+      if (!matchesAccept) {
         setPhase('error');
         setError(
           `Only ${accepted.join(', ')} files are accepted. You uploaded a ${ext || 'unknown'} file.`,

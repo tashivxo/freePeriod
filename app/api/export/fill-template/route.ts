@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { contentDispositionAttachment } from '@/lib/export/content-disposition';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
+import { fillGenericPdfTemplate } from '@/lib/export/fill-generic-pdf';
 import { mapTemplateExportError } from '@/lib/export/map-error';
 import {
   TEMPLATE_UNFILLED_CODE,
@@ -17,12 +18,11 @@ import {
 } from '@/lib/export/fill-template-result';
 import type { LessonPlan, LessonSection } from '@/types';
 
-export { buildTemplateData };
-
 const DOCX_CONTENT_TYPE =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const XLSX_CONTENT_TYPE =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const PDF_CONTENT_TYPE = 'application/pdf';
 
 function unfilledTemplateResponse() {
   return NextResponse.json(
@@ -164,10 +164,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (ext === 'pdf') {
-    return NextResponse.json(
-      { error: 'PDF template download is not supported. Upload a DOCX or XLSX template instead.' },
-      { status: 400 },
-    );
+    const result = await fillGenericPdfTemplate(templateBuffer, {
+      ...lesson,
+      content: lesson.content as LessonSection,
+    } as LessonPlan);
+    if (!isMeaningfulFill(result.filledCount, result.matchedLabels)) {
+      return unfilledTemplateResponse();
+    }
+    return filledFileResponse(result.buffer, filename, PDF_CONTENT_TYPE);
   }
 
     return NextResponse.json({ error: 'Unsupported template format' }, { status: 400 });

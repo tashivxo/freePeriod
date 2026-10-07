@@ -46,11 +46,11 @@ describe('DocumentUploadZone template intake', () => {
     });
   });
 
-  it('rejects a PDF before reading, uploading, or marking the parent busy', async () => {
+  it('accepts a PDF template and uploads it', async () => {
     render(
       <DocumentUploadZone
         label="Upload lesson plan template"
-        accept=".docx,.xlsx,.xls"
+        accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
         onRemove={onRemove}
@@ -63,10 +63,37 @@ describe('DocumentUploadZone template intake', () => {
       target: { files: [file] },
     });
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a .pdf.',
+    await waitFor(() => {
+      expect(screen.getByText('pr15-test.pdf')).toBeInTheDocument();
+      expect(screen.getByText(/uploaded\. ready to generate/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(mockUpload).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalled();
+    expect(onUploadComplete).toHaveBeenCalled();
+  });
+
+  it('still rejects a plain-text file before reading, uploading, or marking the parent busy', async () => {
+    render(
+      <DocumentUploadZone
+        label="Upload lesson plan template"
+        accept=".pdf,.docx,.xlsx,.xls"
+        uploadType="template"
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+        onBusyChange={onBusyChange}
+      />,
     );
-    expect(screen.queryByText(/pr15-test\.pdf/i)).not.toBeInTheDocument();
+
+    const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
+    fireEvent.change(screen.getByLabelText(/upload lesson plan template/i), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
+    );
+    expect(screen.queryByText(/notes\.txt/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();
     expect(onBusyChange).not.toHaveBeenCalledWith(true);
     expect(mockUpload).not.toHaveBeenCalled();
@@ -78,7 +105,7 @@ describe('DocumentUploadZone template intake', () => {
     render(
       <DocumentUploadZone
         label="Upload lesson plan template"
-        accept=".docx,.xlsx,.xls"
+        accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
         onRemove={onRemove}

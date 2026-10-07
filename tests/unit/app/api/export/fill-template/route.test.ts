@@ -5,6 +5,7 @@ const mockGetUser = jest.fn();
 const mockLessonSingle = jest.fn();
 const mockStorageDownload = jest.fn();
 const mockFillGeneric = jest.fn();
+const mockFillPdf = jest.fn();
 const mockCreateReport = jest.fn();
 
 jest.mock('@/lib/supabase/server', () => ({
@@ -36,6 +37,10 @@ jest.mock('@/lib/export/fill-generic-template', () => ({
   fillGenericDocxTemplate: (...args: unknown[]) => mockFillGeneric(...args),
 }));
 
+jest.mock('@/lib/export/fill-generic-pdf', () => ({
+  fillGenericPdfTemplate: (...args: unknown[]) => mockFillPdf(...args),
+}));
+
 jest.mock('docx-templates', () => ({
   __esModule: true,
   default: (...args: unknown[]) => mockCreateReport(...args),
@@ -46,7 +51,8 @@ jest.mock('xlsx', () => ({
   write: jest.fn(),
 }));
 
-import { POST, buildTemplateData } from '@/app/api/export/fill-template/route';
+import { POST } from '@/app/api/export/fill-template/route';
+import { buildTemplateData } from '@/lib/lesson/template-data';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
@@ -312,5 +318,46 @@ describe('POST /api/export/fill-template', () => {
     const bytes = Buffer.from(await response.arrayBuffer());
     expect(bytes.subarray(0, 2).toString('utf8')).toBe('PK');
     expect(bytes.equals(filledBuffer)).toBe(true);
+  });
+
+  it('returns the filled PDF when AcroForm fields map to lesson content', async () => {
+    lessonRow('user-1/template/plan.pdf');
+    const templateBuffer = Buffer.from('%PDF-template');
+    const filledBuffer = Buffer.from('%PDF-filled');
+    mockDownloadedBuffer(templateBuffer);
+    mockFillPdf.mockResolvedValue({
+      buffer: filledBuffer,
+      filledCount: 2,
+      matchedLabels: ['objectives', 'hook'],
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/pdf');
+    expect(response.headers.get('Content-Disposition')).toContain('Story Elements-filled.pdf');
+    expect(mockFillPdf).toHaveBeenCalled();
+    const bytes = Buffer.from(await response.arrayBuffer());
+    expect(bytes.equals(filledBuffer)).toBe(true);
+  });
+
+  it('returns 422 when a PDF template has no mappable form fields', async () => {
+    lessonRow('user-1/template/plan.pdf');
+    const templateBuffer = Buffer.from('%PDF-template');
+    mockDownloadedBuffer(templateBuffer);
+    mockFillPdf.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: TEMPLATE_UNFILLED_ERROR,
+      code: TEMPLATE_UNFILLED_CODE,
+    });
+    expect(mockFillPdf).toHaveBeenCalled();
   });
 });

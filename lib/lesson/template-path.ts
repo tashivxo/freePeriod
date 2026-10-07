@@ -1,6 +1,6 @@
-export const FILLABLE_TEMPLATE_ACCEPT = '.docx,.xlsx,.xls';
+export const FILLABLE_TEMPLATE_ACCEPT = '.pdf,.docx,.xlsx,.xls';
 
-const FILLABLE_TEMPLATE_EXTENSIONS = new Set(['docx', 'xlsx', 'xls']);
+const FILLABLE_TEMPLATE_EXTENSIONS = new Set(['pdf', 'docx', 'xlsx', 'xls']);
 const PDF_MIME_TYPES = new Set(['application/pdf', 'application/x-pdf']);
 
 export type TemplateFileLike = {
@@ -25,6 +25,11 @@ export function isTemplateStoragePath(storagePath: string | null | undefined): b
   return /(?:^|\/)template\//i.test(storagePath?.trim() ?? '');
 }
 
+export function isPdfTemplateMime(mimeType: string | null | undefined): boolean {
+  const mime = mimeType?.trim().toLowerCase() ?? '';
+  return PDF_MIME_TYPES.has(mime) || mime.includes('pdf');
+}
+
 export function getTemplateUploadError(
   templatePath: string,
   mimeType?: string | null,
@@ -33,29 +38,27 @@ export function getTemplateUploadError(
   const mime = mimeType?.trim().toLowerCase() ?? '';
   const uploaded = ext
     ? `.${ext}`
-    : PDF_MIME_TYPES.has(mime) || mime.includes('pdf')
+    : isPdfTemplateMime(mime)
       ? '.pdf'
       : 'file';
-  return `Lesson plan templates need to be .docx, .xlsx, or .xls so we can fill them in. You uploaded a ${uploaded}.`;
+  return `Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a ${uploaded}.`;
 }
 
 function isNonFillableTemplateMime(mimeType: string | null | undefined): boolean {
   const mime = mimeType?.trim().toLowerCase() ?? '';
-  if (!mime) return false;
-  return (
-    PDF_MIME_TYPES.has(mime) ||
-    mime.includes('pdf') ||
-    mime.startsWith('image/') ||
-    mime.startsWith('text/')
-  );
+  if (!mime || isPdfTemplateMime(mime)) return false;
+  return mime.startsWith('image/') || mime.startsWith('text/');
 }
 
 /** Returns a reject message, or null when the file may be uploaded as a template. */
 export function getTemplateFileRejection(file: TemplateFileLike): string | null {
   const name = file.name?.trim() ?? '';
   const mime = file.type?.trim() ?? '';
-  if (isNonFillableTemplateMime(mime) || !isFillableTemplatePath(name)) {
+  if (isNonFillableTemplateMime(mime)) {
     return getTemplateUploadError(name, mime);
   }
-  return null;
+  if (isPdfTemplateMime(mime) || isFillableTemplatePath(name)) {
+    return null;
+  }
+  return getTemplateUploadError(name, mime);
 }

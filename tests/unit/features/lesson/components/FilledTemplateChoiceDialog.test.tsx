@@ -7,6 +7,8 @@ import {
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
 import { FilledTemplateChoiceDialog } from '@/features/lesson/components/FilledTemplateChoiceDialog';
+import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 jest.mock('@/providers/zen-mode', () => ({
   useZenMode: () => ({ zenMode: true }),
@@ -64,5 +66,20 @@ describe('FilledTemplateChoiceDialog', () => {
     expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: BTN_FILL_TEMPLATE })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
+  });
+
+  it('accepts PDF lesson plan templates in the upload picker', () => {
+    renderDialog('no-template');
+
+    expect(useFileUpload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploadType: 'template',
+        accept: FILLABLE_TEMPLATE_ACCEPT,
+      }),
+    );
+    expect(document.querySelector('input[type="file"]')).toHaveAttribute(
+      'accept',
+      FILLABLE_TEMPLATE_ACCEPT,
+    );
   });
 });

@@ -16,7 +16,7 @@ describe('Fill my template copy', () => {
     );
     expect(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE).toMatch(/\?$/);
     expect(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE).toBe(
-      'You haven’t uploaded a lesson plan template. Upload a DOCX or XLSX to fill?',
+      'You haven’t uploaded a lesson plan template. Upload a PDF, DOCX or XLSX to fill?',
     );
   });
 
