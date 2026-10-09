@@ -20,13 +20,14 @@ describe('Fill my template copy', () => {
     );
   });
 
-  it('uses Free Period branding and the Free Period Template download label in unfilled copy', () => {
+  it('uses Free Period branding and the Free Period template download label in unfilled copy', () => {
     expect(TEMPLATE_UNFILLED_ERROR).toBe(
-      'Couldn’t fill this template — some sections didn’t map. Use Free Period Template for a Free Period lesson plan, or re-upload yours.',
+      'Couldn’t fill this template — some sections didn’t map. Use Free Period template for a Free Period lesson plan, or re-upload yours.',
     );
     expect(TEMPLATE_UNFILLED_ERROR).toContain(
-      'Use Free Period Template for a Free Period lesson plan',
+      'Use Free Period template for a Free Period lesson plan',
     );
+    expect(TEMPLATE_UNFILLED_ERROR).not.toContain('Free Period Template');
     expect(TEMPLATE_UNFILLED_ERROR).not.toContain('free period template');
     expect(TEMPLATE_UNFILLED_ERROR).not.toContain('Download lesson plan (FreePeriod template)');
     expect(TEMPLATE_UNFILLED_ERROR).not.toContain('Download DOCX');
