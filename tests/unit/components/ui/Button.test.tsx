@@ -1,5 +1,6 @@
 import { render, screen } from '@/tests/helpers';
 import { Button, buttonVariants } from '@/components/ui/Button';
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 
 function variantClasses(variant: string) {
   return buttonVariants({
@@ -55,8 +56,10 @@ describe('Button', () => {
     });
 
     it('renders accent as solid mustard for Download as the primary action', () => {
-      render(<Button variant={'accent' as 'default'}>Download DOCX</Button>);
-      const button = screen.getByRole('button', { name: /download docx/i });
+      render(
+        <Button variant={'accent' as 'default'}>{FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}</Button>,
+      );
+      const button = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
       expect(button).toHaveAttribute('data-variant', 'accent');
       expect(button).toHaveClass('bg-accent', 'text-accent-foreground', 'btn-shine');
       expect(variantClasses('accent')).toContain('hover:bg-mustard-dark');
