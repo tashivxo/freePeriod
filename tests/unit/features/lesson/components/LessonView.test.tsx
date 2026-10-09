@@ -65,6 +65,7 @@ import {
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
 import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
@@ -184,7 +185,7 @@ describe('LessonView', () => {
     const { user } = render(<LessonView lesson={lesson} />);
 
     const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
-    const downloadButton = screen.getByRole('button', { name: /download docx/i });
+    const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
 
     expect(downloadButton).toHaveAttribute('data-variant', 'accent');
     expect(fillButton).toHaveAttribute('data-variant', 'soft');
@@ -203,7 +204,7 @@ describe('LessonView', () => {
     );
 
     const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
-    const downloadButton = screen.getByRole('button', { name: /download docx/i });
+    const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
     const helper = screen.getByText('Uses your uploaded template');
 
     expect(fillButton).toHaveAttribute('data-variant', 'default');
