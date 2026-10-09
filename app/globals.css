@@ -41,7 +41,7 @@
 
   /* Focus ring */
   *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-coral;
+    @apply outline-2 outline-offset-2 outline-ring;
   }
   * {
     @apply border-border outline-ring/50;
@@ -165,7 +165,7 @@ html[lang="zh-Hans"] {
   --popover: #FFFFFF;
   --popover-foreground: #1A1A2E;
   --primary: var(--color-coral);
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #1A1A2E;
   --primary-soft: var(--color-coral-100);
   --primary-soft-hover: var(--color-coral-light);
   --secondary: #FEF3C7;
@@ -178,7 +178,7 @@ html[lang="zh-Hans"] {
   --destructive: oklch(0.577 0.245 27.325);
   --border: #E5E7EB;
   --input: #E5E7EB;
-  --ring: var(--color-coral);
+  --ring: var(--color-coral-800);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -210,7 +210,7 @@ html[lang="zh-Hans"] {
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: var(--color-coral);
-  --primary-foreground: oklch(0.145 0.034 271);
+  --primary-foreground: #060918;
   --primary-soft: #40262F;
   --primary-soft-hover: #58333F;
   --secondary: #3E3318;

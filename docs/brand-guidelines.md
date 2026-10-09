@@ -10,7 +10,7 @@
 
 | Token | Hex | CSS Variable | Tailwind Class | Usage |
 |-------|-----|-------------|----------------|-------|
-| Coral 500 (primary) | `#FF8BB0` | `var(--color-coral)` | `bg-coral`, `text-coral` | CTAs, focus rings, key accents |
+| Coral 500 (primary) | `#FF8BB0` | `var(--color-coral)` | `bg-coral`, `text-coral` | CTAs, key accents |
 | Coral 300 (light) | `#FFB8D0` | `var(--color-coral-light)` | `bg-coral-light`, `text-coral-light` | Hover states, subtle tints |
 | Coral 700 (dark) | `#E5709A` | `var(--color-coral-dark)` | `bg-coral-dark`, `text-coral-dark` | Active states, hover on coral bg |
 | Coral 800 | `#CA5C81` | `var(--color-coral-800)` | `border-coral-800`, `bg-coral-800` | High-contrast coral borders; light-theme focus ring |
@@ -175,7 +175,7 @@ CSS variables:
 ## Spacing & Sizing
 
 - Minimum touch target: **44px** (use `min-h-[44px] min-w-[44px]`)
-- Focus ring: `2px solid` coral — `outline-coral` Tailwind class, or `focus-visible:outline-coral`
+- Focus ring: `2px solid` — `outline-ring` (light `--ring` is coral-800 `#CA5C81` on warm white; dark `--ring` stays coral)
 - Border radius scale: `rounded-lg` (8px), `rounded-xl` (12px) for cards/modals
 
 ---

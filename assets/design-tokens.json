@@ -51,7 +51,7 @@
       "text-secondary":    { "value": "{primitive.color.neutral-600}", "type": "color", "css": "var(--text-secondary)" },
       "success":           { "value": "{primitive.color.green-500}",   "type": "color", "css": "var(--color-success)" },
       "error":             { "value": "{primitive.color.red-500}",     "type": "color", "css": "var(--color-error)" },
-      "focus-ring":        { "value": "{primitive.color.coral-500}",   "type": "color", "css": "var(--color-coral)" }
+      "focus-ring":        { "value": "{primitive.color.coral-800}",   "type": "color", "css": "var(--ring)" }
     }
   },
 
@@ -59,11 +59,11 @@
     "description": "Component-level tokens mapping semantic tokens to UI roles.",
     "button": {
       "primary-bg":     { "value": "{semantic.color.primary}",       "css": "bg-coral" },
-      "primary-text":   { "value": "{primitive.color.neutral-0}",    "css": "text-white" },
+      "primary-text":   { "value": "{primitive.color.neutral-900}",  "css": "text-primary-foreground" },
       "primary-hover":  { "value": "{semantic.color.primary-dark}",  "css": "hover:bg-coral-dark" },
       "outline-border": { "value": "{semantic.color.primary}",       "css": "border-coral" },
       "outline-text":   { "value": "{semantic.color.primary}",       "css": "text-coral" },
-      "focus-ring":     { "value": "{semantic.color.focus-ring}",    "css": "ring-coral" }
+      "focus-ring":     { "value": "{semantic.color.focus-ring}",    "css": "ring-ring" }
     },
     "card": {
       "bg":             { "value": "{semantic.color.surface}",       "css": "bg-surface" },
