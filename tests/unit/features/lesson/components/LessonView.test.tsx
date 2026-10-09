@@ -180,6 +180,38 @@ describe('LessonView', () => {
     expect(screen.getByRole('button', { name: /back to dashboard/i })).toHaveClass('min-h-11');
   });
 
+  it('makes Download the solid yellow action and Fill the soft coral action when no template is uploaded', async () => {
+    const { user } = render(<LessonView lesson={lesson} />);
+
+    const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
+    const downloadButton = screen.getByRole('button', { name: /download docx/i });
+
+    expect(downloadButton).toHaveAttribute('data-variant', 'accent');
+    expect(fillButton).toHaveAttribute('data-variant', 'soft');
+    expect(screen.queryByText('Uses your uploaded template')).not.toBeInTheDocument();
+
+    await user.click(fillButton);
+    expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
+  });
+
+  it('makes Fill the solid coral action with a helper line when a template is uploaded', () => {
+    render(
+      <LessonView
+        lesson={{ ...lesson, template_path: 'user-1/template/plan.docx' }}
+      />,
+    );
+
+    const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
+    const downloadButton = screen.getByRole('button', { name: /download docx/i });
+    const helper = screen.getByText('Uses your uploaded template');
+
+    expect(fillButton).toHaveAttribute('data-variant', 'default');
+    expect(downloadButton).toHaveAttribute('data-variant', 'secondary');
+    expect(fillButton).not.toContainElement(helper);
+    expect(fillButton.compareDocumentPosition(helper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('always shows an enabled Fill my template button and opens no-template copy', async () => {
     const { user } = render(<LessonView lesson={lesson} />);
 
