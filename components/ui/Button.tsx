@@ -21,7 +21,7 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary-hover aria-expanded:bg-secondary aria-expanded:text-secondary-foreground btn-shine overflow-hidden",
         accent:
-          "bg-accent text-accent-foreground hover:bg-mustard-dark btn-shine overflow-hidden",
+          "bg-accent text-accent-foreground hover:bg-mustard-dark dark:hover:bg-mustard-light btn-shine overflow-hidden",
         soft:
           "border-coral-800 bg-primary-soft text-foreground hover:bg-primary-soft-hover btn-shine overflow-hidden",
         ghost:
