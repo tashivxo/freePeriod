@@ -8,7 +8,7 @@ import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
 import { SettingsClient } from './SettingsClient';
 import type { Plan, Subscription, User } from '@/types';
 
-export const metadata = { title: 'Settings, FreePeriod' };
+export const metadata = { title: 'Settings | FreePeriod' };
 
 const PLAN_LABELS: Record<Plan, string> = {
   free: 'Free',

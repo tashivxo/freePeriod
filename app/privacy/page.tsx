@@ -4,7 +4,7 @@ import { PrivacyPolicyContent, privacyTableOfContents } from '@/components/legal
 import { legalConfig } from '@/lib/legal/config';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy, FreePeriod',
+  title: 'Privacy Policy | FreePeriod',
   description:
     'How FreePeriod collects, uses, and protects your personal information. POPIA and GDPR aligned.',
 };

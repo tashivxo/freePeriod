@@ -4,7 +4,7 @@ import { TermsOfServiceContent, termsTableOfContents } from '@/components/legal/
 import { legalConfig } from '@/lib/legal/config';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service, FreePeriod',
+  title: 'Terms of Service | FreePeriod',
   description: 'Terms governing your use of FreePeriod, the AI lesson planning service for teachers.',
 };
 
