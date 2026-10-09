@@ -60,6 +60,8 @@ describe('Button', () => {
       expect(button).toHaveAttribute('data-variant', 'accent');
       expect(button).toHaveClass('bg-accent', 'text-accent-foreground', 'btn-shine');
       expect(variantClasses('accent')).toContain('hover:bg-mustard-dark');
+      expect(variantClasses('accent')).toContain('dark:hover:bg-mustard-light');
+      expect(variantClasses('accent')).not.toContain('dark:hover:bg-mustard-dark');
     });
 
     it('renders soft as muted coral with the coral-800 border for Fill as the secondary action', () => {
