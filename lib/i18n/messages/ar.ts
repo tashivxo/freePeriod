@@ -102,7 +102,7 @@ export const ar: Messages = {
       'الخطط المدفوعة تشمل تجربة 30 يومًا. ألغِ في أي وقت. بلا رسوم خفية.',
     checkoutRedirecting: 'جارٍ فتح الدفع…',
     checkoutSettingUp: 'جارٍ إعداد الدفع…',
-    checkoutError: 'تعذّر فتح الدفع — حاول مرة أخرى',
+    checkoutError: 'تعذّر فتح الدفع، حاول مرة أخرى',
     plans: {
       free: {
         name: 'مجاني',

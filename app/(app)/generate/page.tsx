@@ -7,7 +7,7 @@ import type { Plan } from '@/types';
 import { isLocale, type Locale } from '@/lib/i18n';
 
 export const metadata: Metadata = {
-  title: 'Generate — FreePeriod',
+  title: 'Generate | FreePeriod',
 };
 
 async function GeneratePageContent() {

@@ -498,7 +498,7 @@ function buildHeaderInfoTable(lesson: LessonPlan): Table {
       new TableRow({
         children: [
           makeCell(
-            `Subject: ${lesson.subject}${lesson.curriculum ? ` — ${lesson.curriculum}` : ''}`,
+            `Subject: ${lesson.subject}${lesson.curriculum ? `, ${lesson.curriculum}` : ''}`,
             CONTENT_WIDTH,
             { columnSpan: TABLE1_WIDTHS.length },
           ),

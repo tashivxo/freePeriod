@@ -102,7 +102,7 @@ export const es: Messages = {
       'Los planes de pago incluyen 30 días de prueba. Cancela cuando quieras. Sin cargos ocultos.',
     checkoutRedirecting: 'Abriendo el pago…',
     checkoutSettingUp: 'Preparando el pago…',
-    checkoutError: 'No se pudo abrir el pago — inténtalo de nuevo',
+    checkoutError: 'No se pudo abrir el pago, inténtalo de nuevo',
     plans: {
       free: {
         name: 'Gratis',

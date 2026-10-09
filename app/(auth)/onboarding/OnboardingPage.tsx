@@ -297,7 +297,7 @@ function StepSubjects({
         What do you teach?
       </h1>
       <p className="mb-6 text-center font-body text-sm text-text-secondary">
-        Pick one subject — you can change this anytime in settings.
+        Pick one subject, you can change this anytime in settings.
       </p>
 
       <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Subject">

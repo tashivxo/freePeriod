@@ -26,7 +26,7 @@ export const WRITING_WAIT_MESSAGES = [
   WRITING_LESSON_PLAN_STATUS,
   'Drafting objectives and activities…',
   'Building assessment and differentiation…',
-  'Still working — Quality mode can take a minute…',
+  'Still working, Quality mode can take a minute…',
 ] as const;
 
 export const WRITING_WAIT_CYCLE_MS = 4500;

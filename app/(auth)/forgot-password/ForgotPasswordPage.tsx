@@ -107,7 +107,7 @@ export function ForgotPasswordPage() {
                   role="status"
                   className="rounded-xl bg-success/10 p-3 text-center text-sm text-success"
                 >
-                  Check your inbox — we&apos;ve sent a reset link to <strong>{email}</strong>
+                  Check your inbox, we&apos;ve sent a reset link to <strong>{email}</strong>
                 </div>
                 <p className="text-center font-body text-sm text-text-secondary">
                   Didn&apos;t get it? Check your spam folder, then resend if needed.

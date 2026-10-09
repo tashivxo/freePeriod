@@ -60,7 +60,7 @@ import {
 } from '@/lib/export/fill-template-result';
 import * as XLSX from 'xlsx';
 
-const PDF_NO_FIELDS_ERROR = `Couldn’t fill this PDF — it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`;
+const PDF_NO_FIELDS_ERROR = `Couldn’t fill this PDF, it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`;
 
 const lessonContent = {
   title: 'Story Elements',

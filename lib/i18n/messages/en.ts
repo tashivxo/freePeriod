@@ -99,7 +99,7 @@ export const en = {
     trustFooter: 'Paid plans include a 30-day free trial. Cancel anytime. No hidden fees.',
     checkoutRedirecting: 'Opening checkout…',
     checkoutSettingUp: 'Setting up checkout…',
-    checkoutError: "Couldn't open checkout — try again",
+    checkoutError: "Couldn't open checkout, try again",
     plans: {
       free: {
         name: 'Free',

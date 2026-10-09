@@ -100,7 +100,7 @@ export const zhHans: Messages = {
     trustFooter: '付费方案含 30 天试用。随时取消。无隐藏费用。',
     checkoutRedirecting: '正在打开结账…',
     checkoutSettingUp: '正在准备结账…',
-    checkoutError: '无法打开结账 — 请重试',
+    checkoutError: '无法打开结账，请重试',
     plans: {
       free: {
         name: '免费',

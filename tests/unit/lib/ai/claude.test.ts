@@ -90,7 +90,7 @@ ${JSON.stringify({
     expect(prompt).toContain('Learner Activity & Success Criteria');
     expect(prompt).toContain('Plain text only');
     expect(prompt).toContain('not skeleton outlines');
-    expect(prompt).toContain('Term — student-friendly definition');
+    expect(prompt).toContain('Term: student-friendly definition');
     expect(prompt).toContain('FORMAT EXAMPLES');
     expect(prompt).toContain('Never invent, infer, or guess a code');
     expect(prompt).not.toContain('MS-PS1-4');

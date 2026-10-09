@@ -126,7 +126,7 @@ export function DocumentUploadZone({
               style={{ color: 'var(--color-text-primary)' }}
             >
               {file.name}
-              {PHASE_LABEL[phase] ? ` — ${PHASE_LABEL[phase]}` : ''}
+              {PHASE_LABEL[phase] ? `, ${PHASE_LABEL[phase]}` : ''}
             </span>
             <button
               type="button"

@@ -24,7 +24,7 @@ describe('Fill my template copy', () => {
 
   it('uses Free Period branding and the Free Period template download label in unfilled copy', () => {
     expect(TEMPLATE_UNFILLED_ERROR).toBe(
-      'Couldn’t fill this template — some sections didn’t map. Use Free Period template for a Free Period lesson plan, or re-upload yours.',
+      'Couldn’t fill this template, some sections didn’t map. Use Free Period template for a Free Period lesson plan, or re-upload yours.',
     );
     expect(TEMPLATE_UNFILLED_ERROR).toContain(
       'Use Free Period template for a Free Period lesson plan',
@@ -39,7 +39,7 @@ describe('Fill my template copy', () => {
   it('names the current download action in PDF no-fields unfilled copy', () => {
     expect(FillResult).toHaveProperty(
       'TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR',
-      `Couldn’t fill this PDF — it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`,
+      `Couldn’t fill this PDF, it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`,
     );
     expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).toContain(
       'use Free Period template for a Free Period lesson plan',
