@@ -6,6 +6,40 @@ import {
 } from '@/lib/ai/claude';
 
 describe('Claude lesson prompt parsing', () => {
+  it('parses JSON wrapped in markdown fences', () => {
+    const lesson = parseLessonContent(`\`\`\`json
+${JSON.stringify({
+      title: 'Fenced Lesson',
+      objectives: ['Identify story elements'],
+    })}
+\`\`\``);
+
+    expect(lesson).not.toBeNull();
+    expect(lesson?.title).toBe('Fenced Lesson');
+    expect(lesson?.objectives).toEqual(['Identify story elements']);
+  });
+
+  it('parses JSON that follows a prose preamble', () => {
+    const lesson = parseLessonContent(`Here is the lesson plan you requested:
+
+${JSON.stringify({
+      title: 'Preamble Lesson',
+      objectives: ['Explain the water cycle'],
+    })}`);
+
+    expect(lesson).not.toBeNull();
+    expect(lesson?.title).toBe('Preamble Lesson');
+    expect(lesson?.objectives).toEqual(['Explain the water cycle']);
+  });
+
+  it('returns null for truncated JSON', () => {
+    expect(parseLessonContent('{"title":"Cut off","objectives":["Finish the')).toBeNull();
+  });
+
+  it('returns null when objectives are missing', () => {
+    expect(parseLessonContent(JSON.stringify({ title: 'No objectives here' }))).toBeNull();
+  });
+
   it('parses formal lesson planning fields from model JSON', () => {
     const lesson = parseLessonContent(JSON.stringify({
       title: 'Elements of a Story',
