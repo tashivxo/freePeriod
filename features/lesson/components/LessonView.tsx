@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
 import { ArrowLeft } from 'lucide-react';
@@ -69,6 +69,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   )
     ? 'has-template'
     : 'no-template';
+  const fillHelperId = useId();
+  const toolbarButtonClassName = 'h-auto min-h-11 w-full sm:h-7 sm:min-h-0 sm:w-auto';
 
   const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
     lesson.id,
@@ -239,31 +241,39 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           <CurriculumAccuracyNotice curriculum={lesson.curriculum} />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-start gap-2">
-          <div className="flex flex-col items-start gap-1">
+        <div className="mt-4 flex flex-col gap-1.5">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
             <Button
               size="sm"
+              className={toolbarButtonClassName}
               variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
+              aria-describedby={
+                filledTemplateVariant === 'has-template' ? fillHelperId : undefined
+              }
               onClick={() => handleFilledTemplateDialogOpenChange(true)}
             >
               <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
               {FILL_MY_TEMPLATE_LABEL}
             </Button>
-            {filledTemplateVariant === 'has-template' ? (
-              <p className="font-body text-xs text-text-secondary">
-                Uses your uploaded template
-              </p>
-            ) : null}
+            <Button
+              size="sm"
+              className={toolbarButtonClassName}
+              variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
+              onClick={() => void handleExport()}
+              isLoading={exportLoading}
+            >
+              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
+              {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
-            onClick={() => void handleExport()}
-            isLoading={exportLoading}
-          >
-            <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
-            {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
-          </Button>
+          {filledTemplateVariant === 'has-template' ? (
+            <p
+              id={fillHelperId}
+              className="text-left font-body text-xs text-text-secondary"
+            >
+              Uses your uploaded template
+            </p>
+          ) : null}
         </div>
         {exportError ? (
           <div role="alert" className="mt-3 flex gap-3 rounded-xl bg-error/10 p-3 text-error">
