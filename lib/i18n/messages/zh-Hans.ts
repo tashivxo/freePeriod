@@ -66,7 +66,7 @@ export const zhHans: Messages = {
     featureAiPowered: 'AI 驱动',
     featureAiPoweredDesc: '按学科、年级和课程纲要，数秒内量身生成。',
     featureExportAnywhere: '随处导出',
-    featureExportAnywhereDesc: '下载为 DOCX 或已填写的模板。导出前可在页面内编辑。',
+    featureExportAnywhereDesc: '下载 FreePeriod 模板教案，或填写你自己的模板。',
     ctaHeadline: '准备好把晚上的时间要回来了吗？',
     ctaSub: '加入那些规划更快、却不牺牲结构的教师。',
     ctaBandTitle: '你的教案，按你的方式',

@@ -65,7 +65,7 @@ export const en = {
     featureAiPoweredDesc: 'Tailored to your subject, year group, and curriculum in seconds.',
     featureExportAnywhere: 'Export Anywhere',
     featureExportAnywhereDesc:
-      'Download as DOCX or a filled-in template. Edit inline before exporting.',
+      'Download the FreePeriod template lesson plan or fill in your own template.',
     ctaHeadline: 'Ready to reclaim your evenings?',
     ctaSub: 'Join teachers who plan faster without sacrificing structure.',
     ctaBandTitle: 'Your plan, your way',
