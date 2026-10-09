@@ -134,6 +134,18 @@ describe('LessonView', () => {
     );
   });
 
+  it('shows the FreePeriod template export label on the toolbar download button', () => {
+    render(<LessonView lesson={lesson} />);
+
+    expect(
+      screen.getByRole('button', { name: 'Download lesson plan (FreePeriod template)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Download DOCX' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Download DOCX')).not.toBeInTheDocument();
+  });
+
   it('shows inline export error when download fails', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -142,9 +154,16 @@ describe('LessonView', () => {
     });
 
     const { user } = render(<LessonView lesson={lesson} />);
-    await user.click(screen.getByRole('button', { name: /download docx/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Download lesson plan (FreePeriod template)' }),
+    );
 
     await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId: lesson.id, format: 'docx' }),
+      });
       expect(screen.getByRole('alert')).toHaveTextContent('Export service unavailable');
     });
   });
