@@ -77,7 +77,7 @@ export function formatCurriculumPackForPrompt(
 ): string {
   const lines: string[] = [
     `Guideline pack: ${pack.displayName} (${pack.authority})`,
-    `Coverage: ${pack.coverage} only — not an official curriculum document.`,
+    `Coverage: ${pack.coverage} only, not an official curriculum document.`,
     `Last reviewed: ${pack.lastReviewed}`,
     `Grade context: ${grade.trim() || 'unspecified'}`,
     `Subject context: ${subject.trim() || 'unspecified'}`,

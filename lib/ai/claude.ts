@@ -38,24 +38,24 @@ function buildLocaleInstructions(locale?: string): string {
 const ACTIVITY_PHASE_FORMAT = `Activity phase format (hook, every mainActivities item, guidedPractice, independentPractice, and plenary):
 Each activity phase MUST be a single plain-text string with exactly these five labeled fields, in this order:
 Time: [duration, e.g. 10 min]
-Teacher Activity: [what the teacher does — 2 to 4 short bullet points, one per line]
-Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal — 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can: name all five elements correctly. I can: explain how conflict drives the plot."]
-Formative Assessment: [how you check understanding during this phase — 2 to 4 short bullet points]
-Resources: [specific materials, platforms, or handouts used in this phase only — e.g. "Whiteboard, printed graphic organiser, PhET simulation link, pupil notebooks"]
+Teacher Activity: [what the teacher does, 2 to 4 short bullet points, one per line]
+Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal, 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can: name all five elements correctly. I can: explain how conflict drives the plot."]
+Formative Assessment: [how you check understanding during this phase, 2 to 4 short bullet points]
+Resources: [specific materials, platforms, or handouts used in this phase only, e.g. "Whiteboard, printed graphic organiser, PhET simulation link, pupil notebooks"]
 
 For every activity phase you MUST return content for all 5 fields. Empty fields are not acceptable.
 If resources are minimal, list at least: "Whiteboard / projector, teacher-created handout".
 Success criteria inside Learner Activity & Success Criteria must be written as "I can" statements derived from the lesson objectives and successCriteria for that phase's goal.`;
 
 const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successCriteria, priorKnowledge, performanceExpectations, misconceptions, sciencePractices, keyConcepts, vocabulary, formativeAssessment, differentiation, realWorldConnections):
-- Write complete, teacher-ready content — not skeleton outlines, placeholders, or single-word labels.
+- Write complete, teacher-ready content, not skeleton outlines, placeholders, or single-word labels.
 - priorKnowledge: 3-5 full sentences describing prerequisite concepts, skills, and experiences students should already have. Explain WHY each prerequisite matters for this lesson.
 - performanceExpectations (legacy JSON key for curriculum alignment): Write 2-4 plain-language statements explaining how the lesson aligns to the supplied curriculum guidance. Include a standards identifier ONLY when it appears verbatim in the uploaded curriculum document. Never invent, infer, or guess a code. Without an uploaded document, do not include any standards identifier.
 - misconceptions: 2-4 common student misconceptions about this topic, each with a brief note on how the lesson will address it.
 - sciencePractices (legacy JSON key for learning and inquiry practices): Write 2-4 subject-appropriate practices aligned to the lesson activities. Do not assume a Science & Engineering Practices framework unless the selected curriculum or subject explicitly uses it.
-- keyConcepts: Each item must name the concept AND explain it in 1-2 sentences — not just a label like "Energy" or "Phases".
-- vocabulary: Each item must be "Term — student-friendly definition" (e.g. "Phase — a distinct form of matter such as solid, liquid, or gas").
-- objectives: Full measurable objective statements using Bloom's taxonomy verbs — complete sentences, not fragments.
+- keyConcepts: Each item must name the concept AND explain it in 1-2 sentences, not just a label like "Energy" or "Phases".
+- vocabulary: Each item must be "Term: student-friendly definition" (e.g. "Phase: a distinct form of matter such as solid, liquid, or gas").
+- objectives: Full measurable objective statements using Bloom's taxonomy verbs, complete sentences, not fragments.
 - successCriteria, formativeAssessment, differentiation, realWorldConnections: Detailed enough that a substitute teacher could deliver the lesson without guessing.
 - Minimum 3 items per array field where applicable.`;
 
@@ -93,7 +93,7 @@ export function buildSystemPrompt(
 ): string {
   let prompt = `You are an expert lesson planner with deep knowledge of curriculum standards and pedagogical best practices. Your task is to generate a comprehensive, structured lesson plan that is suitable for a formal observation and useful for a real teacher to deliver.
 
-You MUST respond with valid JSON only — no markdown code fences, no explanation outside the JSON object.
+You MUST respond with valid JSON only, no markdown code fences, no explanation outside the JSON object.
 
 The JSON object must have exactly these 18 keys:
 {
@@ -103,10 +103,10 @@ The JSON object must have exactly these 18 keys:
   "successCriteria": ["I can ...", "I can ...", ...],
   "priorKnowledge": ["Students should already understand ...", "Students should be able to ...", ...],
   "performanceExpectations": ["Plain-language curriculum alignment statement...", ...],
-  "misconceptions": ["Students often think ... — addressed by ...", ...],
+  "misconceptions": ["Students often think ..., addressed by ...", ...],
   "sciencePractices": ["Subject-appropriate learning or inquiry practice...", ...],
-  "keyConcepts": ["Concept name — explanation of what students need to understand", ...],
-  "vocabulary": ["Term — student-friendly definition", ...],
+  "keyConcepts": ["Concept name: explanation of what students need to understand", ...],
+  "vocabulary": ["Term: student-friendly definition", ...],
   "hook": "Activity phase string with all 5 labeled fields (see format below)",
   "mainActivities": ["Activity phase string with all 5 labeled fields", ...],
   "guidedPractice": ["Activity phase string with all 5 labeled fields", ...],
@@ -125,12 +125,12 @@ ${ACTIVITY_PHASE_FORMAT}
 ${WRITING_RULES}
 
 FORMAT EXAMPLES (bad → good):
-- keyConcepts BAD: ["Matter", "Solid", "Gas"] → GOOD: ["States of matter — substances exist as solids, liquids, or gases depending on particle arrangement and energy", "Particle motion — particles vibrate, slide, or move freely depending on the state"]
-- vocabulary BAD: ["Solid", "Liquid"] → GOOD: ["Solid — matter with a fixed shape and volume because particles are tightly packed", "Liquid — matter with a fixed volume but no fixed shape because particles can slide past one another"]
+- keyConcepts BAD: ["Matter", "Solid", "Gas"] → GOOD: ["States of matter: substances exist as solids, liquids, or gases depending on particle arrangement and energy", "Particle motion: particles vibrate, slide, or move freely depending on the state"]
+- vocabulary BAD: ["Solid", "Liquid"] → GOOD: ["Solid: matter with a fixed shape and volume because particles are tightly packed", "Liquid: matter with a fixed volume but no fixed shape because particles can slide past one another"]
 - priorKnowledge BAD: [] or ["Matter"] → GOOD: ["Students should already know that all materials are made of matter and can be observed in everyday objects.", "Students should be able to compare basic properties such as shape, volume, and whether a material can be poured or compressed."]
 - performanceExpectations BAD: [] or ["Matter"] → GOOD: ["The lesson develops students' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance.", "Students demonstrate the target learning through the lesson's evidence-based activities and assessment."]
 
-Each array should contain 3-6 items where practical. Be specific and actionable — avoid generic advice.
+Each array should contain 3-6 items where practical. Be specific and actionable, avoid generic advice.
 
 Quality expectations:
 - When an uploaded curriculum document is supplied, align terminology, assessment expectations, and curriculum references to that document.
@@ -203,6 +203,60 @@ ${sanitizeUntrustedDocumentText(params.curriculumText)}
   return prompt;
 }
 
+const GENERATED_EM_DASH = '\u2014';
+
+function replaceGeneratedEmDashes(text: string, asTermDefinition: boolean): string {
+  if (asTermDefinition) {
+    return text
+      .replaceAll(` ${GENERATED_EM_DASH} `, ': ')
+      .replace(new RegExp(` ?${GENERATED_EM_DASH} ?`, 'g'), ', ');
+  }
+  return text.replace(new RegExp(` ?${GENERATED_EM_DASH} ?`, 'g'), ', ');
+}
+
+function mapGeneratedField(value: string[], asTermDefinition: boolean): string[] {
+  return value.map((item) => replaceGeneratedEmDashes(item, asTermDefinition));
+}
+
+/** Strip U+2014 from model-generated fields. Leaves `title` unchanged for user-typed names. */
+export function stripGeneratedEmDashes(content: LessonSection): LessonSection {
+  return {
+    ...content,
+    essentialQuestion: content.essentialQuestion
+      ? replaceGeneratedEmDashes(content.essentialQuestion, false)
+      : content.essentialQuestion,
+    objectives: mapGeneratedField(content.objectives, false),
+    successCriteria: mapGeneratedField(content.successCriteria, false),
+    priorKnowledge: content.priorKnowledge
+      ? mapGeneratedField(content.priorKnowledge, false)
+      : content.priorKnowledge,
+    performanceExpectations: content.performanceExpectations
+      ? mapGeneratedField(content.performanceExpectations, false)
+      : content.performanceExpectations,
+    misconceptions: content.misconceptions
+      ? mapGeneratedField(content.misconceptions, false)
+      : content.misconceptions,
+    sciencePractices: content.sciencePractices
+      ? mapGeneratedField(content.sciencePractices, false)
+      : content.sciencePractices,
+    keyConcepts: mapGeneratedField(content.keyConcepts, true),
+    vocabulary: content.vocabulary
+      ? mapGeneratedField(content.vocabulary, true)
+      : content.vocabulary,
+    hook: replaceGeneratedEmDashes(content.hook, false),
+    mainActivities: mapGeneratedField(content.mainActivities, false),
+    guidedPractice: mapGeneratedField(content.guidedPractice, false),
+    independentPractice: mapGeneratedField(content.independentPractice, false),
+    formativeAssessment: mapGeneratedField(content.formativeAssessment, false),
+    differentiation: {
+      support: mapGeneratedField(content.differentiation.support, false),
+      extension: mapGeneratedField(content.differentiation.extension, false),
+    },
+    realWorldConnections: mapGeneratedField(content.realWorldConnections, false),
+    plenary: replaceGeneratedEmDashes(content.plenary, false),
+  };
+}
+
 export function parseLessonContent(text: string): LessonSection | null {
   try {
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -213,7 +267,7 @@ export function parseLessonContent(text: string): LessonSection | null {
 
     if (!parsed.title || !parsed.objectives) return null;
 
-    return {
+    return stripGeneratedEmDashes({
       title: String(parsed.title),
       essentialQuestion: String(parsed.essentialQuestion ?? ''),
       objectives: Array.isArray(parsed.objectives) ? parsed.objectives.map(String) : [],
@@ -237,7 +291,7 @@ export function parseLessonContent(text: string): LessonSection | null {
       },
       realWorldConnections: Array.isArray(parsed.realWorldConnections) ? parsed.realWorldConnections.map(String) : [],
       plenary: String(parsed.plenary ?? ''),
-    };
+    });
   } catch {
     return null;
   }

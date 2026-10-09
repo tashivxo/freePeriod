@@ -1,4 +1,5 @@
 import type { LessonSection } from '@/types';
+import { stripGeneratedEmDashes } from './claude';
 
 export const MIN_PLANNING_ARRAY_ITEMS = 2;
 export const MIN_EXPLANATION_ITEM_LENGTH = 15;
@@ -20,7 +21,7 @@ const PLANNING_ARRAY_FIELDS: PlanningValidationField[] = [
 ];
 
 function hasExplanationSeparator(text: string): boolean {
-  return /[—–]/.test(text) || /\s-\s/.test(text);
+  return /[:—–]/.test(text) || /\s-\s/.test(text);
 }
 
 export function isRichExplanationItem(text: string): boolean {
@@ -65,10 +66,10 @@ const FIELD_EXAMPLES: Record<PlanningValidationField, string> = {
   performanceExpectations:
     '"The lesson develops students\' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance."',
   misconceptions:
-    '"Students often think particles stop moving in solids — addressed by comparing particle vibration models."',
+    '"Students often think particles stop moving in solids, addressed by comparing particle vibration models."',
   sciencePractices: '"Using evidence from lesson activities to explain the target concept and communicate reasoning clearly."',
-  keyConcepts: '"Particle motion — particles move faster when thermal energy increases and slower when it decreases."',
-  vocabulary: '"Phase — a distinct form of matter such as solid, liquid, or gas."',
+  keyConcepts: '"Particle motion: particles move faster when thermal energy increases and slower when it decreases."',
+  vocabulary: '"Phase: a distinct form of matter such as solid, liquid, or gas."',
 };
 
 export function buildPlanningFieldsRetryPrompt(
@@ -114,14 +115,14 @@ function expandThinConcept(term: string, content: LessonSection): string {
   const trimmed = term.trim();
   if (isRichExplanationItem(trimmed)) return trimmed;
   const anchor = content.objectives[0] ?? content.essentialQuestion ?? content.title;
-  return `${trimmed} — a core idea students explore in this lesson, connected to ${anchor.replace(/\.$/, '')}.`;
+  return `${trimmed}: a core idea students explore in this lesson, connected to ${anchor.replace(/\.$/, '')}.`;
 }
 
 function expandThinVocabulary(term: string): string {
   const trimmed = term.trim();
   if (isRichExplanationItem(trimmed)) return trimmed;
   const word = trimmed.split(/[—–-]/)[0]?.trim() || trimmed;
-  return `${word} — key vocabulary students use to describe and explain ideas in this lesson.`;
+  return `${word}: key vocabulary students use to describe and explain ideas in this lesson.`;
 }
 
 function synthesizePriorKnowledge(content: LessonSection, title: string): string[] {
@@ -149,8 +150,8 @@ function synthesizeAlignmentStatements(content: LessonSection): string[] {
 function synthesizeMisconceptions(content: LessonSection, title: string): string[] {
   const topic = content.title || title;
   return [
-    `Students may hold everyday misconceptions about ${topic} that differ from scientific explanations — this lesson addresses these through modelling, questioning, and evidence-based discussion.`,
-    `Students may confuse related vocabulary terms — addressed through explicit definitions, examples, and formative checks during activities.`,
+    `Students may hold everyday misconceptions about ${topic} that differ from scientific explanations, this lesson addresses these through modelling, questioning, and evidence-based discussion.`,
+    `Students may confuse related vocabulary terms, addressed through explicit definitions, examples, and formative checks during activities.`,
   ];
 }
 
@@ -220,8 +221,8 @@ export function enrichThinLessonContent(
     enriched.vocabulary = (enriched.vocabulary ?? []).map(expandThinVocabulary);
     if ((enriched.vocabulary?.length ?? 0) < MIN_PLANNING_ARRAY_ITEMS) {
       enriched.vocabulary = [
-        'Concept — key idea vocabulary used throughout the lesson.',
-        'Evidence — observations or data used to support scientific explanations.',
+        'Concept: key idea vocabulary used throughout the lesson.',
+        'Evidence: observations or data used to support scientific explanations.',
       ];
     }
     enrichedFields.push('vocabulary');
@@ -364,10 +365,14 @@ export async function finalizeLessonContent(
         remainingFailures,
       });
     }
-    return sanitizeLessonCurriculumIdentifiers(enriched, options.curriculumText);
+    return stripGeneratedEmDashes(
+      sanitizeLessonCurriculumIdentifiers(enriched, options.curriculumText),
+    );
   }
 
-  return sanitizeLessonCurriculumIdentifiers(current, options.curriculumText);
+  return stripGeneratedEmDashes(
+    sanitizeLessonCurriculumIdentifiers(current, options.curriculumText),
+  );
 }
 
 export function parsePlanningFieldPatch(text: string): Partial<LessonSection> | null {
