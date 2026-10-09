@@ -26,6 +26,7 @@ type GenerateWithGeminiResult = {
 
 const RATE_LIMIT_RETRY_DELAY_MS = 5000;
 const RATE_LIMIT_MAX_RETRIES = 2;
+const GEMINI_JSON_GENERATION_CONFIG = { responseMimeType: 'application/json' as const };
 
 function isRateLimitError(err: unknown): boolean {
   if (err instanceof Error) {
@@ -38,6 +39,10 @@ function isRateLimitError(err: unknown): boolean {
     );
   }
   return false;
+}
+
+function isParseError(err: unknown): boolean {
+  return err instanceof Error && err.message === 'Failed to parse lesson plan from Gemini response';
 }
 
 function sleep(ms: number): Promise<void> {
@@ -73,12 +78,19 @@ export async function generateWithGemini(
       const result = await model.generateContent({
         systemInstruction,
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: GEMINI_JSON_GENERATION_CONFIG,
       });
 
       const text = result.response.text();
       const lessonContent = parseLessonContent(text);
 
       if (!lessonContent) {
+        console.error('[generateWithGemini] Failed to parse Gemini response', {
+          model: GEMINI_FREE_MODEL,
+          finishReason: result.response.candidates?.[0]?.finishReason ?? null,
+          preview: text.slice(0, 500),
+          length: text.length,
+        });
         throw new Error('Failed to parse lesson plan from Gemini response');
       }
 
@@ -92,6 +104,7 @@ export async function generateWithGemini(
               { role: 'user', parts: [{ text: userPrompt }] },
               { role: 'user', parts: [{ text: retryPrompt }] },
             ],
+            generationConfig: GEMINI_JSON_GENERATION_CONFIG,
           });
           return parsePlanningFieldPatch(retryResult.response.text());
         },
@@ -110,6 +123,10 @@ export async function generateWithGemini(
           `[gemini] Rate limit hit (attempt ${attempt + 1}/${RATE_LIMIT_MAX_RETRIES}). Retrying in ${delay}ms...`,
         );
         await sleep(delay);
+        continue;
+      }
+
+      if (isParseError(err) && attempt < RATE_LIMIT_MAX_RETRIES) {
         continue;
       }
 
