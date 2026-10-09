@@ -19,6 +19,7 @@ import {
   TEMPLATE_DOWNLOAD_FAILED_ERROR,
 } from '@/lib/export/map-error';
 import { buildExportFilename } from '@/lib/export/filename';
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
@@ -246,7 +247,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             isLoading={exportLoading}
           >
             <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
-            Download DOCX
+            {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
           </Button>
           <Button
             size="sm"
