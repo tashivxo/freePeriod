@@ -1072,6 +1072,7 @@ export type FillGenericTemplateResult = {
   buffer: Buffer;
   filledCount: number;
   matchedLabels: string[];
+  formFieldCount?: number;
 };
 
 /**

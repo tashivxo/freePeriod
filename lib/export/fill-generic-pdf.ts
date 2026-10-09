@@ -63,9 +63,15 @@ export async function fillGenericPdfTemplate(
   try {
     form = pdfDoc.getForm();
   } catch {
-    return { buffer: templateBuffer, filledCount: 0, matchedLabels: [] };
+    return {
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+      formFieldCount: 0,
+    };
   }
 
+  const formFieldCount = form.getFields().length;
   let filledCount = 0;
   const matchedLabels: string[] = [];
 
@@ -102,5 +108,6 @@ export async function fillGenericPdfTemplate(
     buffer: Buffer.from(await pdfDoc.save()),
     filledCount,
     matchedLabels,
+    formFieldCount,
   };
 }
