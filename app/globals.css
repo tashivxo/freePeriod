@@ -9,6 +9,7 @@
   --color-coral: #FF8BB0;
   --color-coral-light: #FFB8D0;
   --color-coral-dark: #E5709A;
+  --color-coral-800: #CA5C81;
   --color-mustard: #F7C34B;
   --color-mustard-light: #FADB8A;
   --color-mustard-dark: #D4A52E;
@@ -99,8 +100,11 @@ html[lang="zh-Hans"] {
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-hover: var(--primary-soft-hover);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -162,8 +166,11 @@ html[lang="zh-Hans"] {
   --popover-foreground: #1A1A2E;
   --primary: var(--color-coral);
   --primary-foreground: #FFFFFF;
+  --primary-soft: var(--color-coral-100);
+  --primary-soft-hover: var(--color-coral-light);
   --secondary: #FEF3C7;
   --secondary-foreground: #1A1A2E;
+  --secondary-hover: var(--color-mustard-light);
   --muted: #F3F4F6;
   --muted-foreground: #374151;
   --accent: #F7C34B;
@@ -204,8 +211,11 @@ html[lang="zh-Hans"] {
   --popover-foreground: oklch(0.985 0 0);
   --primary: var(--color-coral);
   --primary-foreground: oklch(0.145 0.034 271);
-  --secondary: color-mix(in srgb, var(--color-mustard) 22%, transparent);
-  --secondary-foreground: oklch(0.985 0 0);
+  --primary-soft: #40262F;
+  --primary-soft-hover: #58333F;
+  --secondary: #3E3318;
+  --secondary-foreground: #F0F4FF;
+  --secondary-hover: #56451F;
   --muted: oklch(0.269 0 0);
   --muted-foreground: #d1d5db;
   --accent: var(--color-mustard);

@@ -239,23 +239,30 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           <CurriculumAccuracyNotice curriculum={lesson.curriculum} />
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap items-start gap-2">
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
+              onClick={() => handleFilledTemplateDialogOpenChange(true)}
+            >
+              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
+              {FILL_MY_TEMPLATE_LABEL}
+            </Button>
+            {filledTemplateVariant === 'has-template' ? (
+              <p className="font-body text-xs text-text-secondary">
+                Uses your uploaded template
+              </p>
+            ) : null}
+          </div>
           <Button
             size="sm"
-            variant="secondary"
+            variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
             onClick={() => void handleExport()}
             isLoading={exportLoading}
           >
             <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
             {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleFilledTemplateDialogOpenChange(true)}
-          >
-            <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
-            {FILL_MY_TEMPLATE_LABEL}
           </Button>
         </div>
         {exportError ? (
