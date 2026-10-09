@@ -134,12 +134,12 @@ describe('LessonView', () => {
     );
   });
 
-  it('shows the free period template export label on the toolbar download button', () => {
+  it('shows the Free Period Template export label on the toolbar download button', () => {
     render(<LessonView lesson={lesson} />);
 
-    const downloadButton = screen.getByRole('button', { name: 'free period template' });
+    const downloadButton = screen.getByRole('button', { name: 'Free Period Template' });
     expect(downloadButton).toBeInTheDocument();
-    expect(downloadButton).toHaveAccessibleName('free period template');
+    expect(downloadButton).toHaveAccessibleName('Free Period Template');
     expect(
       screen.getByRole('button', { name: 'Fill my template' }),
     ).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe('LessonView', () => {
 
     const { user } = render(<LessonView lesson={lesson} />);
     await user.click(
-      screen.getByRole('button', { name: 'free period template' }),
+      screen.getByRole('button', { name: 'Free Period Template' }),
     );
 
     await waitFor(() => {
