@@ -186,10 +186,16 @@ describe('LessonView', () => {
 
     const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
     const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
+    const row = fillButton.parentElement;
 
     expect(downloadButton).toHaveAttribute('data-variant', 'accent');
     expect(fillButton).toHaveAttribute('data-variant', 'soft');
+    expect(fillButton).not.toHaveAttribute('aria-describedby');
     expect(screen.queryByText('Uses your uploaded template')).not.toBeInTheDocument();
+    expect(row).toBe(downloadButton.parentElement);
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(fillButton).toHaveClass('w-full', 'min-h-11');
+    expect(downloadButton).toHaveClass('w-full', 'min-h-11');
 
     await user.click(fillButton);
     expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
@@ -206,10 +212,19 @@ describe('LessonView', () => {
     const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
     const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
     const helper = screen.getByText('Uses your uploaded template');
+    const row = fillButton.parentElement;
 
     expect(fillButton).toHaveAttribute('data-variant', 'default');
     expect(downloadButton).toHaveAttribute('data-variant', 'secondary');
-    expect(fillButton).not.toContainElement(helper);
+    expect(row).toBe(downloadButton.parentElement);
+    expect(row).not.toContainElement(helper);
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(row?.nextElementSibling).toBe(helper);
+    expect(helper).toHaveClass('text-xs');
+    expect(helper.id).toBeTruthy();
+    expect(fillButton).toHaveAttribute('aria-describedby', helper.id);
+    expect(fillButton).toHaveClass('w-full', 'min-h-11');
+    expect(downloadButton).toHaveClass('w-full', 'min-h-11');
     expect(fillButton.compareDocumentPosition(helper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
