@@ -20,8 +20,12 @@ describe('Fill my template copy', () => {
     );
   });
 
-  it('uses Free Period branding instead of the legacy compact spelling', () => {
-    expect(TEMPLATE_UNFILLED_ERROR).toContain('Free Period');
-    expect(TEMPLATE_UNFILLED_ERROR).not.toContain('FreePeriod');
+  it('uses Free Period branding and the FreePeriod template download label in unfilled copy', () => {
+    expect(TEMPLATE_UNFILLED_ERROR).toBe(
+      'Couldn’t fill this template — some sections didn’t map. Use Download lesson plan (FreePeriod template) for a Free Period lesson plan, or re-upload yours.',
+    );
+    expect(TEMPLATE_UNFILLED_ERROR).toContain('Download lesson plan (FreePeriod template)');
+    expect(TEMPLATE_UNFILLED_ERROR).toContain('for a Free Period lesson plan');
+    expect(TEMPLATE_UNFILLED_ERROR).not.toContain('Download DOCX');
   });
 });
