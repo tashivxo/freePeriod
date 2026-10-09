@@ -8,18 +8,22 @@ import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useZenMode } from "@/providers/zen-mode"
 
-const SPOTLIGHT_VARIANTS = new Set(['default', 'outline', 'secondary'])
+const SPOTLIGHT_VARIANTS = new Set(['default', 'outline', 'secondary', 'accent', 'soft'])
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[transform,opacity,color,background-color,box-shadow,border-color] select-none active:not-aria-[haspopup]:not(:disabled):scale-[0.96] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 relative",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80 btn-shine overflow-hidden",
+        default: "bg-primary text-primary-foreground hover:bg-coral-dark dark:hover:bg-coral-light [a]:hover:bg-coral-dark dark:[a]:hover:bg-coral-light btn-shine overflow-hidden",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50 btn-shine overflow-hidden",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground btn-shine overflow-hidden",
+          "bg-secondary text-secondary-foreground hover:bg-secondary-hover aria-expanded:bg-secondary aria-expanded:text-secondary-foreground btn-shine overflow-hidden",
+        accent:
+          "bg-accent text-accent-foreground hover:bg-mustard-dark dark:hover:bg-mustard-light btn-shine overflow-hidden",
+        soft:
+          "border-coral-800 bg-primary-soft text-foreground hover:bg-primary-soft-hover btn-shine overflow-hidden",
         ghost:
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:

@@ -10,9 +10,10 @@
 
 | Token | Hex | CSS Variable | Tailwind Class | Usage |
 |-------|-----|-------------|----------------|-------|
-| Coral 500 (primary) | `#FF8BB0` | `var(--color-coral)` | `bg-coral`, `text-coral` | CTAs, focus rings, key accents |
+| Coral 500 (primary) | `#FF8BB0` | `var(--color-coral)` | `bg-coral`, `text-coral` | CTAs, key accents |
 | Coral 300 (light) | `#FFB8D0` | `var(--color-coral-light)` | `bg-coral-light`, `text-coral-light` | Hover states, subtle tints |
 | Coral 700 (dark) | `#E5709A` | `var(--color-coral-dark)` | `bg-coral-dark`, `text-coral-dark` | Active states, hover on coral bg |
+| Coral 800 | `#CA5C81` | `var(--color-coral-800)` | `border-coral-800`, `bg-coral-800` | High-contrast coral borders; light-theme focus ring |
 
 ### Accent — Mustard
 
@@ -21,6 +22,17 @@
 | Mustard 500 (accent) | `#F7C34B` | `var(--color-mustard)` | `bg-mustard`, `text-mustard` | Secondary highlights, icons on coral bg |
 | Mustard 300 (light) | `#FADB8A` | `var(--color-mustard-light)` | `bg-mustard-light`, `text-mustard-light` | Soft backgrounds |
 | Mustard 700 (dark) | `#D4A52E` | `var(--color-mustard-dark)` | `bg-mustard-dark`, `text-mustard-dark` | Text on light mustard bg |
+
+### Semantic button strength (Fill coral / Download yellow)
+
+Each action keeps its hue; only strength changes, and only one control is solid at a time.
+
+| Token | Light | Dark | CSS Variable | Usage |
+|-------|-------|------|--------------|-------|
+| Primary soft | `#FFE4EE` (coral-100) | `#40262F` | `var(--primary-soft)` | Fill my template when no template is uploaded (`variant="soft"`) |
+| Primary soft hover | `#FFB8D0` | `#58333F` | `var(--primary-soft-hover)` | Hover on the soft coral button |
+| Secondary | `#FEF3C7` | `#3E3318` | `var(--secondary)` | Download when Fill is the solid action |
+| Secondary hover | `#FADB8A` | `#56451F` | `var(--secondary-hover)` | Hover on the soft yellow button |
 
 ### Background & Surface
 
@@ -90,7 +102,7 @@ Favicon, Apple touch icon, and Open Graph image all use the same pictogram asset
 ### ✅ Preferred — Tailwind utilities
 
 ```tsx
-<button className="bg-coral text-white hover:bg-coral-dark">
+<button className="bg-coral text-primary-foreground hover:bg-coral-dark">
   Get started
 </button>
 ```
@@ -163,7 +175,7 @@ CSS variables:
 ## Spacing & Sizing
 
 - Minimum touch target: **44px** (use `min-h-[44px] min-w-[44px]`)
-- Focus ring: `2px solid` coral — `outline-coral` Tailwind class, or `focus-visible:outline-coral`
+- Focus ring: `2px solid` — `outline-ring` (light `--ring` is coral-800 `#CA5C81` on warm white; dark `--ring` stays coral)
 - Border radius scale: `rounded-lg` (8px), `rounded-xl` (12px) for cards/modals
 
 ---

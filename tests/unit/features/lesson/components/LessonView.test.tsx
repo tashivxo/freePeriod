@@ -65,6 +65,7 @@ import {
   FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE,
 } from '@/features/lesson/components/filled-template-copy';
 import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
 
@@ -178,6 +179,53 @@ describe('LessonView', () => {
     render(<LessonView lesson={lesson} />);
 
     expect(screen.getByRole('button', { name: /back to dashboard/i })).toHaveClass('min-h-11');
+  });
+
+  it('makes Download the solid yellow action and Fill the soft coral action when no template is uploaded', async () => {
+    const { user } = render(<LessonView lesson={lesson} />);
+
+    const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
+    const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
+    const row = fillButton.parentElement;
+
+    expect(downloadButton).toHaveAttribute('data-variant', 'accent');
+    expect(fillButton).toHaveAttribute('data-variant', 'soft');
+    expect(fillButton).not.toHaveAttribute('aria-describedby');
+    expect(screen.queryByText('Uses your uploaded template')).not.toBeInTheDocument();
+    expect(row).toBe(downloadButton.parentElement);
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(fillButton).toHaveClass('w-full', 'min-h-11');
+    expect(downloadButton).toHaveClass('w-full', 'min-h-11');
+
+    await user.click(fillButton);
+    expect(screen.getByText(FILLED_TEMPLATE_NO_TEMPLATE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: BTN_UPLOAD_ONE_NOW })).toBeInTheDocument();
+  });
+
+  it('makes Fill the solid coral action with a helper line when a template is uploaded', () => {
+    render(
+      <LessonView
+        lesson={{ ...lesson, template_path: 'user-1/template/plan.docx' }}
+      />,
+    );
+
+    const fillButton = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
+    const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
+    const helper = screen.getByText('Uses your uploaded template');
+    const row = fillButton.parentElement;
+
+    expect(fillButton).toHaveAttribute('data-variant', 'default');
+    expect(downloadButton).toHaveAttribute('data-variant', 'secondary');
+    expect(row).toBe(downloadButton.parentElement);
+    expect(row).not.toContainElement(helper);
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(row?.nextElementSibling).toBe(helper);
+    expect(helper).toHaveClass('text-xs');
+    expect(helper.id).toBeTruthy();
+    expect(fillButton).toHaveAttribute('aria-describedby', helper.id);
+    expect(fillButton).toHaveClass('w-full', 'min-h-11');
+    expect(downloadButton).toHaveClass('w-full', 'min-h-11');
+    expect(fillButton.compareDocumentPosition(helper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('always shows an enabled Fill my template button and opens no-template copy', async () => {
