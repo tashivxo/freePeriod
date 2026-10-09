@@ -6,7 +6,7 @@ test.describe('Landing page', () => {
   });
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('FreePeriod, AI Lesson Planner');
+    await expect(page).toHaveTitle('FreePeriod | AI Lesson Planner');
   });
 
   test('renders navbar with logo and CTAs', async ({ page }) => {

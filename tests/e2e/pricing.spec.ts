@@ -26,7 +26,7 @@ test.describe('Pricing page', () => {
 
   // ── Page metadata ───────────────────────────────────────────────
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('Pricing, FreePeriod');
+    await expect(page).toHaveTitle('Pricing | FreePeriod');
   });
 
   // ── Hero section ─────────────────────────────────────────────────
