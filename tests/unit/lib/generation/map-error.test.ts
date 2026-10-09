@@ -22,4 +22,14 @@ describe('mapGenerationError', () => {
       'Generation API key is not configured on this deployment. Check Vercel environment variables.',
     );
   });
+
+  it('maps a Gemini parse failure to a retryable message instead of the generic fallback', () => {
+    const mapped = mapGenerationError(
+      new Error('Failed to parse lesson plan from Gemini response'),
+      { isFreePlan: true, modelUsed: 'gemini-2.5-flash' },
+    );
+
+    expect(mapped).toBe('The model returned an unreadable lesson plan. Please try again.');
+    expect(mapped).not.toContain('An unexpected error occurred during generation');
+  });
 });

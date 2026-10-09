@@ -28,6 +28,10 @@ export function mapGenerationError(err: unknown, context: GenerationErrorContext
     return err.message;
   }
 
+  if (err instanceof Error && err.message === 'Failed to parse lesson plan from Gemini response') {
+    return 'The model returned an unreadable lesson plan. Please try again.';
+  }
+
   if (errType === 'overloaded_error') {
     return 'Claude is currently overloaded. Please try again in a moment.';
   }
