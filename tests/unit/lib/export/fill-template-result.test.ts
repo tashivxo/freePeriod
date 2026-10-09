@@ -1,3 +1,5 @@
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
+import * as FillResult from '@/lib/export/fill-template-result';
 import {
   isMeaningfulFill,
   templateDataAppearsInText,
@@ -25,6 +27,27 @@ describe('isMeaningfulFill', () => {
     expect(isMeaningfulFill(1, ['essential questions'])).toBe(true);
     expect(isMeaningfulFill(2, ['lesson title', 'learning objectives'])).toBe(true);
     expect(isMeaningfulFill(2, ['duration', 'new vocabulary'])).toBe(true);
+  });
+});
+
+describe('TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR', () => {
+  it('describes a PDF with no fillable fields and names the current download action', () => {
+    expect(FillResult).toHaveProperty(
+      'TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR',
+      `Couldn’t fill this PDF — it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`,
+    );
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).toContain(
+      'use Free Period template for a Free Period lesson plan',
+    );
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).not.toContain('Free Period Template');
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).not.toContain('free period template');
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).not.toContain(
+      'Download lesson plan (FreePeriod template)',
+    );
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).not.toContain('Download DOCX');
+    expect(FillResult.TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR).not.toContain(
+      'some sections didn’t map',
+    );
   });
 });
 
