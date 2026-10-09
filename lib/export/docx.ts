@@ -15,6 +15,7 @@ import {
 } from 'docx';
 import type { LessonPlan, LessonSection } from '@/types';
 import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
+import { EMPTY_DIFFERENTIATION_MESSAGE, nonEmptyListItems } from '@/lib/lesson/content';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { DOCX_RUN_FONT } from './cjk';
 
@@ -235,22 +236,17 @@ function labelValueRow(
 function sectionWithBullets(
   title: string,
   items: string[] | undefined,
-  fallback: string,
 ): Paragraph[] {
-  const paragraphs: Paragraph[] = [
+  const filled = nonEmptyListItems(items);
+  if (filled.length === 0) return [];
+
+  return [
     new Paragraph({
       spacing: { before: 120, after: 60 },
       children: [textRun(title, true)],
     }),
+    ...bulletParagraphs(filled),
   ];
-
-  if (items?.length) {
-    paragraphs.push(...bulletParagraphs(items));
-  } else {
-    paragraphs.push(cellParagraph(fallback));
-  }
-
-  return paragraphs;
 }
 
 function extractField(text: string, labels: string[]): string {
@@ -355,34 +351,23 @@ function inferHigherOrderSkills(objectives: string[]): string[] {
 }
 
 function differentiationParagraphs(content: LessonSection): Paragraph[] {
-  const { differentiation } = content;
+  const support = nonEmptyListItems(content.differentiation?.support);
+  const extension = nonEmptyListItems(content.differentiation?.extension);
+  const mastery = nonEmptyListItems(content.successCriteria);
+
+  if (support.length === 0 && extension.length === 0) {
+    return [
+      cellParagraph(EMPTY_DIFFERENTIATION_MESSAGE),
+      ...sectionWithBullets('[2] Working at Mastery:', mastery),
+    ];
+  }
 
   return [
-    ...sectionWithBullets(
-      '[1] Working Towards Mastery:',
-      differentiation?.support,
-      'See differentiated scaffolds during activities.',
-    ),
-    ...sectionWithBullets(
-      '[2] Working at Mastery:',
-      content.successCriteria,
-      'Students meet lesson success criteria independently.',
-    ),
-    ...sectionWithBullets(
-      '[3] Mastery with Greater Depth:',
-      differentiation?.extension,
-      'Extension tasks provided for high-attaining learners.',
-    ),
-    ...sectionWithBullets(
-      'SEN:',
-      differentiation?.support,
-      'Additional scaffolding and check-ins during practice.',
-    ),
-    ...sectionWithBullets(
-      'G&T:',
-      differentiation?.extension,
-      'Extended analysis and creation tasks.',
-    ),
+    ...sectionWithBullets('[1] Working Towards Mastery:', support),
+    ...sectionWithBullets('[2] Working at Mastery:', mastery),
+    ...sectionWithBullets('[3] Mastery with Greater Depth:', extension),
+    ...sectionWithBullets('SEN:', support),
+    ...sectionWithBullets('G&T:', extension),
   ];
 }
 
