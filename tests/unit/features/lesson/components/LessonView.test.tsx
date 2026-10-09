@@ -134,12 +134,18 @@ describe('LessonView', () => {
     );
   });
 
-  it('shows the FreePeriod template export label on the toolbar download button', () => {
+  it('shows the Free Period template export label on the toolbar download button', () => {
     render(<LessonView lesson={lesson} />);
 
+    const downloadButton = screen.getByRole('button', { name: 'Free Period template' });
+    expect(downloadButton).toBeInTheDocument();
+    expect(downloadButton).toHaveAccessibleName('Free Period template');
     expect(
-      screen.getByRole('button', { name: 'Download lesson plan (FreePeriod template)' }),
+      screen.getByRole('button', { name: 'Fill my template' }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Download lesson plan (FreePeriod template)' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Download DOCX' }),
     ).not.toBeInTheDocument();
@@ -155,7 +161,7 @@ describe('LessonView', () => {
 
     const { user } = render(<LessonView lesson={lesson} />);
     await user.click(
-      screen.getByRole('button', { name: 'Download lesson plan (FreePeriod template)' }),
+      screen.getByRole('button', { name: 'Free Period template' }),
     );
 
     await waitFor(() => {

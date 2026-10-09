@@ -1,2 +1,1 @@
-export const FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL =
-  'Download lesson plan (FreePeriod template)';
+export const FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL = 'Free Period template';
