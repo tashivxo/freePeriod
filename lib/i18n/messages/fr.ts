@@ -67,7 +67,7 @@ export const fr: Messages = {
     featureAiPoweredDesc: 'Adapté à votre matière, niveau et programme en quelques secondes.',
     featureExportAnywhere: 'Exportez partout',
     featureExportAnywhereDesc:
-      'Téléchargez le plan de cours modèle FreePeriod ou remplissez votre propre modèle.',
+      'Téléchargez le plan de cours modèle free period template ou remplissez votre propre modèle.',
     ctaHeadline: 'Prêt à retrouver vos soirées ?',
     ctaSub: 'Rejoignez les enseignants qui planifient plus vite sans sacrifier la structure.',
     ctaBandTitle: 'Votre plan, à votre façon',
