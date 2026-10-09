@@ -13,6 +13,7 @@ import { mapTemplateExportError } from '@/lib/export/map-error';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
+  TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR,
   isMeaningfulFill,
   templateDataAppearsInText,
 } from '@/lib/export/fill-template-result';
@@ -169,6 +170,12 @@ export async function POST(request: NextRequest) {
       content: lesson.content as LessonSection,
     } as LessonPlan);
     if (!isMeaningfulFill(result.filledCount, result.matchedLabels)) {
+      if ((result.formFieldCount ?? 0) === 0) {
+        return NextResponse.json(
+          { error: TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR, code: TEMPLATE_UNFILLED_CODE },
+          { status: 422 },
+        );
+      }
       return unfilledTemplateResponse();
     }
     return filledFileResponse(result.buffer, filename, PDF_CONTENT_TYPE);

@@ -53,11 +53,14 @@ jest.mock('xlsx', () => ({
 
 import { POST } from '@/app/api/export/fill-template/route';
 import { buildTemplateData } from '@/lib/lesson/template-data';
+import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
 } from '@/lib/export/fill-template-result';
 import * as XLSX from 'xlsx';
+
+const PDF_NO_FIELDS_ERROR = `Couldn’t fill this PDF — it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`;
 
 const lessonContent = {
   title: 'Story Elements',
@@ -349,6 +352,28 @@ describe('POST /api/export/fill-template', () => {
       buffer: templateBuffer,
       filledCount: 0,
       matchedLabels: [],
+      formFieldCount: 0,
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: PDF_NO_FIELDS_ERROR,
+      code: TEMPLATE_UNFILLED_CODE,
+    });
+    expect(mockFillPdf).toHaveBeenCalled();
+  });
+
+  it('returns 422 with unmapped-fields copy when PDF has form fields but none matched', async () => {
+    lessonRow('user-1/template/plan.pdf');
+    const templateBuffer = Buffer.from('%PDF-template');
+    mockDownloadedBuffer(templateBuffer);
+    mockFillPdf.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+      formFieldCount: 3,
     });
 
     const response = await postFill();
@@ -358,6 +383,25 @@ describe('POST /api/export/fill-template', () => {
       error: TEMPLATE_UNFILLED_ERROR,
       code: TEMPLATE_UNFILLED_CODE,
     });
-    expect(mockFillPdf).toHaveBeenCalled();
+  });
+
+  it('returns 422 with unmapped-fields copy when PDF fill is header-only', async () => {
+    lessonRow('user-1/template/plan.pdf');
+    const templateBuffer = Buffer.from('%PDF-template');
+    mockDownloadedBuffer(templateBuffer);
+    mockFillPdf.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 1,
+      matchedLabels: ['lesson title'],
+      formFieldCount: 1,
+    });
+
+    const response = await postFill();
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: TEMPLATE_UNFILLED_ERROR,
+      code: TEMPLATE_UNFILLED_CODE,
+    });
   });
 });

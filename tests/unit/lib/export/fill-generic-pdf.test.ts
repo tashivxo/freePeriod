@@ -1,10 +1,16 @@
 /**
  * @jest-environment node
  */
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import { fillGenericPdfTemplate, valueForPdfField } from '@/lib/export/fill-generic-pdf';
 import { isMeaningfulFill } from '@/lib/export/fill-template-result';
 import type { LessonPlan } from '@/types';
+
+const STATIC_FORMAL_FIXTURE = readFileSync(
+  path.join(process.cwd(), 'tests/fixtures/static-formal-lesson-plan.pdf'),
+);
 
 const sampleLesson: LessonPlan = {
   id: 'test-id',
@@ -84,6 +90,7 @@ describe('fillGenericPdfTemplate', () => {
     const result = await fillGenericPdfTemplate(template, sampleLesson);
 
     expect(result.filledCount).toBe(3);
+    expect(result.formFieldCount).toBe(4);
     expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(true);
 
     const filled = await PDFDocument.load(result.buffer);
@@ -103,6 +110,7 @@ describe('fillGenericPdfTemplate', () => {
 
     expect(result.filledCount).toBe(0);
     expect(result.matchedLabels).toEqual([]);
+    expect(result.formFieldCount).toBe(0);
     expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(false);
   });
 
@@ -110,6 +118,27 @@ describe('fillGenericPdfTemplate', () => {
     const template = await makePdfWithFields([{ name: 'Lesson Title' }]);
     const result = await fillGenericPdfTemplate(template, sampleLesson);
     expect(result.filledCount).toBe(1);
+    expect(result.formFieldCount).toBe(1);
+    expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(false);
+  });
+
+  it('reports no form fields for the static Formal lesson-plan PDF fixture', async () => {
+    const loaded = await PDFDocument.load(STATIC_FORMAL_FIXTURE);
+    expect(loaded.getPageCount()).toBe(10);
+    expect(loaded.getPage(0).getSize()).toEqual({ width: 792, height: 612 });
+    expect(loaded.getForm().getFields()).toHaveLength(0);
+    for (const page of loaded.getPages()) {
+      const annots = page.node.Annots();
+      expect(annots?.size() ?? 0).toBe(0);
+    }
+    const raw = STATIC_FORMAL_FIXTURE.toString('latin1');
+    expect(raw).not.toMatch(/\/AcroForm/);
+    expect(raw).not.toMatch(/\/Widget/);
+
+    const result = await fillGenericPdfTemplate(STATIC_FORMAL_FIXTURE, sampleLesson);
+    expect(result.filledCount).toBe(0);
+    expect(result.matchedLabels).toEqual([]);
+    expect(result.formFieldCount).toBe(0);
     expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(false);
   });
 });
