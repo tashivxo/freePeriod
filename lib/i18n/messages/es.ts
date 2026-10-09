@@ -67,7 +67,7 @@ export const es: Messages = {
     featureAiPoweredDesc: 'Adaptado a tu materia, curso y currículo en segundos.',
     featureExportAnywhere: 'Exporta a cualquier parte',
     featureExportAnywhereDesc:
-      'Descarga el plan de clase de la plantilla free period template o rellena tu propia plantilla.',
+      'Descarga el plan de clase de la plantilla Free Period Template o rellena tu propia plantilla.',
     ctaHeadline: '¿Listo para recuperar tus tardes?',
     ctaSub: 'Únete a profesores que planifican más rápido sin sacrificar la estructura.',
     ctaBandTitle: 'Tu plan, a tu manera',
