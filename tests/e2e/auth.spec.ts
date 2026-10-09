@@ -7,7 +7,7 @@ test.describe('Sign-in page', () => {
   });
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Sign In — FreePeriod');
+    await expect(page).toHaveTitle('Sign In, FreePeriod');
   });
 
   test('renders logo, heading and form', async ({ page }) => {
@@ -66,7 +66,7 @@ test.describe('Sign-up page', () => {
   });
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Sign Up — FreePeriod');
+    await expect(page).toHaveTitle('Sign Up, FreePeriod');
   });
 
   test('renders logo, heading and registration form', async ({ page }) => {

@@ -29,7 +29,7 @@ test.describe('Dashboard', () => {
   });
 
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('FreePeriod — AI Lesson Planner');
+    await expect(page).toHaveTitle('FreePeriod, AI Lesson Planner');
   });
 
   test('renders navbar with active Dashboard link', async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe('Generate page', () => {
   });
 
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('Generate — FreePeriod');
+    await expect(page).toHaveTitle('Generate, FreePeriod');
   });
 
   test('renders form with all required fields', async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe('History page', () => {
   });
 
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('Lesson Plan History — FreePeriod');
+    await expect(page).toHaveTitle('Lesson Plan History, FreePeriod');
   });
 
   test('renders heading and empty state for new account', async ({ page }) => {
@@ -111,7 +111,7 @@ test.describe('Settings page', () => {
   });
 
   test('has correct page title', async ({ page }) => {
-    await expect(page).toHaveTitle('Settings — FreePeriod');
+    await expect(page).toHaveTitle('Settings, FreePeriod');
   });
 
   test('renders profile section with user data', async ({ page }) => {

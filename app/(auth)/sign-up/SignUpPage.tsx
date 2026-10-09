@@ -235,7 +235,7 @@ export function SignUpPage() {
         {checkEmail ? (
           <div role="status" className="space-y-4">
             <div className="p-3 rounded-xl bg-success/10 text-success text-sm text-center">
-              Check your email — we&apos;ve sent a confirmation link to{' '}
+              Check your email, we&apos;ve sent a confirmation link to{' '}
               <strong>{normalizeEmail(email)}</strong>
             </div>
             <p className="text-center text-sm font-body text-text-secondary">

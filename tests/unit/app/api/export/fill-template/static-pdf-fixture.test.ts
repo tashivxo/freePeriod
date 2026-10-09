@@ -41,7 +41,7 @@ const STATIC_FORMAL_FIXTURE = readFileSync(
   path.join(process.cwd(), 'tests/fixtures/static-formal-lesson-plan.pdf'),
 );
 
-const PDF_NO_FIELDS_ERROR = `Couldn’t fill this PDF — it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`;
+const PDF_NO_FIELDS_ERROR = `Couldn’t fill this PDF, it has no fillable form fields. Upload a Word (.docx) version of your template, or use ${FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL} for a Free Period lesson plan.`;
 
 const lessonContent = {
   title: 'Story Elements',

@@ -102,7 +102,7 @@ export const fr: Messages = {
       'Les forfaits payants incluent 30 jours d’essai. Résiliez à tout moment. Sans frais cachés.',
     checkoutRedirecting: 'Ouverture du paiement…',
     checkoutSettingUp: 'Préparation du paiement…',
-    checkoutError: 'Impossible d’ouvrir le paiement — réessayez',
+    checkoutError: 'Impossible d’ouvrir le paiement, réessayez',
     plans: {
       free: {
         name: 'Gratuit',

@@ -136,24 +136,24 @@ export function PrivacyPolicyContent() {
         </p>
         <ul>
           <li>
-            <strong>Supabase</strong> — authentication, database, and private file storage for your
+            <strong>Supabase</strong>, authentication, database, and private file storage for your
             uploads and account data (hosted in {legalConfig.supabaseRegion})
           </li>
           <li>
-            <strong>Anthropic</strong> — processes lesson prompts and curriculum context to generate
+            <strong>Anthropic</strong>, processes lesson prompts and curriculum context to generate
             lesson plans for paid (Pro and Pro+) subscribers using Claude models
           </li>
           <li>
-            <strong>Google</strong> — provides Gemini models for free-tier lesson generation and,
+            <strong>Google</strong>, provides Gemini models for free-tier lesson generation and,
             if you choose &quot;Continue with Google&quot;, OAuth sign-in (email and basic profile
             only)
           </li>
           <li>
-            <strong>{paymentProcessor}</strong> — payment processing for paid subscriptions; card
+            <strong>{paymentProcessor}</strong>, payment processing for paid subscriptions; card
             details are handled by {paymentProcessor}, not stored by us
           </li>
           <li>
-            <strong>Vercel</strong> — application hosting, CDN, and infrastructure logs (hosted in{' '}
+            <strong>Vercel</strong>, application hosting, CDN, and infrastructure logs (hosted in{' '}
             {legalConfig.vercelRegion})
           </li>
         </ul>

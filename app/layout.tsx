@@ -36,7 +36,7 @@ const notoSansSC = Noto_Sans_SC({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://freeperiod.co.za'),
-  title: 'FreePeriod — AI Lesson Planner',
+  title: 'FreePeriod, AI Lesson Planner',
   description:
     'AI lesson planner for teachers. Describe what you need and get a complete, structured lesson plan in seconds. Export to DOCX.',
 };

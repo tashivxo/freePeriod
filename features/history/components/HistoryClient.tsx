@@ -97,7 +97,7 @@ export function HistoryClient() {
       ) : lessons.length === 0 ? (
         <div className="text-center font-body text-text-secondary py-12">
           {hasActiveFilters ? (
-            <p>Nothing found — try a different search.</p>
+            <p>Nothing found, try a different search.</p>
           ) : (
             <>
               <p className="mb-4">No lessons yet.</p>
