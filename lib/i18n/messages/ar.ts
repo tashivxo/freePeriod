@@ -67,7 +67,7 @@ export const ar: Messages = {
     featureAiPoweredDesc: 'مخصص لمادتك وصفك ومنهجك في ثوانٍ.',
     featureExportAnywhere: 'صدّر إلى أي مكان',
     featureExportAnywhereDesc:
-      'حمّل خطة الدرس بقالب Free Period Template أو املأ قالبك الخاص.',
+      'حمّل خطة الدرس بقالب Free Period template أو املأ قالبك الخاص.',
     ctaHeadline: 'هل أنت مستعد لاستعادة أمسياتك؟',
     ctaSub: 'انضم إلى المعلمين الذين يخططون أسرع دون التضحية بالهيكل.',
     ctaBandTitle: 'خطتك، بطريقتك',

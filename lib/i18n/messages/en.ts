@@ -65,7 +65,7 @@ export const en = {
     featureAiPoweredDesc: 'Tailored to your subject, year group, and curriculum in seconds.',
     featureExportAnywhere: 'Export Anywhere',
     featureExportAnywhereDesc:
-      'Download the Free Period Template lesson plan or fill in your own template.',
+      'Download the Free Period template lesson plan or fill in your own template.',
     ctaHeadline: 'Ready to reclaim your evenings?',
     ctaSub: 'Join teachers who plan faster without sacrificing structure.',
     ctaBandTitle: 'Your plan, your way',
