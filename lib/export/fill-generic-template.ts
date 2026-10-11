@@ -674,6 +674,65 @@ function isAdaptiveLabelCell(cellXml: string): boolean {
   );
 }
 
+function normalizeCompareText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function splitWrittenLines(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .map((line) => line.replace(/^[•\s]+/, '').trim())
+    .filter(Boolean);
+}
+
+function isNearDuplicate(item: string, existing: string[]): boolean {
+  const left = normalizeCompareText(item);
+  if (left.length < 8) return false;
+  return existing.some((other) => {
+    const right = normalizeCompareText(other);
+    if (right.length < 8) return false;
+    return left === right || left.includes(right) || right.includes(left);
+  });
+}
+
+function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
+  const source = activitySourceForPhase('demonstration', content);
+  const parsed = source ? mergeParsedActivities(source.items, source.fallbackTime) : null;
+  const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
+  const iCan = withoutICanColonPrefix(
+    successCriteriaItems.some((item) => /\bi can\b/i.test(item))
+      ? joinBullets(successCriteriaItems)
+      : formatICanStatements(successCriteriaItems),
+  );
+  return [
+    parsed?.teacher ?? '',
+    parsed?.learner ? withoutICanColonPrefix(parsed.learner) : '',
+    activityLevelLine(1, content),
+    activityLevelLine(2, content),
+    activityLevelLine(3, content),
+    scaledICan('support', content),
+    iCan,
+    scaledICan('extend', content),
+  ].flatMap(splitWrittenLines);
+}
+
+function adaptivePointerForHeading(heading: string): string {
+  const text = normalizeLabel(heading);
+  if (text.includes('working towards mastery')) return 'See Adaptive Teaching: Working Towards Mastery.';
+  if (text.includes('working at mastery')) return 'See Adaptive Teaching: Working At Mastery.';
+  if (text.includes('greater depth')) return 'See Adaptive Teaching: Mastery with Greater Depth.';
+  return 'See Adaptive Teaching.';
+}
+
+function dedupeAdaptiveItems(items: string[], practiceTexts: string[], pointer: string): string[] {
+  const unique = items.filter((item) => !isNearDuplicate(item, practiceTexts));
+  return unique.length > 0 ? unique : [pointer];
+}
+
 function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): string[] {
   const text = normalizeLabel(heading);
   if (text.startsWith('prior knowledge')) {
@@ -697,12 +756,17 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
 function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']): string {
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) return cellXml;
+  const practiceTexts = practiceCellWrittenTexts(content);
 
   const insertions: Array<{ afterIndex: number; xml: string }> = [];
   paras.forEach((para, index) => {
     const heading = cellPlainText(para.xml);
     if (!heading) return;
-    const items = adaptiveHeadingItems(heading, content);
+    const items = dedupeAdaptiveItems(
+      adaptiveHeadingItems(heading, content),
+      practiceTexts,
+      adaptivePointerForHeading(heading),
+    );
     if (items.length === 0) return;
     const bullets = items.map((item) => `• ${item}`).join('\n');
     insertions.push({ afterIndex: index, xml: buildParagraphsXml(para.xml, bullets) });

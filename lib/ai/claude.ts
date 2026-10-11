@@ -57,7 +57,7 @@ const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successC
 - vocabulary: Each item must be "Term: student-friendly definition" (e.g. "Phase: a distinct form of matter such as solid, liquid, or gas").
 - objectives: Full measurable objective statements using Bloom's taxonomy verbs, complete sentences, not fragments.
 - successCriteria, formativeAssessment, differentiation, realWorldConnections: Detailed enough that a substitute teacher could deliver the lesson without guessing.
-- templateSlots: Each value is one complete grammatical sentence. Do not splice a clause onto an existing sentence. Homework lines must be based on independent practice or the exit ticket, not an in-class brainstorm.
+- templateSlots: Each value is one complete grammatical sentence. Do not splice a clause onto an existing sentence. Homework lines must be based on independent practice or the exit ticket, not an in-class brainstorm. activitySupported, activityExpected, and activityStretch must be teacher-facing teaching strategies, not learner outcomes or copies of Learner Activity text.
 - Keep pronouns agreeing with their nouns. After a plural noun such as paragraphs, write them rather than a singular pronoun. Write I can statements as complete sentences, never as colon labels.
 - Minimum 3 items per array field where applicable.`;
 
@@ -125,7 +125,7 @@ The JSON object must include these 18 required keys:
 Also include this optional object of single complete sentences for leftover template bands:
 "templateSlots": {
   "activitySupported": "One complete sentence for the supported activity band.",
-  "activityExpected": "One complete sentence for the expected-level activity band.",
+  "activityExpected": "One complete sentence for a teaching strategy at the expected level, not a learner outcome.",
   "activityStretch": "One complete sentence for the stretch activity band.",
   "successCriteriaSupported": "One I can sentence for the supported success-criteria band.",
   "successCriteriaExtended": "One I can sentence for the extended success-criteria band.",
@@ -145,6 +145,7 @@ FORMAT EXAMPLES (bad → good):
 - priorKnowledge BAD: [] or ["Matter"] → GOOD: ["Students should already know that all materials are made of matter and can be observed in everyday objects.", "Students should be able to compare basic properties such as shape, volume, and whether a material can be poured or compressed."]
 - performanceExpectations BAD: [] or ["Matter"] → GOOD: ["The lesson develops students' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance.", "Students demonstrate the target learning through the lesson's evidence-based activities and assessment."]
 - pair talk BAD: ["Swap a paragraph with a partner and read them."] → GOOD: ["Swap paragraphs with a partner and read them."]
+- activityExpected BAD: ["Students independently draft a structured opinion paragraph about screen time."] → GOOD: ["Keep expected-level writers on a modelled paragraph frame and circulate with success-criteria prompts."]
 
 Each array should contain 3-6 items where practical. Be specific and actionable, avoid generic advice.
 
