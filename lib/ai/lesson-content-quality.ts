@@ -1,4 +1,4 @@
-import type { LessonSection } from '@/types';
+import type { LessonSection, LessonTemplateSlots } from '@/types';
 import { stripGeneratedEmDashes } from './claude';
 
 export const MIN_PLANNING_ARRAY_ITEMS = 2;
@@ -335,7 +335,34 @@ export function sanitizeLessonCurriculumIdentifiers(
     },
     realWorldConnections: sanitizeList(content.realWorldConnections) ?? [],
     plenary: sanitizeString(content.plenary),
+    templateSlots: sanitizeTemplateSlots(content.templateSlots, sanitizeString),
   };
+}
+
+function sanitizeTemplateSlots(
+  slots: LessonTemplateSlots | undefined,
+  sanitizeString: (value: string) => string,
+): LessonTemplateSlots | undefined {
+  if (!slots) return slots;
+  const keys: Array<keyof LessonTemplateSlots> = [
+    'activitySupported',
+    'activityExpected',
+    'activityStretch',
+    'successCriteriaSupported',
+    'successCriteriaExtended',
+    'homeworkSupported',
+    'homeworkExpected',
+    'homeworkStretch',
+    'homeworkExtension',
+  ];
+  const sanitized: LessonTemplateSlots = {};
+  for (const key of keys) {
+    const value = slots[key];
+    if (typeof value === 'string') {
+      sanitized[key] = sanitizeString(value);
+    }
+  }
+  return sanitized;
 }
 
 export async function finalizeLessonContent(

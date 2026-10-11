@@ -1,4 +1,4 @@
-import type { GenerationLocale, LessonSection } from '@/types';
+import type { GenerationLocale, LessonSection, LessonTemplateSlots } from '@/types';
 
 const LOCALE_LANGUAGE_NAMES: Record<GenerationLocale, string> = {
   en: 'English',
@@ -57,6 +57,7 @@ const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successC
 - vocabulary: Each item must be "Term: student-friendly definition" (e.g. "Phase: a distinct form of matter such as solid, liquid, or gas").
 - objectives: Full measurable objective statements using Bloom's taxonomy verbs, complete sentences, not fragments.
 - successCriteria, formativeAssessment, differentiation, realWorldConnections: Detailed enough that a substitute teacher could deliver the lesson without guessing.
+- templateSlots: Each value is one complete grammatical sentence. Do not splice a clause onto an existing sentence. Homework lines must be based on independent practice or the exit ticket, not an in-class brainstorm.
 - Minimum 3 items per array field where applicable.`;
 
 const ACTIVITY_PHASE_RULES = `Activity phase writing rules (hook, mainActivities, guidedPractice, independentPractice, plenary):
@@ -95,7 +96,7 @@ export function buildSystemPrompt(
 
 You MUST respond with valid JSON only, no markdown code fences, no explanation outside the JSON object.
 
-The JSON object must have exactly these 18 keys:
+The JSON object must include these 18 required keys:
 {
   "title": "A concise, descriptive lesson title",
   "essentialQuestion": "A thought-provoking lesson question that frames the learning (1-2 complete sentences)",
@@ -118,6 +119,19 @@ The JSON object must have exactly these 18 keys:
   },
   "realWorldConnections": ["Real-world connection 1", ...],
   "plenary": "Activity phase string with all 5 labeled fields"
+}
+
+Also include this optional object of single complete sentences for leftover template bands:
+"templateSlots": {
+  "activitySupported": "One complete sentence for the supported activity band.",
+  "activityExpected": "One complete sentence for the expected-level activity band.",
+  "activityStretch": "One complete sentence for the stretch activity band.",
+  "successCriteriaSupported": "One I can sentence for the supported success-criteria band.",
+  "successCriteriaExtended": "One I can sentence for the extended success-criteria band.",
+  "homeworkSupported": "One complete sentence for supported homework, based on independent practice or the exit ticket.",
+  "homeworkExpected": "One complete sentence for expected-level homework, based on independent practice or the exit ticket.",
+  "homeworkStretch": "One complete sentence for greater-depth homework, based on independent practice or the exit ticket.",
+  "homeworkExtension": "One complete sentence for extension homework, based on independent practice or the exit ticket."
 }
 
 ${ACTIVITY_PHASE_FORMAT}
@@ -218,6 +232,44 @@ function mapGeneratedField(value: string[], asTermDefinition: boolean): string[]
   return value.map((item) => replaceGeneratedEmDashes(item, asTermDefinition));
 }
 
+const TEMPLATE_SLOT_KEYS = [
+  'activitySupported',
+  'activityExpected',
+  'activityStretch',
+  'successCriteriaSupported',
+  'successCriteriaExtended',
+  'homeworkSupported',
+  'homeworkExpected',
+  'homeworkStretch',
+  'homeworkExtension',
+] as const;
+
+function parseTemplateSlots(raw: unknown): LessonTemplateSlots | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const source = raw as Record<string, unknown>;
+  const slots: LessonTemplateSlots = {};
+  let found = false;
+  for (const key of TEMPLATE_SLOT_KEYS) {
+    if (typeof source[key] === 'string' && source[key].trim()) {
+      slots[key] = source[key];
+      found = true;
+    }
+  }
+  return found ? slots : undefined;
+}
+
+function mapGeneratedSlots(slots: LessonTemplateSlots | undefined): LessonTemplateSlots | undefined {
+  if (!slots) return slots;
+  const mapped: LessonTemplateSlots = {};
+  for (const key of TEMPLATE_SLOT_KEYS) {
+    const value = slots[key];
+    if (typeof value === 'string') {
+      mapped[key] = replaceGeneratedEmDashes(value, false);
+    }
+  }
+  return mapped;
+}
+
 /** Strip U+2014 from model-generated fields. Leaves `title` unchanged for user-typed names. */
 export function stripGeneratedEmDashes(content: LessonSection): LessonSection {
   return {
@@ -254,6 +306,7 @@ export function stripGeneratedEmDashes(content: LessonSection): LessonSection {
     },
     realWorldConnections: mapGeneratedField(content.realWorldConnections, false),
     plenary: replaceGeneratedEmDashes(content.plenary, false),
+    templateSlots: mapGeneratedSlots(content.templateSlots),
   };
 }
 
@@ -291,6 +344,7 @@ export function parseLessonContent(text: string): LessonSection | null {
       },
       realWorldConnections: Array.isArray(parsed.realWorldConnections) ? parsed.realWorldConnections.map(String) : [],
       plenary: String(parsed.plenary ?? ''),
+      templateSlots: parseTemplateSlots(parsed.templateSlots),
     });
   } catch {
     return null;

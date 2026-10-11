@@ -452,34 +452,112 @@ function practiceTaskCore(content: LessonPlan['content']): string {
   return stripTaskMarkers(raw) || 'the lesson task';
 }
 
+function stripTrailingPunctuation(text: string): string {
+  return text.replace(/[.!?…]+$/u, '').trim();
+}
+
+function asCompleteSentence(text: string): string {
+  const cleaned = stripTrailingPunctuation(text.replace(/\s+/g, ' ').trim());
+  if (!cleaned) return '';
+  return `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}.`;
+}
+
+function asICanSentence(text: string): string {
+  const cleaned = stripTrailingPunctuation(text.replace(/\s+/g, ' ').trim());
+  if (!cleaned) return 'I can complete the lesson task.';
+  if (/^i can\b/i.test(cleaned)) return asCompleteSentence(cleaned);
+  return asCompleteSentence(`I can ${cleaned.replace(/^[:.\s]+/, '')}`);
+}
+
+function shortPhrase(text: string, fallback: string): string {
+  const cleaned = stripTrailingPunctuation(stripTaskMarkers(text).split('\n')[0] ?? '');
+  if (!cleaned) return fallback;
+  const stripped = cleaned
+    .replace(
+      /^(?:i can|students?|complete|contribute|revisit|finish|describe|explain|identify|analyse|analyze|use)\s+(?:\w+\s+)?/i,
+      '',
+    )
+    .trim();
+  const words = (stripped || cleaned).split(/\s+/).slice(0, 7);
+  let phrase = words.join(' ');
+  if (!phrase) return fallback;
+  if (/^[A-Z][a-z]/.test(phrase)) {
+    phrase = phrase.charAt(0).toLowerCase() + phrase.slice(1);
+  }
+  return phrase;
+}
+
+function homeworkSource(content: LessonPlan['content']): string {
+  const independent = activityTasksFromItems(content.independentPractice);
+  const exit = (content.formativeAssessment ?? [])[0] ?? '';
+  return independent[0] || exit || 'the lesson task';
+}
+
 function activationDifferentiationLine(): string {
   return 'Support with a model or prompts; stretch with a further example. See Adaptive Teaching.';
 }
 
-function activityLevelLine(level: 1 | 2 | 3, core: string): string {
-  if (level === 1) return `Supported: ${core} with a model and prompts.`;
-  if (level === 2) return `At expected level: ${core} independently.`;
-  return `Stretch: ${core} and add a further example.`;
+function activityLevelLine(level: 1 | 2 | 3, content: LessonPlan['content']): string {
+  const slots = content.templateSlots;
+  if (level === 1 && slots?.activitySupported) return asCompleteSentence(slots.activitySupported);
+  if (level === 2 && slots?.activityExpected) return asCompleteSentence(slots.activityExpected);
+  if (level === 3 && slots?.activityStretch) return asCompleteSentence(slots.activityStretch);
+  if (level === 1) {
+    return asCompleteSentence(
+      `Complete the supported task using ${shortPhrase(content.differentiation?.support?.[0] ?? '', 'supported prompts')}`,
+    );
+  }
+  if (level === 2) {
+    return asCompleteSentence(
+      `Complete the expected-level task using ${shortPhrase(masteryLevelTasks(content)[0] ?? practiceTaskCore(content), 'the core task')}`,
+    );
+  }
+  return asCompleteSentence(
+    `Complete the stretch task using ${shortPhrase(content.differentiation?.extension?.[0] ?? '', 'a stretch challenge')}`,
+  );
 }
 
 function iCanPredicate(items: string[]): string {
   const first = items[0] || 'I can complete the lesson task';
   const match = first.match(/\bi can\b\s*(.+)/i);
   const rest = match?.[1] ? stripTaskMarkers(match[1]) : stripTaskMarkers(first.replace(/^i can\s+/i, ''));
-  return rest.replace(/^[:.\s]+/, '') || 'complete the lesson task';
+  return stripTrailingPunctuation(rest.replace(/^[:.\s]+/, '')) || 'complete the lesson task';
 }
 
-function scaledICan(items: string[], scale: 'support' | 'extend'): string {
+function scaledICan(
+  items: string[],
+  scale: 'support' | 'extend',
+  content: LessonPlan['content'],
+): string {
+  if (scale === 'support' && content.templateSlots?.successCriteriaSupported) {
+    return asICanSentence(content.templateSlots.successCriteriaSupported);
+  }
+  if (scale === 'extend' && content.templateSlots?.successCriteriaExtended) {
+    return asICanSentence(content.templateSlots.successCriteriaExtended);
+  }
   const predicate = iCanPredicate(items);
-  if (scale === 'support') return `I can, with prompts or a model, ${predicate}`;
-  return `I can ${predicate} and apply it to a further example.`;
+  if (scale === 'support') {
+    return asCompleteSentence(`I can, with prompts or a model, ${predicate}`);
+  }
+  const topic = predicate.replace(/^(state|describe|explain|identify|complete)\s+/i, '') || predicate;
+  return asCompleteSentence(`I can explain ${topic} in greater depth`);
 }
 
-function homeworkLevelLine(band: 'towards' | 'at' | 'depth' | 'extension', core: string): string {
-  if (band === 'towards') return `Revisit ${core} at home using the supported prompts.`;
-  if (band === 'at') return `Finish ${core} independently at home.`;
-  if (band === 'depth') return `Add one further example to ${core}.`;
-  return `Invent a stretch question related to ${core}.`;
+function homeworkLevelLine(
+  band: 'towards' | 'at' | 'depth' | 'extension',
+  content: LessonPlan['content'],
+): string {
+  const slots = content.templateSlots;
+  if (band === 'towards' && slots?.homeworkSupported) return asCompleteSentence(slots.homeworkSupported);
+  if (band === 'at' && slots?.homeworkExpected) return asCompleteSentence(slots.homeworkExpected);
+  if (band === 'depth' && slots?.homeworkStretch) return asCompleteSentence(slots.homeworkStretch);
+  if (band === 'extension' && slots?.homeworkExtension) return asCompleteSentence(slots.homeworkExtension);
+
+  const phrase = shortPhrase(homeworkSource(content), 'the lesson task');
+  if (band === 'towards') return asCompleteSentence(`Complete a supported homework review of ${phrase}`);
+  if (band === 'at') return asCompleteSentence(`Complete the independent practice on ${phrase} at home`);
+  if (band === 'depth') return asCompleteSentence(`Add one further example related to ${phrase}`);
+  return asCompleteSentence(`Write one stretch question about ${phrase}`);
 }
 
 function matchesTowardsLabel(label: string): boolean {
@@ -516,7 +594,6 @@ function fillActivityPhaseRow(
   const iCan = successCriteriaItems.some((item) => /\bi can\b/i.test(item))
     ? joinBullets(successCriteriaItems)
     : formatICanStatements(successCriteriaItems);
-  const taskCore = practiceTaskCore(content);
   const activitiesCell = /differentiated activities/i.test(cellPlainText(cellsXml[1] ?? ''));
   const successCriteriaCell = /differentiated success criteria/i.test(cellPlainText(cellsXml[2] ?? ''));
   const homeworkCell = /homework differentiation/i.test(cellPlainText(cellsXml[2] ?? ''));
@@ -526,9 +603,9 @@ function fillActivityPhaseRow(
   if (teacher) {
     next[1] = fillStructuredCell(next[1], teacher, [
       { match: (label) => /class discussion/i.test(label), content: teacher },
-      { match: (label) => activitiesCell && matchesTowardsLabel(label), content: activityLevelLine(1, taskCore) },
-      { match: (label) => activitiesCell && matchesAtMasteryLabel(label), content: activityLevelLine(2, taskCore) },
-      { match: (label) => activitiesCell && matchesGreaterDepthLabel(label), content: activityLevelLine(3, taskCore) },
+      { match: (label) => activitiesCell && matchesTowardsLabel(label), content: activityLevelLine(1, content) },
+      { match: (label) => activitiesCell && matchesAtMasteryLabel(label), content: activityLevelLine(2, content) },
+      { match: (label) => activitiesCell && matchesGreaterDepthLabel(label), content: activityLevelLine(3, content) },
     ]);
   }
   if (learner) {
@@ -542,7 +619,7 @@ function fillActivityPhaseRow(
       { match: (label) => /^plenary\b/i.test(label.trim()), content: learner },
       {
         match: (label) => successCriteriaCell && matchesTowardsLabel(label),
-        content: scaledICan(successCriteriaItems, 'support'),
+        content: scaledICan(successCriteriaItems, 'support', content),
       },
       {
         match: (label) => successCriteriaCell && matchesAtMasteryLabel(label),
@@ -550,23 +627,23 @@ function fillActivityPhaseRow(
       },
       {
         match: (label) => successCriteriaCell && matchesGreaterDepthLabel(label),
-        content: scaledICan(successCriteriaItems, 'extend'),
+        content: scaledICan(successCriteriaItems, 'extend', content),
       },
       {
         match: (label) => homeworkCell && matchesTowardsLabel(label),
-        content: homeworkLevelLine('towards', taskCore),
+        content: homeworkLevelLine('towards', content),
       },
       {
         match: (label) => homeworkCell && matchesAtMasteryLabel(label),
-        content: homeworkLevelLine('at', taskCore),
+        content: homeworkLevelLine('at', content),
       },
       {
         match: (label) => homeworkCell && matchesGreaterDepthLabel(label),
-        content: homeworkLevelLine('depth', taskCore),
+        content: homeworkLevelLine('depth', content),
       },
       {
         match: (label) => homeworkCell && matchesExtensionLabel(label),
-        content: homeworkLevelLine('extension', taskCore),
+        content: homeworkLevelLine('extension', content),
       },
     ]);
   }
