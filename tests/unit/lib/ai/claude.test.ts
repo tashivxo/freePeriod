@@ -90,7 +90,7 @@ ${JSON.stringify({
 
     expect(prompt).toContain('I can name all five elements correctly.');
     expect(prompt).toContain('I can explain how conflict drives the plot.');
-    expect(prompt).not.toMatch(/\bI can:\s+[a-z]/i);
+    expect(prompt).not.toContain('I can:');
   });
 
   it('keeps pronoun number agreement in prompt and leftover fallback copy', () => {
