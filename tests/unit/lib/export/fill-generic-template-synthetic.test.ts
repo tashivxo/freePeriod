@@ -376,6 +376,64 @@ describe('synthetic daily English template fill', () => {
     expect(contentIdx).toBeGreaterThan(classIdx);
   });
 
+  it('fills leftover guidance slots with short level-specific text, not Adaptive list copies', async () => {
+    const { outXml } = await fillSynthetic();
+    const slots = collectListSlots(outXml);
+    const adaptiveItems = [
+      slots.adaptiveTowards,
+      slots.adaptiveAtMastery,
+      slots.adaptiveDepth,
+    ].flatMap((text) => extractBulletItems(text));
+
+    const activationDiff = slotBody(slots.activationDiff, 'Differentiation:', '');
+    expect(activationDiff.length).toBeGreaterThan(12);
+    expect(activationDiff).toMatch(/support|stretch|adaptive teaching/i);
+
+    const act1 = slotBody(slots.practiceAct1, '[1]', '[2]');
+    const act2 = slotBody(slots.practiceAct2, '[2]', '[3]');
+    const act3 = slotBody(slots.practiceAct3, '[3]', '');
+    expect(act1.length).toBeGreaterThan(12);
+    expect(act2.length).toBeGreaterThan(12);
+    expect(act3.length).toBeGreaterThan(12);
+    expect(act1).toMatch(/support|scaffold|prompt|model/i);
+    expect(act2).toMatch(/expected|on-level|independen|core/i);
+    expect(act3).toMatch(/stretch|extend|further|deeper/i);
+    expect(new Set([act1, act2, act3]).size).toBe(3);
+
+    const sc1 = slotBody(slots.practiceSc1, '[1]', '[2]');
+    const sc2 = slotBody(slots.practiceSc2, '[2]', '[3]');
+    const sc3 = slotBody(slots.practiceSc3, '[3]', '');
+    expect(sc1).toMatch(/^i can\b/i);
+    expect(sc2).toMatch(/i can/i);
+    expect(sc3).toMatch(/^i can\b/i);
+    expect(new Set([sc1, sc2, sc3]).size).toBe(3);
+
+    const hwTowards = slotBody(slots.homework, 'Working Towards Mastery:', 'Working At Mastery:');
+    const hwAt = slotBody(slots.homework, 'Working At Mastery:', 'Mastery with Greater Depth:');
+    const hwDepth = slotBody(slots.homework, 'Mastery with Greater Depth:', 'Extension:');
+    const hwExtension = slotBody(slots.homework, 'Extension:', '');
+    expect(hwTowards.length).toBeGreaterThan(12);
+    expect(hwAt.length).toBeGreaterThan(12);
+    expect(hwDepth.length).toBeGreaterThan(12);
+    expect(hwExtension.length).toBeGreaterThan(12);
+    expect(new Set([hwTowards, hwAt, hwDepth, hwExtension]).size).toBe(4);
+    for (const band of [hwTowards, hwAt, hwDepth, hwExtension]) {
+      expect(band).not.toBe(
+        'Complete a short reflection or practice task reinforcing the lesson objectives and vocabulary.',
+      );
+    }
+
+    const derivedSlots = [activationDiff, act1, act2, act3, sc1, sc3, hwTowards, hwAt, hwDepth, hwExtension];
+    for (const slot of derivedSlots) {
+      expect(slot).not.toContain('SUPPORT_MARKER');
+      expect(slot).not.toContain('MASTERY_TASK_MARKER');
+      expect(slot).not.toContain('EXTENSION_MARKER');
+      for (const item of adaptiveItems) {
+        expect(slot).not.toContain(item);
+      }
+    }
+  });
+
   it('keeps SEN template prose intact and puts misconceptions only in a misconceptions slot', async () => {
     const { outXml } = await fillSynthetic();
     const adaptive = adaptiveValueText(outXml);
@@ -389,6 +447,19 @@ describe('synthetic daily English template fill', () => {
     expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('targeted intervention for');
   });
 });
+
+function slotBody(text: string, start: string, end: string): string {
+  const raw = sliceBetween(text, start, end);
+  const withoutLabel = raw.startsWith(start) ? raw.slice(start.length) : raw;
+  return withoutLabel.replace(/^[•\s]+/, '').trim();
+}
+
+function extractBulletItems(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.replace(/^[•\s]+/, '').trim())
+    .filter((line) => line.length > 0 && !/^(working |other adaptive|special educational|prior knowledge)/i.test(line));
+}
 
 function expectedHome(marker: string): string {
   if (marker === 'SUPPORT_MARKER') return 'adaptiveTowards';
