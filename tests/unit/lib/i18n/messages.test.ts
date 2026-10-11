@@ -1,5 +1,37 @@
 import { getMessages, LOCALES, type Locale } from '@/lib/i18n';
 
+const LESSON_EDIT_COPY: Record<
+  Locale,
+  { edited: string; savedToast: string; discardChanges: string }
+> = {
+  en: {
+    edited: 'Edited',
+    savedToast: 'Saved. Downloads use your edits.',
+    discardChanges: 'Discard changes?',
+  },
+  ar: {
+    edited: 'تم التعديل',
+    savedToast: 'تم الحفظ. التنزيلات تستخدم تعديلاتك.',
+    discardChanges: 'هل تريد تجاهل التغييرات؟',
+  },
+  es: {
+    edited: 'Editado',
+    savedToast: 'Guardado. Las descargas usan tus ediciones.',
+    discardChanges: '¿Descartar cambios?',
+  },
+  fr: {
+    edited: 'Modifié',
+    savedToast: 'Enregistré. Les téléchargements utilisent vos modifications.',
+    discardChanges: 'Ignorer les modifications ?',
+  },
+  'zh-Hans': {
+    edited: '已编辑',
+    savedToast: '已保存。下载将使用你的修改。',
+    discardChanges: '放弃更改？',
+  },
+};
+
+
 const FREEPERIOD_TEMPLATE_EXPORT_DESC: Record<Locale, string> = {
   en: 'Download the Free Period template lesson plan or fill in your own template.',
   ar: 'حمّل خطة الدرس بقالب Free Period template أو املأ قالبك الخاص.',
@@ -35,3 +67,17 @@ describe('landing.featureExportAnywhereDesc', () => {
     expect(desc).not.toMatch(/DOCX/i);
   });
 });
+
+describe('lesson edit copy', () => {
+  it.each(LOCALES)('ships Edited, saved toast, and discard copy for %s', (locale) => {
+    const lesson = getMessages(locale).lesson;
+    const expected = LESSON_EDIT_COPY[locale];
+
+    expect(lesson.edited).toBe(expected.edited);
+    expect(lesson.savedToast).toBe(expected.savedToast);
+    expect(lesson.discardChanges).toBe(expected.discardChanges);
+    expect(lesson.savedToast).not.toContain('\u2014');
+    expect(lesson.discardChanges).not.toContain('\u2014');
+  });
+});
+
