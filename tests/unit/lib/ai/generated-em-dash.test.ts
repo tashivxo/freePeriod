@@ -84,6 +84,17 @@ describe('generated lesson copy has no em dash (U+2014)', () => {
           'Students often think particles stop moving in solids — addressed by comparing vibration models.',
         ],
         hook: 'Show a short clip — then ask a prediction question',
+        templateSlots: {
+          activitySupported: 'Use a model — then try the supported task',
+          activityExpected: 'Complete the core task — independently',
+          activityStretch: 'Extend the task — with a further example',
+          successCriteriaSupported: 'I can complete the task — with a model',
+          successCriteriaExtended: 'I can apply the idea — to a new example',
+          homeworkSupported: 'Review the exit ticket — with prompts',
+          homeworkExpected: 'Finish the independent practice — at home',
+          homeworkStretch: 'Add one example — from a new context',
+          homeworkExtension: 'Write a stretch question — about the idea',
+        },
       }),
     );
 
@@ -100,6 +111,17 @@ describe('generated lesson copy has no em dash (U+2014)', () => {
       'Students often think particles stop moving in solids, addressed by comparing vibration models.',
     ]);
     expect(parsed?.hook).toBe('Show a short clip, then ask a prediction question');
+    expect(parsed?.templateSlots).toEqual({
+      activitySupported: 'Use a model, then try the supported task',
+      activityExpected: 'Complete the core task, independently',
+      activityStretch: 'Extend the task, with a further example',
+      successCriteriaSupported: 'I can complete the task, with a model',
+      successCriteriaExtended: 'I can apply the idea, to a new example',
+      homeworkSupported: 'Review the exit ticket, with prompts',
+      homeworkExpected: 'Finish the independent practice, at home',
+      homeworkStretch: 'Add one example, from a new context',
+      homeworkExtension: 'Write a stretch question, about the idea',
+    });
     expect(collectStrings({ ...parsed, title: '' }).join('')).not.toContain(EM_DASH);
   });
 });

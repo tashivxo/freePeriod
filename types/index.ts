@@ -5,6 +5,7 @@ export type {
   ExportFormat,
   LessonPlan,
   LessonSection,
+  LessonTemplateSlots,
   Plan,
   Subscription,
   SubscriptionStatus,

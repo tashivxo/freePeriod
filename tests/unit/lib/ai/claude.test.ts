@@ -5,6 +5,12 @@ import {
   sanitizeUntrustedDocumentText,
 } from '@/lib/ai/claude';
 
+function pronounNumberProblems(text: string): string[] {
+  const problems: string[] = [];
+  if (/\bparagraphs\b[^.!?]+\bit\b/i.test(text)) problems.push('paragraphs ... it');
+  return problems;
+}
+
 describe('Claude lesson prompt parsing', () => {
   it('parses JSON wrapped in markdown fences', () => {
     const lesson = parseLessonContent(`\`\`\`json
@@ -77,6 +83,46 @@ ${JSON.stringify({
     expect(lesson?.priorKnowledge).toHaveLength(2);
     expect(lesson?.performanceExpectations?.[0]).toContain('RL.5.3');
     expect(lesson?.vocabulary).toEqual(['conflict', 'theme', 'resolution']);
+  });
+
+  it('asks for templateSlots activityExpected as a teaching strategy, not a learner outcome', () => {
+    const prompt = buildSystemPrompt();
+
+    expect(prompt).toMatch(/activityExpected/);
+    expect(prompt).toMatch(/teaching strategy/i);
+    expect(prompt).toMatch(/not a learner outcome/i);
+    expect(prompt).not.toContain('\u2014');
+  });
+
+  it('writes I can examples as sentences, not colon labels', () => {
+    const prompt = buildSystemPrompt();
+
+    expect(prompt).toContain('I can name all five elements correctly.');
+    expect(prompt).toContain('I can explain how conflict drives the plot.');
+    expect(prompt).not.toContain('I can:');
+  });
+
+  it('keeps pronoun number agreement in prompt and leftover fallback copy', () => {
+    expect(pronounNumberProblems('swap paragraphs with a partner and read it')).toEqual([
+      'paragraphs ... it',
+    ]);
+
+    const leftoverFallbacks = [
+      'See Adaptive Teaching: Working Towards Mastery.',
+      'See Adaptive Teaching: Working At Mastery.',
+      'See Adaptive Teaching: Mastery with Greater Depth.',
+      'I can complete the core task with support.',
+      'I can extend the core task independently.',
+      'Complete the independent practice task at your level with support.',
+      'Complete the independent practice task at your level.',
+      'Complete the independent practice task at your level with greater depth.',
+      'Complete the independent practice task at your level as an extension.',
+      'Support with a model or prompts; stretch with a further example. See Adaptive Teaching.',
+    ];
+
+    for (const text of [buildSystemPrompt(), buildSystemPrompt('ar'), ...leftoverFallbacks]) {
+      expect(pronounNumberProblems(text)).toEqual([]);
+    }
   });
 
   it('asks the model for substantive planning-field content', () => {

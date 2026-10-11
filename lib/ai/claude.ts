@@ -1,4 +1,4 @@
-import type { GenerationLocale, LessonSection } from '@/types';
+import type { GenerationLocale, LessonSection, LessonTemplateSlots } from '@/types';
 
 const LOCALE_LANGUAGE_NAMES: Record<GenerationLocale, string> = {
   en: 'English',
@@ -39,13 +39,13 @@ const ACTIVITY_PHASE_FORMAT = `Activity phase format (hook, every mainActivities
 Each activity phase MUST be a single plain-text string with exactly these five labeled fields, in this order:
 Time: [duration, e.g. 10 min]
 Teacher Activity: [what the teacher does, 2 to 4 short bullet points, one per line]
-Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal, 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can: name all five elements correctly. I can: explain how conflict drives the plot."]
+Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal, 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can name all five elements correctly. I can explain how conflict drives the plot."]
 Formative Assessment: [how you check understanding during this phase, 2 to 4 short bullet points]
 Resources: [specific materials, platforms, or handouts used in this phase only, e.g. "Whiteboard, printed graphic organiser, PhET simulation link, pupil notebooks"]
 
 For every activity phase you MUST return content for all 5 fields. Empty fields are not acceptable.
 If resources are minimal, list at least: "Whiteboard / projector, teacher-created handout".
-Success criteria inside Learner Activity & Success Criteria must be written as "I can" statements derived from the lesson objectives and successCriteria for that phase's goal.`;
+Success criteria inside Learner Activity & Success Criteria must be written as complete "I can ..." sentences derived from the lesson objectives and successCriteria for that phase's goal. Do not write colon labels after I can.`;
 
 const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successCriteria, priorKnowledge, performanceExpectations, misconceptions, sciencePractices, keyConcepts, vocabulary, formativeAssessment, differentiation, realWorldConnections):
 - Write complete, teacher-ready content, not skeleton outlines, placeholders, or single-word labels.
@@ -57,6 +57,8 @@ const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successC
 - vocabulary: Each item must be "Term: student-friendly definition" (e.g. "Phase: a distinct form of matter such as solid, liquid, or gas").
 - objectives: Full measurable objective statements using Bloom's taxonomy verbs, complete sentences, not fragments.
 - successCriteria, formativeAssessment, differentiation, realWorldConnections: Detailed enough that a substitute teacher could deliver the lesson without guessing.
+- templateSlots: Each value is one complete grammatical sentence. Do not splice a clause onto an existing sentence. Homework lines must be based on independent practice or the exit ticket, not an in-class brainstorm. activitySupported, activityExpected, and activityStretch must be teacher-facing teaching strategies, not learner outcomes or copies of Learner Activity text.
+- Keep pronouns agreeing with their nouns. After a plural noun such as paragraphs, write them rather than a singular pronoun. Write I can statements as complete sentences, never as colon labels.
 - Minimum 3 items per array field where applicable.`;
 
 const ACTIVITY_PHASE_RULES = `Activity phase writing rules (hook, mainActivities, guidedPractice, independentPractice, plenary):
@@ -95,7 +97,7 @@ export function buildSystemPrompt(
 
 You MUST respond with valid JSON only, no markdown code fences, no explanation outside the JSON object.
 
-The JSON object must have exactly these 18 keys:
+The JSON object must include these 18 required keys:
 {
   "title": "A concise, descriptive lesson title",
   "essentialQuestion": "A thought-provoking lesson question that frames the learning (1-2 complete sentences)",
@@ -120,6 +122,19 @@ The JSON object must have exactly these 18 keys:
   "plenary": "Activity phase string with all 5 labeled fields"
 }
 
+Also include this optional object of single complete sentences for leftover template bands:
+"templateSlots": {
+  "activitySupported": "One complete sentence for the supported activity band.",
+  "activityExpected": "One complete sentence for a teaching strategy at the expected level, not a learner outcome.",
+  "activityStretch": "One complete sentence for the stretch activity band.",
+  "successCriteriaSupported": "One I can sentence for the supported success-criteria band.",
+  "successCriteriaExtended": "One I can sentence for the extended success-criteria band.",
+  "homeworkSupported": "One complete sentence for supported homework, based on independent practice or the exit ticket.",
+  "homeworkExpected": "One complete sentence for expected-level homework, based on independent practice or the exit ticket.",
+  "homeworkStretch": "One complete sentence for greater-depth homework, based on independent practice or the exit ticket.",
+  "homeworkExtension": "One complete sentence for extension homework, based on independent practice or the exit ticket."
+}
+
 ${ACTIVITY_PHASE_FORMAT}
 
 ${WRITING_RULES}
@@ -129,6 +144,8 @@ FORMAT EXAMPLES (bad → good):
 - vocabulary BAD: ["Solid", "Liquid"] → GOOD: ["Solid: matter with a fixed shape and volume because particles are tightly packed", "Liquid: matter with a fixed volume but no fixed shape because particles can slide past one another"]
 - priorKnowledge BAD: [] or ["Matter"] → GOOD: ["Students should already know that all materials are made of matter and can be observed in everyday objects.", "Students should be able to compare basic properties such as shape, volume, and whether a material can be poured or compressed."]
 - performanceExpectations BAD: [] or ["Matter"] → GOOD: ["The lesson develops students' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance.", "Students demonstrate the target learning through the lesson's evidence-based activities and assessment."]
+- pair talk BAD: ["Swap a paragraph with a partner and read them."] → GOOD: ["Swap paragraphs with a partner and read them."]
+- activityExpected BAD: ["Students independently draft a structured opinion paragraph about screen time."] → GOOD: ["Keep expected-level writers on a modelled paragraph frame and circulate with success-criteria prompts."]
 
 Each array should contain 3-6 items where practical. Be specific and actionable, avoid generic advice.
 
@@ -218,6 +235,44 @@ function mapGeneratedField(value: string[], asTermDefinition: boolean): string[]
   return value.map((item) => replaceGeneratedEmDashes(item, asTermDefinition));
 }
 
+const TEMPLATE_SLOT_KEYS = [
+  'activitySupported',
+  'activityExpected',
+  'activityStretch',
+  'successCriteriaSupported',
+  'successCriteriaExtended',
+  'homeworkSupported',
+  'homeworkExpected',
+  'homeworkStretch',
+  'homeworkExtension',
+] as const;
+
+function parseTemplateSlots(raw: unknown): LessonTemplateSlots | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const source = raw as Record<string, unknown>;
+  const slots: LessonTemplateSlots = {};
+  let found = false;
+  for (const key of TEMPLATE_SLOT_KEYS) {
+    if (typeof source[key] === 'string' && source[key].trim()) {
+      slots[key] = source[key];
+      found = true;
+    }
+  }
+  return found ? slots : undefined;
+}
+
+function mapGeneratedSlots(slots: LessonTemplateSlots | undefined): LessonTemplateSlots | undefined {
+  if (!slots) return slots;
+  const mapped: LessonTemplateSlots = {};
+  for (const key of TEMPLATE_SLOT_KEYS) {
+    const value = slots[key];
+    if (typeof value === 'string') {
+      mapped[key] = replaceGeneratedEmDashes(value, false);
+    }
+  }
+  return mapped;
+}
+
 /** Strip U+2014 from model-generated fields. Leaves `title` unchanged for user-typed names. */
 export function stripGeneratedEmDashes(content: LessonSection): LessonSection {
   return {
@@ -254,6 +309,7 @@ export function stripGeneratedEmDashes(content: LessonSection): LessonSection {
     },
     realWorldConnections: mapGeneratedField(content.realWorldConnections, false),
     plenary: replaceGeneratedEmDashes(content.plenary, false),
+    templateSlots: mapGeneratedSlots(content.templateSlots),
   };
 }
 
@@ -291,6 +347,7 @@ export function parseLessonContent(text: string): LessonSection | null {
       },
       realWorldConnections: Array.isArray(parsed.realWorldConnections) ? parsed.realWorldConnections.map(String) : [],
       plenary: String(parsed.plenary ?? ''),
+      templateSlots: parseTemplateSlots(parsed.templateSlots),
     });
   } catch {
     return null;

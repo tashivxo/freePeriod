@@ -39,7 +39,7 @@ function normalizeLabel(text: string): string {
 }
 
 function cellWidthDxa(cellXml: string): number {
-  const match = cellXml.match(/<w:tcW w:w="(\d+)"/);
+  const match = cellXml.match(/<w:tcW\b[^>]*\bw:w="(\d+)"/);
   return match ? parseInt(match[1], 10) : 0;
 }
 
@@ -222,25 +222,442 @@ function keepHeadingAndWriteBody(cellXml: string, body: string): string {
   return withoutParas.replace('</w:tc>', `${heading}${bodyXml}</w:tc>`);
 }
 
+function vMergeKind(cellXml: string): 'restart' | 'continue' | null {
+  if (/<w:vMerge\b[^>]*w:val="restart"/.test(cellXml)) return 'restart';
+  if (/<w:vMerge\b/.test(cellXml)) return 'continue';
+  return null;
+}
+
+function isGuidanceLabelText(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (/^\[\d+\]/.test(trimmed)) return true;
+  if (/homework differentiation/i.test(trimmed)) return true;
+  if (/^plenary\b/i.test(trimmed)) return true;
+  if (isSubHeaderLine(trimmed)) return true;
+  return /:$/.test(trimmed) && trimmed.length < 80;
+}
+
+function matchesAtMasteryLabel(label: string): boolean {
+  const text = normalizeLabel(label);
+  return text.includes('working at mastery') && !text.includes('towards');
+}
+
+type LabelRule = {
+  match: (label: string) => boolean;
+  content: string;
+};
+
+function isFallbackHomeLabel(text: string): boolean {
+  return (
+    /class discussion/i.test(text) ||
+    /student participation/i.test(text) ||
+    /student-centered approach/i.test(text) ||
+    /formal introduction/i.test(text) ||
+    /formative data/i.test(text) ||
+    /^plenary\b/i.test(text.trim())
+  );
+}
+
+function fillStructuredCell(cellXml: string, fallbackBody: string, rules: LabelRule[]): string {
+  const paras = topLevelWordTags(cellXml, 'w:p');
+  if (paras.length === 0) {
+    return fallbackBody.trim() ? replaceCellParagraphs(cellXml, fallbackBody) : cellXml;
+  }
+
+  const extras = new Map<number, string>();
+  const used = new Set<number>();
+  let fallbackPlaced = false;
+
+  paras.forEach((para, index) => {
+    const label = cellPlainText(para.xml);
+    if (!label) return;
+    rules.forEach((rule, ruleIndex) => {
+      if (used.has(ruleIndex) || !rule.content.trim()) return;
+      if (!rule.match(label)) return;
+      extras.set(index, (extras.get(index) ?? '') + buildParagraphsXml(para.xml, rule.content));
+      used.add(ruleIndex);
+      if (rule.content === fallbackBody) fallbackPlaced = true;
+    });
+  });
+
+  const hasLabels = paras.some((para) => isGuidanceLabelText(cellPlainText(para.xml)));
+  if (!hasLabels) {
+    return fallbackBody.trim() ? keepHeadingAndWriteBody(cellXml, fallbackBody) : cellXml;
+  }
+
+  if (fallbackBody.trim() && !fallbackPlaced) {
+    const homeIdx = paras.findIndex((para) => isFallbackHomeLabel(cellPlainText(para.xml)));
+    const headingIdx = paras.findIndex((para) => activityPhaseKind(cellPlainText(para.xml)) != null);
+    const insertAt = homeIdx >= 0 ? homeIdx : headingIdx;
+    if (insertAt >= 0) {
+      extras.set(
+        insertAt,
+        (extras.get(insertAt) ?? '') + buildParagraphsXml(paras[insertAt].xml, fallbackBody),
+      );
+    }
+  }
+
+  if (extras.size === 0) return cellXml;
+
+  let result = '';
+  let lastEnd = 0;
+  paras.forEach((para, index) => {
+    result += cellXml.slice(lastEnd, para.index) + para.xml;
+    const extra = extras.get(index);
+    if (extra) result += extra;
+    lastEnd = para.index + para.xml.length;
+  });
+  return result + cellXml.slice(lastEnd);
+}
+
+function printedMinutes(cellXml: string): number | null {
+  const match = cellPlainText(cellXml).match(/(\d+)\s*min/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function minutesFromTimeLabel(time: string): number {
+  const match = time.match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+function formatMinutes(minutes: number): string {
+  return `${minutes} min`;
+}
+
+function defaultMinutesForKind(kind: NonNullable<ReturnType<typeof activityPhaseKind>>): number {
+  if (kind === 'hook' || kind === 'plenary') return 5;
+  return 10;
+}
+
+function phaseResourceLabel(kind: NonNullable<ReturnType<typeof activityPhaseKind>>): string {
+  if (kind === 'hook') return 'Do Now';
+  if (kind === 'activation') return 'Activation';
+  if (kind === 'demonstration') return 'Demonstration of Learning';
+  return 'Consolidation / Review';
+}
+
+function allocatePhaseTimes(
+  phases: Array<{
+    kind: NonNullable<ReturnType<typeof activityPhaseKind>>;
+    parsedTime: string;
+    printed: number | null;
+  }>,
+  durationMinutes: number,
+): Map<NonNullable<ReturnType<typeof activityPhaseKind>>, { time: string; keepPrinted: boolean }> {
+  const result = new Map<
+    NonNullable<ReturnType<typeof activityPhaseKind>>,
+    { time: string; keepPrinted: boolean }
+  >();
+  const unlocked: Array<{ kind: NonNullable<ReturnType<typeof activityPhaseKind>>; minutes: number }> =
+    [];
+  let lockedSum = 0;
+  let lockedCount = 0;
+
+  for (const phase of phases) {
+    if (phase.printed != null) {
+      lockedSum += phase.printed;
+      lockedCount += 1;
+      result.set(phase.kind, { time: formatMinutes(phase.printed), keepPrinted: true });
+      continue;
+    }
+    const parsed = minutesFromTimeLabel(phase.parsedTime);
+    unlocked.push({
+      kind: phase.kind,
+      minutes: parsed || defaultMinutesForKind(phase.kind),
+    });
+  }
+
+  const shouldFitDuration =
+    lockedCount > 0 && phases.length >= 4 && durationMinutes > 0 && unlocked.length > 0;
+  if (shouldFitDuration) {
+    const remaining = Math.max(unlocked.length, durationMinutes - lockedSum);
+    const bookends = unlocked.filter((item) => item.kind === 'hook' || item.kind === 'plenary');
+    const middle = unlocked.filter((item) => item.kind !== 'hook' && item.kind !== 'plenary');
+    let used = 0;
+    for (const item of bookends) {
+      item.minutes = Math.max(1, Math.min(item.minutes || 5, remaining - used - middle.length));
+      used += item.minutes;
+    }
+    if (middle.length === 1) {
+      middle[0].minutes = Math.max(1, remaining - used);
+    } else if (middle.length > 1) {
+      const leftover = remaining - used;
+      const sourceSum = middle.reduce((sum, item) => sum + item.minutes, 0) || middle.length;
+      let assigned = 0;
+      middle.forEach((item, index) => {
+        if (index === middle.length - 1) {
+          item.minutes = Math.max(1, leftover - assigned);
+        } else {
+          item.minutes = Math.max(1, Math.round((item.minutes / sourceSum) * leftover));
+          assigned += item.minutes;
+        }
+      });
+    }
+  }
+
+  for (const item of unlocked) {
+    result.set(item.kind, { time: formatMinutes(item.minutes), keepPrinted: false });
+  }
+  return result;
+}
+
+function findMergedColumn(cellsByRow: string[][]): number | null {
+  for (const cells of cellsByRow) {
+    for (let index = 0; index < cells.length; index += 1) {
+      if (vMergeKind(cells[index]) === 'restart') return index;
+    }
+  }
+  return null;
+}
+
+function senTargetedItems(_content: LessonPlan['content']): string[] {
+  return [
+    'SEN/LS: targeted access arrangements and in-lesson intervention for identified learners.',
+    'G&T: targeted enrichment that increases depth of thinking, not extra volume.',
+  ];
+}
+
+function withoutICanColonPrefix(text: string): string {
+  return text.replace(/\bI can:\s*/gi, 'I can ');
+}
+
+function asCompleteSentence(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  const capitalized = `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}`;
+  if (/[.!?]$/.test(capitalized)) return capitalized;
+  return `${capitalized}.`;
+}
+
+function asICanSentence(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return 'I can complete the core task with support.';
+  if (/^i can\b/i.test(cleaned)) return asCompleteSentence(cleaned);
+  return asCompleteSentence(`I can ${cleaned.replace(/^[:.\s]+/, '')}`);
+}
+
+function activationDifferentiationLine(): string {
+  return 'Support with a model or prompts; stretch with a further example. See Adaptive Teaching.';
+}
+
+function activityLevelLine(level: 1 | 2 | 3, content: LessonPlan['content']): string {
+  const slots = content.templateSlots;
+  if (level === 1 && slots?.activitySupported) return asCompleteSentence(slots.activitySupported);
+  if (level === 2 && slots?.activityExpected) return asCompleteSentence(slots.activityExpected);
+  if (level === 3 && slots?.activityStretch) return asCompleteSentence(slots.activityStretch);
+  if (level === 1) return 'See Adaptive Teaching: Working Towards Mastery.';
+  if (level === 2) return 'See Adaptive Teaching: Working At Mastery.';
+  return 'See Adaptive Teaching: Mastery with Greater Depth.';
+}
+
+function scaledICan(
+  scale: 'support' | 'extend',
+  content: LessonPlan['content'],
+): string {
+  if (scale === 'support' && content.templateSlots?.successCriteriaSupported) {
+    return asICanSentence(content.templateSlots.successCriteriaSupported);
+  }
+  if (scale === 'extend' && content.templateSlots?.successCriteriaExtended) {
+    return asICanSentence(content.templateSlots.successCriteriaExtended);
+  }
+  if (scale === 'support') return 'I can complete the core task with support.';
+  return 'I can extend the core task independently.';
+}
+
+function homeworkLevelLine(
+  band: 'towards' | 'at' | 'depth' | 'extension',
+  content: LessonPlan['content'],
+): string {
+  const slots = content.templateSlots;
+  if (band === 'towards' && slots?.homeworkSupported) return asCompleteSentence(slots.homeworkSupported);
+  if (band === 'at' && slots?.homeworkExpected) return asCompleteSentence(slots.homeworkExpected);
+  if (band === 'depth' && slots?.homeworkStretch) return asCompleteSentence(slots.homeworkStretch);
+  if (band === 'extension' && slots?.homeworkExtension) return asCompleteSentence(slots.homeworkExtension);
+  if (band === 'towards') return 'Complete the independent practice task at your level with support.';
+  if (band === 'at') return 'Complete the independent practice task at your level.';
+  if (band === 'depth') return 'Complete the independent practice task at your level with greater depth.';
+  return 'Complete the independent practice task at your level as an extension.';
+}
+
+function matchesTowardsLabel(label: string): boolean {
+  const text = normalizeLabel(label);
+  return text.includes('working towards mastery') || /^\[1\]/.test(label.trim());
+}
+
+function matchesGreaterDepthLabel(label: string): boolean {
+  return /greater depth/i.test(label);
+}
+
+function matchesExtensionLabel(label: string): boolean {
+  return normalizeLabel(label) === 'extension';
+}
+
 function fillActivityPhaseRow(
   cellsXml: string[],
   parsed: ParsedActivityFields,
   content: LessonPlan['content'],
+  options?: {
+    allocatedTime?: string;
+    keepPrintedTime?: boolean;
+    skipResources?: boolean;
+    resourcesOverride?: string;
+  },
 ): string[] {
   const formativePool = content.formativeAssessment ?? [];
-  const time = parsed.time.trim();
+  const time = (options?.allocatedTime ?? parsed.time).trim();
   const teacher = parsed.teacher.trim();
-  const learner = parsed.learner.trim() || formatICanStatements(content.successCriteria) || '';
+  const learner = withoutICanColonPrefix(
+    parsed.learner.trim() || formatICanStatements(content.successCriteria) || '',
+  );
   const assessment = parsed.assessment.trim() || formativePool[0] || '';
-  const resources = parsed.resources.trim() || DEFAULT_RESOURCES;
+  const resources = (options?.resourcesOverride ?? (parsed.resources.trim() || DEFAULT_RESOURCES)).trim();
+  const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
+  const iCan = withoutICanColonPrefix(
+    successCriteriaItems.some((item) => /\bi can\b/i.test(item))
+      ? joinBullets(successCriteriaItems)
+      : formatICanStatements(successCriteriaItems),
+  );
+  const activitiesCell = /differentiated activities/i.test(cellPlainText(cellsXml[1] ?? ''));
+  const successCriteriaCell = /differentiated success criteria/i.test(cellPlainText(cellsXml[2] ?? ''));
+  const homeworkCell = /homework differentiation/i.test(cellPlainText(cellsXml[2] ?? ''));
 
   const next = [...cellsXml];
-  if (time) next[0] = replaceCellParagraphs(next[0], time);
-  if (teacher) next[1] = keepHeadingAndWriteBody(next[1], teacher);
-  if (learner) next[2] = replaceCellParagraphs(next[2], learner);
-  if (assessment) next[3] = replaceCellParagraphs(next[3], assessment);
-  if (resources) next[4] = replaceCellParagraphs(next[4], resources);
+  if (!options?.keepPrintedTime && time) next[0] = replaceCellParagraphs(next[0], time);
+  if (teacher) {
+    next[1] = fillStructuredCell(next[1], teacher, [
+      { match: (label) => /class discussion/i.test(label), content: teacher },
+      { match: (label) => activitiesCell && matchesTowardsLabel(label), content: activityLevelLine(1, content) },
+      { match: (label) => activitiesCell && matchesAtMasteryLabel(label), content: activityLevelLine(2, content) },
+      { match: (label) => activitiesCell && matchesGreaterDepthLabel(label), content: activityLevelLine(3, content) },
+    ]);
+  }
+  if (learner) {
+    next[2] = fillStructuredCell(next[2], learner, [
+      { match: (label) => /student participation/i.test(label), content: learner },
+      { match: (label) => /student-centered approach/i.test(label), content: learner },
+      {
+        match: (label) => normalizeLabel(label) === 'differentiation',
+        content: activationDifferentiationLine(),
+      },
+      { match: (label) => /^plenary\b/i.test(label.trim()), content: learner },
+      {
+        match: (label) => successCriteriaCell && matchesTowardsLabel(label),
+        content: scaledICan('support', content),
+      },
+      {
+        match: (label) => successCriteriaCell && matchesAtMasteryLabel(label),
+        content: iCan,
+      },
+      {
+        match: (label) => successCriteriaCell && matchesGreaterDepthLabel(label),
+        content: scaledICan('extend', content),
+      },
+      {
+        match: (label) => homeworkCell && matchesTowardsLabel(label),
+        content: homeworkLevelLine('towards', content),
+      },
+      {
+        match: (label) => homeworkCell && matchesAtMasteryLabel(label),
+        content: homeworkLevelLine('at', content),
+      },
+      {
+        match: (label) => homeworkCell && matchesGreaterDepthLabel(label),
+        content: homeworkLevelLine('depth', content),
+      },
+      {
+        match: (label) => homeworkCell && matchesExtensionLabel(label),
+        content: homeworkLevelLine('extension', content),
+      },
+    ]);
+  }
+  if (assessment) {
+    next[3] = fillStructuredCell(next[3], assessment, [
+      { match: (label) => /formal introduction/i.test(label), content: assessment },
+      { match: (label) => /formative data/i.test(label), content: assessment },
+    ]);
+  }
+  if (!options?.skipResources && resources) next[4] = replaceCellParagraphs(next[4], resources);
   return next;
+}
+
+type ActivityPhaseFill = {
+  index: number;
+  kind: NonNullable<ReturnType<typeof activityPhaseKind>>;
+  label: string;
+  parsed: ParsedActivityFields;
+  cellMatches: XmlSegment[];
+  cellsXml: string[];
+};
+
+function collectActivityPhases(rowMatches: XmlSegment[], content: LessonPlan['content']): ActivityPhaseFill[] {
+  const phases: ActivityPhaseFill[] = [];
+  rowMatches.forEach((row, index) => {
+    const cellMatches = topLevelWordTags(row.xml, 'w:tc');
+    const cellsXml = cellMatches.map((cell) => cell.xml);
+    if (!isActivityTableRow(cellsXml) || isActivityHeaderRow(cellsXml) || isActivityInstructionRow(cellsXml)) {
+      return;
+    }
+    const kind = activityPhaseKind(cellsXml[1] ?? '');
+    if (!kind) return;
+    const source = activitySourceForPhase(kind, content);
+    if (!source) return;
+    const parsed = mergeParsedActivities(source.items, source.fallbackTime);
+    if (!parsed) return;
+    phases.push({ index, kind, label: source.label, parsed, cellMatches, cellsXml });
+  });
+  return phases;
+}
+
+function fillActivityPhasesInTable(
+  tblXml: string,
+  lesson: LessonPlan,
+): { xml: string; filledCount: number; labels: string[] } {
+  const rowMatches = topLevelWordTags(tblXml, 'w:tr');
+  const phases = collectActivityPhases(rowMatches, lesson.content);
+  if (phases.length === 0) return { xml: tblXml, filledCount: 0, labels: [] };
+
+  const allocated = allocatePhaseTimes(
+    phases.map((phase) => ({
+      kind: phase.kind,
+      parsedTime: phase.parsed.time,
+      printed: printedMinutes(phase.cellsXml[0] ?? ''),
+    })),
+    lesson.duration_minutes,
+  );
+  const mergedColumn = findMergedColumn(phases.map((phase) => phase.cellsXml));
+  const labelledResources = phases
+    .map((phase) => {
+      const resources = phase.parsed.resources.trim() || DEFAULT_RESOURCES;
+      return `${phaseResourceLabel(phase.kind)}:\n${resources}`;
+    })
+    .join('\n\n');
+
+  const filledRows = new Map<number, string>();
+  for (const phase of phases) {
+    const timing = allocated.get(phase.kind);
+    const column = mergedColumn ?? 4;
+    const merge = vMergeKind(phase.cellsXml[column] ?? '');
+    const next = fillActivityPhaseRow(phase.cellsXml, phase.parsed, lesson.content, {
+      allocatedTime: timing?.time,
+      keepPrintedTime: timing?.keepPrinted ?? false,
+      skipResources: mergedColumn != null && merge === 'continue',
+      resourcesOverride: mergedColumn != null && merge === 'restart' ? labelledResources : undefined,
+    });
+    filledRows.set(phase.index, rebuildRow(rowMatches[phase.index].xml, phase.cellMatches, next));
+  }
+
+  let result = '';
+  let lastEnd = 0;
+  rowMatches.forEach((row, index) => {
+    result += tblXml.slice(lastEnd, row.index) + (filledRows.get(index) ?? row.xml);
+    lastEnd = row.index + row.xml.length;
+  });
+  return {
+    xml: result + tblXml.slice(lastEnd),
+    filledCount: phases.length,
+    labels: phases.map((phase) => phase.label),
+  };
 }
 
 function isAdaptiveHeadingCell(cellXml: string): boolean {
@@ -257,6 +674,65 @@ function isAdaptiveLabelCell(cellXml: string): boolean {
   );
 }
 
+function normalizeCompareText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function splitWrittenLines(text: string): string[] {
+  return text
+    .split(/\n+/)
+    .map((line) => line.replace(/^[•\s]+/, '').trim())
+    .filter(Boolean);
+}
+
+function isNearDuplicate(item: string, existing: string[]): boolean {
+  const left = normalizeCompareText(item);
+  if (left.length < 8) return false;
+  return existing.some((other) => {
+    const right = normalizeCompareText(other);
+    if (right.length < 8) return false;
+    return left === right || left.includes(right) || right.includes(left);
+  });
+}
+
+function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
+  const source = activitySourceForPhase('demonstration', content);
+  const parsed = source ? mergeParsedActivities(source.items, source.fallbackTime) : null;
+  const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
+  const iCan = withoutICanColonPrefix(
+    successCriteriaItems.some((item) => /\bi can\b/i.test(item))
+      ? joinBullets(successCriteriaItems)
+      : formatICanStatements(successCriteriaItems),
+  );
+  return [
+    parsed?.teacher ?? '',
+    parsed?.learner ? withoutICanColonPrefix(parsed.learner) : '',
+    activityLevelLine(1, content),
+    activityLevelLine(2, content),
+    activityLevelLine(3, content),
+    scaledICan('support', content),
+    iCan,
+    scaledICan('extend', content),
+  ].flatMap(splitWrittenLines);
+}
+
+function adaptivePointerForHeading(heading: string): string {
+  const text = normalizeLabel(heading);
+  if (text.includes('working towards mastery')) return 'See Adaptive Teaching: Working Towards Mastery.';
+  if (text.includes('working at mastery')) return 'See Adaptive Teaching: Working At Mastery.';
+  if (text.includes('greater depth')) return 'See Adaptive Teaching: Mastery with Greater Depth.';
+  return 'See Adaptive Teaching.';
+}
+
+function dedupeAdaptiveItems(items: string[], practiceTexts: string[], pointer: string): string[] {
+  const unique = items.filter((item) => !isNearDuplicate(item, practiceTexts));
+  return unique.length > 0 ? unique : [pointer];
+}
+
 function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): string[] {
   const text = normalizeLabel(heading);
   if (text.startsWith('prior knowledge')) {
@@ -264,14 +740,15 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
     return content.priorKnowledge ?? [];
   }
   if (text.includes('working towards mastery')) return content.differentiation?.support ?? [];
-  if (text.includes('working at mastery')) return content.successCriteria ?? [];
+  if (text.includes('working at mastery')) {
+    const strategy = content.templateSlots?.activityExpected?.trim();
+    if (strategy) return [asCompleteSentence(strategy)];
+    return ['See Adaptive Teaching: Working At Mastery.'];
+  }
   if (text.includes('greater depth')) return content.differentiation?.extension ?? [];
-  if (text.includes('other adaptive')) return content.realWorldConnections ?? [];
+  if (text.includes('other adaptive')) return inferTeachingStrategies(content);
   if (text.includes('sen') || text.includes('learning support') || text.includes('gifted')) {
-    return [
-      ...(content.differentiation?.support ?? []).map((item) => `SEN/LS: ${item}`),
-      ...(content.differentiation?.extension ?? []).map((item) => `G&T: ${item}`),
-    ];
+    return senTargetedItems(content);
   }
   return [];
 }
@@ -279,12 +756,17 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
 function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']): string {
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) return cellXml;
+  const practiceTexts = practiceCellWrittenTexts(content);
 
   const insertions: Array<{ afterIndex: number; xml: string }> = [];
   paras.forEach((para, index) => {
     const heading = cellPlainText(para.xml);
     if (!heading) return;
-    const items = adaptiveHeadingItems(heading, content);
+    const items = dedupeAdaptiveItems(
+      adaptiveHeadingItems(heading, content),
+      practiceTexts,
+      adaptivePointerForHeading(heading),
+    );
     if (items.length === 0) return;
     const bullets = items.map((item) => `• ${item}`).join('\n');
     insertions.push({ afterIndex: index, xml: buildParagraphsXml(para.xml, bullets) });
@@ -1096,27 +1578,15 @@ export async function fillGenericDocxTemplate(
   let filledCount = 0;
   const matchedLabels: string[] = [];
 
-  const newXml = replaceTopLevelWordTags(xml, 'w:tbl', (tblMatch) =>
-    replaceTopLevelWordTags(tblMatch, 'w:tr', (rowMatch) => {
+  const newXml = replaceTopLevelWordTags(xml, 'w:tbl', (tblMatch) => {
+    const withLabels = replaceTopLevelWordTags(tblMatch, 'w:tr', (rowMatch) => {
       const cellMatches = topLevelWordTags(rowMatch, 'w:tc');
       if (cellMatches.length < 1) return rowMatch;
 
       let cellsXml = cellMatches.map((m) => m.xml);
 
       if (isActivityTableRow(cellsXml)) {
-        if (isActivityHeaderRow(cellsXml) || isActivityInstructionRow(cellsXml)) {
-          return rowMatch;
-        }
-        const kind = activityPhaseKind(cellsXml[1] ?? '');
-        if (!kind) return rowMatch;
-        const source = activitySourceForPhase(kind, lesson.content);
-        if (!source) return rowMatch;
-        const parsed = mergeParsedActivities(source.items, source.fallbackTime);
-        if (!parsed) return rowMatch;
-        cellsXml = fillActivityPhaseRow(cellsXml, parsed, lesson.content);
-        filledCount += 1;
-        matchedLabels.push(source.label);
-        return rebuildRow(rowMatch, cellMatches, cellsXml);
+        return rowMatch;
       }
 
       let changed = false;
@@ -1178,8 +1648,13 @@ export async function fillGenericDocxTemplate(
 
       if (!changed) return rowMatch;
       return rebuildRow(rowMatch, cellMatches, cellsXml);
-    }),
-  );
+    });
+
+    const phases = fillActivityPhasesInTable(withLabels, lesson);
+    filledCount += phases.filledCount;
+    matchedLabels.push(...phases.labels);
+    return phases.xml;
+  });
 
   zip.file(DOCUMENT_XML_PATH, newXml);
   const buffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));

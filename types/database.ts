@@ -23,6 +23,18 @@ export type User = {
   created_at: string;
 }
 
+export type LessonTemplateSlots = {
+  activitySupported?: string;
+  activityExpected?: string;
+  activityStretch?: string;
+  successCriteriaSupported?: string;
+  successCriteriaExtended?: string;
+  homeworkSupported?: string;
+  homeworkExpected?: string;
+  homeworkStretch?: string;
+  homeworkExtension?: string;
+};
+
 export type LessonSection = {
   title: string;
   essentialQuestion?: string;
@@ -45,6 +57,7 @@ export type LessonSection = {
   };
   realWorldConnections: string[];
   plenary: string;
+  templateSlots?: LessonTemplateSlots;
 }
 
 export type LessonPlan = {
