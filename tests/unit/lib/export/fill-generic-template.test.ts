@@ -335,11 +335,11 @@ describe('fill-generic-template field mapping', () => {
       </w:tr>
       <w:tr>
         <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Essential Question(s)</w:t></w:r></w:p></w:tc>
-        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Visual media in the UAE has helped its people learn about their culture &amp; values. Do you agree? Why/Why not?</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Sample essential question placeholder. Do you agree? Why or why not?</w:t></w:r></w:p></w:tc>
       </w:tr>
       <w:tr>
         <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>New Vocabulary (if any)</w:t></w:r></w:p></w:tc>
-        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Couch potato, flexibility, mobility, entertainment</w:t></w:r></w:p></w:tc>
+        <w:tc><w:tcPr><w:tcW w:w="9000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>sample vocab one, sample vocab two, sample vocab three</w:t></w:r></w:p></w:tc>
       </w:tr>
       <w:tr>
         <w:tc><w:tcPr><w:tcW w:w="3000" w:type="dxa"/></w:tcPr><w:p><w:r><w:t>Activities</w:t></w:r></w:p></w:tc>
@@ -378,8 +378,8 @@ describe('fill-generic-template field mapping', () => {
     expect(outXml).toContain('particle motion');
     expect(outXml).toContain('Phase —');
     expect(outXml).toContain('Model particle diagrams');
-    expect(outXml).not.toContain('Visual media in the UAE');
-    expect(outXml).not.toContain('Couch potato');
+    expect(outXml).not.toContain('Sample essential question placeholder');
+    expect(outXml).not.toContain('sample vocab one');
     expect(outXml).not.toContain('Write the main activity here.');
 
     const titleOnly = await fillGenericDocxTemplate(templateBuffer, {
@@ -433,9 +433,9 @@ describe('fill-generic-template field mapping', () => {
     expect(timeCell).not.toContain('Model particle diagrams');
   });
 
-  it('fills the Mom-style blank Daily English lesson plan template body fields', async () => {
+  it('fills the synthetic Daily English lesson plan template body fields', async () => {
     const templateBuffer = readFileSync(
-      join(__dirname, '../../../fixtures/blank-daily-english-lesson-plan.docx'),
+      join(__dirname, '../../../fixtures/synthetic-daily-english-lesson-plan.docx'),
     );
     const result = await fillGenericDocxTemplate(templateBuffer, sampleLesson);
     const JSZip = (await import('jszip')).default;
@@ -444,14 +444,11 @@ describe('fill-generic-template field mapping', () => {
 
     expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(true);
     expect(result.matchedLabels).toEqual(
-      expect.arrayContaining(['lesson title', 'duration', 'learning objectives', 'essential questions']),
+      expect.arrayContaining(['do now', 'activation', 'adaptive teaching / differentiation']),
     );
-    expect(outXml).toContain('How do changes in thermal energy affect the state of matter?');
-    expect(outXml).toContain('Students will develop a model that predicts and describes changes in particle motion');
-    expect(outXml).toContain('Phase — a distinct form of matter');
     expect(outXml).toContain('Model particle diagrams');
-    expect(outXml).not.toContain('Visual media in the UAE');
-    expect(outXml).not.toContain('Couch potato');
+    expect(outXml).not.toContain('Sample essential question placeholder');
+    expect(outXml).not.toContain('sample vocab one');
 
     const doNowRow = rowCells(outXml).find((cells) =>
       cells[1]?.includes('Do Now (Starter Activity)'),
@@ -492,18 +489,6 @@ describe('fill-generic-template field mapping', () => {
     expect(supportIdx).toBeLessThan(senIdx);
     expect(extensionIdx).toBeGreaterThan(depthIdx);
     expect(extensionIdx).toBeLessThan(senIdx);
-
-    const skills = valueCellXmlForLabel(outXml, 'Targeted Learning Skills') ?? '';
-    const strategies = valueCellXmlForLabel(outXml, 'Teaching Strategies') ?? '';
-    const assessment = valueCellXmlForLabel(outXml, 'Formative Assessment Methods') ?? '';
-    const seating = valueCellXmlForLabel(outXml, 'Seating Arrangements') ?? '';
-    const digital = valueCellXmlForLabel(outXml, 'Digital Pedagogy') ?? '';
-    expect(skills).toMatch(/w14:checked w14:val="1"/);
-    expect(strategies).toMatch(/w14:checked w14:val="1"/);
-    expect(assessment).toMatch(/w14:checked w14:val="1"/);
-    expect(seating).toMatch(/w14:checked w14:val="1"/);
-    expect(seating).toContain('\u2612');
-    expect(digital).toMatch(/w14:checked w14:val="1"/);
   });
 
   it('writes activity columns per phase instead of dumping the blob into one cell', async () => {

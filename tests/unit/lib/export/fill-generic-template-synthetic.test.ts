@@ -96,8 +96,9 @@ function activityPhaseRows(xml: string): Array<{
 
 function sliceBetween(text: string, start: string, end: string): string {
   const startIdx = text.indexOf(start);
-  const endIdx = text.indexOf(end, startIdx + start.length);
   if (startIdx < 0) return '';
+  if (!end) return text.slice(startIdx);
+  const endIdx = text.indexOf(end, startIdx + start.length);
   if (endIdx < 0) return text.slice(startIdx);
   return text.slice(startIdx, endIdx);
 }
@@ -319,4 +320,128 @@ describe('synthetic daily English template fill', () => {
     expect(minutes.reduce((sum, value) => sum + value, 0)).toBe(60);
     expect(minutes.every((value) => value > 0)).toBe(true);
   });
+
+  it('places each support, mastery, and extension item in only one slot and caps growth', async () => {
+    const templateBuffer = readFileSync(FIXTURE);
+    const JSZip = (await import('jszip')).default;
+    const templateXml = await (await JSZip.loadAsync(templateBuffer)).file('word/document.xml')!.async('string');
+    const { outXml } = await fillSynthetic();
+    const slots = collectListSlots(outXml);
+    const markers = ['SUPPORT_MARKER', 'MASTERY_TASK_MARKER', 'EXTENSION_MARKER'];
+
+    for (const marker of markers) {
+      const homes = Object.entries(slots)
+        .filter(([, text]) => text.includes(marker))
+        .map(([name]) => name);
+      expect({ marker, homes }).toEqual({ marker, homes: [expectedHome(marker)] });
+    }
+
+    expect(outXml.length).toBeLessThanOrEqual(Math.floor(templateXml.length * 2.2));
+  });
+
+  it('puts I can success criteria under Success criteria bands, not the activity tasks', async () => {
+    const { outXml } = await fillSynthetic();
+    const phases = activityPhaseRows(outXml);
+    const practice = phases.find((phase) => /demonstration of learning/i.test(phase.heading));
+    expect(practice).toBeDefined();
+
+    const activities = practice!.texts[1];
+    const success = practice!.texts[2];
+    const atMasterySuccess = sliceBetween(success, '[2] Working at Mastery:', '[3]');
+
+    expect(success).toContain('Differentiated success criteria:');
+    expect(atMasterySuccess).toContain('SUCCESS_CRITERIA_MARKER');
+    expect(atMasterySuccess).toMatch(/I can/i);
+    expect(success).not.toContain('MASTERY_TASK_MARKER');
+    expect(activities).not.toContain('SUCCESS_CRITERIA_MARKER');
+    expect(sliceBetween(activities, '[1]', '[2]')).not.toContain('SUPPORT_MARKER');
+    expect(sliceBetween(activities, '[2]', '[3]')).not.toContain('MASTERY_TASK_MARKER');
+    expect(sliceBetween(activities, '[3]', '')).not.toContain('EXTENSION_MARKER');
+  });
+
+  it('keeps Consolidation labels in order and writes discussion under Class Discussion', async () => {
+    const { outXml } = await fillSynthetic();
+    const plenary = activityPhaseRows(outXml).find((phase) => /consolidation/i.test(phase.heading));
+    expect(plenary).toBeDefined();
+
+    const teacher = plenary!.texts[1];
+    const headingIdx = teacher.indexOf('Consolidation / Review');
+    const classIdx = teacher.indexOf('Class Discussion:');
+    const contentIdx = teacher.indexOf('PLENARY_TEACHER_MARKER');
+
+    expect(headingIdx).toBeGreaterThanOrEqual(0);
+    expect(classIdx).toBeGreaterThan(headingIdx);
+    expect(contentIdx).toBeGreaterThan(classIdx);
+  });
+
+  it('keeps SEN template prose intact and puts misconceptions only in a misconceptions slot', async () => {
+    const { outXml } = await fillSynthetic();
+    const adaptive = adaptiveValueText(outXml);
+    const sen = adaptive.slice(adaptive.indexOf('Special Educational Needs'));
+    const misconceptions = misconceptionsValueText(outXml);
+
+    expect(misconceptions).toContain('MISCONCEPTION_MARKER');
+    expect(sen).not.toContain('MISCONCEPTION_MARKER');
+    expect(sen).toMatch(/targeted access arrangements|targeted enrichment/i);
+    expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('MISCONCEPTION_MARKER');
+    expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('targeted intervention for');
+  });
 });
+
+function expectedHome(marker: string): string {
+  if (marker === 'SUPPORT_MARKER') return 'adaptiveTowards';
+  if (marker === 'MASTERY_TASK_MARKER') return 'adaptiveAtMastery';
+  return 'adaptiveDepth';
+}
+
+function collectListSlots(xml: string): Record<string, string> {
+  const adaptive = adaptiveValueText(xml);
+  const phases = activityPhaseRows(xml);
+  const activation = phases.find((phase) => /activation/i.test(phase.heading));
+  const practice = phases.find((phase) => /demonstration of learning/i.test(phase.heading));
+  const plenary = phases.find((phase) => /consolidation/i.test(phase.heading));
+
+  return {
+    adaptiveTowards: sliceBetween(adaptive, 'Working Towards Mastery', 'Working At Mastery'),
+    adaptiveAtMastery: sliceBetween(adaptive, 'Working At Mastery', 'Mastery with Greater Depth'),
+    adaptiveDepth: sliceBetween(adaptive, 'Mastery with Greater Depth', 'Other adaptive'),
+    adaptiveOther: sliceBetween(adaptive, 'Other adaptive', 'Special Educational Needs'),
+    adaptiveSen: adaptive.slice(adaptive.indexOf('Special Educational Needs')),
+    activationDiff: sliceBetween(activation?.texts[2] ?? '', 'Differentiation:', ''),
+    practiceAct1: sliceBetween(practice?.texts[1] ?? '', '[1]', '[2]'),
+    practiceAct2: sliceBetween(practice?.texts[1] ?? '', '[2]', '[3]'),
+    practiceAct3: sliceBetween(practice?.texts[1] ?? '', '[3]', ''),
+    practiceSc1: sliceBetween(practice?.texts[2] ?? '', '[1]', '[2]'),
+    practiceSc2: sliceBetween(practice?.texts[2] ?? '', '[2]', '[3]'),
+    practiceSc3: sliceBetween(practice?.texts[2] ?? '', '[3]', ''),
+    homework: sliceBetween(plenary?.texts[2] ?? '', 'Homework Differentiation', ''),
+  };
+}
+
+function misconceptionsValueText(xml: string): string {
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (/possible misconceptions/i.test(cellPlainText(cells[0] ?? ''))) {
+        return cellPlainText(cells[1] ?? '');
+      }
+    }
+  }
+  return '';
+}
+
+function senLabelParagraph(xml: string): string {
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (!/adaptive teaching/i.test(cellPlainText(cells[0] ?? ''))) continue;
+      const para = topLevelXml(cells[1] ?? '', 'w:p').find((item) =>
+        /special educational needs/i.test(cellPlainText(item)),
+      );
+      return para ?? '';
+    }
+  }
+  return '';
+}

@@ -87,6 +87,7 @@ const doc = new Document({
             labelValueRow(['Lesson Title'], ['Sample lesson title placeholder']),
             labelValueRow(['Duration'], ['']),
             labelValueRow(['Grade/Class'], ['']),
+            labelValueRow(['Possible Misconceptions'], ['']),
             labelValueRow(
               ['Adaptive Teaching / Differentiation'],
               [
