@@ -453,19 +453,24 @@ describe('fill-generic-template field mapping', () => {
     expect(outXml).not.toContain('Visual media in the UAE');
     expect(outXml).not.toContain('Couch potato');
 
+    const doNowRow = rowCells(outXml).find((cells) =>
+      cells[1]?.includes('Do Now (Starter Activity)'),
+    );
     const activityRow = rowCells(outXml).find((cells) =>
       cells[1]?.includes('Activation (Introducing New Content)'),
     );
     const demoRow = rowCells(outXml).find((cells) =>
       cells[1]?.includes('Demonstration of Learning'),
     );
+    expect(doNowRow).toBeDefined();
     expect(activityRow).toBeDefined();
     expect(demoRow).toBeDefined();
     expect(activityRow![1]).toContain('Model particle diagrams');
     expect(activityRow![2]).toContain('Draw models');
     expect(activityRow![2]).not.toMatch(/Teacher Activity:/i);
     expect(activityRow![3]).toContain('Gallery walk');
-    expect(activityRow![4]).toContain('Whiteboard');
+    expect(doNowRow![4]).toContain('Whiteboard');
+    expect(activityRow![4]).not.toContain('Whiteboard');
     expect(demoRow![1]).toContain('Circulate and prompt particle comparisons');
     expect(demoRow![1]).not.toContain('Model particle diagrams');
     expect(`${activityRow![1]} ${activityRow![2]} ${activityRow![3]}`).not.toMatch(
@@ -600,7 +605,10 @@ describe('fill-generic-template field mapping', () => {
     expect(particlesIdx).toBeLessThan(towardsIdx);
     expect(supportIdx).toBeGreaterThan(towardsIdx);
     expect(supportIdx).toBeLessThan(senIdx);
-    expect(adaptive.indexOf('I can explain how particle motion')).toBeGreaterThan(
+    expect(adaptive.indexOf('Complete practice diagrams')).toBeGreaterThan(
+      adaptive.indexOf('Working At Mastery'),
+    );
+    expect(adaptive.indexOf('I can explain how particle motion')).toBeLessThan(
       adaptive.indexOf('Working At Mastery'),
     );
     expect(adaptive.indexOf('Research sublimation examples')).toBeGreaterThan(
