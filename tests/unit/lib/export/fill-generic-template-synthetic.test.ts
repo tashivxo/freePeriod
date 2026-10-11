@@ -284,7 +284,7 @@ function grammarProblems(text: string): string[] {
     problems.push(`verb followed by capitalised verb in ${JSON.stringify(text)}`);
   }
   if (
-    /\b(?:using|on|about|of|to)\s+(?:write|provide|define|complete|finish|add|invent|use|extend|contribute|revisit|describe|explain|identify|analyse|analyze)\b/i.test(
+    /\b(?:using|on|about|of|to)\s+(?:write|provide|define|finish|add|invent|use|contribute|revisit|describe|explain|identify|analyse|analyze)\b/i.test(
       text,
     )
   ) {

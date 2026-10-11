@@ -437,60 +437,19 @@ function senTargetedItems(_content: LessonPlan['content']): string[] {
   ];
 }
 
-function stripTaskMarkers(text: string): string {
-  return text
-    .replace(/\b[A-Z][A-Z0-9_]*_MARKER\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function practiceTaskCore(content: LessonPlan['content']): string {
-  const guided = activityTasksFromItems(content.guidedPractice);
-  const main = activityTasksFromItems(content.mainActivities);
-  const independent = activityTasksFromItems(content.independentPractice);
-  const raw = (guided[0] || main[0] || independent[0] || 'the lesson task').split('\n')[0] ?? '';
-  return stripTaskMarkers(raw) || 'the lesson task';
-}
-
-function stripTrailingPunctuation(text: string): string {
-  return text.replace(/[.!?…]+$/u, '').trim();
-}
-
 function asCompleteSentence(text: string): string {
-  const cleaned = stripTrailingPunctuation(text.replace(/\s+/g, ' ').trim());
+  const cleaned = text.replace(/\s+/g, ' ').trim();
   if (!cleaned) return '';
-  return `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}.`;
+  const capitalized = `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}`;
+  if (/[.!?]$/.test(capitalized)) return capitalized;
+  return `${capitalized}.`;
 }
 
 function asICanSentence(text: string): string {
-  const cleaned = stripTrailingPunctuation(text.replace(/\s+/g, ' ').trim());
-  if (!cleaned) return 'I can complete the lesson task.';
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return 'I can complete the core task with support.';
   if (/^i can\b/i.test(cleaned)) return asCompleteSentence(cleaned);
   return asCompleteSentence(`I can ${cleaned.replace(/^[:.\s]+/, '')}`);
-}
-
-function shortPhrase(text: string, fallback: string): string {
-  const cleaned = stripTrailingPunctuation(stripTaskMarkers(text).split('\n')[0] ?? '');
-  if (!cleaned) return fallback;
-  const stripped = cleaned
-    .replace(
-      /^(?:i can|students?|complete|contribute|revisit|finish|describe|explain|identify|analyse|analyze|use)\s+(?:\w+\s+)?/i,
-      '',
-    )
-    .trim();
-  const words = (stripped || cleaned).split(/\s+/).slice(0, 7);
-  let phrase = words.join(' ');
-  if (!phrase) return fallback;
-  if (/^[A-Z][a-z]/.test(phrase)) {
-    phrase = phrase.charAt(0).toLowerCase() + phrase.slice(1);
-  }
-  return phrase;
-}
-
-function homeworkSource(content: LessonPlan['content']): string {
-  const independent = activityTasksFromItems(content.independentPractice);
-  const exit = (content.formativeAssessment ?? [])[0] ?? '';
-  return independent[0] || exit || 'the lesson task';
 }
 
 function activationDifferentiationLine(): string {
@@ -502,30 +461,12 @@ function activityLevelLine(level: 1 | 2 | 3, content: LessonPlan['content']): st
   if (level === 1 && slots?.activitySupported) return asCompleteSentence(slots.activitySupported);
   if (level === 2 && slots?.activityExpected) return asCompleteSentence(slots.activityExpected);
   if (level === 3 && slots?.activityStretch) return asCompleteSentence(slots.activityStretch);
-  if (level === 1) {
-    return asCompleteSentence(
-      `Complete the supported task using ${shortPhrase(content.differentiation?.support?.[0] ?? '', 'supported prompts')}`,
-    );
-  }
-  if (level === 2) {
-    return asCompleteSentence(
-      `Complete the expected-level task using ${shortPhrase(masteryLevelTasks(content)[0] ?? practiceTaskCore(content), 'the core task')}`,
-    );
-  }
-  return asCompleteSentence(
-    `Complete the stretch task using ${shortPhrase(content.differentiation?.extension?.[0] ?? '', 'a stretch challenge')}`,
-  );
-}
-
-function iCanPredicate(items: string[]): string {
-  const first = items[0] || 'I can complete the lesson task';
-  const match = first.match(/\bi can\b\s*(.+)/i);
-  const rest = match?.[1] ? stripTaskMarkers(match[1]) : stripTaskMarkers(first.replace(/^i can\s+/i, ''));
-  return stripTrailingPunctuation(rest.replace(/^[:.\s]+/, '')) || 'complete the lesson task';
+  if (level === 1) return 'See Adaptive Teaching: Working Towards Mastery.';
+  if (level === 2) return 'See Adaptive Teaching: Working At Mastery.';
+  return 'See Adaptive Teaching: Mastery with Greater Depth.';
 }
 
 function scaledICan(
-  items: string[],
   scale: 'support' | 'extend',
   content: LessonPlan['content'],
 ): string {
@@ -535,12 +476,8 @@ function scaledICan(
   if (scale === 'extend' && content.templateSlots?.successCriteriaExtended) {
     return asICanSentence(content.templateSlots.successCriteriaExtended);
   }
-  const predicate = iCanPredicate(items);
-  if (scale === 'support') {
-    return asCompleteSentence(`I can, with prompts or a model, ${predicate}`);
-  }
-  const topic = predicate.replace(/^(state|describe|explain|identify|complete)\s+/i, '') || predicate;
-  return asCompleteSentence(`I can explain ${topic} in greater depth`);
+  if (scale === 'support') return 'I can complete the core task with support.';
+  return 'I can extend the core task independently.';
 }
 
 function homeworkLevelLine(
@@ -552,12 +489,10 @@ function homeworkLevelLine(
   if (band === 'at' && slots?.homeworkExpected) return asCompleteSentence(slots.homeworkExpected);
   if (band === 'depth' && slots?.homeworkStretch) return asCompleteSentence(slots.homeworkStretch);
   if (band === 'extension' && slots?.homeworkExtension) return asCompleteSentence(slots.homeworkExtension);
-
-  const phrase = shortPhrase(homeworkSource(content), 'the lesson task');
-  if (band === 'towards') return asCompleteSentence(`Complete a supported homework review of ${phrase}`);
-  if (band === 'at') return asCompleteSentence(`Complete the independent practice on ${phrase} at home`);
-  if (band === 'depth') return asCompleteSentence(`Add one further example related to ${phrase}`);
-  return asCompleteSentence(`Write one stretch question about ${phrase}`);
+  if (band === 'towards') return 'Complete the independent practice task at your level with support.';
+  if (band === 'at') return 'Complete the independent practice task at your level.';
+  if (band === 'depth') return 'Complete the independent practice task at your level with greater depth.';
+  return 'Complete the independent practice task at your level as an extension.';
 }
 
 function matchesTowardsLabel(label: string): boolean {
@@ -619,7 +554,7 @@ function fillActivityPhaseRow(
       { match: (label) => /^plenary\b/i.test(label.trim()), content: learner },
       {
         match: (label) => successCriteriaCell && matchesTowardsLabel(label),
-        content: scaledICan(successCriteriaItems, 'support', content),
+        content: scaledICan('support', content),
       },
       {
         match: (label) => successCriteriaCell && matchesAtMasteryLabel(label),
@@ -627,7 +562,7 @@ function fillActivityPhaseRow(
       },
       {
         match: (label) => successCriteriaCell && matchesGreaterDepthLabel(label),
-        content: scaledICan(successCriteriaItems, 'extend', content),
+        content: scaledICan('extend', content),
       },
       {
         match: (label) => homeworkCell && matchesTowardsLabel(label),
