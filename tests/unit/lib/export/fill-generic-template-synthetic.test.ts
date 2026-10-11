@@ -451,7 +451,12 @@ describe('synthetic daily English template fill', () => {
 function slotBody(text: string, start: string, end: string): string {
   const raw = sliceBetween(text, start, end);
   const withoutLabel = raw.startsWith(start) ? raw.slice(start.length) : raw;
-  return withoutLabel.replace(/^[•\s]+/, '').trim();
+  return withoutLabel
+    .split('\n')
+    .map((line) => line.replace(/^[•\s]+/, '').trim())
+    .filter((line) => line && !/:$/.test(line) && !/^\[\d+\]/.test(line))
+    .join('\n')
+    .trim();
 }
 
 function extractBulletItems(text: string): string[] {

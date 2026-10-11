@@ -437,8 +437,62 @@ function senTargetedItems(_content: LessonPlan['content']): string[] {
   ];
 }
 
-function homeworkPrompt(): string {
-  return 'Complete a short reflection or practice task reinforcing the lesson objectives and vocabulary.';
+function stripTaskMarkers(text: string): string {
+  return text
+    .replace(/\b[A-Z][A-Z0-9_]*_MARKER\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function practiceTaskCore(content: LessonPlan['content']): string {
+  const guided = activityTasksFromItems(content.guidedPractice);
+  const main = activityTasksFromItems(content.mainActivities);
+  const independent = activityTasksFromItems(content.independentPractice);
+  const raw = (guided[0] || main[0] || independent[0] || 'the lesson task').split('\n')[0] ?? '';
+  return stripTaskMarkers(raw) || 'the lesson task';
+}
+
+function activationDifferentiationLine(): string {
+  return 'Support with a model or prompts; stretch with a further example. See Adaptive Teaching.';
+}
+
+function activityLevelLine(level: 1 | 2 | 3, core: string): string {
+  if (level === 1) return `Supported: ${core} with a model and prompts.`;
+  if (level === 2) return `At expected level: ${core} independently.`;
+  return `Stretch: ${core} and add a further example.`;
+}
+
+function iCanPredicate(items: string[]): string {
+  const first = items[0] || 'I can complete the lesson task';
+  const match = first.match(/\bi can\b\s*(.+)/i);
+  const rest = match?.[1] ? stripTaskMarkers(match[1]) : stripTaskMarkers(first.replace(/^i can\s+/i, ''));
+  return rest.replace(/^[:.\s]+/, '') || 'complete the lesson task';
+}
+
+function scaledICan(items: string[], scale: 'support' | 'extend'): string {
+  const predicate = iCanPredicate(items);
+  if (scale === 'support') return `I can, with prompts or a model, ${predicate}`;
+  return `I can ${predicate} and apply it to a further example.`;
+}
+
+function homeworkLevelLine(band: 'towards' | 'at' | 'depth' | 'extension', core: string): string {
+  if (band === 'towards') return `Revisit ${core} at home using the supported prompts.`;
+  if (band === 'at') return `Finish ${core} independently at home.`;
+  if (band === 'depth') return `Add one further example to ${core}.`;
+  return `Invent a stretch question related to ${core}.`;
+}
+
+function matchesTowardsLabel(label: string): boolean {
+  const text = normalizeLabel(label);
+  return text.includes('working towards mastery') || /^\[1\]/.test(label.trim());
+}
+
+function matchesGreaterDepthLabel(label: string): boolean {
+  return /greater depth/i.test(label);
+}
+
+function matchesExtensionLabel(label: string): boolean {
+  return normalizeLabel(label) === 'extension';
 }
 
 function fillActivityPhaseRow(
@@ -462,24 +516,57 @@ function fillActivityPhaseRow(
   const iCan = successCriteriaItems.some((item) => /\bi can\b/i.test(item))
     ? joinBullets(successCriteriaItems)
     : formatICanStatements(successCriteriaItems);
+  const taskCore = practiceTaskCore(content);
+  const activitiesCell = /differentiated activities/i.test(cellPlainText(cellsXml[1] ?? ''));
   const successCriteriaCell = /differentiated success criteria/i.test(cellPlainText(cellsXml[2] ?? ''));
+  const homeworkCell = /homework differentiation/i.test(cellPlainText(cellsXml[2] ?? ''));
 
   const next = [...cellsXml];
   if (!options?.keepPrintedTime && time) next[0] = replaceCellParagraphs(next[0], time);
   if (teacher) {
     next[1] = fillStructuredCell(next[1], teacher, [
       { match: (label) => /class discussion/i.test(label), content: teacher },
+      { match: (label) => activitiesCell && matchesTowardsLabel(label), content: activityLevelLine(1, taskCore) },
+      { match: (label) => activitiesCell && matchesAtMasteryLabel(label), content: activityLevelLine(2, taskCore) },
+      { match: (label) => activitiesCell && matchesGreaterDepthLabel(label), content: activityLevelLine(3, taskCore) },
     ]);
   }
   if (learner) {
     next[2] = fillStructuredCell(next[2], learner, [
       { match: (label) => /student participation/i.test(label), content: learner },
       { match: (label) => /student-centered approach/i.test(label), content: learner },
+      {
+        match: (label) => normalizeLabel(label) === 'differentiation',
+        content: activationDifferentiationLine(),
+      },
       { match: (label) => /^plenary\b/i.test(label.trim()), content: learner },
-      { match: (label) => /homework differentiation/i.test(label), content: homeworkPrompt() },
+      {
+        match: (label) => successCriteriaCell && matchesTowardsLabel(label),
+        content: scaledICan(successCriteriaItems, 'support'),
+      },
       {
         match: (label) => successCriteriaCell && matchesAtMasteryLabel(label),
         content: iCan,
+      },
+      {
+        match: (label) => successCriteriaCell && matchesGreaterDepthLabel(label),
+        content: scaledICan(successCriteriaItems, 'extend'),
+      },
+      {
+        match: (label) => homeworkCell && matchesTowardsLabel(label),
+        content: homeworkLevelLine('towards', taskCore),
+      },
+      {
+        match: (label) => homeworkCell && matchesAtMasteryLabel(label),
+        content: homeworkLevelLine('at', taskCore),
+      },
+      {
+        match: (label) => homeworkCell && matchesGreaterDepthLabel(label),
+        content: homeworkLevelLine('depth', taskCore),
+      },
+      {
+        match: (label) => homeworkCell && matchesExtensionLabel(label),
+        content: homeworkLevelLine('extension', taskCore),
       },
     ]);
   }
