@@ -144,6 +144,10 @@ export const zhHans: Messages = {
   lesson: {
     edited: '已编辑',
     savedToast: '已保存。下载将使用你的修改。',
-    discardChanges: '放弃更改？',
+    discardEdits: '放弃你的修改？',
+    leaveWithoutSaving: '不保存修改并离开？',
+    save: '保存',
+    cancel: '取消',
+    saveFailed: '无法保存，请重试',
   },
 };

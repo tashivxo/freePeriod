@@ -14,6 +14,7 @@ jest.mock('@/hooks/useDebouncedLessonSave', () => ({
     save: mockSave,
     flush: mockFlush,
     cancel: jest.fn(),
+    revert: jest.fn(),
     status: 'idle',
     error: null,
     isDirty: false,

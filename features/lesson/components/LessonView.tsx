@@ -9,7 +9,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
-import { contentToString, isRecord } from '@/lib/lesson/content';
+import { contentToString, isRecord, stripHtml } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
@@ -79,6 +79,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     save: debouncedSave,
     flush,
     cancel,
+    revert,
     status: saveStatus,
     error: saveError,
     isDirty,
@@ -90,6 +91,13 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       setAutosaveFlashBySection((prev) => ({ ...prev, [key]: Date.now() }));
     },
   );
+  const lessonRef = useRef(lesson);
+  lessonRef.current = lesson;
+  const editSnapshotRef = useRef<{
+    key: LessonSectionKey;
+    html: string;
+    wasEdited: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!exportError || exportErrorIconMotionDisabled) return;
@@ -129,19 +137,55 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [isDirty]);
 
-  const handleBack = useCallback(async () => {
-    if (isDirty) {
-      const discard = window.confirm(t('lesson.discardChanges'));
-      if (!discard) return;
+  const leaveTo = useCallback(
+    async (href: string) => {
+      const ok = await flush();
+      if (ok) {
+        router.push(href);
+        return;
+      }
+      const leave = window.confirm(t('lesson.leaveWithoutSaving'));
+      if (!leave) return;
       cancel();
-      router.push('/dashboard');
-      return;
-    }
+      router.push(href);
+    },
+    [cancel, flush, router, t],
+  );
 
-    const ok = await flush();
-    if (!ok) return;
-    router.push('/dashboard');
-  }, [cancel, flush, isDirty, router, t]);
+  const handleBack = useCallback(() => {
+    void leaveTo('/dashboard');
+  }, [leaveTo]);
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        return;
+      }
+      let url: URL;
+      try {
+        url = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      void leaveTo(`${url.pathname}${url.search}`);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [leaveTo]);
 
   const handleExport = useCallback(async () => {
     setExportLoading(true);
@@ -275,7 +319,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           )}
           {saveStatus === 'error' && saveError && (
             <span role="status" className="text-error">
-              {saveError}
+              {t('lesson.saveFailed')}
             </span>
           )}
         </div>
@@ -357,9 +401,36 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               isEditing={editingKey === section.key}
               isEdited={Boolean(content.editedKeys?.includes(section.key))}
               editedLabel={t('lesson.edited')}
-              onEdit={() => setEditingKey(section.key)}
-              onDone={() => {
-                void flush();
+              saveError={
+                editingKey === section.key && saveStatus === 'error'
+                  ? t('lesson.saveFailed')
+                  : null
+              }
+              isSaving={editingKey === section.key && saveStatus === 'saving'}
+              onEdit={() => {
+                editSnapshotRef.current = {
+                  key: section.key,
+                  html: contentToString(content[section.key]),
+                  wasEdited: Boolean(content.editedKeys?.includes(section.key)),
+                };
+                setEditingKey(section.key);
+              }}
+              onDone={async () => {
+                const ok = await flush();
+                if (ok) setEditingKey(null);
+                return ok;
+              }}
+              onCancel={async (snapshotHtml) => {
+                const snap = editSnapshotRef.current;
+                cancel();
+                if (
+                  snap &&
+                  stripHtml(contentToString(lessonRef.current.content[snap.key])) !==
+                    stripHtml(snap.html)
+                ) {
+                  const ok = await revert(snap.key, snapshotHtml, snap.wasEdited);
+                  if (!ok) return;
+                }
                 setEditingKey(null);
               }}
               onChange={(html) => debouncedSave(section.key, html)}

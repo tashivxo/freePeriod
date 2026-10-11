@@ -146,6 +146,10 @@ export const es: Messages = {
   lesson: {
     edited: 'Editado',
     savedToast: 'Guardado. Las descargas usan tus ediciones.',
-    discardChanges: '¿Descartar cambios?',
+    discardEdits: '¿Descartar tus ediciones?',
+    leaveWithoutSaving: '¿Salir sin guardar tus ediciones?',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    saveFailed: 'No se pudo guardar, inténtalo de nuevo',
   },
 };

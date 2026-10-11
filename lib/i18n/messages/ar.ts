@@ -146,6 +146,10 @@ export const ar: Messages = {
   lesson: {
     edited: 'تم التعديل',
     savedToast: 'تم الحفظ. التنزيلات تستخدم تعديلاتك.',
-    discardChanges: 'هل تريد تجاهل التغييرات؟',
+    discardEdits: 'هل تريد تجاهل تعديلاتك؟',
+    leaveWithoutSaving: 'المغادرة دون حفظ تعديلاتك؟',
+    save: 'حفظ',
+    cancel: 'إلغاء',
+    saveFailed: 'تعذر الحفظ، حاول مرة أخرى',
   },
 };

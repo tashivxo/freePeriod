@@ -184,6 +184,34 @@ describe('useDebouncedLessonSave', () => {
     expect(result.current.status).toBe('idle');
   });
 
+  it('reverts a section to snapshot text and can drop the Edited key', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave(
+        'lesson-1',
+        { ...sampleContent, editedKeys: ['hook'] },
+        onSaved,
+      ),
+    );
+
+    await act(async () => {
+      await expect(result.current.revert('hook', 'Leaf observation', false)).resolves.toBe(
+        true,
+      );
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          hook: 'Leaf observation',
+          editedKeys: [],
+        }),
+      }),
+    );
+    expect(onSaved).toHaveBeenCalled();
+  });
+
   it('returns false from flush when the database write fails', async () => {
     mockEq.mockResolvedValue({ error: { message: 'db error' } });
     const onSaved = jest.fn();

@@ -154,5 +154,57 @@ export function useDebouncedLessonSave(
     setIsDirty(false);
   }, [schedulePersist]);
 
-  return { save, flush, cancel, status, error, isDirty };
+  const revert = useCallback(
+    async (
+      key: LessonSectionKey,
+      html: string,
+      markEdited: boolean,
+    ): Promise<boolean> => {
+      schedulePersist.cancel();
+      delete pendingRef.current[key];
+
+      let updatedContent = { ...contentRef.current };
+      const stripped = stripHtml(html);
+      const existingValue = updatedContent[key] ?? (key === 'vocabulary' ? [] : '');
+      const value = editTextToContent(stripped, existingValue);
+      const editedKeys = new Set(updatedContent.editedKeys ?? []);
+      if (markEdited) editedKeys.add(key);
+      else editedKeys.delete(key);
+      updatedContent = {
+        ...updatedContent,
+        [key]: value,
+        editedKeys: Array.from(editedKeys),
+      };
+
+      if (mountedRef.current) {
+        setStatus('saving');
+        setError(null);
+      }
+
+      const supabase = createClient();
+      const { error: saveError } = await supabase
+        .from('lesson_plans')
+        .update({ content: updatedContent })
+        .eq('id', lessonId);
+
+      if (saveError) {
+        if (mountedRef.current) {
+          setStatus('error');
+          setError('Failed to save changes');
+        }
+        return false;
+      }
+
+      contentRef.current = updatedContent;
+      if (mountedRef.current) {
+        setIsDirty(pendingKeys(pendingRef.current).length > 0);
+        onSaved(updatedContent, key);
+        setStatus('saved');
+      }
+      return true;
+    },
+    [lessonId, onSaved, schedulePersist],
+  );
+
+  return { save, flush, cancel, revert, status, error, isDirty };
 }

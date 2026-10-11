@@ -143,7 +143,11 @@ export const en = {
   lesson: {
     edited: 'Edited',
     savedToast: 'Saved. Downloads use your edits.',
-    discardChanges: 'Discard changes?',
+    discardEdits: 'Discard your edits?',
+    leaveWithoutSaving: 'Leave without saving your edits?',
+    save: 'Save',
+    cancel: 'Cancel',
+    saveFailed: "Couldn't save, try again",
   },
 } as const;
 
@@ -233,7 +237,11 @@ export type Messages = {
   lesson: {
     edited: string;
     savedToast: string;
-    discardChanges: string;
+    discardEdits: string;
+    leaveWithoutSaving: string;
+    save: string;
+    cancel: string;
+    saveFailed: string;
   };
   pricing: {
     title: string;

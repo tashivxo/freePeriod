@@ -146,6 +146,10 @@ export const fr: Messages = {
   lesson: {
     edited: 'Modifié',
     savedToast: 'Enregistré. Les téléchargements utilisent vos modifications.',
-    discardChanges: 'Ignorer les modifications ?',
+    discardEdits: 'Ignorer vos modifications ?',
+    leaveWithoutSaving: 'Quitter sans enregistrer vos modifications ?',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    saveFailed: "Échec de l'enregistrement, réessayez",
   },
 };
