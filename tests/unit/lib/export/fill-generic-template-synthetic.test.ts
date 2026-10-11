@@ -761,7 +761,11 @@ function extractBulletItems(text: string): string[] {
   return text
     .split('\n')
     .map((line) => line.replace(/^[•\s]+/, '').trim())
-    .filter((line) => line.length > 0 && !/^(working |other adaptive|special educational|prior knowledge)/i.test(line));
+    .filter(
+      (line) =>
+        line.length > 0 &&
+        !/^(working |other adaptive|special educational|prior knowledge|see adaptive teaching)/i.test(line),
+    );
 }
 
 function expectedHome(marker: string): string {

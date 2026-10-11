@@ -411,30 +411,15 @@ function findMergedColumn(cellsByRow: string[][]): number | null {
   return null;
 }
 
-function activityTasksFromItems(items: string[] | undefined): string[] {
-  if (!items?.length) return [];
-  return items
-    .map((item) => parseActivityBlock(item, ''))
-    .map((parsed) => parsed.learner.trim() || parsed.teacher.trim())
-    .filter(Boolean);
-}
-
-function masteryLevelTasks(content: LessonPlan['content']): string[] {
-  const independent = activityTasksFromItems(content.independentPractice);
-  if (independent.length > 0) return independent;
-  const guided = activityTasksFromItems(content.guidedPractice);
-  if (guided.length > 0) return guided;
-  if (content.objectives?.[0]) {
-    return [`Complete the core lesson task: ${content.objectives[0]}`];
-  }
-  return [];
-}
-
 function senTargetedItems(_content: LessonPlan['content']): string[] {
   return [
     'SEN/LS: targeted access arrangements and in-lesson intervention for identified learners.',
     'G&T: targeted enrichment that increases depth of thinking, not extra volume.',
   ];
+}
+
+function withoutICanColonPrefix(text: string): string {
+  return text.replace(/\bI can:\s*/gi, 'I can ');
 }
 
 function asCompleteSentence(text: string): string {
@@ -522,13 +507,17 @@ function fillActivityPhaseRow(
   const formativePool = content.formativeAssessment ?? [];
   const time = (options?.allocatedTime ?? parsed.time).trim();
   const teacher = parsed.teacher.trim();
-  const learner = parsed.learner.trim() || formatICanStatements(content.successCriteria) || '';
+  const learner = withoutICanColonPrefix(
+    parsed.learner.trim() || formatICanStatements(content.successCriteria) || '',
+  );
   const assessment = parsed.assessment.trim() || formativePool[0] || '';
   const resources = (options?.resourcesOverride ?? (parsed.resources.trim() || DEFAULT_RESOURCES)).trim();
   const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
-  const iCan = successCriteriaItems.some((item) => /\bi can\b/i.test(item))
-    ? joinBullets(successCriteriaItems)
-    : formatICanStatements(successCriteriaItems);
+  const iCan = withoutICanColonPrefix(
+    successCriteriaItems.some((item) => /\bi can\b/i.test(item))
+      ? joinBullets(successCriteriaItems)
+      : formatICanStatements(successCriteriaItems),
+  );
   const activitiesCell = /differentiated activities/i.test(cellPlainText(cellsXml[1] ?? ''));
   const successCriteriaCell = /differentiated success criteria/i.test(cellPlainText(cellsXml[2] ?? ''));
   const homeworkCell = /homework differentiation/i.test(cellPlainText(cellsXml[2] ?? ''));
@@ -692,7 +681,11 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
     return content.priorKnowledge ?? [];
   }
   if (text.includes('working towards mastery')) return content.differentiation?.support ?? [];
-  if (text.includes('working at mastery')) return masteryLevelTasks(content);
+  if (text.includes('working at mastery')) {
+    const strategy = content.templateSlots?.activityExpected?.trim();
+    if (strategy) return [asCompleteSentence(strategy)];
+    return ['See Adaptive Teaching: Working At Mastery.'];
+  }
   if (text.includes('greater depth')) return content.differentiation?.extension ?? [];
   if (text.includes('other adaptive')) return inferTeachingStrategies(content);
   if (text.includes('sen') || text.includes('learning support') || text.includes('gifted')) {

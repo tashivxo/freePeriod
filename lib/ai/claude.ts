@@ -39,13 +39,13 @@ const ACTIVITY_PHASE_FORMAT = `Activity phase format (hook, every mainActivities
 Each activity phase MUST be a single plain-text string with exactly these five labeled fields, in this order:
 Time: [duration, e.g. 10 min]
 Teacher Activity: [what the teacher does, 2 to 4 short bullet points, one per line]
-Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal, 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can: name all five elements correctly. I can: explain how conflict drives the plot."]
+Learner Activity & Success Criteria: [what students do PLUS "I can" success criteria tied to the lesson goal, 2 to 4 short bullet points, one per line. Example: "Work in pairs to label the diagram. I can name all five elements correctly. I can explain how conflict drives the plot."]
 Formative Assessment: [how you check understanding during this phase, 2 to 4 short bullet points]
 Resources: [specific materials, platforms, or handouts used in this phase only, e.g. "Whiteboard, printed graphic organiser, PhET simulation link, pupil notebooks"]
 
 For every activity phase you MUST return content for all 5 fields. Empty fields are not acceptable.
 If resources are minimal, list at least: "Whiteboard / projector, teacher-created handout".
-Success criteria inside Learner Activity & Success Criteria must be written as "I can" statements derived from the lesson objectives and successCriteria for that phase's goal.`;
+Success criteria inside Learner Activity & Success Criteria must be written as complete "I can ..." sentences derived from the lesson objectives and successCriteria for that phase's goal. Do not write colon labels after I can.`;
 
 const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successCriteria, priorKnowledge, performanceExpectations, misconceptions, sciencePractices, keyConcepts, vocabulary, formativeAssessment, differentiation, realWorldConnections):
 - Write complete, teacher-ready content, not skeleton outlines, placeholders, or single-word labels.
@@ -58,6 +58,7 @@ const PLANNING_FIELD_RULES = `Planning field writing rules (objectives, successC
 - objectives: Full measurable objective statements using Bloom's taxonomy verbs, complete sentences, not fragments.
 - successCriteria, formativeAssessment, differentiation, realWorldConnections: Detailed enough that a substitute teacher could deliver the lesson without guessing.
 - templateSlots: Each value is one complete grammatical sentence. Do not splice a clause onto an existing sentence. Homework lines must be based on independent practice or the exit ticket, not an in-class brainstorm.
+- Keep pronouns agreeing with their nouns. After a plural noun such as paragraphs, write them rather than a singular pronoun. Write I can statements as complete sentences, never as colon labels.
 - Minimum 3 items per array field where applicable.`;
 
 const ACTIVITY_PHASE_RULES = `Activity phase writing rules (hook, mainActivities, guidedPractice, independentPractice, plenary):
@@ -143,6 +144,7 @@ FORMAT EXAMPLES (bad → good):
 - vocabulary BAD: ["Solid", "Liquid"] → GOOD: ["Solid: matter with a fixed shape and volume because particles are tightly packed", "Liquid: matter with a fixed volume but no fixed shape because particles can slide past one another"]
 - priorKnowledge BAD: [] or ["Matter"] → GOOD: ["Students should already know that all materials are made of matter and can be observed in everyday objects.", "Students should be able to compare basic properties such as shape, volume, and whether a material can be poured or compressed."]
 - performanceExpectations BAD: [] or ["Matter"] → GOOD: ["The lesson develops students' ability to explain the topic using the concepts and vocabulary specified in the supplied curriculum guidance.", "Students demonstrate the target learning through the lesson's evidence-based activities and assessment."]
+- pair talk BAD: ["Swap a paragraph with a partner and read them."] → GOOD: ["Swap paragraphs with a partner and read them."]
 
 Each array should contain 3-6 items where practical. Be specific and actionable, avoid generic advice.
 
