@@ -229,14 +229,66 @@ const grammarLesson: LessonPlan = {
 
 const FIXTURE = join(__dirname, '../../../fixtures/synthetic-daily-english-lesson-plan.docx');
 
+const realisticLesson: LessonPlan = {
+  ...qaLesson,
+  id: 'synthetic-realistic',
+  content: {
+    ...qaLesson.content,
+    successCriteria: ['Define at least three effects of screen time.'],
+    guidedPractice: [
+      [
+        'Time: 10 min',
+        'Teacher Activity: DEMO_TEACHER_MARKER circulate and scaffold comparisons',
+        'Learner Activity & Success Criteria: Provide sentence starters',
+        'Formative Assessment: DEMO_ASSESS_MARKER spot checks',
+        'Resources: DEMO_RESOURCE_MARKER practice sheet',
+      ].join('\n'),
+    ],
+    independentPractice: [
+      [
+        'Time: 10 min',
+        'Teacher Activity: assign the on-level worksheet',
+        'Learner Activity & Success Criteria: Write an opinion paragraph about screen time,.',
+        'Formative Assessment: check the first three items',
+        'Resources: on-level worksheet',
+      ].join('\n'),
+    ],
+    formativeAssessment: ['Write an exit ticket about screen time.'],
+    differentiation: {
+      support: ['Provide sentence starters'],
+      extension: ['Write a stretch paragraph about screen time.'],
+    },
+  },
+};
+
+const cleanTemplateSlots = {
+  activitySupported: 'Work with a teacher model and guided prompts to complete the task.',
+  activityExpected: 'Complete the core task independently.',
+  activityStretch: 'Extend the task by analysing a further example.',
+  successCriteriaSupported: 'I can complete the task with a model and prompts.',
+  successCriteriaExtended: 'I can apply this concept to a new scenario and justify my reasoning.',
+  homeworkSupported: 'Complete a supported review of the exit ticket at home.',
+  homeworkExpected: 'Finish the independent practice from the exit ticket at home.',
+  homeworkStretch: 'Add one further example based on the exit ticket.',
+  homeworkExtension: 'Write one stretch question based on the exit ticket.',
+};
+
 function grammarProblems(text: string): string[] {
   const problems: string[] = [];
   if (/\. and\b/i.test(text)) problems.push(`'. and' in ${JSON.stringify(text)}`);
   if (/\.\./.test(text)) problems.push(`'..' in ${JSON.stringify(text)}`);
   if (/ \./.test(text)) problems.push(`' .' in ${JSON.stringify(text)}`);
+  if (/,\./.test(text)) problems.push(`',.' in ${JSON.stringify(text)}`);
   if (/\.\s+[a-z]/.test(text)) problems.push(`lowercase after full stop in ${JSON.stringify(text)}`);
   if (/\b(?:Revisit|Finish|Complete|Contribute|Add|Invent|Use|Extend|Supported|Stretch)\s+[A-Z][a-z]+\b/.test(text)) {
     problems.push(`verb followed by capitalised verb in ${JSON.stringify(text)}`);
+  }
+  if (
+    /\b(?:using|on|about|of|to)\s+(?:write|provide|define|complete|finish|add|invent|use|extend|contribute|revisit|describe|explain|identify|analyse|analyze)\b/i.test(
+      text,
+    )
+  ) {
+    problems.push(`preposition followed by bare imperative in ${JSON.stringify(text)}`);
   }
   return problems;
 }
@@ -436,30 +488,27 @@ describe('synthetic daily English template fill', () => {
     const act1 = slotBody(slots.practiceAct1, '[1]', '[2]');
     const act2 = slotBody(slots.practiceAct2, '[2]', '[3]');
     const act3 = slotBody(slots.practiceAct3, '[3]', '');
-    expect(act1.length).toBeGreaterThan(12);
-    expect(act2.length).toBeGreaterThan(12);
-    expect(act3.length).toBeGreaterThan(12);
-    expect(act1).toMatch(/support|scaffold|prompt|model/i);
-    expect(act2).toMatch(/expected|on-level|independen|core/i);
-    expect(act3).toMatch(/stretch|extend|further|deeper/i);
+    expect(act1).toBe('See Adaptive Teaching: Working Towards Mastery.');
+    expect(act2).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(act3).toBe('See Adaptive Teaching: Mastery with Greater Depth.');
     expect(new Set([act1, act2, act3]).size).toBe(3);
 
     const sc1 = slotBody(slots.practiceSc1, '[1]', '[2]');
     const sc2 = slotBody(slots.practiceSc2, '[2]', '[3]');
     const sc3 = slotBody(slots.practiceSc3, '[3]', '');
-    expect(sc1).toMatch(/^i can\b/i);
+    expect(sc1).toBe('I can complete the core task with support.');
     expect(sc2).toMatch(/i can/i);
-    expect(sc3).toMatch(/^i can\b/i);
+    expect(sc3).toBe('I can extend the core task independently.');
     expect(new Set([sc1, sc2, sc3]).size).toBe(3);
 
     const hwTowards = slotBody(slots.homework, 'Working Towards Mastery:', 'Working At Mastery:');
     const hwAt = slotBody(slots.homework, 'Working At Mastery:', 'Mastery with Greater Depth:');
     const hwDepth = slotBody(slots.homework, 'Mastery with Greater Depth:', 'Extension:');
     const hwExtension = slotBody(slots.homework, 'Extension:', '');
-    expect(hwTowards.length).toBeGreaterThan(12);
-    expect(hwAt.length).toBeGreaterThan(12);
-    expect(hwDepth.length).toBeGreaterThan(12);
-    expect(hwExtension.length).toBeGreaterThan(12);
+    expect(hwTowards).toBe('Complete the independent practice task at your level with support.');
+    expect(hwAt).toBe('Complete the independent practice task at your level.');
+    expect(hwDepth).toBe('Complete the independent practice task at your level with greater depth.');
+    expect(hwExtension).toBe('Complete the independent practice task at your level as an extension.');
     expect(new Set([hwTowards, hwAt, hwDepth, hwExtension]).size).toBe(4);
     for (const band of [hwTowards, hwAt, hwDepth, hwExtension]) {
       expect(band).not.toBe(
@@ -522,6 +571,47 @@ describe('synthetic daily English template fill', () => {
       expect(band).not.toMatch(/contribute ideas/i);
       expect(band).not.toMatch(/brainstorm/i);
     }
+  });
+
+  it('keeps leftover slot lines grammatical for realistic imperative tasks', async () => {
+    const { outXml } = await fillSynthetic(realisticLesson);
+    const fallbackLines = leftoverSlotLines(outXml);
+    expect(fallbackLines).toHaveLength(11);
+    for (const slot of fallbackLines) {
+      expect(slot.length).toBeGreaterThan(12);
+      expect(grammarProblems(slot)).toEqual([]);
+    }
+    expect(fallbackLines[1]).toBe('See Adaptive Teaching: Working Towards Mastery.');
+    expect(fallbackLines[2]).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(fallbackLines[3]).toBe('See Adaptive Teaching: Mastery with Greater Depth.');
+    expect(fallbackLines[4]).toBe('I can complete the core task with support.');
+    expect(fallbackLines[6]).toBe('I can extend the core task independently.');
+    expect(fallbackLines[7]).toBe('Complete the independent practice task at your level with support.');
+    expect(fallbackLines[8]).toBe('Complete the independent practice task at your level.');
+    expect(fallbackLines[9]).toBe('Complete the independent practice task at your level with greater depth.');
+    expect(fallbackLines[10]).toBe('Complete the independent practice task at your level as an extension.');
+
+    const slotted = await fillSynthetic({
+      ...realisticLesson,
+      content: {
+        ...realisticLesson.content,
+        templateSlots: cleanTemplateSlots,
+      },
+    });
+    const slottedLines = leftoverSlotLines(slotted.outXml);
+    expect(slottedLines).toHaveLength(11);
+    for (const slot of slottedLines) {
+      expect(grammarProblems(slot)).toEqual([]);
+    }
+    expect(slottedLines[1]).toBe(cleanTemplateSlots.activitySupported);
+    expect(slottedLines[2]).toBe(cleanTemplateSlots.activityExpected);
+    expect(slottedLines[3]).toBe(cleanTemplateSlots.activityStretch);
+    expect(slottedLines[4]).toBe(cleanTemplateSlots.successCriteriaSupported);
+    expect(slottedLines[6]).toBe(cleanTemplateSlots.successCriteriaExtended);
+    expect(slottedLines[7]).toBe(cleanTemplateSlots.homeworkSupported);
+    expect(slottedLines[8]).toBe(cleanTemplateSlots.homeworkExpected);
+    expect(slottedLines[9]).toBe(cleanTemplateSlots.homeworkStretch);
+    expect(slottedLines[10]).toBe(cleanTemplateSlots.homeworkExtension);
   });
 
   it('uses model-generated templateSlots when they are present', async () => {
@@ -608,6 +698,23 @@ function expectedHome(marker: string): string {
   if (marker === 'SUPPORT_MARKER') return 'adaptiveTowards';
   if (marker === 'MASTERY_TASK_MARKER') return 'adaptiveAtMastery';
   return 'adaptiveDepth';
+}
+
+function leftoverSlotLines(xml: string): string[] {
+  const slots = collectListSlots(xml);
+  return [
+    slotBody(slots.activationDiff, 'Differentiation:', ''),
+    slotBody(slots.practiceAct1, '[1]', '[2]'),
+    slotBody(slots.practiceAct2, '[2]', '[3]'),
+    slotBody(slots.practiceAct3, '[3]', ''),
+    slotBody(slots.practiceSc1, '[1]', '[2]'),
+    slotBody(slots.practiceSc2, '[2]', '[3]'),
+    slotBody(slots.practiceSc3, '[3]', ''),
+    slotBody(slots.homework, 'Working Towards Mastery:', 'Working At Mastery:'),
+    slotBody(slots.homework, 'Working At Mastery:', 'Mastery with Greater Depth:'),
+    slotBody(slots.homework, 'Mastery with Greater Depth:', 'Extension:'),
+    slotBody(slots.homework, 'Extension:', ''),
+  ];
 }
 
 function collectListSlots(xml: string): Record<string, string> {
