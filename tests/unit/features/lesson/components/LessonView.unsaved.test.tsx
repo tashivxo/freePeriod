@@ -72,8 +72,8 @@ jest.mock('@/features/lesson/components/SectionCard', () => ({
             aria-label={`Section editor ${title}`}
             onChange={(event) => onChange(event.target.value)}
           />
-          <button type="button" onClick={onDone}>
-            Done editing {title}
+          <button type="button" onClick={() => void onDone()}>
+            Save
           </button>
         </>
       ) : (
@@ -130,7 +130,7 @@ describe('LessonView unsaved changes', () => {
     confirmSpy.mockRestore();
   });
 
-  it('warns with Discard changes? before leaving with unsaved edits', async () => {
+  it('flushes unsaved edits on Back and leaves without a prompt', async () => {
     const { user } = render(
       <LocaleProvider initialLocale="en">
         <LessonView lesson={lesson} />
@@ -141,11 +141,58 @@ describe('LessonView unsaved changes', () => {
     await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Unsaved hook');
     await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
 
-    expect(confirmSpy).toHaveBeenCalledWith('Discard changes?');
+    expect(confirmSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+    expect(mockUpdate.mock.calls[0][0].content.hook).toContain('Unsaved hook');
+  });
+
+  it('flushes unsaved edits on in-app navigation and leaves without a prompt', async () => {
+    const { user } = render(
+      <LocaleProvider initialLocale="en">
+        <div>
+          <a href="/history">History</a>
+          <LessonView lesson={lesson} />
+        </div>
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
+    await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Nav hook');
+    await user.click(screen.getByRole('link', { name: 'History' }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/history');
+    });
+    expect(mockUpdate.mock.calls[0][0].content.hook).toContain('Nav hook');
+  });
+
+  it('asks Leave without saving your edits? only when the flush fails', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } });
+
+    const { user } = render(
+      <LocaleProvider initialLocale="en">
+        <LessonView lesson={lesson} />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
+    await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Unsaved hook');
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+    expect(confirmSpy).toHaveBeenCalledWith('Leave without saving your edits?');
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('leaves after confirming Discard changes?', async () => {
+  it('leaves without saving after the teacher confirms a failed flush', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } });
     confirmSpy.mockReturnValue(true);
 
     const { user } = render(
@@ -158,9 +205,10 @@ describe('LessonView unsaved changes', () => {
     await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Unsaved hook');
     await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
 
-    expect(confirmSpy).toHaveBeenCalledWith('Discard changes?');
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-    expect(mockUpdate).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith('Leave without saving your edits?');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
   });
 
   it('does not warn when leaving with no unsaved edits', async () => {
@@ -176,5 +224,22 @@ describe('LessonView unsaved changes', () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
+  });
+
+  it('keeps the beforeunload warning when closing the tab with unsaved edits', async () => {
+    const { user } = render(
+      <LocaleProvider initialLocale="en">
+        <LessonView lesson={lesson} />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
+    await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Unsaved hook');
+
+    const event = new Event('beforeunload', { cancelable: true });
+    const prevented = !window.dispatchEvent(event);
+
+    expect(event.defaultPrevented || prevented).toBe(true);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 });

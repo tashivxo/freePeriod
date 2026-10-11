@@ -60,7 +60,7 @@ jest.mock('@/features/lesson/components/SectionCard', () => ({
             Simulate edit {title}
           </button>
           <button type="button" onClick={() => void onDone()}>
-            Done editing {title}
+            Save
           </button>
         </>
       ) : (
@@ -432,14 +432,14 @@ describe('LessonView', () => {
     expect(screen.queryByText(TEMPLATE_UNFILLED_ERROR)).not.toBeInTheDocument();
   });
 
-  it('flushes pending edits when Done is clicked', async () => {
+  it('flushes pending edits when Save is clicked', async () => {
     const { user } = render(<LessonView lesson={lesson} />);
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.click(screen.getByRole('button', { name: 'Simulate edit Hook Activity' }));
     expect(mockSave).toHaveBeenCalledWith('hook', '<p>Edited</p>');
 
-    await user.click(screen.getByRole('button', { name: 'Done editing Hook Activity' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(mockFlush).toHaveBeenCalled();
   });
 
@@ -464,8 +464,9 @@ describe('LessonView', () => {
     });
   });
 
-  it('stays on the lesson when flush fails before leaving', async () => {
+  it('asks to leave without saving when flush fails before leaving', async () => {
     mockFlush.mockResolvedValue(false);
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
 
     const { user } = render(<LessonView lesson={lesson} />);
     await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
@@ -473,7 +474,23 @@ describe('LessonView', () => {
     await waitFor(() => {
       expect(mockFlush).toHaveBeenCalled();
     });
+    expect(confirmSpy).toHaveBeenCalledWith('Leave without saving your edits?');
     expect(mockPush).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('leaves after the teacher confirms a failed flush', async () => {
+    mockFlush.mockResolvedValue(false);
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+    expect(mockCancel).toHaveBeenCalled();
+    confirmSpy.mockRestore();
   });
 
   it('flushes pending edits before exporting', async () => {

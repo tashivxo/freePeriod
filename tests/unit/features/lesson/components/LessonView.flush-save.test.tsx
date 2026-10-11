@@ -82,8 +82,8 @@ jest.mock('@/features/lesson/components/SectionCard', () => ({
             onChange={(event) => onChange(event.target.value)}
             onBlur={() => onBlur?.()}
           />
-          <button type="button" onClick={onDone}>
-            Done editing {title}
+          <button type="button" onClick={() => void onDone()}>
+            Save
           </button>
         </>
       ) : (
@@ -164,7 +164,7 @@ describe('LessonView flush save', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.type(screen.getByLabelText('Section editor Hook Activity'), edited);
-    await user.click(screen.getByRole('button', { name: 'Done editing Hook Activity' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     await user.click(screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL }));
 
     await waitFor(() => {
@@ -218,12 +218,12 @@ describe('LessonView flush save', () => {
     expect(mockUpdate.mock.calls[0][0].content.hook).toContain(edited);
   });
 
-  it('flushes the pending save when Done is clicked', async () => {
+  it('flushes the pending save when Save is clicked', async () => {
     const { user } = renderLesson();
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Saved on Done');
-    await user.click(screen.getByRole('button', { name: 'Done editing Hook Activity' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalled();
@@ -249,20 +249,38 @@ describe('LessonView flush save', () => {
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Toast after save');
-    await user.click(screen.getByRole('button', { name: 'Done editing Hook Activity' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Saved. Downloads use your edits.')).toBeInTheDocument();
   });
 
-  it('shows an Edited tag on a section after a saved edit', async () => {
+  it('shows an Edited tag on a section only after a save succeeds', async () => {
     const { user } = renderLesson();
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Marked as edited');
-    await user.click(screen.getByRole('button', { name: 'Done editing Hook Activity' }));
+
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText('Edited')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /restore/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the editor open when Save fails', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } });
+    const { user } = renderLesson();
+
+    await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
+    await user.type(screen.getByLabelText('Section editor Hook Activity'), 'Broken save');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled();
+    });
+    expect(screen.getByLabelText('Section editor Hook Activity')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit Hook Activity' })).not.toBeInTheDocument();
   });
 
   it('shows an Edited tag for sections already saved as edited, without Restore', () => {
