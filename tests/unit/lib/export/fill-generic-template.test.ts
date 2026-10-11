@@ -590,9 +590,13 @@ describe('fill-generic-template field mapping', () => {
     expect(particlesIdx).toBeLessThan(towardsIdx);
     expect(supportIdx).toBeGreaterThan(towardsIdx);
     expect(supportIdx).toBeLessThan(senIdx);
-    expect(adaptive.indexOf('Complete practice diagrams')).toBeGreaterThan(
+    expect(adaptive).toContain('See Adaptive Teaching: Working At Mastery.');
+    const atMastery = adaptive.slice(
       adaptive.indexOf('Working At Mastery'),
+      adaptive.indexOf('Mastery with Greater Depth'),
     );
+    expect(atMastery).not.toContain('Complete practice diagrams');
+    expect(atMastery).not.toContain('I can explain how particle motion');
     expect(adaptive.indexOf('I can explain how particle motion')).toBeLessThan(
       adaptive.indexOf('Working At Mastery'),
     );

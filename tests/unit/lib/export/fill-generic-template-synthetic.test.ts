@@ -391,7 +391,9 @@ describe('synthetic daily English template fill', () => {
     expect(adaptive).toContain('Working At Mastery');
 
     const atMastery = sliceBetween(adaptive, 'Working At Mastery', 'Mastery with Greater Depth');
-    expect(atMastery).toContain('MASTERY_TASK_MARKER');
+    expect(atMastery).toContain('See Adaptive Teaching: Working At Mastery.');
+    expect(atMastery).not.toContain('MASTERY_TASK_MARKER');
+    expect(atMastery).not.toContain('DEMO_LEARNER_MARKER');
     expect(atMastery).not.toContain('SUCCESS_CRITERIA_MARKER');
 
     const other = sliceBetween(adaptive, 'Other adaptive', 'Special Educational Needs');
@@ -614,6 +616,74 @@ describe('synthetic daily English template fill', () => {
     expect(slottedLines[10]).toBe(cleanTemplateSlots.homeworkExtension);
   });
 
+  it('gives Working At Mastery its own strategy instead of repeating Practice learner text', async () => {
+    const { outXml } = await fillSynthetic();
+    const slots = collectListSlots(outXml);
+    const practiceLearner = slotBody(slots.practiceLearner, 'Student-Centered Approach:', 'Differentiated success criteria:');
+    const atMastery = slotBody(slots.adaptiveAtMastery, 'Working At Mastery', 'Mastery with Greater Depth');
+
+    expect(practiceLearner).toContain('DEMO_LEARNER_MARKER');
+    expect(practiceLearner).toContain('MASTERY_TASK_MARKER');
+    expect(atMastery).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(atMastery).not.toContain(practiceLearner);
+    expect(atMastery).not.toContain('DEMO_LEARNER_MARKER');
+    expect(atMastery).not.toContain('MASTERY_TASK_MARKER');
+    expect(atMastery).not.toContain('I can:');
+
+    const slotted = await fillSynthetic({
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        templateSlots: {
+          activityExpected: 'Complete the on-level task independently with the core success criteria.',
+        },
+      },
+    });
+    const slottedAtMastery = slotBody(
+      collectListSlots(slotted.outXml).adaptiveAtMastery,
+      'Working At Mastery',
+      'Mastery with Greater Depth',
+    );
+    expect(slottedAtMastery).toBe(
+      'Complete the on-level task independently with the core success criteria.',
+    );
+    expect(slottedAtMastery).not.toContain('DEMO_LEARNER_MARKER');
+    expect(slottedAtMastery).not.toContain('MASTERY_TASK_MARKER');
+  });
+
+  it('writes I can sentences in learner cells without a colon prefix', async () => {
+    const lesson: LessonPlan = {
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        guidedPractice: [
+          [
+            'Time: 10 min',
+            'Teacher Activity: DEMO_TEACHER_MARKER circulate and scaffold comparisons',
+            'Learner Activity & Success Criteria: Complete practice diagrams.\nI can: name three particle changes.',
+            'Formative Assessment: DEMO_ASSESS_MARKER spot checks',
+            'Resources: DEMO_RESOURCE_MARKER practice sheet',
+          ].join('\n'),
+        ],
+        independentPractice: [
+          [
+            'Time: 10 min',
+            'Teacher Activity: assign the on-level worksheet',
+            'Learner Activity & Success Criteria: Write an opinion paragraph about screen time.\nI can: justify one claim with evidence.',
+            'Formative Assessment: check the first three items',
+            'Resources: on-level worksheet',
+          ].join('\n'),
+        ],
+      },
+    };
+    const { outXml } = await fillSynthetic(lesson);
+    const phases = activityPhaseRows(outXml);
+    for (const phase of phases) {
+      expect(phase.texts[2]).not.toContain('I can:');
+    }
+    expect(adaptiveValueText(outXml)).not.toContain('I can:');
+  });
+
   it('uses model-generated templateSlots when they are present', async () => {
     const lesson: LessonPlan = {
       ...qaLesson,
@@ -696,7 +766,7 @@ function extractBulletItems(text: string): string[] {
 
 function expectedHome(marker: string): string {
   if (marker === 'SUPPORT_MARKER') return 'adaptiveTowards';
-  if (marker === 'MASTERY_TASK_MARKER') return 'adaptiveAtMastery';
+  if (marker === 'MASTERY_TASK_MARKER') return 'practiceLearner';
   return 'adaptiveDepth';
 }
 
@@ -731,6 +801,7 @@ function collectListSlots(xml: string): Record<string, string> {
     adaptiveOther: sliceBetween(adaptive, 'Other adaptive', 'Special Educational Needs'),
     adaptiveSen: adaptive.slice(adaptive.indexOf('Special Educational Needs')),
     activationDiff: sliceBetween(activation?.texts[2] ?? '', 'Differentiation:', ''),
+    practiceLearner: practice?.texts[2] ?? '',
     practiceAct1: sliceBetween(practice?.texts[1] ?? '', '[1]', '[2]'),
     practiceAct2: sliceBetween(practice?.texts[1] ?? '', '[2]', '[3]'),
     practiceAct3: sliceBetween(practice?.texts[1] ?? '', '[3]', ''),
