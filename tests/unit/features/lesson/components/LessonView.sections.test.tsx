@@ -3,6 +3,7 @@ import type { LessonPlan } from '@/types';
 
 const mockPush = jest.fn();
 const mockSave = jest.fn();
+const mockFlush = jest.fn(async () => true);
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -11,6 +12,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/hooks/useDebouncedLessonSave', () => ({
   useDebouncedLessonSave: jest.fn(() => ({
     save: mockSave,
+    flush: mockFlush,
     status: 'idle',
     error: null,
   })),
