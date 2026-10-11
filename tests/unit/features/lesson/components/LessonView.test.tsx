@@ -9,12 +9,16 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const mockCancel = jest.fn();
+
 jest.mock('@/hooks/useDebouncedLessonSave', () => ({
   useDebouncedLessonSave: jest.fn(() => ({
     save: mockSave,
     flush: mockFlush,
+    cancel: mockCancel,
     status: 'idle',
     error: null,
+    isDirty: false,
   })),
 }));
 
@@ -137,8 +141,10 @@ describe('LessonView', () => {
     (useDebouncedLessonSave as jest.Mock).mockReturnValue({
       save: mockSave,
       flush: mockFlush,
+      cancel: mockCancel,
       status: 'idle',
       error: null,
+      isDirty: false,
     });
     (global.fetch as jest.Mock) = jest.fn();
   });
@@ -153,8 +159,10 @@ describe('LessonView', () => {
     (useDebouncedLessonSave as jest.Mock).mockReturnValue({
       save: mockSave,
       flush: mockFlush,
+      cancel: mockCancel,
       status: 'saved',
       error: null,
+      isDirty: false,
     });
 
     render(<LessonView lesson={lesson} />);

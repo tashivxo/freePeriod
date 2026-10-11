@@ -143,4 +143,9 @@ export const ar: Messages = {
     showConfirmPassword: 'إظهار تأكيد كلمة المرور',
     hideConfirmPassword: 'إخفاء تأكيد كلمة المرور',
   },
+  lesson: {
+    edited: 'تم التعديل',
+    savedToast: 'تم الحفظ. التنزيلات تستخدم تعديلاتك.',
+    discardChanges: 'هل تريد تجاهل التغييرات؟',
+  },
 };

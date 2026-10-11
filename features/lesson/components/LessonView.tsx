@@ -34,6 +34,7 @@ import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccu
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
+import { useT } from '@/providers/locale';
 
 type LessonViewProps = {
   lesson: LessonPlan;
@@ -51,6 +52,7 @@ async function readExportError(response: Response, fallback: string): Promise<st
 export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
   const { zenMode } = useZenMode();
+  const t = useT();
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -73,7 +75,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const fillHelperId = useId();
   const toolbarButtonClassName = 'h-auto min-h-11 w-full sm:h-7 sm:min-h-0 sm:w-auto';
 
-  const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
+  const {
+    save: debouncedSave,
+    flush,
+    cancel,
+    status: saveStatus,
+    error: saveError,
+    isDirty,
+  } = useDebouncedLessonSave(
     lesson.id,
     lesson.content,
     (updatedContent, key) => {
@@ -110,10 +119,37 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, [zenMode]);
 
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
+
+  const handleBack = useCallback(async () => {
+    if (isDirty) {
+      const discard = window.confirm(t('lesson.discardChanges'));
+      if (!discard) return;
+      cancel();
+      router.push('/dashboard');
+      return;
+    }
+
+    const ok = await flush();
+    if (!ok) return;
+    router.push('/dashboard');
+  }, [cancel, flush, isDirty, router, t]);
+
   const handleExport = useCallback(async () => {
     setExportLoading(true);
     setExportError(null);
     try {
+      const ok = await flush();
+      if (!ok) return;
+
       const response = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +167,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     } finally {
       setExportLoading(false);
     }
-  }, [lesson.id, lesson.subject]);
+  }, [flush, lesson.id, lesson.subject]);
 
   const handleFillTemplate = useCallback(
     async (options?: { fromDialog?: boolean }): Promise<boolean> => {
@@ -140,6 +176,9 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         setExportError(null);
       }
       try {
+        const ok = await flush();
+        if (!ok) return false;
+
         const response = await fetch('/api/export/fill-template', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -171,7 +210,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         setFillLoading(false);
       }
     },
-    [lesson.id, lesson.template_path, lesson.title],
+    [flush, lesson.id, lesson.template_path, lesson.title],
   );
 
   const handleFillTemplateFromDialog = useCallback(async () => {
@@ -200,7 +239,10 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       <div className="mb-8">
         <button
           type="button"
-          onClick={() => router.push('/dashboard')}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            void handleBack();
+          }}
           className="min-h-11 inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -228,7 +270,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           )}
           {saveStatus === 'saved' && (
             <span role="status" className="text-success">
-              Saved
+              {t('lesson.savedToast')}
             </span>
           )}
           {saveStatus === 'error' && saveError && (
@@ -313,9 +355,17 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
                 ) : undefined
               }
               isEditing={editingKey === section.key}
+              isEdited={Boolean(content.editedKeys?.includes(section.key))}
+              editedLabel={t('lesson.edited')}
               onEdit={() => setEditingKey(section.key)}
-              onDone={() => setEditingKey(null)}
+              onDone={() => {
+                void flush();
+                setEditingKey(null);
+              }}
               onChange={(html) => debouncedSave(section.key, html)}
+              onBlur={() => {
+                void flush();
+              }}
               autosaveFlashNonce={autosaveFlashBySection[section.key]}
             />
           </div>

@@ -1,4 +1,4 @@
-import { render, screen } from '@/tests/helpers';
+import { render, screen, waitFor } from '@/tests/helpers';
 import { LocaleProvider } from '@/providers/locale';
 import type { LessonPlan } from '@/types';
 
@@ -173,6 +173,8 @@ describe('LessonView unsaved changes', () => {
     await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
 
     expect(confirmSpy).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
   });
 });

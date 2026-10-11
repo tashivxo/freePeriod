@@ -140,6 +140,11 @@ export const en = {
     showConfirmPassword: 'Show confirm password',
     hideConfirmPassword: 'Hide confirm password',
   },
+  lesson: {
+    edited: 'Edited',
+    savedToast: 'Saved. Downloads use your edits.',
+    discardChanges: 'Discard changes?',
+  },
 } as const;
 
 export type Messages = {
@@ -224,6 +229,11 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+  };
+  lesson: {
+    edited: string;
+    savedToast: string;
+    discardChanges: string;
   };
   pricing: {
     title: string;

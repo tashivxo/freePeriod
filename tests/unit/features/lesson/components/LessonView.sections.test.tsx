@@ -13,8 +13,10 @@ jest.mock('@/hooks/useDebouncedLessonSave', () => ({
   useDebouncedLessonSave: jest.fn(() => ({
     save: mockSave,
     flush: mockFlush,
+    cancel: jest.fn(),
     status: 'idle',
     error: null,
+    isDirty: false,
   })),
 }));
 

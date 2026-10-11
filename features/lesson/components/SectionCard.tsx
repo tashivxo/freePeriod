@@ -17,9 +17,12 @@ type SectionCardProps = {
   content: string;
   viewContent?: ReactNode;
   isEditing: boolean;
+  isEdited?: boolean;
+  editedLabel?: string;
   onEdit: () => void;
   onDone: () => void;
   onChange: (html: string) => void;
+  onBlur?: () => void;
   autosaveFlashNonce?: number;
 };
 
@@ -28,9 +31,12 @@ export function SectionCard({
   content,
   viewContent,
   isEditing,
+  isEdited = false,
+  editedLabel = 'Edited',
   onEdit,
   onDone,
   onChange,
+  onBlur,
   autosaveFlashNonce,
 }: SectionCardProps) {
   const [isOpen, setIsOpen] = useState(true);
@@ -81,6 +87,11 @@ export function SectionCard({
           aria-expanded={panelOpen}
         >
           <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
+          {isEdited && editedLabel ? (
+            <span className="rounded-full bg-coral/10 px-2 py-0.5 font-body text-xs font-medium text-coral">
+              {editedLabel}
+            </span>
+          ) : null}
           <div
             className="t-icon-swap h-5 w-5 shrink-0 text-text-secondary"
             data-state={isOpen ? 'b' : 'a'}
@@ -135,7 +146,7 @@ export function SectionCard({
           >
             {isEditing ? (
               <div className="mt-3">
-                <LessonEditor content={content} onChange={onChange} />
+                <LessonEditor content={content} onChange={onChange} onBlur={onBlur} />
               </div>
             ) : (
               <div
