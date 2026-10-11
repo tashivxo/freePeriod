@@ -195,7 +195,51 @@ const qaLesson: LessonPlan = {
   },
 };
 
+const grammarLesson: LessonPlan = {
+  ...qaLesson,
+  id: 'synthetic-grammar',
+  content: {
+    ...qaLesson.content,
+    successCriteria: ['I can describe the effects of each.'],
+    guidedPractice: [
+      [
+        'Time: 10 min',
+        'Teacher Activity: DEMO_TEACHER_MARKER circulate and scaffold comparisons',
+        'Learner Activity & Success Criteria: Contribute ideas about screen time.',
+        'Formative Assessment: DEMO_ASSESS_MARKER spot checks',
+        'Resources: DEMO_RESOURCE_MARKER practice sheet',
+      ].join('\n'),
+    ],
+    independentPractice: [
+      [
+        'Time: 10 min',
+        'Teacher Activity: assign the on-level worksheet',
+        'Learner Activity & Success Criteria: Finish the exit review on screen time effects.',
+        'Formative Assessment: check the first three items',
+        'Resources: on-level worksheet',
+      ].join('\n'),
+    ],
+    formativeAssessment: ['Students complete an exit ticket on screen time.'],
+    differentiation: {
+      support: ['Students use an annotated diagram with a model and prompts.'],
+      extension: ['Students analyse a further example of each.'],
+    },
+  },
+};
+
 const FIXTURE = join(__dirname, '../../../fixtures/synthetic-daily-english-lesson-plan.docx');
+
+function grammarProblems(text: string): string[] {
+  const problems: string[] = [];
+  if (/\. and\b/i.test(text)) problems.push(`'. and' in ${JSON.stringify(text)}`);
+  if (/\.\./.test(text)) problems.push(`'..' in ${JSON.stringify(text)}`);
+  if (/ \./.test(text)) problems.push(`' .' in ${JSON.stringify(text)}`);
+  if (/\.\s+[a-z]/.test(text)) problems.push(`lowercase after full stop in ${JSON.stringify(text)}`);
+  if (/\b(?:Revisit|Finish|Complete|Contribute|Add|Invent|Use|Extend|Supported|Stretch)\s+[A-Z][a-z]+\b/.test(text)) {
+    problems.push(`verb followed by capitalised verb in ${JSON.stringify(text)}`);
+  }
+  return problems;
+}
 
 async function fillSynthetic(lesson: LessonPlan = qaLesson) {
   const templateBuffer = readFileSync(FIXTURE);
@@ -428,10 +472,104 @@ describe('synthetic daily English template fill', () => {
       expect(slot).not.toContain('SUPPORT_MARKER');
       expect(slot).not.toContain('MASTERY_TASK_MARKER');
       expect(slot).not.toContain('EXTENSION_MARKER');
+      expect(grammarProblems(slot)).toEqual([]);
       for (const item of adaptiveItems) {
         expect(slot).not.toContain(item);
       }
     }
+  });
+
+  it('writes leftover slot lines as complete grammatical sentences', async () => {
+    const { outXml } = await fillSynthetic(grammarLesson);
+    const slots = collectListSlots(outXml);
+    const derivedSlots = [
+      slotBody(slots.activationDiff, 'Differentiation:', ''),
+      slotBody(slots.practiceAct1, '[1]', '[2]'),
+      slotBody(slots.practiceAct2, '[2]', '[3]'),
+      slotBody(slots.practiceAct3, '[3]', ''),
+      slotBody(slots.practiceSc1, '[1]', '[2]'),
+      slotBody(slots.practiceSc2, '[2]', '[3]'),
+      slotBody(slots.practiceSc3, '[3]', ''),
+      slotBody(slots.homework, 'Working Towards Mastery:', 'Working At Mastery:'),
+      slotBody(slots.homework, 'Working At Mastery:', 'Mastery with Greater Depth:'),
+      slotBody(slots.homework, 'Mastery with Greater Depth:', 'Extension:'),
+      slotBody(slots.homework, 'Extension:', ''),
+    ];
+
+    for (const slot of derivedSlots) {
+      expect(slot.length).toBeGreaterThan(12);
+      expect(grammarProblems(slot)).toEqual([]);
+    }
+
+    const act1 = derivedSlots[1];
+    const act2 = derivedSlots[2];
+    const act3 = derivedSlots[3];
+    expect(act1).toMatch(/^[A-Z]/);
+    expect(act2).toMatch(/^[A-Z]/);
+    expect(act3).toMatch(/^[A-Z]/);
+    expect(act1).toMatch(/[.!?]$/);
+    expect(act2).toMatch(/[.!?]$/);
+    expect(act3).toMatch(/[.!?]$/);
+    expect(new Set([act1, act2, act3]).size).toBe(3);
+
+    expect(derivedSlots[6]).toMatch(/^i can\b/i);
+    expect(derivedSlots[6]).toMatch(/[.!?]$/);
+    expect(derivedSlots[6]).not.toMatch(/and apply it to a further example/i);
+
+    for (const band of derivedSlots.slice(7)) {
+      expect(band).toMatch(/^[A-Z]/);
+      expect(band).toMatch(/[.!?]$/);
+      expect(band).not.toMatch(/contribute ideas/i);
+      expect(band).not.toMatch(/brainstorm/i);
+    }
+  });
+
+  it('uses model-generated templateSlots when they are present', async () => {
+    const lesson: LessonPlan = {
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        templateSlots: {
+          activitySupported: 'Work with a teacher model and guided prompts to complete the task.',
+          activityExpected: 'Complete the core task independently.',
+          activityStretch: 'Extend the task by analysing a further example.',
+          successCriteriaSupported: 'I can complete the task with a model and prompts.',
+          successCriteriaExtended: 'I can apply this concept to a new scenario and justify my reasoning.',
+          homeworkSupported: 'Complete a supported review of the exit ticket at home.',
+          homeworkExpected: 'Finish the independent practice from the exit ticket at home.',
+          homeworkStretch: 'Add one further example based on the exit ticket.',
+          homeworkExtension: 'Write one stretch question based on the exit ticket.',
+        },
+      },
+    };
+    const { outXml } = await fillSynthetic(lesson);
+    const slots = collectListSlots(outXml);
+
+    expect(slotBody(slots.practiceAct1, '[1]', '[2]')).toBe(
+      'Work with a teacher model and guided prompts to complete the task.',
+    );
+    expect(slotBody(slots.practiceAct2, '[2]', '[3]')).toBe('Complete the core task independently.');
+    expect(slotBody(slots.practiceAct3, '[3]', '')).toBe(
+      'Extend the task by analysing a further example.',
+    );
+    expect(slotBody(slots.practiceSc1, '[1]', '[2]')).toBe(
+      'I can complete the task with a model and prompts.',
+    );
+    expect(slotBody(slots.practiceSc3, '[3]', '')).toBe(
+      'I can apply this concept to a new scenario and justify my reasoning.',
+    );
+    expect(slotBody(slots.homework, 'Working Towards Mastery:', 'Working At Mastery:')).toBe(
+      'Complete a supported review of the exit ticket at home.',
+    );
+    expect(slotBody(slots.homework, 'Working At Mastery:', 'Mastery with Greater Depth:')).toBe(
+      'Finish the independent practice from the exit ticket at home.',
+    );
+    expect(slotBody(slots.homework, 'Mastery with Greater Depth:', 'Extension:')).toBe(
+      'Add one further example based on the exit ticket.',
+    );
+    expect(slotBody(slots.homework, 'Extension:', '')).toBe(
+      'Write one stretch question based on the exit ticket.',
+    );
   });
 
   it('keeps SEN template prose intact and puts misconceptions only in a misconceptions slot', async () => {
