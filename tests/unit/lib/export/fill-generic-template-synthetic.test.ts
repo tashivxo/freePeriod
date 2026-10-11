@@ -791,6 +791,43 @@ describe('synthetic daily English template fill', () => {
     expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('MISCONCEPTION_MARKER');
     expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('targeted intervention for');
   });
+
+  it('does not type a bullet glyph at the start of a paragraph that has numPr', async () => {
+    const { outXml } = await fillSynthetic();
+    const numbered = collectDocumentParagraphs(outXml).filter(paragraphHasNumPr);
+    expect(numbered.length).toBeGreaterThan(0);
+
+    const doubled = numbered
+      .map((para) => cellPlainText(para))
+      .filter((text) => /^[•\-*]/.test(text));
+    expect(doubled).toEqual([]);
+  });
+
+  it('does not leave an empty paragraph with numPr in the filled document', async () => {
+    const { outXml } = await fillSynthetic({
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        independentPractice: [
+          qaLesson.content.independentPractice[0],
+          [
+            'Time: 10 min',
+            'Teacher Activity: assign a second practice task',
+            'Learner Activity & Success Criteria: complete a second worksheet',
+            'Formative Assessment: check completion',
+            'Resources: second worksheet',
+          ].join('\n'),
+        ],
+      },
+    });
+    expect(independentPracticeValueText(outXml)).toContain('MASTERY_TASK_MARKER');
+    expect(independentPracticeValueText(outXml)).toContain('second practice task');
+
+    const emptyNumbered = collectDocumentParagraphs(outXml)
+      .filter(paragraphHasNumPr)
+      .filter((para) => cellPlainText(para) === '');
+    expect(emptyNumbered).toEqual([]);
+  });
 });
 
 function slotBody(text: string, start: string, end: string): string {
@@ -877,6 +914,35 @@ function misconceptionsValueText(xml: string): string {
       const cells = topLevelXml(row, 'w:tc');
       if (cells.length < 2) continue;
       if (/possible misconceptions/i.test(cellPlainText(cells[0] ?? ''))) {
+        return cellPlainText(cells[1] ?? '');
+      }
+    }
+  }
+  return '';
+}
+
+function collectDocumentParagraphs(xml: string): string[] {
+  const paras: string[] = [];
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      for (const cell of topLevelXml(row, 'w:tc')) {
+        paras.push(...topLevelXml(cell, 'w:p'));
+      }
+    }
+  }
+  return paras;
+}
+
+function paragraphHasNumPr(paraXml: string): boolean {
+  return /<w:numPr\b/.test(paraXml);
+}
+
+function independentPracticeValueText(xml: string): string {
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (/independent practice/i.test(cellPlainText(cells[0] ?? ''))) {
         return cellPlainText(cells[1] ?? '');
       }
     }

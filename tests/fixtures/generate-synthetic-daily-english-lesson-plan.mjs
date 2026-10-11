@@ -11,6 +11,8 @@
  *     Homework Differentiation)
  *   - Adaptive Teaching headings including Working At Mastery,
  *     Other adaptive teaching strategies, and SEN/LS/G&T
+ *   - Numbered (numPr) Adaptive headings plus an Independent Practice
+ *     value cell, so filled items inherit list numbering
  *   - A Practice time cell that already prints "25 min"
  *
  * Run from the repo root:
@@ -20,7 +22,9 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  AlignmentType,
   Document,
+  LevelFormat,
   Packer,
   Paragraph,
   Table,
@@ -41,13 +45,17 @@ const ASSESS_W = 3240;
 const RESOURCE_W = 3960;
 const LABEL_W = 3256;
 const VALUE_W = 11859;
+const ADAPTIVE_LIST = 'adaptive-list';
 
-function para(text = '') {
-  return new Paragraph({ children: [new TextRun({ text })] });
+function para(text = '', numbered = false) {
+  return new Paragraph({
+    numbering: numbered ? { reference: ADAPTIVE_LIST, level: 0 } : undefined,
+    children: [new TextRun({ text })],
+  });
 }
 
-function cell(lines, width, extra = {}) {
-  const children = (lines.length > 0 ? lines : ['']).map((text) => para(text));
+function cell(lines, width, extra = {}, numbered = false) {
+  const children = (lines.length > 0 ? lines : ['']).map((text) => para(text, numbered));
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     ...extra,
@@ -55,9 +63,9 @@ function cell(lines, width, extra = {}) {
   });
 }
 
-function labelValueRow(labelLines, valueLines) {
+function labelValueRow(labelLines, valueLines, numberedValue = false) {
   return new TableRow({
-    children: [cell(labelLines, LABEL_W), cell(valueLines, VALUE_W)],
+    children: [cell(labelLines, LABEL_W), cell(valueLines, VALUE_W, {}, numberedValue)],
   });
 }
 
@@ -77,6 +85,21 @@ const doc = new Document({
   creator: 'Free Period test fixture generator',
   title: 'synthetic-daily-english-lesson-plan',
   description: 'Synthetic Daily English lesson plan structures for fill tests',
+  numbering: {
+    config: [
+      {
+        reference: ADAPTIVE_LIST,
+        levels: [
+          {
+            level: 0,
+            format: LevelFormat.BULLET,
+            text: '\u2022',
+            alignment: AlignmentType.LEFT,
+          },
+        ],
+      },
+    ],
+  },
   sections: [
     {
       children: [
@@ -98,7 +121,9 @@ const doc = new Document({
                 'Other adaptive teaching strategies:',
                 'Special Educational Needs (SEN registered), Learning Support (LS), Gifted & Talented (G&T):',
               ],
+              true,
             ),
+            labelValueRow(['Independent Practice'], [''], true),
           ],
         }),
         new Table({
