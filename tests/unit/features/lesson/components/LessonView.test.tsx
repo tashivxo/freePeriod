@@ -170,7 +170,9 @@ describe('LessonView', () => {
 
     render(<LessonView lesson={lesson} />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Saved');
+    expect(status).toHaveClass('text-emerald-700', 'dark:text-emerald-300');
   });
 
   it('shows the curriculum accuracy notice on generated lessons', () => {

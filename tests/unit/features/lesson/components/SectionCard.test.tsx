@@ -244,9 +244,34 @@ describe('SectionCard', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     const error = await screen.findByText("Couldn't save, try again");
-    expect(error).toHaveClass('text-error');
+    expect(error).toHaveClass('text-red-700', 'dark:text-red-300');
+    expect(error).toHaveAttribute('id');
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute(
+      'aria-describedby',
+      error.id,
+    );
     expect(screen.getByTestId('lesson-editor')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it('returns focus to the edit control after leaving edit mode', () => {
+    const { rerender } = renderCard(
+      <SectionCard
+        {...baseProps}
+        isEditing
+      />,
+    );
+
+    rerender(
+      <LocaleProvider initialLocale="en">
+        <SectionCard
+          {...baseProps}
+          isEditing={false}
+        />
+      </LocaleProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Edit Hook Activity' })).toHaveFocus();
   });
 
   it('keeps the editor open after a blur save', async () => {
