@@ -155,4 +155,72 @@ describe('docx export', () => {
     expect(xml).toContain('Microsoft YaHei');
     expect(xml).toContain('能量转化与守恒');
   });
+
+  it('omits raw JSON and empty differentiation headings when support and extension are empty', async () => {
+    const emptyDiffLesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        differentiation: { support: [], extension: [] },
+      },
+    };
+    const buffer = await generateDocx(emptyDiffLesson);
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file('word/document.xml')!.async('string');
+    const text = documentXmlPlainText(xml);
+
+    expect(text).not.toMatch(/"support"\s*:/);
+    expect(text).not.toMatch(/"extension"\s*:/);
+    expect(text).not.toContain('{ "support": []');
+    expect(text).not.toContain('"support": []');
+    expect(text).not.toContain('"extension": []');
+    expect(text).not.toContain('Working Towards Mastery');
+    expect(text).not.toContain('Mastery with Greater Depth');
+    expect(text).not.toMatch(/\bSEN:/);
+    expect(text).not.toMatch(/G&T:/);
+    expect(text).not.toContain('See differentiated scaffolds during activities.');
+    expect(text).not.toContain('Extension tasks provided for high-attaining learners.');
+    expect(text).not.toContain('Additional scaffolding and check-ins during practice.');
+    expect(text).toContain('No differentiation suggestions for this lesson.');
+    expect(text).not.toContain('\u2014');
+  });
+
+  it('keeps filled differentiation bullets and hides empty sub-headings', async () => {
+    const partialDiffLesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        differentiation: {
+          support: ['Provide a word bank and partially completed organizer.'],
+          extension: [],
+        },
+      },
+    };
+    const buffer = await generateDocx(partialDiffLesson);
+    const zip = await JSZip.loadAsync(buffer);
+    const xml = await zip.file('word/document.xml')!.async('string');
+    const text = documentXmlPlainText(xml);
+
+    expect(text).toContain('Provide a word bank and partially completed organizer.');
+    expect(text).toContain('Working Towards Mastery');
+    expect(text).toMatch(/\bSEN:/);
+    expect(text).not.toContain('Mastery with Greater Depth');
+    expect(text).not.toMatch(/G&T:/);
+    expect(text).not.toContain('Extension tasks provided for high-attaining learners.');
+    expect(text).not.toContain('No differentiation suggestions for this lesson.');
+    expect(text).not.toMatch(/"extension"\s*:/);
+    expect(text).not.toContain('"extension": []');
+  });
 });
+
+function documentXmlPlainText(xml: string): string {
+  return xml
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<w:tab\s*\/>/g, '\t')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&apos;/g, "'");
+}

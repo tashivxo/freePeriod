@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { animate } from 'animejs';
 import { ChevronDown, ChevronUp, Pencil, Check } from 'lucide-react';
@@ -15,6 +15,7 @@ const LessonEditor = dynamic(
 type SectionCardProps = {
   title: string;
   content: string;
+  viewContent?: ReactNode;
   isEditing: boolean;
   onEdit: () => void;
   onDone: () => void;
@@ -25,6 +26,7 @@ type SectionCardProps = {
 export function SectionCard({
   title,
   content,
+  viewContent,
   isEditing,
   onEdit,
   onDone,
@@ -140,8 +142,11 @@ export function SectionCard({
                 className="mt-3 font-body text-text-primary prose prose-sm max-w-none
                   [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5
                   [&_h3]:font-semibold [&_h3]:text-base [&_p]:my-1"
-                dangerouslySetInnerHTML={{ __html: content }}
-              />
+              >
+                {viewContent ?? (
+                  <div dangerouslySetInnerHTML={{ __html: content }} />
+                )}
+              </div>
             )}
           </div>
         </div>

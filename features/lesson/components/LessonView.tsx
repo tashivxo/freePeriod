@@ -9,7 +9,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
-import { contentToString } from '@/lib/lesson/content';
+import { contentToString, isRecord } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
@@ -23,6 +23,7 @@ import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
+import { SectionValueView } from '@/features/lesson/components/SectionValueView';
 import {
   FilledTemplateChoiceDialog,
   type FilledTemplateDialogVariant,
@@ -306,6 +307,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             <SectionCard
               title={section.label}
               content={contentToString(content[section.key])}
+              viewContent={
+                isRecord(content[section.key]) ? (
+                  <SectionValueView value={content[section.key]} />
+                ) : undefined
+              }
               isEditing={editingKey === section.key}
               onEdit={() => setEditingKey(section.key)}
               onDone={() => setEditingKey(null)}
