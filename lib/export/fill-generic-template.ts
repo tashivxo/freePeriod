@@ -39,7 +39,7 @@ function normalizeLabel(text: string): string {
 }
 
 function cellWidthDxa(cellXml: string): number {
-  const match = cellXml.match(/<w:tcW w:w="(\d+)"/);
+  const match = cellXml.match(/<w:tcW\b[^>]*\bw:w="(\d+)"/);
   return match ? parseInt(match[1], 10) : 0;
 }
 
@@ -238,24 +238,26 @@ function isGuidanceLabelText(text: string): boolean {
   return /:$/.test(trimmed) && trimmed.length < 80;
 }
 
-function matchesTowardsLabel(label: string): boolean {
-  const text = normalizeLabel(label);
-  return text.includes('working towards mastery') || /^\[1\]/.test(label.trim());
-}
-
 function matchesAtMasteryLabel(label: string): boolean {
   const text = normalizeLabel(label);
   return text.includes('working at mastery') && !text.includes('towards');
-}
-
-function matchesGreaterDepthLabel(label: string): boolean {
-  return /greater depth/i.test(label);
 }
 
 type LabelRule = {
   match: (label: string) => boolean;
   content: string;
 };
+
+function isFallbackHomeLabel(text: string): boolean {
+  return (
+    /class discussion/i.test(text) ||
+    /student participation/i.test(text) ||
+    /student-centered approach/i.test(text) ||
+    /formal introduction/i.test(text) ||
+    /formative data/i.test(text) ||
+    /^plenary\b/i.test(text.trim())
+  );
+}
 
 function fillStructuredCell(cellXml: string, fallbackBody: string, rules: LabelRule[]): string {
   const paras = topLevelWordTags(cellXml, 'w:p');
@@ -285,11 +287,13 @@ function fillStructuredCell(cellXml: string, fallbackBody: string, rules: LabelR
   }
 
   if (fallbackBody.trim() && !fallbackPlaced) {
+    const homeIdx = paras.findIndex((para) => isFallbackHomeLabel(cellPlainText(para.xml)));
     const headingIdx = paras.findIndex((para) => activityPhaseKind(cellPlainText(para.xml)) != null);
-    if (headingIdx >= 0) {
+    const insertAt = homeIdx >= 0 ? homeIdx : headingIdx;
+    if (insertAt >= 0) {
       extras.set(
-        headingIdx,
-        (extras.get(headingIdx) ?? '') + buildParagraphsXml(paras[headingIdx].xml, fallbackBody),
+        insertAt,
+        (extras.get(insertAt) ?? '') + buildParagraphsXml(paras[insertAt].xml, fallbackBody),
       );
     }
   }
@@ -426,20 +430,15 @@ function masteryLevelTasks(content: LessonPlan['content']): string[] {
   return [];
 }
 
-function senTargetedItems(content: LessonPlan['content']): string[] {
-  const misconception = content.misconceptions?.[0]?.trim();
+function senTargetedItems(_content: LessonPlan['content']): string[] {
   return [
-    misconception
-      ? `SEN/LS: targeted intervention for ${misconception}`
-      : 'SEN/LS: targeted access arrangements and in-lesson intervention for identified learners.',
+    'SEN/LS: targeted access arrangements and in-lesson intervention for identified learners.',
     'G&T: targeted enrichment that increases depth of thinking, not extra volume.',
   ];
 }
 
-function homeworkDifferentiationText(content: LessonPlan['content']): string {
-  const tasks = activityTasksFromItems(content.independentPractice);
-  if (tasks.length > 0) return joinBullets(tasks);
-  return formatHomework(content);
+function homeworkPrompt(): string {
+  return 'Complete a short reflection or practice task reinforcing the lesson objectives and vocabulary.';
 }
 
 function fillActivityPhaseRow(
@@ -459,36 +458,29 @@ function fillActivityPhaseRow(
   const learner = parsed.learner.trim() || formatICanStatements(content.successCriteria) || '';
   const assessment = parsed.assessment.trim() || formativePool[0] || '';
   const resources = (options?.resourcesOverride ?? (parsed.resources.trim() || DEFAULT_RESOURCES)).trim();
-  const support = content.differentiation?.support ?? [];
-  const extension = content.differentiation?.extension ?? [];
-  const masteryTasks = masteryLevelTasks(content);
+  const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
+  const iCan = successCriteriaItems.some((item) => /\bi can\b/i.test(item))
+    ? joinBullets(successCriteriaItems)
+    : formatICanStatements(successCriteriaItems);
+  const successCriteriaCell = /differentiated success criteria/i.test(cellPlainText(cellsXml[2] ?? ''));
 
   const next = [...cellsXml];
   if (!options?.keepPrintedTime && time) next[0] = replaceCellParagraphs(next[0], time);
   if (teacher) {
     next[1] = fillStructuredCell(next[1], teacher, [
-      { match: matchesTowardsLabel, content: joinBullets(support) },
-      { match: matchesAtMasteryLabel, content: joinBullets(masteryTasks) },
-      { match: matchesGreaterDepthLabel, content: joinBullets(extension) },
+      { match: (label) => /class discussion/i.test(label), content: teacher },
     ]);
   }
   if (learner) {
     next[2] = fillStructuredCell(next[2], learner, [
       { match: (label) => /student participation/i.test(label), content: learner },
       { match: (label) => /student-centered approach/i.test(label), content: learner },
-      {
-        match: (label) => normalizeLabel(label) === 'differentiation',
-        content: [
-          ...support.map((item) => `Support: ${item}`),
-          ...extension.map((item) => `Extension: ${item}`),
-        ].join('\n'),
-      },
-      { match: matchesTowardsLabel, content: joinBullets(support) },
-      { match: matchesAtMasteryLabel, content: joinBullets(masteryTasks) },
-      { match: matchesGreaterDepthLabel, content: joinBullets(extension) },
       { match: (label) => /^plenary\b/i.test(label.trim()), content: learner },
-      { match: (label) => /homework differentiation/i.test(label), content: homeworkDifferentiationText(content) },
-      { match: (label) => normalizeLabel(label) === 'extension', content: joinBullets(extension) },
+      { match: (label) => /homework differentiation/i.test(label), content: homeworkPrompt() },
+      {
+        match: (label) => successCriteriaCell && matchesAtMasteryLabel(label),
+        content: iCan,
+      },
     ]);
   }
   if (assessment) {

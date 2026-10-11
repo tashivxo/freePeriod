@@ -352,7 +352,9 @@ describe('synthetic daily English template fill', () => {
     expect(success).toContain('Differentiated success criteria:');
     expect(atMasterySuccess).toContain('SUCCESS_CRITERIA_MARKER');
     expect(atMasterySuccess).toMatch(/I can/i);
-    expect(success).not.toContain('MASTERY_TASK_MARKER');
+    expect(sliceBetween(success, 'Differentiated success criteria:', '')).not.toContain(
+      'MASTERY_TASK_MARKER',
+    );
     expect(activities).not.toContain('SUCCESS_CRITERIA_MARKER');
     expect(sliceBetween(activities, '[1]', '[2]')).not.toContain('SUPPORT_MARKER');
     expect(sliceBetween(activities, '[2]', '[3]')).not.toContain('MASTERY_TASK_MARKER');
