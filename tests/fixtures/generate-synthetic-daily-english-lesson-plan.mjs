@@ -11,8 +11,8 @@
  *     Homework Differentiation)
  *   - Adaptive Teaching headings including Working At Mastery,
  *     Other adaptive teaching strategies, and SEN/LS/G&T
- *   - Numbered (numPr) Adaptive headings plus an Independent Practice
- *     value cell, so filled items inherit list numbering
+ *   - Numbered (numPr) Adaptive headings plus Independent Practice,
+ *     SEN, and G&T value cells, so filled items inherit list numbering
  *   - A Practice time cell that already prints "25 min"
  *
  * Run from the repo root:
@@ -124,6 +124,8 @@ const doc = new Document({
               true,
             ),
             labelValueRow(['Independent Practice'], [''], true),
+            labelValueRow(['SEN'], [''], true),
+            labelValueRow(['G&T'], [''], true),
           ],
         }),
         new Table({
