@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useState, useRef, useEffect, useCallback, type KeyboardEvent, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { animate } from 'animejs';
 import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
@@ -49,11 +49,14 @@ export function SectionCard({
   autosaveFlashNonce,
 }: SectionCardProps) {
   const t = useT();
+  const errorId = useId();
   const [isOpen, setIsOpen] = useState(true);
   const [draft, setDraft] = useState(content);
   const [localError, setLocalError] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
   const snapshotRef = useRef(content);
+  const wasEditingRef = useRef(isEditing);
 
   const flashSaved = useCallback(() => {
     if (!cardRef.current) return;
@@ -82,6 +85,13 @@ export function SectionCard({
     setLocalError(null);
     // Snapshot only when entering edit mode, not when blur persists new content.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- content is intentionally excluded
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing) {
+      editButtonRef.current?.focus();
+    }
+    wasEditingRef.current = isEditing;
   }, [isEditing]);
 
   const hasChanges = stripHtml(draft) !== stripHtml(snapshotRef.current);
@@ -161,6 +171,7 @@ export function SectionCard({
 
         {!isEditing ? (
           <button
+            ref={editButtonRef}
             type="button"
             onClick={() => {
               setIsOpen(true);
@@ -209,12 +220,17 @@ export function SectionCard({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => void handleSave()}
                     isLoading={isSaving}
+                    aria-describedby={errorMessage ? errorId : undefined}
                   >
                     {t('lesson.save')}
                   </Button>
                 </div>
                 {errorMessage ? (
-                  <p role="alert" className="mt-2 font-body text-sm text-error">
+                  <p
+                    id={errorId}
+                    role="alert"
+                    className="mt-3 font-body text-sm font-medium text-red-700 dark:text-red-300"
+                  >
                     {errorMessage}
                   </p>
                 ) : null}

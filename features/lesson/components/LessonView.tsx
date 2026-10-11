@@ -313,12 +313,12 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             </span>
           )}
           {saveStatus === 'saved' && (
-            <span role="status" className="text-success">
+            <span role="status" className="text-emerald-700 dark:text-emerald-300">
               {t('lesson.savedToast')}
             </span>
           )}
           {saveStatus === 'error' && saveError && (
-            <span role="status" className="text-error">
+            <span role="status" className="font-medium text-red-700 dark:text-red-300">
               {t('lesson.saveFailed')}
             </span>
           )}
