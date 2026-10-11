@@ -85,6 +85,15 @@ ${JSON.stringify({
     expect(lesson?.vocabulary).toEqual(['conflict', 'theme', 'resolution']);
   });
 
+  it('asks for templateSlots activityExpected as a teaching strategy, not a learner outcome', () => {
+    const prompt = buildSystemPrompt();
+
+    expect(prompt).toMatch(/activityExpected/);
+    expect(prompt).toMatch(/teaching strategy/i);
+    expect(prompt).toMatch(/not a learner outcome/i);
+    expect(prompt).not.toContain('\u2014');
+  });
+
   it('writes I can examples as sentences, not colon labels', () => {
     const prompt = buildSystemPrompt();
 

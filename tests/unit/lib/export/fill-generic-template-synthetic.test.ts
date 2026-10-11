@@ -644,11 +644,58 @@ describe('synthetic daily English template fill', () => {
       'Working At Mastery',
       'Mastery with Greater Depth',
     );
-    expect(slottedAtMastery).toBe(
-      'Complete the on-level task independently with the core success criteria.',
-    );
+    expect(slottedAtMastery).toBe('See Adaptive Teaching: Working At Mastery.');
     expect(slottedAtMastery).not.toContain('DEMO_LEARNER_MARKER');
     expect(slottedAtMastery).not.toContain('MASTERY_TASK_MARKER');
+  });
+
+  it('does not repeat Practice [2] teacher text in Adaptive Working At Mastery', async () => {
+    const strategy =
+      'Students independently draft a structured opinion paragraph about screen time.';
+    const { outXml } = await fillSynthetic({
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        templateSlots: {
+          activityExpected: strategy,
+        },
+      },
+    });
+    const slots = collectListSlots(outXml);
+    const practiceAct2 = slotBody(slots.practiceAct2, '[2]', '[3]');
+    const practiceLearner = slotBody(
+      slots.practiceLearner,
+      'Student-Centered Approach:',
+      'Differentiated success criteria:',
+    );
+    const atMastery = slotBody(slots.adaptiveAtMastery, 'Working At Mastery', 'Mastery with Greater Depth');
+
+    expect(practiceAct2).toBe(strategy);
+    expect(atMastery).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(atMastery).not.toContain('Students independently draft');
+    expect(normalizeCompareText(atMastery)).not.toBe(normalizeCompareText(practiceAct2));
+    expect(normalizeCompareText(atMastery)).not.toBe(normalizeCompareText(practiceLearner));
+  });
+
+  it('replaces other Adaptive items that nearly duplicate Practice cell text', async () => {
+    const { outXml } = await fillSynthetic({
+      ...qaLesson,
+      content: {
+        ...qaLesson.content,
+        differentiation: {
+          support: ['DEMO_LEARNER_MARKER complete practice diagrams'],
+          extension: ['MASTERY_TASK_MARKER complete the on-level worksheet'],
+        },
+      },
+    });
+    const slots = collectListSlots(outXml);
+    const towards = slotBody(slots.adaptiveTowards, 'Working Towards Mastery', 'Working At Mastery');
+    const depth = slotBody(slots.adaptiveDepth, 'Mastery with Greater Depth', 'Other adaptive');
+
+    expect(towards).toBe('See Adaptive Teaching: Working Towards Mastery.');
+    expect(depth).toBe('See Adaptive Teaching: Mastery with Greater Depth.');
+    expect(towards).not.toContain('DEMO_LEARNER_MARKER');
+    expect(depth).not.toContain('MASTERY_TASK_MARKER');
   });
 
   it('writes I can sentences in learner cells without a colon prefix', async () => {
@@ -772,6 +819,14 @@ function expectedHome(marker: string): string {
   if (marker === 'SUPPORT_MARKER') return 'adaptiveTowards';
   if (marker === 'MASTERY_TASK_MARKER') return 'practiceLearner';
   return 'adaptiveDepth';
+}
+
+function normalizeCompareText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function leftoverSlotLines(xml: string): string[] {
