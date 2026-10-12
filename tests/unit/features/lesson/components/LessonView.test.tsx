@@ -1,3 +1,4 @@
+import { act } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import type { LessonPlan } from '@/types';
 
@@ -173,6 +174,57 @@ describe('LessonView', () => {
     const status = screen.getByRole('status');
     expect(status).toHaveTextContent('Saved');
     expect(status).toHaveClass('text-emerald-700', 'dark:text-emerald-300');
+  });
+
+  it('exposes the saved confirmation as a polite live region', () => {
+    (useDebouncedLessonSave as jest.Mock).mockReturnValue({
+      save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
+      status: 'saved',
+      error: null,
+      isDirty: false,
+    });
+
+    render(<LessonView lesson={lesson} />);
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveTextContent('Saved. Downloads use your edits.');
+  });
+
+  it('fades the saved confirmation out after about 4 seconds', () => {
+    jest.useFakeTimers();
+    (useDebouncedLessonSave as jest.Mock).mockReturnValue({
+      save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
+      status: 'saved',
+      error: null,
+      isDirty: false,
+    });
+
+    try {
+      render(<LessonView lesson={lesson} />);
+
+      const status = screen.getByRole('status');
+      expect(status).toHaveAttribute('aria-live', 'polite');
+      expect(status).toHaveTextContent('Saved. Downloads use your edits.');
+
+      act(() => {
+        jest.advanceTimersByTime(3999);
+      });
+      expect(screen.getByText('Saved. Downloads use your edits.')).toBeInTheDocument();
+
+      act(() => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(screen.queryByText('Saved. Downloads use your edits.')).not.toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('shows the curriculum accuracy notice on generated lessons', () => {
