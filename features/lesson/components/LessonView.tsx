@@ -41,6 +41,9 @@ type LessonViewProps = {
   lesson: LessonPlan;
 };
 
+const SAVED_NOTICE_MS = 4_000;
+const SAVED_NOTICE_FADE_MS = 500;
+
 async function readExportError(response: Response, fallback: string): Promise<string> {
   try {
     const data = (await response.json()) as { error?: unknown };
@@ -68,6 +71,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
     Partial<Record<LessonSectionKey, number>>
   >({});
+  const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+  const [savedNoticeFading, setSavedNoticeFading] = useState(false);
 
   const filledTemplateVariant: FilledTemplateDialogVariant = isFillableTemplatePath(
     lesson.template_path,
@@ -105,6 +110,26 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     setEditing(editingKey !== null);
     return () => setEditing(false);
   }, [editingKey, setEditing]);
+
+  useEffect(() => {
+    if (saveStatus !== 'saved') {
+      setSavedNoticeVisible(false);
+      setSavedNoticeFading(false);
+      return;
+    }
+    setSavedNoticeVisible(true);
+    setSavedNoticeFading(false);
+    const fadeAt = Math.max(0, SAVED_NOTICE_MS - SAVED_NOTICE_FADE_MS);
+    const fadeTimer = window.setTimeout(() => setSavedNoticeFading(true), fadeAt);
+    const hideTimer = window.setTimeout(() => {
+      setSavedNoticeVisible(false);
+      setSavedNoticeFading(false);
+    }, SAVED_NOTICE_MS);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [saveStatus]);
 
   useEffect(() => {
     if (!exportError || exportErrorIconMotionDisabled) return;
@@ -319,8 +344,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               Saving…
             </span>
           )}
-          {saveStatus === 'saved' && (
-            <span role="status" className="text-emerald-700 dark:text-emerald-300">
+          {savedNoticeVisible && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={`text-emerald-700 dark:text-emerald-300 motion-safe:transition-opacity motion-safe:duration-500 ${
+                savedNoticeFading ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
               {t('lesson.savedToast')}
             </span>
           )}
