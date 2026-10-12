@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
-import { ChipRadio } from '@/components/ui/ChipRadio';
+import { ChipRadio } from '@/components/forms/ChipRadio';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';

@@ -6,7 +6,7 @@ import { Sparkles, Zap } from 'lucide-react';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { LockIcon } from '@/components/ui/icons/lock';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
-import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 
 export type GenerationMode = 'fast' | 'quality';
 

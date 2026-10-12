@@ -1,5 +1,5 @@
 import { render, screen } from '@/tests/helpers';
-import { ChipRadio } from '@/components/ui/ChipRadio';
+import { ChipRadio } from '@/components/forms/ChipRadio';
 
 describe('ChipRadio', () => {
   it('exposes radio semantics and selected styles', async () => {

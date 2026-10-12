@@ -1,5 +1,5 @@
 import { render, screen } from '@/tests/helpers';
-import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 import { useZenMode } from '@/providers/zen-mode';
 
 const mockPush = jest.fn();

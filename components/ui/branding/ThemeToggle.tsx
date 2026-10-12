@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { CSSProperties, Ref } from 'react';
 import { SunIcon } from '@/components/ui/icons/sun';
 import { MoonIcon } from '@/components/ui/icons/moon';
-import { TextSwap } from '@/components/ui/TextSwap';
+import { TextSwap } from '@/components/ui/effects/TextSwap';
 import { useTheme } from '@/providers/theme';
 import { useLocale, useT } from '@/providers/locale';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';

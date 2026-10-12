@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@/tests/helpers';
-import { LanguagePicker } from '@/components/ui/LanguagePicker';
+import { LanguagePicker } from '@/components/layout/LanguagePicker';
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 
 const setLocale = jest.fn();

@@ -13,7 +13,7 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
-import { TextSwap } from '@/components/ui/TextSwap';
+import { TextSwap } from '@/components/ui/effects/TextSwap';
 import { ShinyText } from '@/components/ui/effects/ShinyText';
 import { SpotlightCard } from '@/components/ui/effects/SpotlightCard';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';

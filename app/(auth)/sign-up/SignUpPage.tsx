@@ -11,7 +11,7 @@ import { mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { TERMS_REQUIRED_MESSAGE } from '@/lib/auth/terms';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
-import { ChipRadio } from '@/components/ui/ChipRadio';
+import { ChipRadio } from '@/components/forms/ChipRadio';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';

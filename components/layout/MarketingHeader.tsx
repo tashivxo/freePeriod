@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import { LanguagePicker } from '@/components/ui/LanguagePicker';
-import { TextSwap } from '@/components/ui/TextSwap';
+import { LanguagePicker } from '@/components/layout/LanguagePicker';
+import { TextSwap } from '@/components/ui/effects/TextSwap';
 import { Logo } from '@/components/ui/branding/Logo';
 import { useLocale } from '@/providers/locale';
 

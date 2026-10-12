@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 
 import { TEXT_SWAP } from '@/lib/motion/tokens';
-import { TextSwap } from '@/components/ui/TextSwap';
+import { TextSwap } from '@/components/ui/effects/TextSwap';
 
 describe('TextSwap', () => {
   beforeEach(() => {

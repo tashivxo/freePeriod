@@ -45,16 +45,17 @@ components/
   ui/                         # Reusable UI primitives (Button, Input, Card, shadcn)
     icons/                    # Animated lucide icons + MotionSafeIcon wrapper
     backgrounds/              # WebGL / ambient backgrounds (SoftAurora, Waves, Noise, etc.)
-    effects/                  # Text and card embellishments (BlurText, SpotlightCard)
+    effects/                  # Text and card embellishments (BlurText, SpotlightCard, TextSwap)
     branding/                 # Logo, ThemeToggle
   animations/                 # anime.js wrappers (dynamically imported via next/dynamic)
-  forms/                      # Shared form widgets (DocumentUploadZone)
-  layout/                     # Layout components (Navbar)
+  forms/                      # Shared form widgets (DocumentUploadZone, ChipRadio)
+  layout/                     # Layout chrome (Navbar, MarketingHeader, LanguagePicker)
 features/                     # Domain-specific smart components
   generate/                   # GenerateForm, GenerateClient
   lesson/                     # LessonEditor, LessonView, SectionCard
   history/                    # HistoryClient
-  billing/                    # PricingClient
+  dashboard/                  # RecentLessons
+  billing/                    # PricingClient, UpgradePrompt
 providers/                    # React context providers (theme, zen-mode)
 hooks/                        # Custom React hooks
 lib/

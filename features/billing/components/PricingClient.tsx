@@ -15,7 +15,7 @@ import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MagicCard } from '@/components/ui/effects/magic-card';
 import { MarketingHeader } from '@/components/layout/MarketingHeader';
 import { MarketingFooter } from '@/components/legal/MarketingFooter';
-import { TextSwap } from '@/components/ui/TextSwap';
+import { TextSwap } from '@/components/ui/effects/TextSwap';
 import { createClient } from '@/lib/supabase/client';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';

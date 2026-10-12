@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
-import { UpgradePrompt } from '@/components/ui/UpgradePrompt';
+import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 import { drainSseEvents } from '@/lib/generation/sse';
 import { useLocale } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
