@@ -34,6 +34,7 @@ import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccu
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
+import { useLessonEditing } from '@/providers/lesson-editing';
 import { useT } from '@/providers/locale';
 
 type LessonViewProps = {
@@ -52,6 +53,7 @@ async function readExportError(response: Response, fallback: string): Promise<st
 export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
   const { zenMode } = useZenMode();
+  const { setEditing } = useLessonEditing();
   const t = useT();
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -98,6 +100,11 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     html: string;
     wasEdited: boolean;
   } | null>(null);
+
+  useEffect(() => {
+    setEditing(editingKey !== null);
+    return () => setEditing(false);
+  }, [editingKey, setEditing]);
 
   useEffect(() => {
     if (!exportError || exportErrorIconMotionDisabled) return;
