@@ -49,7 +49,7 @@ function collectMetadataTitles(): Record<string, string> {
   for (const file of walkTsx(APP_ROOT)) {
     const title = extractMetadataTitle(readFileSync(file, 'utf8'));
     if (!title) continue;
-    titles[path.relative(process.cwd(), file)] = title;
+    titles[path.relative(process.cwd(), file).replaceAll('\\', '/')] = title;
   }
   return titles;
 }

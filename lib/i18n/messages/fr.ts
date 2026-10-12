@@ -143,4 +143,13 @@ export const fr: Messages = {
     showConfirmPassword: 'Afficher la confirmation du mot de passe',
     hideConfirmPassword: 'Masquer la confirmation du mot de passe',
   },
+  lesson: {
+    edited: 'Modifié',
+    savedToast: 'Enregistré. Les téléchargements utilisent vos modifications.',
+    discardEdits: 'Ignorer vos modifications ?',
+    leaveWithoutSaving: 'Quitter sans enregistrer vos modifications ?',
+    save: 'Enregistrer',
+    cancel: 'Annuler',
+    saveFailed: "Échec de l'enregistrement, réessayez",
+  },
 };

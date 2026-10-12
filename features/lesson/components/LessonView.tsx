@@ -9,7 +9,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
-import { contentToString, isRecord } from '@/lib/lesson/content';
+import { contentToString, isRecord, stripHtml } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
@@ -34,10 +34,15 @@ import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccu
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
+import { useLessonEditing } from '@/providers/lesson-editing';
+import { useT } from '@/providers/locale';
 
 type LessonViewProps = {
   lesson: LessonPlan;
 };
+
+const SAVED_NOTICE_MS = 4_000;
+const SAVED_NOTICE_FADE_MS = 500;
 
 async function readExportError(response: Response, fallback: string): Promise<string> {
   try {
@@ -51,6 +56,8 @@ async function readExportError(response: Response, fallback: string): Promise<st
 export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const router = useRouter();
   const { zenMode } = useZenMode();
+  const { setEditing } = useLessonEditing();
+  const t = useT();
   const [lesson, setLesson] = useState(initialLesson);
   const cardsRef = useRef<HTMLDivElement>(null);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -64,6 +71,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
     Partial<Record<LessonSectionKey, number>>
   >({});
+  const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+  const [savedNoticeFading, setSavedNoticeFading] = useState(false);
 
   const filledTemplateVariant: FilledTemplateDialogVariant = isFillableTemplatePath(
     lesson.template_path,
@@ -73,7 +82,15 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const fillHelperId = useId();
   const toolbarButtonClassName = 'h-auto min-h-11 w-full sm:h-7 sm:min-h-0 sm:w-auto';
 
-  const { save: debouncedSave, status: saveStatus, error: saveError } = useDebouncedLessonSave(
+  const {
+    save: debouncedSave,
+    flush,
+    cancel,
+    revert,
+    status: saveStatus,
+    error: saveError,
+    isDirty,
+  } = useDebouncedLessonSave(
     lesson.id,
     lesson.content,
     (updatedContent, key) => {
@@ -81,6 +98,38 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       setAutosaveFlashBySection((prev) => ({ ...prev, [key]: Date.now() }));
     },
   );
+  const lessonRef = useRef(lesson);
+  lessonRef.current = lesson;
+  const editSnapshotRef = useRef<{
+    key: LessonSectionKey;
+    html: string;
+    wasEdited: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    setEditing(editingKey !== null);
+    return () => setEditing(false);
+  }, [editingKey, setEditing]);
+
+  useEffect(() => {
+    if (saveStatus !== 'saved') {
+      setSavedNoticeVisible(false);
+      setSavedNoticeFading(false);
+      return;
+    }
+    setSavedNoticeVisible(true);
+    setSavedNoticeFading(false);
+    const fadeAt = Math.max(0, SAVED_NOTICE_MS - SAVED_NOTICE_FADE_MS);
+    const fadeTimer = window.setTimeout(() => setSavedNoticeFading(true), fadeAt);
+    const hideTimer = window.setTimeout(() => {
+      setSavedNoticeVisible(false);
+      setSavedNoticeFading(false);
+    }, SAVED_NOTICE_MS);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [saveStatus]);
 
   useEffect(() => {
     if (!exportError || exportErrorIconMotionDisabled) return;
@@ -110,10 +159,73 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     };
   }, [zenMode]);
 
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty]);
+
+  const leaveTo = useCallback(
+    async (href: string) => {
+      const ok = await flush();
+      if (ok) {
+        router.push(href);
+        return;
+      }
+      const leave = window.confirm(t('lesson.leaveWithoutSaving'));
+      if (!leave) return;
+      cancel();
+      router.push(href);
+    },
+    [cancel, flush, router, t],
+  );
+
+  const handleBack = useCallback(() => {
+    void leaveTo('/dashboard');
+  }, [leaveTo]);
+
+  useEffect(() => {
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        return;
+      }
+      let url: URL;
+      try {
+        url = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname && url.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      void leaveTo(`${url.pathname}${url.search}`);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [leaveTo]);
+
   const handleExport = useCallback(async () => {
     setExportLoading(true);
     setExportError(null);
     try {
+      const ok = await flush();
+      if (!ok) return;
+
       const response = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,7 +243,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     } finally {
       setExportLoading(false);
     }
-  }, [lesson.id, lesson.subject]);
+  }, [flush, lesson.id, lesson.subject]);
 
   const handleFillTemplate = useCallback(
     async (options?: { fromDialog?: boolean }): Promise<boolean> => {
@@ -140,6 +252,9 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         setExportError(null);
       }
       try {
+        const ok = await flush();
+        if (!ok) return false;
+
         const response = await fetch('/api/export/fill-template', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -171,7 +286,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         setFillLoading(false);
       }
     },
-    [lesson.id, lesson.template_path, lesson.title],
+    [flush, lesson.id, lesson.template_path, lesson.title],
   );
 
   const handleFillTemplateFromDialog = useCallback(async () => {
@@ -200,7 +315,10 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
       <div className="mb-8">
         <button
           type="button"
-          onClick={() => router.push('/dashboard')}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => {
+            void handleBack();
+          }}
           className="min-h-11 inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -226,14 +344,20 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               Saving…
             </span>
           )}
-          {saveStatus === 'saved' && (
-            <span role="status" className="text-success">
-              Saved
+          {savedNoticeVisible && (
+            <span
+              role="status"
+              aria-live="polite"
+              className={`text-emerald-700 dark:text-emerald-300 motion-safe:transition-opacity motion-safe:duration-500 ${
+                savedNoticeFading ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              {t('lesson.savedToast')}
             </span>
           )}
           {saveStatus === 'error' && saveError && (
-            <span role="status" className="text-error">
-              {saveError}
+            <span role="status" className="font-medium text-red-700 dark:text-red-300">
+              {t('lesson.saveFailed')}
             </span>
           )}
         </div>
@@ -313,9 +437,44 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
                 ) : undefined
               }
               isEditing={editingKey === section.key}
-              onEdit={() => setEditingKey(section.key)}
-              onDone={() => setEditingKey(null)}
+              isEdited={Boolean(content.editedKeys?.includes(section.key))}
+              editedLabel={t('lesson.edited')}
+              saveError={
+                editingKey === section.key && saveStatus === 'error'
+                  ? t('lesson.saveFailed')
+                  : null
+              }
+              isSaving={editingKey === section.key && saveStatus === 'saving'}
+              onEdit={() => {
+                editSnapshotRef.current = {
+                  key: section.key,
+                  html: contentToString(content[section.key]),
+                  wasEdited: Boolean(content.editedKeys?.includes(section.key)),
+                };
+                setEditingKey(section.key);
+              }}
+              onDone={async () => {
+                const ok = await flush();
+                if (ok) setEditingKey(null);
+                return ok;
+              }}
+              onCancel={async (snapshotHtml) => {
+                const snap = editSnapshotRef.current;
+                cancel();
+                if (
+                  snap &&
+                  stripHtml(contentToString(lessonRef.current.content[snap.key])) !==
+                    stripHtml(snap.html)
+                ) {
+                  const ok = await revert(snap.key, snapshotHtml, snap.wasEdited);
+                  if (!ok) return;
+                }
+                setEditingKey(null);
+              }}
               onChange={(html) => debouncedSave(section.key, html)}
+              onBlur={() => {
+                void flush();
+              }}
               autosaveFlashNonce={autosaveFlashBySection[section.key]}
             />
           </div>

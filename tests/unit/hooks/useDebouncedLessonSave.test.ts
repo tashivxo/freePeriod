@@ -87,4 +87,149 @@ describe('useDebouncedLessonSave', () => {
     expect(result.current.error).toBe('Failed to save changes');
     expect(onSaved).not.toHaveBeenCalled();
   });
+
+  it('flush persists immediately without waiting for the debounce', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save('hook', '<p>Updated hook</p>');
+    });
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('idle');
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(true);
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({ hook: 'Updated hook' }),
+      }),
+    );
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({ hook: 'Updated hook' }),
+      'hook',
+    );
+    expect(result.current.status).toBe('saved');
+  });
+
+  it('keeps edits from two sections when flushing before the debounce', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save('hook', '<p>Updated hook</p>');
+      result.current.save('plenary', '<p>Updated plenary</p>');
+    });
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(true);
+    });
+
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          hook: 'Updated hook',
+          plenary: 'Updated plenary',
+        }),
+      }),
+    );
+  });
+
+  it('flushes pending edits on unmount', async () => {
+    const onSaved = jest.fn();
+
+    const { result, unmount } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save('hook', '<p>Updated hook</p>');
+    });
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+    unmount();
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.objectContaining({ hook: 'Updated hook' }),
+        }),
+      );
+    });
+  });
+
+  it('flush is a successful no-op when nothing is pending', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(true);
+    });
+
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('idle');
+  });
+
+  it('reverts a section to snapshot text and can drop the Edited key', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave(
+        'lesson-1',
+        { ...sampleContent, editedKeys: ['hook'] },
+        onSaved,
+      ),
+    );
+
+    await act(async () => {
+      await expect(result.current.revert('hook', 'Leaf observation', false)).resolves.toBe(
+        true,
+      );
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.objectContaining({
+          hook: 'Leaf observation',
+          editedKeys: [],
+        }),
+      }),
+    );
+    expect(onSaved).toHaveBeenCalled();
+  });
+
+  it('returns false from flush when the database write fails', async () => {
+    mockEq.mockResolvedValue({ error: { message: 'db error' } });
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save('hook', '<p>Broken save</p>');
+    });
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(false);
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toBe('Failed to save changes');
+    expect(onSaved).not.toHaveBeenCalled();
+  });
 });

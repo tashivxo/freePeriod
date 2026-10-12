@@ -1,6 +1,7 @@
 export type UploadType = 'curriculum_doc' | 'template';
 export type ExportFormat = 'docx' | 'xlsx';
 import type { Locale } from '@/lib/i18n/locales';
+import type { LessonSectionKey } from './lesson';
 
 export type Plan = 'free' | 'pro' | 'pro_plus';
 export type BillingInterval = 'monthly' | 'yearly';
@@ -58,6 +59,7 @@ export type LessonSection = {
   realWorldConnections: string[];
   plenary: string;
   templateSlots?: LessonTemplateSlots;
+  editedKeys?: LessonSectionKey[];
 }
 
 export type LessonPlan = {

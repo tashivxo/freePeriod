@@ -1,18 +1,26 @@
+import { act } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import type { LessonPlan } from '@/types';
 
 const mockPush = jest.fn();
 const mockSave = jest.fn();
+const mockFlush = jest.fn(async () => true);
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const mockCancel = jest.fn();
+
 jest.mock('@/hooks/useDebouncedLessonSave', () => ({
   useDebouncedLessonSave: jest.fn(() => ({
     save: mockSave,
+    flush: mockFlush,
+    cancel: mockCancel,
+    revert: jest.fn(),
     status: 'idle',
     error: null,
+    isDirty: false,
   })),
 }));
 
@@ -33,7 +41,37 @@ jest.mock('@/components/ui/effects/BlurText', () => ({
 }));
 
 jest.mock('@/features/lesson/components/SectionCard', () => ({
-  SectionCard: ({ title }: { title: string }) => <div>{title}</div>,
+  SectionCard: ({
+    title,
+    isEditing,
+    onEdit,
+    onDone,
+    onChange,
+  }: {
+    title: string;
+    isEditing: boolean;
+    onEdit: () => void;
+    onDone: () => void;
+    onChange: (html: string) => void;
+  }) => (
+    <div>
+      <span>{title}</span>
+      {isEditing ? (
+        <>
+          <button type="button" onClick={() => onChange('<p>Edited</p>')}>
+            Simulate edit {title}
+          </button>
+          <button type="button" onClick={() => void onDone()}>
+            Save
+          </button>
+        </>
+      ) : (
+        <button type="button" onClick={onEdit}>
+          Edit {title}
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 const mockHandleFile = jest.fn();
@@ -101,10 +139,15 @@ const lesson: LessonPlan = {
 describe('LessonView', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFlush.mockResolvedValue(true);
     (useDebouncedLessonSave as jest.Mock).mockReturnValue({
       save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
       status: 'idle',
       error: null,
+      isDirty: false,
     });
     (global.fetch as jest.Mock) = jest.fn();
   });
@@ -118,13 +161,70 @@ describe('LessonView', () => {
   it('shows save status text in the header', () => {
     (useDebouncedLessonSave as jest.Mock).mockReturnValue({
       save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
       status: 'saved',
       error: null,
+      isDirty: false,
     });
 
     render(<LessonView lesson={lesson} />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Saved');
+    expect(status).toHaveClass('text-emerald-700', 'dark:text-emerald-300');
+  });
+
+  it('exposes the saved confirmation as a polite live region', () => {
+    (useDebouncedLessonSave as jest.Mock).mockReturnValue({
+      save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
+      status: 'saved',
+      error: null,
+      isDirty: false,
+    });
+
+    render(<LessonView lesson={lesson} />);
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveTextContent('Saved. Downloads use your edits.');
+  });
+
+  it('fades the saved confirmation out after about 4 seconds', () => {
+    jest.useFakeTimers();
+    (useDebouncedLessonSave as jest.Mock).mockReturnValue({
+      save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
+      status: 'saved',
+      error: null,
+      isDirty: false,
+    });
+
+    try {
+      render(<LessonView lesson={lesson} />);
+
+      const status = screen.getByRole('status');
+      expect(status).toHaveAttribute('aria-live', 'polite');
+      expect(status).toHaveTextContent('Saved. Downloads use your edits.');
+
+      act(() => {
+        jest.advanceTimersByTime(3999);
+      });
+      expect(screen.getByText('Saved. Downloads use your edits.')).toBeInTheDocument();
+
+      act(() => {
+        jest.advanceTimersByTime(1);
+      });
+      expect(screen.queryByText('Saved. Downloads use your edits.')).not.toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('shows the curriculum accuracy notice on generated lessons', () => {
@@ -388,4 +488,137 @@ describe('LessonView', () => {
     });
     expect(screen.queryByText(TEMPLATE_UNFILLED_ERROR)).not.toBeInTheDocument();
   });
+
+  it('flushes pending edits when Save is clicked', async () => {
+    const { user } = render(<LessonView lesson={lesson} />);
+
+    await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
+    await user.click(screen.getByRole('button', { name: 'Simulate edit Hook Activity' }));
+    expect(mockSave).toHaveBeenCalledWith('hook', '<p>Edited</p>');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(mockFlush).toHaveBeenCalled();
+  });
+
+  it('flushes pending edits before leaving for the dashboard', async () => {
+    let resolveFlush: ((ok: boolean) => void) | undefined;
+    mockFlush.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveFlush = resolve;
+        }),
+    );
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+
+    expect(mockFlush).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+
+    resolveFlush?.(true);
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('asks to leave without saving when flush fails before leaving', async () => {
+    mockFlush.mockResolvedValue(false);
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+
+    await waitFor(() => {
+      expect(mockFlush).toHaveBeenCalled();
+    });
+    expect(confirmSpy).toHaveBeenCalledWith('Leave without saving your edits?');
+    expect(mockPush).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('leaves after the teacher confirms a failed flush', async () => {
+    mockFlush.mockResolvedValue(false);
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: /back to dashboard/i }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+    expect(mockCancel).toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('flushes pending edits before exporting', async () => {
+    let resolveFlush: ((ok: boolean) => void) | undefined;
+    mockFlush.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveFlush = resolve;
+        }),
+    );
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['docx']),
+    });
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL }));
+
+    expect(mockFlush).toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    resolveFlush?.(true);
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/export', expect.anything());
+    });
+  });
+
+  it('does not export when flush fails', async () => {
+    mockFlush.mockResolvedValue(false);
+
+    const { user } = render(<LessonView lesson={lesson} />);
+    await user.click(screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL }));
+
+    await waitFor(() => {
+      expect(mockFlush).toHaveBeenCalled();
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(downloadBlob).not.toHaveBeenCalled();
+  });
+
+  it('flushes pending edits before filling a template', async () => {
+    const withTemplate = {
+      ...lesson,
+      template_path: 'user-1/template/plan.docx',
+    };
+    let resolveFlush: ((ok: boolean) => void) | undefined;
+    mockFlush.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveFlush = resolve;
+        }),
+    );
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      blob: async () => new Blob(['filled']),
+    });
+
+    const { user } = render(<LessonView lesson={withTemplate} />);
+    await user.click(screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL }));
+    await user.click(screen.getByRole('button', { name: BTN_FILL_TEMPLATE }));
+
+    expect(mockFlush).toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    resolveFlush?.(true);
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/export/fill-template',
+        expect.anything(),
+      );
+    });
+  });
 });
+

@@ -1,6 +1,7 @@
 import { render, type RenderOptions } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
+import { LocaleProvider } from '@/providers/locale';
 
 function renderWithProviders(
   ui: ReactElement,
@@ -8,7 +9,7 @@ function renderWithProviders(
 ) {
   return {
     user: userEvent.setup({ delay: null }),
-    ...render(ui, { ...options }),
+    ...render(ui, { wrapper: LocaleProvider, ...options }),
   };
 }
 

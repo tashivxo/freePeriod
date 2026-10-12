@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import { useId, useState, useRef, useEffect, useCallback, type KeyboardEvent, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { animate } from 'animejs';
-import { ChevronDown, ChevronUp, Pencil, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { SUCCESS } from '@/lib/utils/brand-colors';
+import { Button } from '@/components/ui/Button';
+import { stripHtml } from '@/lib/lesson/content';
+import { useT } from '@/providers/locale';
 
 // Tiptap uses browser-only APIs — load it client-side only
 const LessonEditor = dynamic(
@@ -17,9 +20,15 @@ type SectionCardProps = {
   content: string;
   viewContent?: ReactNode;
   isEditing: boolean;
+  isEdited?: boolean;
+  editedLabel?: string;
+  saveError?: string | null;
+  isSaving?: boolean;
   onEdit: () => void;
-  onDone: () => void;
+  onDone: () => void | boolean | Promise<boolean>;
+  onCancel?: (snapshot: string) => void;
   onChange: (html: string) => void;
+  onBlur?: () => void;
   autosaveFlashNonce?: number;
 };
 
@@ -28,13 +37,26 @@ export function SectionCard({
   content,
   viewContent,
   isEditing,
+  isEdited = false,
+  editedLabel = 'Edited',
+  saveError = null,
+  isSaving = false,
   onEdit,
   onDone,
+  onCancel,
   onChange,
+  onBlur,
   autosaveFlashNonce,
 }: SectionCardProps) {
+  const t = useT();
+  const errorId = useId();
   const [isOpen, setIsOpen] = useState(true);
+  const [draft, setDraft] = useState(content);
+  const [localError, setLocalError] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const snapshotRef = useRef(content);
+  const wasEditingRef = useRef(isEditing);
 
   const flashSaved = useCallback(() => {
     if (!cardRef.current) return;
@@ -56,9 +78,55 @@ export function SectionCard({
     flashSaved();
   }, [autosaveFlashNonce, flashSaved]);
 
-  const handleDone = () => {
-    onDone();
+  useEffect(() => {
+    if (!isEditing) return;
+    snapshotRef.current = content;
+    setDraft(content);
+    setLocalError(null);
+    // Snapshot only when entering edit mode, not when blur persists new content.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- content is intentionally excluded
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (wasEditingRef.current && !isEditing) {
+      editButtonRef.current?.focus();
+    }
+    wasEditingRef.current = isEditing;
+  }, [isEditing]);
+
+  const hasChanges = stripHtml(draft) !== stripHtml(snapshotRef.current);
+  const errorMessage = saveError || localError;
+
+  const handleChange = (html: string) => {
+    setDraft(html);
+    onChange(html);
+  };
+
+  const handleSave = async () => {
+    setLocalError(null);
+    const result = await Promise.resolve(onDone());
+    if (result === false) {
+      setLocalError(t('lesson.saveFailed'));
+      return;
+    }
     flashSaved();
+  };
+
+  const handleCancel = () => {
+    if (hasChanges && !window.confirm(t('lesson.discardEdits'))) return;
+    onCancel?.(snapshotRef.current);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!isEditing) return;
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      void handleSave();
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      handleCancel();
+    }
   };
 
   const panelOpen = isOpen || isEditing;
@@ -67,6 +135,7 @@ export function SectionCard({
     <div
       ref={cardRef}
       className="rounded-xl border-2 border-text-secondary/20 bg-surface overflow-hidden transition-colors"
+      onKeyDown={handleKeyDown}
     >
       {/* Header */}
       <div className="flex w-full items-center justify-between px-5 py-4">
@@ -81,6 +150,11 @@ export function SectionCard({
           aria-expanded={panelOpen}
         >
           <h3 className="font-display text-lg font-semibold text-text-primary">{title}</h3>
+          {isEdited && editedLabel ? (
+            <span className="rounded-full bg-primary-soft px-2 py-0.5 font-body text-xs font-medium text-foreground">
+              {editedLabel}
+            </span>
+          ) : null}
           <div
             className="t-icon-swap h-5 w-5 shrink-0 text-text-secondary"
             data-state={isOpen ? 'b' : 'a'}
@@ -97,6 +171,7 @@ export function SectionCard({
 
         {!isEditing ? (
           <button
+            ref={editButtonRef}
             type="button"
             onClick={() => {
               setIsOpen(true);
@@ -107,16 +182,7 @@ export function SectionCard({
           >
             <Pencil className="h-4 w-4" aria-hidden="true" />
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleDone}
-            aria-label={`Done editing ${title}`}
-            className="flex items-center justify-center min-w-[44px] min-h-[44px] rounded-md text-success hover:opacity-80 transition-opacity"
-          >
-            <Check className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
+        ) : null}
       </div>
 
       {/* Content — stay open while editing so the editor cannot collapse mid-edit */}
@@ -135,7 +201,39 @@ export function SectionCard({
           >
             {isEditing ? (
               <div className="mt-3">
-                <LessonEditor content={content} onChange={onChange} />
+                <LessonEditor content={content} onChange={handleChange} onBlur={onBlur} />
+                <div className="mt-3 flex w-full justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-11 flex-1 sm:flex-none"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    {t('lesson.cancel')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="min-h-11 flex-1 sm:flex-none"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => void handleSave()}
+                    isLoading={isSaving}
+                    aria-describedby={errorMessage ? errorId : undefined}
+                  >
+                    {t('lesson.save')}
+                  </Button>
+                </div>
+                {errorMessage ? (
+                  <p
+                    id={errorId}
+                    role="alert"
+                    className="mt-3 font-body text-sm font-medium text-red-700 dark:text-red-300"
+                  >
+                    {errorMessage}
+                  </p>
+                ) : null}
               </div>
             ) : (
               <div

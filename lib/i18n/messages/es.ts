@@ -143,4 +143,13 @@ export const es: Messages = {
     showConfirmPassword: 'Mostrar confirmación de contraseña',
     hideConfirmPassword: 'Ocultar confirmación de contraseña',
   },
+  lesson: {
+    edited: 'Editado',
+    savedToast: 'Guardado. Las descargas usan tus ediciones.',
+    discardEdits: '¿Descartar tus ediciones?',
+    leaveWithoutSaving: '¿Salir sin guardar tus ediciones?',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+    saveFailed: 'No se pudo guardar, inténtalo de nuevo',
+  },
 };

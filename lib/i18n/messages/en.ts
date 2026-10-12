@@ -140,6 +140,15 @@ export const en = {
     showConfirmPassword: 'Show confirm password',
     hideConfirmPassword: 'Hide confirm password',
   },
+  lesson: {
+    edited: 'Edited',
+    savedToast: 'Saved. Downloads use your edits.',
+    discardEdits: 'Discard your edits?',
+    leaveWithoutSaving: 'Leave without saving your edits?',
+    save: 'Save',
+    cancel: 'Cancel',
+    saveFailed: "Couldn't save, try again",
+  },
 } as const;
 
 export type Messages = {
@@ -224,6 +233,15 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+  };
+  lesson: {
+    edited: string;
+    savedToast: string;
+    discardEdits: string;
+    leaveWithoutSaving: string;
+    save: string;
+    cancel: string;
+    saveFailed: string;
   };
   pricing: {
     title: string;

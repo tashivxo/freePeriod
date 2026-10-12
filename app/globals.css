@@ -518,3 +518,11 @@ html[lang="zh-Hans"] {
     }
   }
 }
+
+/* Hide preview/devtools overlays while a section editor is open so they
+ * cannot cover the Save control on narrow viewports. */
+html[data-lesson-editing] nextjs-portal,
+html[data-lesson-editing] vercel-live-feedback,
+html[data-lesson-editing] [data-vercel-toolbar] {
+  display: none !important;
+}
