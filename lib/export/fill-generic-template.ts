@@ -904,13 +904,22 @@ function buildParagraphsXml(referencePara: string, text: string): string {
     ? pPrWithoutRPr
     : pPrWithoutRPr.replace('</w:pPr>', '<w:spacing w:after="80"/></w:pPr>');
 
+  const inheritsNumPr = /<w:numPr\b/.test(pPrXml);
+
   return text
     .split('\n')
     .map((line) => {
       const trimmed = line.trim();
-      if (!trimmed) return `<w:p>${pPrXml}</w:p>`;
+      if (!trimmed) {
+        // A blank line that keeps list numbering renders as an empty bullet.
+        return inheritsNumPr ? '' : `<w:p>${pPrXml}</w:p>`;
+      }
       const isBoldLine = trimmed.startsWith('>>');
-      const content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
+      let content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
+      if (inheritsNumPr) {
+        content = content.replace(/^[•\-*]\s*/, '');
+      }
+      if (!content) return inheritsNumPr ? '' : `<w:p>${pPrXml}</w:p>`;
       let rPrToUse = isBoldLine || isSubHeaderLine(content) ? boldRPr : baseRPrNoBold;
       if (containsCjk(text)) {
         rPrToUse = ensureEastAsiaRFonts(rPrToUse);

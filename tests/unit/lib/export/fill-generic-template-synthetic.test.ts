@@ -229,6 +229,32 @@ const grammarLesson: LessonPlan = {
 
 const FIXTURE = join(__dirname, '../../../fixtures/synthetic-daily-english-lesson-plan.docx');
 
+const SIX_TEACHING_STRATEGIES = [
+  'Scaffolding',
+  'Differentiated Learning',
+  'Think/Pair/Share',
+  'Group Work',
+  'Guided Practice (I do / We do / You do)',
+  'Modelling',
+];
+
+const SEN_GT_LINES = [
+  'SEN/LS: targeted access arrangements and in-lesson intervention for identified learners.',
+  'G&T: targeted enrichment that increases depth of thinking, not extra volume.',
+];
+
+const sixStrategyLesson: LessonPlan = {
+  ...qaLesson,
+  id: 'synthetic-six-strategies',
+  content: {
+    ...qaLesson.content,
+    keyConcepts: [
+      ...(qaLesson.content.keyConcepts ?? []),
+      'Use think pair share, modelling, and guided practice to surface ideas.',
+    ],
+  },
+};
+
 const realisticLesson: LessonPlan = {
   ...qaLesson,
   id: 'synthetic-realistic',
@@ -791,6 +817,63 @@ describe('synthetic daily English template fill', () => {
     expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('MISCONCEPTION_MARKER');
     expect(cellPlainText(senLabelParagraph(outXml))).not.toContain('targeted intervention for');
   });
+
+  it('does not type a bullet glyph at the start of a paragraph that has numPr', async () => {
+    const { outXml } = await fillSynthetic(sixStrategyLesson);
+    const numbered = collectDocumentParagraphs(outXml).filter(paragraphHasNumPr);
+    expect(numbered.length).toBeGreaterThan(0);
+
+    const adaptiveCell = adaptiveValueCellXml(outXml);
+    const strategyParas = paragraphsAfterHeading(adaptiveCell, /other adaptive/i, /special educational/i);
+    expect(strategyParas).toHaveLength(SIX_TEACHING_STRATEGIES.length);
+    expect(strategyParas.every(paragraphHasNumPr)).toBe(true);
+    expect(strategyParas.map((para) => cellPlainText(para)).sort()).toEqual([...SIX_TEACHING_STRATEGIES].sort());
+
+    const senParas = paragraphsAfterHeading(adaptiveCell, /special educational/i);
+    expect(senParas).toHaveLength(SEN_GT_LINES.length);
+    expect(senParas.every(paragraphHasNumPr)).toBe(true);
+    expect(senParas.map((para) => cellPlainText(para))).toEqual(SEN_GT_LINES);
+
+    const senCellParas = topLevelXml(valueCellXmlForLabel(outXml, /^sen$/i), 'w:p').filter(paragraphHasNumPr);
+    const gtCellParas = topLevelXml(valueCellXmlForLabel(outXml, /^g&t$/i), 'w:p').filter(paragraphHasNumPr);
+    expect(senCellParas.map((para) => cellPlainText(para)).join('\n')).toContain('SUPPORT_MARKER');
+    expect(gtCellParas.map((para) => cellPlainText(para)).join('\n')).toContain('EXTENSION_MARKER');
+
+    const doubled = numbered
+      .map((para) => cellPlainText(para))
+      .filter((text) => /^[•\-*]/.test(text));
+    expect(doubled).toEqual([]);
+  });
+
+  it('does not leave an empty paragraph with numPr in the filled document', async () => {
+    const { outXml } = await fillSynthetic({
+      ...sixStrategyLesson,
+      content: {
+        ...sixStrategyLesson.content,
+        independentPractice: [
+          sixStrategyLesson.content.independentPractice[0],
+          [
+            'Time: 10 min',
+            'Teacher Activity: assign a second practice task',
+            'Learner Activity & Success Criteria: complete a second worksheet',
+            'Formative Assessment: check completion',
+            'Resources: second worksheet',
+          ].join('\n'),
+        ],
+      },
+    });
+    expect(independentPracticeValueText(outXml)).toContain('MASTERY_TASK_MARKER');
+    expect(independentPracticeValueText(outXml)).toContain('second practice task');
+    expect(adaptiveValueText(outXml)).toContain('Think/Pair/Share');
+    expect(adaptiveValueText(outXml)).toContain('SEN/LS:');
+    expect(valueCellTextForLabel(outXml, /^sen$/i)).toContain('SUPPORT_MARKER');
+    expect(valueCellTextForLabel(outXml, /^g&t$/i)).toContain('EXTENSION_MARKER');
+
+    const emptyNumbered = collectDocumentParagraphs(outXml)
+      .filter(paragraphHasNumPr)
+      .filter((para) => cellPlainText(para) === '');
+    expect(emptyNumbered).toEqual([]);
+  });
 });
 
 function slotBody(text: string, start: string, end: string): string {
@@ -877,6 +960,70 @@ function misconceptionsValueText(xml: string): string {
       const cells = topLevelXml(row, 'w:tc');
       if (cells.length < 2) continue;
       if (/possible misconceptions/i.test(cellPlainText(cells[0] ?? ''))) {
+        return cellPlainText(cells[1] ?? '');
+      }
+    }
+  }
+  return '';
+}
+
+function adaptiveValueCellXml(xml: string): string {
+  return valueCellXmlForLabel(xml, /adaptive teaching/i);
+}
+
+function valueCellXmlForLabel(xml: string, labelRe: RegExp): string {
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (labelRe.test(cellPlainText(cells[0] ?? '').trim())) {
+        return cells[1] ?? '';
+      }
+    }
+  }
+  return '';
+}
+
+function valueCellTextForLabel(xml: string, labelRe: RegExp): string {
+  return cellPlainText(valueCellXmlForLabel(xml, labelRe));
+}
+
+function paragraphsAfterHeading(cellXml: string, headingRe: RegExp, untilRe?: RegExp): string[] {
+  const paras = topLevelXml(cellXml, 'w:p');
+  const start = paras.findIndex((para) => headingRe.test(cellPlainText(para)));
+  if (start < 0) return [];
+  const collected: string[] = [];
+  for (const para of paras.slice(start + 1)) {
+    const text = cellPlainText(para);
+    if (untilRe?.test(text)) break;
+    if (/:$/.test(text) && text.length < 80) break;
+    collected.push(para);
+  }
+  return collected;
+}
+
+function collectDocumentParagraphs(xml: string): string[] {
+  const paras: string[] = [];
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      for (const cell of topLevelXml(row, 'w:tc')) {
+        paras.push(...topLevelXml(cell, 'w:p'));
+      }
+    }
+  }
+  return paras;
+}
+
+function paragraphHasNumPr(paraXml: string): boolean {
+  return /<w:numPr\b/.test(paraXml);
+}
+
+function independentPracticeValueText(xml: string): string {
+  for (const tbl of topLevelXml(xml, 'w:tbl')) {
+    for (const row of topLevelXml(tbl, 'w:tr')) {
+      const cells = topLevelXml(row, 'w:tc');
+      if (cells.length < 2) continue;
+      if (/independent practice/i.test(cellPlainText(cells[0] ?? ''))) {
         return cellPlainText(cells[1] ?? '');
       }
     }
