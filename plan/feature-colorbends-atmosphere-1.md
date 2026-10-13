@@ -1,6 +1,6 @@
 ---
 goal: Regional ColorBends atmosphere defaults with a Settings override
-version: 1.1
+version: 1.2
 date_created: 2026-10-13
 last_updated: 2026-10-13
 owner: Tashiv / Arham
@@ -9,6 +9,7 @@ tags:
   - feature
   - colorbends
   - settings
+  - onboarding
   - uae
 ---
 
@@ -25,15 +26,17 @@ Authenticated app surfaces (dashboard, generate, history, settings, lesson) use 
 | `brand` | FreePeriod colours | Pass `COLOR_BENDS_PALETTE` (option C: rose / peach / gold). Keep Arham’s weighted-average mix (`sumCol / sumW`, alpha once). |
 | `rainbow` | Multicolour | Restore production’s empty-colors RGB-split path (independent R/G/B bands). Do not pass named `colors`. |
 
-Defaults: `brand` in the Middle East, `rainbow` everywhere else. Settings shows **two preview tiles** (not a dropdown) in the same appearance stack as zen and language. A tap applies instantly and persists. Zen still hides ColorBends. Light/dark still only changes `COLOR_BENDS_INTENSITY`. See **§9 Settings surface**.
+Defaults: `brand` when **any** Middle East signal is true, `rainbow` otherwise. Signals are OR’d, never AND’d: onboarding/Settings **country** in the locked ME list, **or** a Middle East **curriculum**, **or** locale **Arabic**. An explicit Settings background choice still wins. Settings shows **two preview tiles** in the appearance stack. Zen still hides ColorBends. Light/dark still only changes `COLOR_BENDS_INTENSITY`. See **§9 Settings surface** and **§10 ME detection**.
 
 Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham mix from PR #32, `c427e48`). Empty-colors GLSL currently renders transparent (`col = vec3(0.0); a = 0.0`) in `components/ui/backgrounds/ColorBends.jsx` around L78–80. `rainbow` requires restoring the old RGB else-branch.
 
 ## 1. Requirements & Constraints
 
 - **REQ-001**: Two atmosphere modes only: `brand` and `rainbow`. No third “auto” value in the persisted override; auto is the absence of an override.
-- **REQ-002**: Middle East users default to `brand` until they pick otherwise.
-- **REQ-003**: Non-Middle-East users default to `rainbow` until they pick otherwise.
+- **REQ-002**: Default `brand` when `isMiddleEastAtmosphereDefault` is true (any ME signal). Until they pick a background in Settings.
+- **REQ-003**: Default `rainbow` when no ME signal is true.
+- **REQ-012**: Collect **country** at onboarding (new step) and persist `users.country` as ISO 3166-1 alpha-2. Same field editable in Settings teaching defaults. Do not infer country from IP.
+- **REQ-013**: Do **not** store a `me` / `is_middle_east` column. Derive it every time from country, curriculum, and locale so later edits re-default (when there is no override).
 - **REQ-004**: Settings exposes two visible preview tiles (`brand` / `rainbow`) in the appearance stack of `SettingsClient.tsx`, **after the zen card (~L190–212) and before language (~L214)**. Not an `AnimatedDropdown`. Radiogroup semantics. Instant apply, no Save. Full layout in §9.
 - **REQ-005**: An explicit Settings choice always wins over the regional default.
 - **REQ-006**: Zen mode (`fp-zen-mode` in `providers/zen-mode.tsx`) continues to unmount ColorBends. Atmosphere has no effect while zen is on.
@@ -42,7 +45,7 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 - **REQ-009**: ColorBends stays on the authenticated app shell only (`app/(app)/layout.tsx`). Auth Waves and marketing Iridescence / SoftAurora are out of scope.
 - **REQ-010**: User-facing copy has no em dashes. Locked English draft in §9.4. Short labels only. No “Arham”, “pride”, “shader”, or “palette C”.
 - **REQ-011**: Add matching keys in `lib/i18n/messages/{en,ar,es,fr,zh-Hans}.ts` so `Messages` stays aligned.
-- **SEC-001**: Do not use IP geolocation in v1 unless OPEN-DEC-001 is amended. No new third-party geo API.
+- **SEC-001**: Do not use IP geolocation. Country is self-reported. No geo vendor.
 - **SEC-002**: Persist only `brand` | `rainbow` | unset. No PII in the atmosphere key.
 - **CON-001**: Do not change motion uniforms (speed, warp, mouse, parallax, grain, bandWidth) except what restoring the RGB else-branch requires.
 - **CON-002**: Prefer-reduced-motion still skips ColorBends (`ColorBendsWrapper.tsx` L34).
@@ -52,10 +55,10 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 - **PAT-002**: Outer card matches zen/language (`rounded-xl border border-border bg-background p-4`, icon + label + one-line description). Inner control is a two-column radiogroup of preview tiles, not a switch and not a dropdown.
 - **PAT-003**: Selected tile uses the existing coral focus language (`border-coral` + `ring-2 ring-coral/20`), 44px min hit area, `font-body`. Instant apply like zen (`setAtmosphere` on click, no Save Settings).
 - **OPEN-DEC-006**: Mini previews are **static CSS gradients**, not extra WebGL canvases. The live ColorBends behind the Settings sheet is the real preview. Amend only if tiles feel too abstract.
-- **OPEN-DEC-001**: How to detect Middle East for the default. **Current draft:** treat `default_curriculum` in `('UAE MOE', 'ADEK (Abu Dhabi)')` as ME. Do not use IP. Arabic locale alone is not enough. Broader GCC curricula can be added here later.
-- **OPEN-DEC-002**: Persistence. **Current draft:** `localStorage` key `fp-color-bends-atmosphere` with values `brand` | `rainbow`, same as zen. Cross-device sync (users column) is a later amendment.
-- **OPEN-DEC-003**: Signed-out / no-curriculum users. **Current draft:** default `rainbow` (non-ME).
-- **OPEN-DEC-004**: Exact ME membership list (UAE only vs GCC). **Current draft:** UAE MOE + ADEK only.
+- **OPEN-DEC-001**: How to detect Middle East. **Resolved in 1.2:** OR of country, curriculum, Arabic. Full lists and truth table in §10. Do not use IP.
+- **OPEN-DEC-002**: Persistence of the *override*. **Current draft:** `localStorage` key `fp-color-bends-atmosphere` with values `brand` | `rainbow`, same as zen. Cross-device sync of the override is a later amendment. Country itself lives on `users.country`.
+- **OPEN-DEC-003**: No signals. **Resolved in 1.2:** signed-out, missing country, non-ME curriculum, and locale not `ar` → `rainbow`.
+- **OPEN-DEC-004**: Exact ME membership. **Resolved in 1.2:** locked ISO and curriculum lists in §10.1. Maghreb (MA, DZ, TN, LY) and IL / TR / CY are out until amended.
 - **OPEN-DEC-005**: Whether `rainbow` must pixel-match production’s pre-rework GLSL else-branch. **Current draft:** yes, restore that branch under `uColorCount == 0`.
 
 ## 2. Implementation Steps
@@ -67,9 +70,20 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
 | TASK-001 | Add `export type ColorBendsAtmosphere = 'brand' \| 'rainbow'` and `COLOR_BENDS_ATMOSPHERE_STORAGE_KEY = 'fp-color-bends-atmosphere'` next to the palettes in `lib/utils/brand-colors.ts`. | | |
-| TASK-002 | Add `isMiddleEastAtmosphereDefault(curriculum: string \| null): boolean` in `lib/utils/brand-colors.ts` (or `lib/utils/color-bends-atmosphere.ts` if the file would otherwise mix concerns). Return true only for `'UAE MOE'` and `'ADEK (Abu Dhabi)'` until OPEN-DEC-001/004 change. | | |
-| TASK-003 | Add `resolveColorBendsAtmosphere({ override, curriculum }: { override: ColorBendsAtmosphere \| null; curriculum: string \| null }): ColorBendsAtmosphere`. If `override` is `brand` or `rainbow`, return it. Else return `brand` when TASK-002 is true, otherwise `rainbow`. | | |
-| TASK-004 | Unit-test TASK-002 and TASK-003 in `tests/unit/lib/utils/brand-colors.color-bends.test.ts` (or a sibling `color-bends-atmosphere.test.ts`): UAE MOE → brand, ADEK → brand, GCSE/null/custom → rainbow, override always wins. | | |
+| TASK-002 | Add `isMiddleEastAtmosphereDefault({ country, curriculum, locale })` in `lib/utils/color-bends-atmosphere.ts` (keep palettes in `brand-colors.ts`). True if country ∈ `MIDDLE_EAST_COUNTRY_CODES` **or** curriculum ∈ `MIDDLE_EAST_CURRICULA` **or** locale is `'ar'`. Lists in §10.1. | | |
+| TASK-003 | Add `resolveColorBendsAtmosphere({ override, country, curriculum, locale })`. If `override` is `brand` or `rainbow`, return it. Else return `brand` when TASK-002 is true, otherwise `rainbow`. | | |
+| TASK-004 | Unit-test TASK-002/003: each signal alone → brand (AE + GCSE + en; null + UAE MOE + en; GB + GCSE + ar); all false → rainbow; override always wins; nulls → rainbow; lowercase `ae` still matches. | | |
+| TASK-018 | Add `lib/utils/countries.ts`: ISO 3166-1 alpha-2 list with English names for the onboarding/Settings picker, plus `MIDDLE_EAST_COUNTRY_CODES` from §10.1. No npm geo package. | | |
+| TASK-019 | Migration `supabase/migrations/009_users_country.sql`: `alter table public.users add column if not exists country text;` plus a check that null or length-2 is allowed. Mirror the column on `User` in `types/database.ts`. Existing rows stay null. | | |
+
+### Implementation Phase 1b
+
+- GOAL-001b: Country on onboarding and Settings. Self-reported, not IP.
+
+| Task | Description | Completed | Date |
+|------|-------------|-----------|------|
+| TASK-020 | Onboarding: insert a required **Where do you teach?** step between grade and curriculum. Progress becomes 4. Native `<select>` of countries (AnimatedDropdown is a poor fit for ~200 items; OS picker is searchable). Persist `country` on the existing users upsert. Copy in §10.3. Extend `OnboardingPage.test.tsx`. | | |
+| TASK-021 | Settings teaching defaults: country dropdown next to curriculum, saved with **Save Settings** (not instant; matches subject/grade/curriculum). i18n keys `settings.country` / `settings.selectCountry`. Changing country and saving re-resolves atmosphere when override is null. | | |
 
 ### Implementation Phase 2
 
@@ -86,8 +100,8 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-007 | Add `providers/color-bends-atmosphere.tsx` mirroring `providers/zen-mode.tsx`: read/write `fp-color-bends-atmosphere`, expose `{ atmosphere, setAtmosphere, resolvedAtmosphere }`. `atmosphere` is the override (`null` = follow default). `resolvedAtmosphere` uses TASK-003 plus `default_curriculum` from the signed-in user. | | |
-| TASK-008 | Pass curriculum into the provider from `app/(app)/layout.tsx` (or a thin client wrapper). If layout stays server-first, load `default_curriculum` the same way `app/(app)/generate/page.tsx` already selects it (~L28). | | |
+| TASK-007 | Add `providers/color-bends-atmosphere.tsx` mirroring `providers/zen-mode.tsx`: read/write `fp-color-bends-atmosphere`, expose `{ atmosphere, setAtmosphere, resolvedAtmosphere }`. `atmosphere` is the override (`null` = follow default). `resolvedAtmosphere` uses TASK-003 with `country`, `default_curriculum`, and the resolved app locale (`'ar'` or not). | | |
+| TASK-008 | Pass country, curriculum, and locale into the provider from `app/(app)/layout.tsx` (or a thin client wrapper). Load `country` and `default_curriculum` the same way `app/(app)/generate/page.tsx` already selects profile fields (~L28). Locale from `useLocale()` / `preferred_locale`. | | |
 | TASK-009 | Wrap the app tree in `app/layout.tsx` next to `ThemeProvider` / `ZenModeProvider` (~L105–108). | | |
 | TASK-010 | In `components/ui/backgrounds/ColorBendsWrapper.tsx`, when `resolvedAtmosphere === 'brand'` pass `colors={[...COLOR_BENDS_PALETTE]}`; when `'rainbow'` pass `colors={[]}` (or omit). Keep theme intensity and zen/reduced-motion early return. | | |
 | TASK-011 | Extend `tests/unit/components/ui/backgrounds/ColorBendsWrapper.test.tsx`: brand passes palette, rainbow passes empty array, zen still renders nothing. Mock the new provider. | | |
@@ -109,12 +123,14 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-016 | Manual: `/settings` tiles (desktop + ~375px), live ColorBends behind the card on select, zen disables tiles, light/dark intensity, RTL (`ar`) tile order, keyboard (arrow keys + selected `aria-checked`). ME-default vs override as before. | | |
+| TASK-016 | Manual: `/settings` tiles (desktop + ~375px), live ColorBends behind the card on select, zen disables tiles, light/dark intensity, RTL (`ar`) tile order, keyboard. ME-default cases from §10.2. Onboarding country step. Existing user with null country + GCSE + English stays rainbow; same user switching language to العربية gets brand until they override. | | |
 | TASK-017 | Do not merge to `main` from this plan. Stay on `colorBends_rework_branch` until a later kickoff. | | |
 
 ## 3. Alternatives
 
-- **ALT-001**: IP geolocation for ME default. Rejected for v1 (VPN, travel, extra vendor). Reopen via OPEN-DEC-001.
+- **ALT-001**: IP geolocation for ME default. Rejected (VPN, travel, extra vendor). Country is asked, not sniffed.
+- **ALT-008**: Persist `users.is_middle_east`. Rejected: stale when they change country, curriculum, or language. Derive.
+- **ALT-009**: Curriculum only (v1.0). Rejected in 1.2: a Dubai GCSE teacher would get rainbow. Country and Arabic close that hole.
 - **ALT-002**: Default everyone to `brand` and only offer rainbow in Settings. Simpler, but contradicts the agreed regional default.
 - **ALT-003**: Two shaders / two components. Rejected: one `ColorBends.jsx` with `uColorCount > 0` vs else is enough.
 - **ALT-004**: Persist on `users` in v1. Rejected until OPEN-DEC-002 changes; zen/theme already localStorage-only.
@@ -126,17 +142,21 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 - **DEP-001**: `colorBends_rework_branch` including `c427e48` (Arham mix) and palette C.
 - **DEP-002**: Existing Settings card pattern (zen/language) and coral focus ring. Not `AnimatedDropdown`.
-- **DEP-003**: `default_curriculum` on `public.users` (`lib/supabase/schema.sql`).
-- **DEP-004**: No new npm packages.
+- **DEP-003**: `default_curriculum` and new `country` on `public.users`. `preferred_locale` already exists.
+- **DEP-004**: No new npm packages. Country names live in-repo.
 
 ## 5. Files
 
-- **FILE-001**: `lib/utils/brand-colors.ts` (types, ME helper, resolve helper) and/or `lib/utils/color-bends-atmosphere.ts`
+- **FILE-001**: `lib/utils/brand-colors.ts` (atmosphere types/storage key if they sit next to palettes) and `lib/utils/color-bends-atmosphere.ts` (ME helper, resolve helper, ME sets)
+- **FILE-014**: `lib/utils/countries.ts` (ISO list + picker items)
+- **FILE-015**: `app/(auth)/onboarding/OnboardingPage.tsx` (country step) and its unit test
+- **FILE-016**: `supabase/migrations/009_users_country.sql` and `types/database.ts`
+- **FILE-017**: `app/(app)/settings/SettingsClient.tsx` (country in teaching defaults) plus i18n keys
 - **FILE-002**: `components/ui/backgrounds/ColorBends.jsx` (restore RGB else-branch)
 - **FILE-003**: `components/ui/backgrounds/ColorBendsWrapper.tsx` (pass colors from resolved atmosphere)
 - **FILE-004**: `providers/color-bends-atmosphere.tsx` (new)
 - **FILE-005**: `app/layout.tsx` (provider)
-- **FILE-006**: `app/(app)/layout.tsx` (curriculum into provider if needed)
+- **FILE-006**: `app/(app)/layout.tsx` (country, curriculum, locale into provider if needed)
 - **FILE-007**: `app/(app)/settings/SettingsClient.tsx` (Background card) plus optional `features/settings/components/AtmospherePicker.tsx` if the tiles would clutter the client file
 - **FILE-008**: `lib/i18n/messages/en.ts`, `ar.ts`, `es.ts`, `fr.ts`, `zh-Hans.ts`
 - **FILE-009**: `tests/unit/lib/utils/brand-colors.color-bends.test.ts` (or new sibling)
@@ -147,8 +167,9 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 ## 6. Testing
 
-- **TEST-001**: `isMiddleEastAtmosphereDefault` true only for UAE MOE and ADEK (Abu Dhabi).
+- **TEST-001**: `isMiddleEastAtmosphereDefault` true for any one of: ME country, ME curriculum, `ar`. False when all three miss.
 - **TEST-002**: `resolveColorBendsAtmosphere` override wins; else ME → brand, else rainbow.
+- **TEST-008**: Onboarding requires a country and upserts it. Settings save updates `users.country`.
 - **TEST-003**: ColorBends GLSL: named-colors path still averages; empty-colors path RGB-splits.
 - **TEST-004**: Wrapper passes palette vs `[]` from resolved atmosphere; zen still empty DOM.
 - **TEST-005**: Settings tiles call `setAtmosphere`; zen-on disables them.
@@ -157,8 +178,9 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 ## 7. Risks & Assumptions
 
-- **RISK-001**: Restoring RGB-split reintroduces rainbow on every non-ME session, including screenshots and a UAE teacher whose curriculum is unset or who is on a non-UAE preset.
-- **RISK-002**: Curriculum is a weak proxy for “lives in the ME” (British curriculum in Dubai would get rainbow under OPEN-DEC-001 as drafted).
+- **RISK-001**: Restoring RGB-split reintroduces rainbow on every session with no ME signal, including screenshots and existing users who never set country and are not on Arabic / UAE curricula.
+- **RISK-002**: Mitigated in 1.2 for new onboarding (country catches Dubai GCSE). Remaining: existing accounts with `country` null until they edit Settings; a teacher who picks United Kingdom while working in Dubai; Maghreb countries not in the locked list.
+- **RISK-005**: Arabic as an ME signal defaults Maghreb and Arabic-speaking diaspora teachers to `brand`. That is intended (safer default). They can pick Multicolour in Settings.
 - **RISK-003**: localStorage override does not follow the user across browsers/devices.
 - **RISK-004**: Empty-colors tests today lock transparent black; TASK-006 must invert that contract on purpose.
 - **ASSUMPTION-001**: ColorBends is the only pride-adjacent background in the app shell. Marketing/auth stay unchanged.
@@ -174,6 +196,8 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 - `app/(app)/settings/SettingsClient.tsx` theme + zen + language stack
 - `providers/zen-mode.tsx`, `providers/theme.tsx`
 - `lib/utils/curricula.ts` (`UAE MOE`, `ADEK (Abu Dhabi)`)
+- `app/(auth)/onboarding/OnboardingPage.tsx` (subject → grade → curriculum today; country becomes the new step 3)
+- `providers/locale.tsx` (`fp-locale`, `preferred_locale`)
 - docs/brand-guidelines.md
 - docs/superpowers/specs/2026-07-11-zen-mode-design.md
 - PRODUCT.md (Operate surface, coral focus, 44px targets, no hype)
@@ -340,3 +364,76 @@ Out of scope for 10/10 in v1: undo toast, “reset to regional default”, live 
 - Do not restyle the rest of Settings.
 - Do not add a third tile for “Auto”.
 - Do not write CSS that assumes LTR.
+
+## 10. Middle East detection
+
+Do not ask “Are you in the Middle East?” and do not sniff IP. Ask where they teach, keep curriculum and language as they already exist, and OR the three.
+
+`ME = country ∈ ME codes  OR  curriculum ∈ ME curricula  OR  locale === 'ar'`
+
+Store country. Do not store `ME`. Recompute on every resolve so Settings language / curriculum / country edits move the default until the teacher has picked a background tile (`override` set).
+
+### 10.1 Locked lists (amend here, do not invent at implementation)
+
+**Countries** (`users.country`, ISO 3166-1 alpha-2, compare uppercase):
+
+`AE`, `BH`, `KW`, `OM`, `QA`, `SA` (GCC), `IQ`, `JO`, `LB`, `SY`, `PS`, `YE`, `IR`, `EG`
+
+Out until this list is amended: Maghreb (`MA`, `DZ`, `TN`, `LY`), `IL`, `TR`, `CY`.
+
+**Curricula** (exact match on `default_curriculum` and, when generating, the lesson curriculum is not used for this default; profile default only):
+
+`'UAE MOE'`, `'ADEK (Abu Dhabi)'`
+
+Those are the only Middle East presets in `lib/utils/curricula.ts` today. Custom curriculum text does **not** fuzzy-match (`Saudi`, `KHDA`, …). Add a named preset to `CURRICULA` and to this list if a new ME curriculum ships.
+
+**Locale:** `locale === 'ar'` using the resolved app locale (`preferred_locale` for signed-in users, otherwise `fp-locale`). Not `ar-AE`. Spanish / French / Chinese never count as ME.
+
+### 10.2 Truth table
+
+| Country | Curriculum | Locale | Override | Default |
+| --- | --- | --- | --- | --- |
+| `AE` | GCSE | en | none | brand |
+| `GB` | UAE MOE | en | none | brand |
+| `GB` | GCSE | ar | none | brand |
+| `GB` | GCSE | en | none | rainbow |
+| null | null | en | none | rainbow |
+| `AE` | UAE MOE | ar | `rainbow` | rainbow (override) |
+| `GB` | GCSE | en | `brand` | brand (override) |
+
+Existing users: `country` is null. Curriculum and Arabic still apply. No forced re-onboarding. Country appears in Settings so they can set it later.
+
+### 10.3 Onboarding country step (Operate)
+
+Today: 3 steps (subject, grade, curriculum). Add country as **step 3**; curriculum becomes **step 4**. Extra click is fine if it is obvious (Krug 2).
+
+Copy, hardcoded English like the rest of onboarding (that page is not on `t()` yet):
+
+- Heading: `Where do you teach?`
+- Helper: `You can change this in Settings.`
+- Trigger placeholder: `Select a country`
+- Next disabled until a country is chosen (same as grade/curriculum).
+
+Do not mention backgrounds, palettes, or the Middle East. Country is a teaching-profile field that also drives the default.
+
+Control: native `<select>` of all countries, English names, value = ISO code. Put a short **common** group at the top (`United Arab Emirates`, `Saudi Arabia`, `United Kingdom`, `United States`, `India`, `Australia`, `South Africa`) then a divider then A–Z. Native select beats a 200-row `AnimatedDropdown` (no typeahead in that component).
+
+RTL: onboarding stays LTR until that page is translated. Out of scope.
+
+### 10.4 Settings country
+
+Teaching defaults, not the appearance stack. Label `Country` / `Where you teach`. Saved with **Save Settings** next to subject, grade, curriculum. Instant apply is reserved for zen, theme, language, and background tiles.
+
+After a successful save, if atmosphere override is null, ColorBends must re-resolve without a reload if the provider already has the new country. If the save path only writes Supabase, refresh the provider’s country prop from the saved value in the same handler.
+
+### 10.5 Heuristic notes for detection
+
+| Heuristic | Application |
+| --- | --- |
+| Krug 1 | “Where do you teach?” not “Region for culturally safe atmosphere”. |
+| Nielsen 2 | Country names, not ISO codes in the UI. Codes are the stored value. |
+| Nielsen 3 | Wrong country is editable in Settings. Wrong default is one tap on a background tile. |
+| Nielsen 5 | Closed country list, not a free-text country field. |
+| Nielsen 6 | Common countries on top so UAE/UK/US are visible without hunting. |
+
+**Detection helper score: 8/10** until country is actually on onboarding (without it we are back to curriculum + Arabic only). Gaps to 10/10: common-country grouping ships, native select is keyboard reachable, existing users can set country in Settings without repeating onboarding, Maghreb decision stays explicit in §10.1.
