@@ -17,6 +17,10 @@ function emptyColorsBranch(src: string): string {
 }
 
 describe('ColorBends empty-colors GLSL path', () => {
+  it('types colors as string[] so a palette is not inferred as never[]', () => {
+    expect(source).toMatch(/@param \{string\[\]\} \[props\.colors\]/);
+  });
+
   it('renders transparent black so a missing colors prop cannot rainbow', () => {
     const branch = emptyColorsBranch(source);
     expect(branch).toMatch(/col\s*=\s*vec3\(\s*0\.0\s*\)/);

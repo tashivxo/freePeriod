@@ -97,12 +97,31 @@ void main() {
 }
 `;
 
+/**
+ * @param {object} props
+ * @param {string} [props.className]
+ * @param {import('react').CSSProperties} [props.style]
+ * @param {number} [props.rotation]
+ * @param {number} [props.speed]
+ * @param {string[]} [props.colors]
+ * @param {boolean} [props.transparent]
+ * @param {number} [props.autoRotate]
+ * @param {number} [props.scale]
+ * @param {number} [props.frequency]
+ * @param {number} [props.warpStrength]
+ * @param {number} [props.mouseInfluence]
+ * @param {number} [props.parallax]
+ * @param {number} [props.noise]
+ * @param {number} [props.iterations]
+ * @param {number} [props.intensity]
+ * @param {number} [props.bandWidth]
+ */
 export default function ColorBends({
   className,
   style,
   rotation = 90,
   speed = 0.2,
-  colors = [],
+  colors = /** @type {string[]} */ ([]),
   transparent = true,
   autoRotate = 0,
   scale = 1,
