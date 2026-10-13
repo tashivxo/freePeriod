@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
+import { COLOR_BENDS_INTENSITY, COLOR_BENDS_PALETTE } from "@/lib/utils/brand-colors"
+import { useTheme } from "@/providers/theme"
 import { useZenMode } from "@/providers/zen-mode"
 
 const ColorBends = dynamic(
@@ -16,7 +18,10 @@ function getPrefersReducedMotion(): boolean {
 
 export function ColorBendsBackground() {
   const { zenMode } = useZenMode()
+  const { resolvedTheme } = useTheme()
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion)
+  const intensity =
+    resolvedTheme === "dark" ? COLOR_BENDS_INTENSITY.dark : COLOR_BENDS_INTENSITY.light
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
@@ -39,7 +44,12 @@ export function ColorBendsBackground() {
         height: "100vh"
       }}
     >
-      <ColorBends className="" style={{}} />
+      <ColorBends
+        className=""
+        style={{}}
+        colors={[...COLOR_BENDS_PALETTE]}
+        intensity={intensity}
+      />
     </div>
   )
 }
