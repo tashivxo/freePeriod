@@ -51,6 +51,7 @@ void main() {
   if (uColorCount > 0) {
     vec2 s = q;
     vec3 sumCol = vec3(0.0);
+    float sumW = 0.0;
     float cover = 0.0;
 
     for (int i = 0; i < MAX_COLORS; ++i) {
@@ -67,10 +68,13 @@ void main() {
       float m = mix(m0, m1, kMix);
       float w = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
       sumCol += uColors[i] * w;
+      sumW += w;
       cover = max(cover, w);
     }
-    col = clamp(sumCol, 0.0, 1.0);
-    a = uTransparent > 0 ? cover : 1.0;
+    // Weighted average, not a clipped sum: overlapping bands keep their hue
+    // instead of adding past 1.0 into white cores.
+    col = sumCol / max(sumW, 0.0001);
+    a = cover;
   } else {
     col = vec3(0.0);
     a = 0.0;
@@ -84,8 +88,9 @@ void main() {
     col = clamp(col, 0.0, 1.0);
   }
 
-  vec3 rgb = (uTransparent > 0) ? col * a : col;
-  gl_FragColor = vec4(rgb, a);
+  // col is straight colour here, so coverage is applied exactly once.
+  // (Weighting by coverage and then multiplying by alpha again greyed the edges.)
+  gl_FragColor = vec4(col * a, uTransparent > 0 ? a : 1.0);
 }
 `;
 
