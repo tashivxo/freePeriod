@@ -133,7 +133,7 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 - **ALT-009**: Curriculum only (v1.0). Rejected in 1.2: a Dubai GCSE teacher would get rainbow. Country and Arabic close that hole.
 - **ALT-002**: Default everyone to `brand` and only offer rainbow in Settings. Simpler, but contradicts the agreed regional default.
 - **ALT-003**: Two shaders / two components. Rejected: one `ColorBends.jsx` with `uColorCount > 0` vs else is enough.
-- **ALT-004**: Persist on `users` in v1. Rejected until OPEN-DEC-002 changes; zen/theme already localStorage-only.
+- **ALT-004**: Persist the background *override* on `users` in v1. Rejected until OPEN-DEC-002 changes; zen/theme already localStorage-only. Country is a profile field and does belong on `users`.
 - **ALT-005**: `AnimatedDropdown` like language. Rejected in v1.1: two visual choices fail Krug (“don’t make me think”) and Nielsen #6 (recognition) if hidden in a menu. Language has five options; this has two. Preview tiles.
 - **ALT-007**: Binary switch “Warm / Rainbow”. Rejected: a switch implies on/off, not two named looks. Tiles name each option.
 - **ALT-006**: Geo-split Arham’s mix vs production mix. Rejected: mix stays on `brand`; rainbow is the empty-colors RGB path.
