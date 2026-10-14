@@ -74,7 +74,7 @@ export function AtmospherePicker() {
                 'relative flex min-h-11 cursor-pointer flex-col gap-2 rounded-lg border bg-background p-2 text-start transition-[border-color,box-shadow,background-color] duration-200 motion-reduce:transition-none',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-coral/40',
                 selected
-                  ? 'border-coral ring-2 ring-coral/20'
+                  ? 'border-[#D94677] ring-2 ring-[#D94677]/20 dark:border-coral dark:ring-coral/20'
                   : cn('border-border', !zenMode && 'hover:border-text-secondary/40'),
                 zenMode && 'cursor-not-allowed',
               )}
@@ -92,13 +92,13 @@ export function AtmospherePicker() {
                   aria-hidden
                   className={cn(
                     'grid size-5 shrink-0 place-items-center rounded-full border-2 bg-background',
-                    selected ? 'border-coral' : 'border-text-secondary/50',
+                    selected ? 'border-[#D94677] dark:border-coral' : 'border-text-secondary/50',
                   )}
                 >
                   <span
                     className={cn(
-                      'size-2 rounded-full bg-coral transition-transform duration-200 motion-reduce:transition-none',
-                      selected ? 'scale-100' : 'scale-0',
+                      'size-2 rounded-full transition-transform duration-200 motion-reduce:transition-none',
+                      selected ? 'scale-100 bg-[#D94677] dark:bg-coral' : 'scale-0 bg-coral',
                     )}
                   />
                 </span>
