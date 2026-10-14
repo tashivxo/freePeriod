@@ -120,6 +120,7 @@ export function AtmospherePicker() {
       </div>
 
       <div className="t-resize-lock" data-open={zenMode ? 'true' : 'false'}>
+        {/* pt- not mt-: top margin leaks out of a 0fr grid row when collapsed */}
         <p
           id={ZEN_LOCK_ID}
           aria-hidden={zenMode ? undefined : true}
