@@ -86,4 +86,32 @@ describe('AtmospherePicker', () => {
     expect(group).not.toHaveClass('opacity-40');
     expect(screen.getByTestId('atmosphere-tile-grid')).toHaveClass('opacity-40');
   });
+
+  it('keeps Zen lock mounted but hidden when Zen is off', () => {
+    render(<AtmospherePicker />);
+
+    const group = screen.getByRole('group', { name: 'settings.background' });
+    const lock = screen.getByText('settings.backgroundZenLocked');
+
+    expect(group).toHaveClass('t-resize');
+    expect(group).not.toHaveAttribute('aria-describedby');
+
+    const wrapper = lock.parentElement;
+    expect(wrapper).toHaveClass('t-resize-lock');
+    expect(wrapper).toHaveAttribute('data-open', 'false');
+    expect(lock).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('opens the Zen lock wrapper and announces it when Zen is on', () => {
+    mockUseZenMode.mockReturnValue({ zenMode: true, setZenMode: jest.fn() });
+    render(<AtmospherePicker />);
+
+    const group = screen.getByRole('group', { name: 'settings.background' });
+    const lock = screen.getByText('settings.backgroundZenLocked');
+
+    expect(lock.parentElement).toHaveAttribute('data-open', 'true');
+    expect(lock).not.toHaveAttribute('aria-hidden');
+    expect(group).toHaveAttribute('aria-describedby', lock.id);
+    expect(screen.getAllByRole('radio').every((radio) => radio.hasAttribute('disabled'))).toBe(true);
+  });
 });

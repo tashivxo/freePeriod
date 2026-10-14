@@ -45,7 +45,7 @@ export function AtmospherePicker() {
   return (
     <fieldset
       aria-describedby={zenMode ? ZEN_LOCK_ID : undefined}
-      className="mb-6 min-w-0 rounded-xl border border-border bg-background p-4"
+      className="t-resize mb-6 min-w-0 rounded-xl border border-border bg-background p-4"
     >
       <legend
         id={HEADING_ID}
@@ -60,7 +60,10 @@ export function AtmospherePicker() {
 
       <div
         data-testid="atmosphere-tile-grid"
-        className={cn('mt-4 grid grid-cols-2 gap-3', zenMode && 'opacity-40')}
+        className={cn(
+          'mt-4 grid grid-cols-2 gap-3 transition-opacity duration-[length:var(--resize-dur)] motion-reduce:transition-none',
+          zenMode && 'opacity-40',
+        )}
       >
         {OPTIONS.map(({ value, labelKey }) => {
           const selected = resolvedAtmosphere === value;
@@ -116,11 +119,15 @@ export function AtmospherePicker() {
         })}
       </div>
 
-      {zenMode ? (
-        <p id={ZEN_LOCK_ID} className="mt-3 text-sm font-body text-text-secondary">
+      <div className="t-resize-lock" data-open={zenMode ? 'true' : 'false'}>
+        <p
+          id={ZEN_LOCK_ID}
+          aria-hidden={zenMode ? undefined : true}
+          className="mt-3 text-sm font-body text-text-secondary"
+        >
           {t('settings.backgroundZenLocked')}
         </p>
-      ) : null}
+      </div>
     </fieldset>
   );
 }
