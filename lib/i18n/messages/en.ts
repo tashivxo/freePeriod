@@ -20,6 +20,8 @@ export const en = {
     defaultCurriculum: 'Default Curriculum',
     selectCurriculum: 'Select curriculum',
     enterCurriculum: 'Enter curriculum',
+    country: 'Country',
+    selectCountry: 'Select a country',
     save: 'Save Settings',
     saving: 'Saving...',
     saved: 'Settings saved!',
@@ -173,6 +175,8 @@ export type Messages = {
     defaultCurriculum: string;
     selectCurriculum: string;
     enterCurriculum: string;
+    country: string;
+    selectCountry: string;
     save: string;
     saving: string;
     saved: string;

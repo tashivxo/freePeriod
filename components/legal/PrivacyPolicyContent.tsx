@@ -62,7 +62,7 @@ export function PrivacyPolicyContent() {
         <h3>Account and profile information</h3>
         <ul>
           <li>Email address, display name, and authentication credentials (or Google sign-in profile data)</li>
-          <li>Teaching preferences you provide during onboarding or in Settings: default subject, grade or year group, and curriculum</li>
+          <li>Teaching preferences you provide during onboarding or in Settings: default subject, grade or year group, and curriculum. Country is an optional teaching-location default.</li>
           <li>Subscription plan, trial status, generation usage counts, and account creation date</li>
         </ul>
 

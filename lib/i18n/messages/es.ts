@@ -22,6 +22,8 @@ export const es: Messages = {
     defaultCurriculum: 'Currículo predeterminado',
     selectCurriculum: 'Seleccionar currículo',
     enterCurriculum: 'Introducir currículo',
+    country: 'País',
+    selectCountry: 'Seleccionar país',
     save: 'Guardar ajustes',
     saving: 'Guardando...',
     saved: '¡Ajustes guardados!',

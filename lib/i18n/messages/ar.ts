@@ -22,6 +22,8 @@ export const ar: Messages = {
     defaultCurriculum: 'المنهج الافتراضي',
     selectCurriculum: 'اختر المنهج',
     enterCurriculum: 'أدخل المنهج',
+    country: 'البلد',
+    selectCountry: 'اختر البلد',
     save: 'حفظ الإعدادات',
     saving: 'جارٍ الحفظ...',
     saved: 'تم حفظ الإعدادات!',

@@ -7,6 +7,11 @@ import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
+import {
+  COMMON_COUNTRY_ITEMS,
+  COUNTRY_ITEMS,
+  normalizeCountryCode,
+} from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -42,6 +47,7 @@ type DefaultsSnapshot = {
   subject: string;
   grade: string;
   curriculum: string;
+  country: string;
 };
 
 export type SettingsClientProps = {
@@ -62,10 +68,14 @@ export function SettingsClient({
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
   const [gradeSelect, setGradeSelect] = useState<string>(user.default_grade ?? '');
+  const [countrySelect, setCountrySelect] = useState<string>(
+    () => normalizeCountryCode(user.country) ?? '',
+  );
   const [savedDefaults, setSavedDefaults] = useState<DefaultsSnapshot>({
     subject: user.default_subject ?? '',
     grade: user.default_grade ?? '',
     curriculum: user.default_curriculum ?? '',
+    country: normalizeCountryCode(user.country) ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
@@ -85,7 +95,8 @@ export function SettingsClient({
   const isDirty =
     subjectField.value !== savedDefaults.subject ||
     gradeSelect !== savedDefaults.grade ||
-    curriculumField.value !== savedDefaults.curriculum;
+    curriculumField.value !== savedDefaults.curriculum ||
+    countrySelect !== savedDefaults.country;
 
   useEffect(() => {
     if (user.preferred_locale && isLocale(user.preferred_locale)) {
@@ -129,10 +140,12 @@ export function SettingsClient({
     setSaveStatus(null);
     try {
       const supabase = await createClient();
+      const nextCountry = normalizeCountryCode(countrySelect) ?? '';
       const nextDefaults: DefaultsSnapshot = {
         subject: subjectField.value,
         grade: gradeSelect,
         curriculum: curriculumField.value,
+        country: nextCountry,
       };
       const { error } = await supabase
         .from('users')
@@ -140,11 +153,14 @@ export function SettingsClient({
           default_subject: nextDefaults.subject || null,
           default_grade: nextDefaults.grade || null,
           default_curriculum: nextDefaults.curriculum || null,
+          country: nextDefaults.country || null,
         })
         .eq('id', user.id);
 
       if (error) throw error;
       setSavedDefaults(nextDefaults);
+      setCountrySelect(nextCountry);
+      // Phase 3 TASK-007: setProfileSignals({ country, curriculum })
       setSaveStatus({ tone: 'success', message: t('settings.saved') });
     } catch (err) {
       console.error(err);
@@ -280,6 +296,38 @@ export function SettingsClient({
               selectedValue={gradeSelect}
               onSelect={(item) => setGradeSelect(item.value ?? item.name)}
             />
+          </div>
+
+          {/* Country — teaching default, saved with Save Settings */}
+          <div>
+            <label
+              htmlFor="default-country"
+              className="mb-2 block text-sm font-body font-medium text-text-secondary"
+            >
+              {t('settings.country')}
+            </label>
+            <select
+              id="default-country"
+              value={countrySelect}
+              onChange={(event) => setCountrySelect(event.target.value)}
+              className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+            >
+              <option value="">{t('settings.selectCountry')}</option>
+              <optgroup label="Common">
+                {COMMON_COUNTRY_ITEMS.map((item) => (
+                  <option key={`common-${item.value}`} value={item.value}>
+                    {item.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="All countries">
+                {COUNTRY_ITEMS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
           {/* Default Curriculum */}

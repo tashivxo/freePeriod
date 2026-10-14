@@ -13,6 +13,11 @@ import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
+import {
+  COMMON_COUNTRY_ITEMS,
+  COUNTRY_ITEMS,
+  normalizeCountryCode,
+} from '@/lib/utils/countries';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
@@ -24,6 +29,7 @@ export function OnboardingPage() {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
   const [grade, setGrade] = useState('');
+  const [country, setCountry] = useState('');
   const [curriculumSelect, setCurriculumSelect] = useState('');
   const [customCurriculum, setCustomCurriculum] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,6 +125,13 @@ export function OnboardingPage() {
       }
 
       const defaultSubject = selectedSubject || customSubject.trim();
+      const countryCode = normalizeCountryCode(country);
+      if (!countryCode) {
+        setError('Select a country.');
+        setIsSubmitting(false);
+        setFinishStatus('idle');
+        return;
+      }
 
       const metaName = user.user_metadata?.name;
       const metaFullName = user.user_metadata?.full_name;
@@ -138,6 +151,7 @@ export function OnboardingPage() {
             default_subject: defaultSubject,
             default_grade: grade,
             default_curriculum: curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect,
+            country: countryCode,
             onboarding_complete: true,
           },
           { onConflict: 'id' },
@@ -161,7 +175,7 @@ export function OnboardingPage() {
       setIsSubmitting(false);
       setFinishStatus('idle');
     }
-  }, [selectedSubject, customSubject, grade, curriculumSelect, customCurriculum, router]);
+  }, [selectedSubject, customSubject, grade, country, curriculumSelect, customCurriculum, router]);
 
   // Animate on mount
   useEffect(() => {
@@ -207,6 +221,16 @@ export function OnboardingPage() {
               )}
 
               {step === 3 && (
+                <StepCountry
+                  country={country}
+                  error={error}
+                  onCountryChange={setCountry}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                />
+              )}
+
+              {step === 4 && (
                 <StepCurriculum
                   curriculumSelect={curriculumSelect}
                   onCurriculumSelectChange={setCurriculumSelect}
@@ -228,7 +252,7 @@ export function OnboardingPage() {
   );
 }
 
-function OnboardingProgress({ step, total = 3 }: { step: number; total?: number }) {
+function OnboardingProgress({ step, total = 4 }: { step: number; total?: number }) {
   return (
     <div
       role="progressbar"
@@ -372,6 +396,71 @@ function StepGrade({
           Back
         </Button>
         <Button onClick={onNext} className="flex-1" disabled={!grade}>
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function StepCountry({
+  country,
+  error,
+  onCountryChange,
+  onNext,
+  onBack,
+}: {
+  country: string;
+  error: string;
+  onCountryChange: (value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <h1
+        id="onboarding-country-heading"
+        className="mb-2 text-center font-display text-2xl font-bold text-text-primary"
+      >
+        Where do you teach?
+      </h1>
+      <p className="mb-6 text-center font-body text-sm text-text-secondary">
+        You can change this in Settings.
+      </p>
+
+      <div className="mb-6">
+        <select
+          id="country-select"
+          aria-labelledby="onboarding-country-heading"
+          value={country}
+          onChange={(event) => onCountryChange(event.target.value)}
+          className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
+        >
+          <option value="">Select a country</option>
+          <optgroup label="Common">
+            {COMMON_COUNTRY_ITEMS.map((item) => (
+              <option key={`common-${item.value}`} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="All countries">
+            {COUNTRY_ITEMS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+
+      {error && <StepError message={error} />}
+
+      <div className="flex gap-3">
+        <Button onClick={onBack} variant="outline" className="flex-1">
+          Back
+        </Button>
+        <Button onClick={onNext} className="flex-1" disabled={!country}>
           Next
         </Button>
       </div>

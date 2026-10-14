@@ -29,6 +29,8 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.defaultCurriculum': 'Default Curriculum',
   'settings.selectCurriculum': 'Select curriculum',
   'settings.enterCurriculum': 'Enter curriculum',
+  'settings.country': 'Country',
+  'settings.selectCountry': 'Select a country',
   'settings.save': 'Save Settings',
   'settings.saving': 'Saving...',
   'settings.saved': 'Settings saved!',
@@ -324,6 +326,37 @@ describe('SettingsClient — dirty save', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/settings saved/i);
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /save settings/i })).toBeDisabled();
+    });
+  });
+
+  it('marks Save dirty when the country changes', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const saveButton = screen.getByRole('button', { name: /save settings/i });
+    expect(saveButton).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+
+    expect(saveButton).toBeEnabled();
+  });
+
+  it('includes the uppercase country when saving teaching defaults', async () => {
+    const { user } = render(
+      <SettingsClient {...defaultProps} user={{ ...baseUser, country: 'gb' }} />,
+    );
+
+    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByRole('button', { name: /save settings/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          country: 'AE',
+          default_subject: null,
+          default_grade: null,
+          default_curriculum: null,
+        }),
+      );
     });
   });
 });

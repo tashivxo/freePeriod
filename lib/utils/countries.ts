@@ -269,6 +269,14 @@ export const COUNTRY_ITEMS: CountryItem[] = COUNTRIES.map((country) => ({
   name: country.name,
 })).sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
 
+const COUNTRY_CODES = new Set<string>(COUNTRY_ITEMS.map((country) => country.value));
+
+/** Uppercase ISO code, or null when empty or not in `COUNTRY_ITEMS`. */
+export function normalizeCountryCode(value: string | null | undefined): string | null {
+  const code = (value ?? '').trim().toUpperCase();
+  return COUNTRY_CODES.has(code) ? code : null;
+}
+
 const COUNTRY_NAME_BY_CODE = Object.fromEntries(
   COUNTRIES.map((country) => [country.code, country.name]),
 ) as Record<CountryCode, string>;

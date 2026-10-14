@@ -9,6 +9,7 @@ import {
   COMMON_COUNTRY_ITEMS,
   COUNTRY_ITEMS,
   MIDDLE_EAST_COUNTRY_CODES,
+  normalizeCountryCode,
 } from '@/lib/utils/countries';
 
 describe('COLOR_BENDS_ATMOSPHERE_STORAGE_KEY', () => {
@@ -160,6 +161,13 @@ describe('country lists', () => {
       expect(item.value).toMatch(/^[A-Z]{2}$/);
       expect(item.name.length).toBeGreaterThan(0);
     }
+  });
+
+  it('normalizes a country code before write', () => {
+    expect(normalizeCountryCode(' ae ')).toBe('AE');
+    expect(normalizeCountryCode('gb')).toBe('GB');
+    expect(normalizeCountryCode('')).toBeNull();
+    expect(normalizeCountryCode('ZZ')).toBeNull();
   });
 
   it('keeps the §10.3 common group in display order', () => {
