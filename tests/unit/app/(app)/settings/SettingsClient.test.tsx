@@ -363,7 +363,8 @@ describe('SettingsClient — background', () => {
     expect(brand).toBeDisabled();
     expect(rainbow).toBeDisabled();
     expect(group).toHaveAttribute('aria-describedby', lock.id);
-    expect(group).toHaveClass('opacity-40');
+    expect(group).not.toHaveClass('opacity-40');
+    expect(screen.getByTestId('atmosphere-tile-grid')).toHaveClass('opacity-40');
 
     await user.click(brand);
     expect(mockSetAtmosphere).not.toHaveBeenCalled();
