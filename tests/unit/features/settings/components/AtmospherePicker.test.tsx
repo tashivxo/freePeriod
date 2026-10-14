@@ -33,6 +33,24 @@ jest.mock('@/providers/locale', () => ({
 
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
 import { ProjectorIcon } from '@/components/ui/icons/projector';
+import { CORAL, CORAL_DARK } from '@/lib/utils/brand-colors';
+import { contrastRatio } from '@/tests/helpers/contrast';
+
+const LIGHT_MODE_CREAM = '#FFFBF7';
+
+/** Resolve the unprefixed (light-mode) solid UI colour from Tailwind classes. */
+function lightModeSolidHex(className: string): string {
+  const lightClasses = className
+    .split(/\s+/)
+    .filter((token) => token && !token.startsWith('dark:') && !token.includes('focus-visible'));
+  const joined = lightClasses.join(' ');
+  const arbitrary = joined.match(/(?:border|bg|ring)-\[#([0-9A-Fa-f]{6})\]/i);
+  if (arbitrary) return `#${arbitrary[1]!.toUpperCase()}`;
+  if (/(?:border|bg|ring)-coral-dark(?:\/|\b)/.test(joined)) return CORAL_DARK;
+  if (/(?:border|bg|ring)-coral-800(?:\/|\b)/.test(joined)) return '#CA5C81';
+  if (/(?:border|bg|ring)-coral(?:\/|\b)/.test(joined)) return CORAL;
+  throw new Error(`Could not resolve a light-mode solid colour from: ${className}`);
+}
 
 describe('AtmospherePicker', () => {
   beforeEach(() => {
@@ -113,5 +131,25 @@ describe('AtmospherePicker', () => {
     expect(lock).not.toHaveAttribute('aria-hidden');
     expect(group).toHaveAttribute('aria-describedby', lock.id);
     expect(screen.getAllByRole('radio').every((radio) => radio.hasAttribute('disabled'))).toBe(true);
+  });
+
+  it('keeps the selected light-mode radio ring and dot at 3:1 against cream', () => {
+    render(<AtmospherePicker />);
+
+    const selectedRadio = screen.getByRole('radio', { name: 'settings.backgroundRainbow' });
+    const tile = selectedRadio.closest('label');
+    const indicator = screen.getByTestId('atmosphere-indicator-rainbow');
+    const dot = indicator.querySelector('span');
+
+    expect(tile).not.toBeNull();
+    expect(dot).not.toBeNull();
+
+    const ringHex = lightModeSolidHex(tile!.className);
+    const indicatorHex = lightModeSolidHex(indicator.className);
+    const dotHex = lightModeSolidHex(dot!.className);
+
+    expect(contrastRatio(ringHex, LIGHT_MODE_CREAM)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(indicatorHex, LIGHT_MODE_CREAM)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(dotHex, LIGHT_MODE_CREAM)).toBeGreaterThanOrEqual(3);
   });
 });
