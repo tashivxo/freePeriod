@@ -111,11 +111,11 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-007 | Add `providers/color-bends-atmosphere.tsx`. Props: `initialCountry`, `initialCurriculum`. Reads override from localStorage in `useEffect` (REQ-016). Reads locale from `useLocale()`. Exposes `{ atmosphere, setAtmosphere, resolvedAtmosphere, setProfileSignals }`. `atmosphere` is the override (`null` = follow default). `resolvedAtmosphere` = TASK-003. Invalid stored values → null. | | |
-| TASK-008 | Convert `app/(app)/layout.tsx` to **async**. After session, `select('country, default_curriculum')` for the signed-in user (not generate/page.tsx). Pass those as `initialCountry` / `initialCurriculum`. Nulls if missing. | | |
-| TASK-009 | Mount `ColorBendsAtmosphereProvider` in `app/(app)/layout.tsx` around `ColorBendsBackground` **and** children. **Do not** wrap `app/layout.tsx`. Root keeps Locale / Theme / Zen only. | | |
-| TASK-010 | In `components/ui/backgrounds/ColorBendsWrapper.tsx`, when `resolvedAtmosphere === 'brand'` pass `colors={[...COLOR_BENDS_PALETTE]}`; when `'rainbow'` pass `colors={[]}` (or omit). Keep theme intensity and zen/reduced-motion early return. | | |
-| TASK-011 | Extend wrapper tests: brand passes palette, rainbow passes empty array, zen still renders nothing. Provider tests: invalid storage ignored; `setProfileSignals` changes resolved value when override is null and does not when override is set; locale `ar` from `useLocale` flips default. | | |
+| TASK-007 | Add `providers/color-bends-atmosphere.tsx`. Props: `initialCountry`, `initialCurriculum`. Reads override from localStorage in `useEffect` (REQ-016). Reads locale from `useLocale()`. Exposes `{ atmosphere, setAtmosphere, resolvedAtmosphere, setProfileSignals }`. `atmosphere` is the override (`null` = follow default). `resolvedAtmosphere` = TASK-003. Invalid stored values → null. | Yes | 2026-10-14 |
+| TASK-008 | Convert `app/(app)/layout.tsx` to **async**. After session, `select('country, default_curriculum')` for the signed-in user (not generate/page.tsx). Pass those as `initialCountry` / `initialCurriculum`. Nulls if missing. | Yes | 2026-10-14 |
+| TASK-009 | Mount `ColorBendsAtmosphereProvider` in `app/(app)/layout.tsx` around `ColorBendsBackground` **and** children. **Do not** wrap `app/layout.tsx`. Root keeps Locale / Theme / Zen only. | Yes | 2026-10-14 |
+| TASK-010 | In `components/ui/backgrounds/ColorBendsWrapper.tsx`, when `resolvedAtmosphere === 'brand'` pass `colors={[...COLOR_BENDS_PALETTE]}`; when `'rainbow'` pass `colors={[]}` (or omit). Keep theme intensity and zen/reduced-motion early return. | Yes | 2026-10-14 |
+| TASK-011 | Extend wrapper tests: brand passes palette, rainbow passes empty array, zen still renders nothing. Provider tests: invalid storage ignored; `setProfileSignals` changes resolved value when override is null and does not when override is set; locale `ar` from `useLocale` flips default. | Yes | 2026-10-14 |
 
 ### Implementation Phase 4
 

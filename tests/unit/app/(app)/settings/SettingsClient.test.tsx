@@ -9,9 +9,19 @@ import type { User } from '@/types';
 
 const mockSetZenMode = jest.fn();
 const mockSetLocale = jest.fn();
+const mockSetProfileSignals = jest.fn();
 
 jest.mock('@/providers/zen-mode', () => ({
   useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: mockSetZenMode })),
+}));
+
+jest.mock('@/providers/color-bends-atmosphere', () => ({
+  useColorBendsAtmosphere: jest.fn(() => ({
+    atmosphere: null,
+    setAtmosphere: jest.fn(),
+    resolvedAtmosphere: 'rainbow',
+    setProfileSignals: mockSetProfileSignals,
+  })),
 }));
 
 const SETTINGS_LABELS: Record<string, string> = {
@@ -358,6 +368,10 @@ describe('SettingsClient — dirty save', () => {
         }),
       );
     });
+    expect(mockSetProfileSignals).toHaveBeenCalledWith({
+      country: 'AE',
+      curriculum: null,
+    });
   });
 });
 
@@ -388,5 +402,6 @@ describe('SettingsClient — save feedback', () => {
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
+    expect(mockSetProfileSignals).not.toHaveBeenCalled();
   });
 });

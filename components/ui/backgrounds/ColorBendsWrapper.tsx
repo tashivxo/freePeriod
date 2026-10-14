@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { COLOR_BENDS_INTENSITY, COLOR_BENDS_PALETTE } from "@/lib/utils/brand-colors"
+import { useColorBendsAtmosphere } from "@/providers/color-bends-atmosphere"
 import { useTheme } from "@/providers/theme"
 import { useZenMode } from "@/providers/zen-mode"
 
@@ -19,6 +20,7 @@ function getPrefersReducedMotion(): boolean {
 export function ColorBendsBackground() {
   const { zenMode } = useZenMode()
   const { resolvedTheme } = useTheme()
+  const { resolvedAtmosphere } = useColorBendsAtmosphere()
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion)
   const intensity =
     resolvedTheme === "dark" ? COLOR_BENDS_INTENSITY.dark : COLOR_BENDS_INTENSITY.light
@@ -47,7 +49,7 @@ export function ColorBendsBackground() {
       <ColorBends
         className=""
         style={{}}
-        colors={[...COLOR_BENDS_PALETTE]}
+        colors={resolvedAtmosphere === "brand" ? [...COLOR_BENDS_PALETTE] : []}
         intensity={intensity}
       />
     </div>

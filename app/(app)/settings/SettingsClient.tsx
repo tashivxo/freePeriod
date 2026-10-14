@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 import { useLocale, useT } from '@/providers/locale';
+import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
@@ -91,6 +92,7 @@ export function SettingsClient({
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
   const t = useT();
+  const { setProfileSignals } = useColorBendsAtmosphere();
 
   const isDirty =
     subjectField.value !== savedDefaults.subject ||
@@ -160,7 +162,10 @@ export function SettingsClient({
       if (error) throw error;
       setSavedDefaults(nextDefaults);
       setCountrySelect(nextCountry);
-      // Phase 3 TASK-007: setProfileSignals({ country, curriculum })
+      setProfileSignals({
+        country: nextDefaults.country || null,
+        curriculum: nextDefaults.curriculum || null,
+      });
       setSaveStatus({ tone: 'success', message: t('settings.saved') });
     } catch (err) {
       console.error(err);

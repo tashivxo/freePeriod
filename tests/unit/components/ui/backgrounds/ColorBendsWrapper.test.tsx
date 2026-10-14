@@ -1,8 +1,10 @@
 import { render, screen } from '@/tests/helpers';
 import { useTheme } from '@/providers/theme';
 import { useZenMode } from '@/providers/zen-mode';
+import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { ColorBendsBackground } from '@/components/ui/backgrounds/ColorBendsWrapper';
 import { COLOR_BENDS_INTENSITY, COLOR_BENDS_PALETTE } from '@/lib/utils/brand-colors';
+import type { ColorBendsAtmosphere } from '@/lib/utils/brand-colors';
 
 jest.mock('next/dynamic', () => {
   const React = require('react') as typeof import('react');
@@ -24,8 +26,15 @@ jest.mock('@/providers/theme', () => ({
   useTheme: jest.fn(),
 }));
 
+jest.mock('@/providers/color-bends-atmosphere', () => ({
+  useColorBendsAtmosphere: jest.fn(),
+}));
+
 const mockUseZenMode = useZenMode as jest.MockedFunction<typeof useZenMode>;
 const mockUseTheme = useTheme as jest.MockedFunction<typeof useTheme>;
+const mockUseColorBendsAtmosphere = useColorBendsAtmosphere as jest.MockedFunction<
+  typeof useColorBendsAtmosphere
+>;
 
 function setTheme(resolvedTheme: 'light' | 'dark') {
   mockUseTheme.mockReturnValue({
@@ -35,11 +44,21 @@ function setTheme(resolvedTheme: 'light' | 'dark') {
   });
 }
 
+function setResolvedAtmosphere(resolvedAtmosphere: ColorBendsAtmosphere) {
+  mockUseColorBendsAtmosphere.mockReturnValue({
+    atmosphere: resolvedAtmosphere,
+    setAtmosphere: jest.fn(),
+    resolvedAtmosphere,
+    setProfileSignals: jest.fn(),
+  });
+}
+
 describe('ColorBendsBackground', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseZenMode.mockReturnValue({ zenMode: false, setZenMode: jest.fn() });
     setTheme('light');
+    setResolvedAtmosphere('brand');
   });
 
   it('renders ColorBends when zenMode is false', () => {
@@ -65,6 +84,28 @@ describe('ColorBendsBackground', () => {
 
     expect(colors.length).toBeGreaterThan(0);
     expect(colors).toEqual([...COLOR_BENDS_PALETTE]);
+  });
+
+  it('passes COLOR_BENDS_PALETTE when resolved atmosphere is brand', () => {
+    setResolvedAtmosphere('brand');
+    render(<ColorBendsBackground />);
+
+    const colors = JSON.parse(
+      screen.getByTestId('color-bends').getAttribute('data-colors') ?? '[]',
+    ) as string[];
+
+    expect(colors).toEqual([...COLOR_BENDS_PALETTE]);
+  });
+
+  it('passes an empty colors array when resolved atmosphere is rainbow', () => {
+    setResolvedAtmosphere('rainbow');
+    render(<ColorBendsBackground />);
+
+    const colors = JSON.parse(
+      screen.getByTestId('color-bends').getAttribute('data-colors') ?? '[]',
+    ) as string[];
+
+    expect(colors).toEqual([]);
   });
 
   it('passes theme-aware intensity in light mode', () => {
