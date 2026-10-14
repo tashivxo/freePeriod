@@ -19,7 +19,7 @@ tags:
 
 Living implementation plan. Kickoff: 2026-10-14 on `background_color_implementation`. Amend open decisions in place; bump `last_updated` and `version` on each amendment.
 
-**v1.3** folds the GPT 5.6 Terra review (2026-10-13): authenticated-shell provider only, cookie locale as the Arabic signal, zen-style hydration, `schema.sql` + migration dual-write, four-step onboarding test checklist, native radio tiles, and exact RGB-split invariants. See **§11 Architecture**.
+**v1.3** folds the GPT 5.6 Luna review (2026-10-13): authenticated-shell provider only, cookie locale as the Arabic signal, zen-style hydration, `schema.sql` + migration dual-write, four-step onboarding test checklist, native radio tiles, and exact RGB-split invariants. See **§11 Architecture**.
 
 Authenticated app surfaces (dashboard, generate, history, settings, lesson) use ColorBends. Two atmospheres:
 
@@ -102,8 +102,8 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-005 | In `components/ui/backgrounds/ColorBends.jsx`, replace the empty-colors else-branch (currently L78–80 transparent black) with the `b586e1f^` RGB-split loop (`col[k]` / `uBandWidth` / alpha from max of the three bands). Keep `uColorCount > 0` on Arham’s weighted-average mix and the post-loop `vec4(col * a, …)` (L91–93). | | |
-| TASK-006 | Update `tests/unit/components/ui/backgrounds/ColorBends.empty-colors.test.ts`: empty-colors branch contains `col[k]`, mentions `uBandWidth`, does **not** contain `col = vec3(0.0)` / `a = 0.0`. Named-colors branch still has `sumCol / max(sumW`. TASK-016 includes a visual rainbow vs brand check. | | |
+| TASK-005 | In `components/ui/backgrounds/ColorBends.jsx`, replace the empty-colors else-branch (currently L78–80 transparent black) with the `b586e1f^` RGB-split loop (`col[k]` / `uBandWidth` / alpha from max of the three bands). Keep `uColorCount > 0` on Arham’s weighted-average mix and the post-loop `vec4(col * a, …)` (L91–93). | Yes | 2026-10-14 |
+| TASK-006 | Update `tests/unit/components/ui/backgrounds/ColorBends.empty-colors.test.ts`: empty-colors branch contains `col[k]`, mentions `uBandWidth`, does **not** contain `col = vec3(0.0)` / `a = 0.0`. Named-colors branch still has `sumCol / max(sumW`. TASK-016 includes a visual rainbow vs brand check. | Yes | 2026-10-14 |
 
 ### Implementation Phase 3
 
@@ -209,7 +209,7 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 ## 8. Related Specifications / Further Reading
 
 - Git history: `b586e1f` palette C + fail-closed empty colors; `c03a675` `colors: string[]`; `c427e48` / [PR #32](https://github.com/tashivxo/freePeriod/pull/32) weighted-average mix; empty-colors restore source `b586e1f^`
-- GPT 5.6 Terra plan review, 2026-10-13 (folded in v1.3)
+- GPT 5.6 Luna plan review, 2026-10-13 (folded in v1.3)
 - `components/ui/backgrounds/ColorBends.jsx` fragment shader (`uColorCount` branch vs else)
 - `components/ui/backgrounds/ColorBendsWrapper.tsx`
 - `lib/utils/brand-colors.ts` (`COLOR_BENDS_PALETTES`, `COLOR_BENDS_INTENSITY`)
@@ -467,7 +467,7 @@ After a successful save, call `setProfileSignals({ country, curriculum })` with 
 
 ## 11. Architecture (authenticated shell)
 
-Terra blocker: TASK-008 vs TASK-009 used to contradict. This is the only allowed shape.
+Luna blocker: TASK-008 vs TASK-009 used to contradict. This is the only allowed shape.
 
 ```
 app/layout.tsx (root, public + auth + app)

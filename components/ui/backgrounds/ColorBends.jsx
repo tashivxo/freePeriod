@@ -76,8 +76,21 @@ void main() {
     col = sumCol / max(sumW, 0.0001);
     a = cover;
   } else {
-    col = vec3(0.0);
-    a = 0.0;
+    vec2 s = q;
+    for (int k = 0; k < 3; ++k) {
+      s -= 0.01;
+      vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
+      float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+      float kBelow = clamp(uWarpStrength, 0.0, 1.0);
+      float kMix = pow(kBelow, 0.3);
+      float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
+      vec2 disp = (r - s) * kBelow;
+      vec2 warped = s + disp * gain;
+      float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+      float m = mix(m0, m1, kMix);
+      col[k] = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
+    }
+    a = uTransparent > 0 ? max(max(col.r, col.g), col.b) : 1.0;
   }
 
   col *= uIntensity;
