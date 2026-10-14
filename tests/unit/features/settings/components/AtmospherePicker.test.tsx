@@ -149,7 +149,6 @@ describe('AtmospherePicker', () => {
     expect(group).toHaveAttribute('aria-describedby', lock.id);
     expect(screen.getAllByRole('radio').every((radio) => radio.hasAttribute('disabled'))).toBe(true);
   });
-
   it('keeps the selected light-mode radio ring and dot at 3:1 against cream', () => {
     render(<AtmospherePicker />);
 
