@@ -158,7 +158,7 @@ describe('OnboardingPage', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: /what grade level/i }),
+        screen.getByRole('heading', { name: /what grade do you teach/i }),
       ).toBeInTheDocument();
     });
   });
@@ -196,7 +196,7 @@ describe('OnboardingPage', () => {
     const select = await screen.findByRole('combobox', { name: /where do you teach/i });
     expect(select.tagName).toBe('SELECT');
     expect(screen.getByText(/you can change this in settings/i)).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Select a country' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Select your country' })).toBeInTheDocument();
 
     const groups = select.querySelectorAll('optgroup');
     expect(groups).toHaveLength(2);

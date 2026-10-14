@@ -373,7 +373,7 @@ function StepGrade({
   return (
     <div>
       <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
-        What grade level?
+        What grade do you teach?
       </h1>
 
       <div className="mb-6">
@@ -436,7 +436,7 @@ function StepCountry({
           onChange={(event) => onCountryChange(event.target.value)}
           className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
         >
-          <option value="">Select a country</option>
+          <option value="">Select your country</option>
           <optgroup label="Common">
             {COMMON_COUNTRY_ITEMS.map((item) => (
               <option key={`common-${item.value}`} value={item.value}>

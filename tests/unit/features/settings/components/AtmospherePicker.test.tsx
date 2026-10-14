@@ -84,6 +84,23 @@ describe('AtmospherePicker', () => {
     });
   });
 
+  it('keeps the Background icon and title inside the fieldset padding', () => {
+    render(<AtmospherePicker />);
+
+    const group = screen.getByRole('group', { name: 'settings.background' });
+    const legend = group.querySelector('legend');
+    const header = screen.getByTestId('atmosphere-header');
+    const description = screen.getByText('settings.backgroundDescription');
+
+    expect(legend).toHaveClass('sr-only');
+    expect(legend).toHaveTextContent('settings.background');
+    expect(header.tagName).not.toBe('LEGEND');
+    expect(group).toContainElement(header);
+    expect(header).toContainElement(screen.getByTestId('atmosphere-header-icon'));
+    expect(header).toHaveTextContent('settings.background');
+    expect(header).toContainElement(description);
+  });
+
   it('sets the chosen atmosphere when a tile is clicked', async () => {
     const { user } = render(<AtmospherePicker />);
 

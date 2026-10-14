@@ -47,16 +47,21 @@ export function AtmospherePicker() {
       aria-describedby={zenMode ? ZEN_LOCK_ID : undefined}
       className="t-resize mb-6 min-w-0 rounded-xl border border-border bg-background p-4"
     >
-      <legend
-        id={HEADING_ID}
-        className="flex w-full items-center gap-3 p-0 text-sm font-body font-medium text-text-primary"
-      >
+      <legend className="sr-only">{t('settings.background')}</legend>
+      <div data-testid="atmosphere-header" className="flex items-start gap-3">
         <MotionSafeIcon icon={ProjectorIcon} size={20} className="mt-0.5 text-text-secondary" />
-        <span>{t('settings.background')}</span>
-      </legend>
-      <p className="ms-8 mt-1 text-sm font-body text-text-secondary">
-        {t('settings.backgroundDescription')}
-      </p>
+        <div className="min-w-0">
+          <p
+            id={HEADING_ID}
+            className="text-sm font-body font-medium text-text-primary"
+          >
+            {t('settings.background')}
+          </p>
+          <p className="mt-1 text-sm font-body text-text-secondary">
+            {t('settings.backgroundDescription')}
+          </p>
+        </div>
+      </div>
 
       <div
         data-testid="atmosphere-tile-grid"
