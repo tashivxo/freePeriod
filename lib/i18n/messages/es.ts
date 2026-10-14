@@ -28,7 +28,7 @@ export const es: Messages = {
     selectCurriculum: 'Seleccionar currículo',
     enterCurriculum: 'Introducir currículo',
     country: 'País',
-    selectCountry: 'Seleccionar país',
+    selectCountry: 'Selecciona tu país',
     save: 'Guardar ajustes',
     saving: 'Guardando...',
     saved: '¡Ajustes guardados!',

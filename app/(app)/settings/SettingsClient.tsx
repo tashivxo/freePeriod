@@ -8,6 +8,7 @@ import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import {
+  COMMON_COUNTRY_CODES,
   COMMON_COUNTRY_ITEMS,
   COUNTRY_ITEMS,
   normalizeCountryCode,
@@ -39,6 +40,12 @@ const LOCALE_ITEMS = LOCALES.map((code) => ({
   name: LOCALE_LABELS[code],
   value: code,
 }));
+
+const COMMON_COUNTRY_CODE_SET = new Set<string>(COMMON_COUNTRY_CODES);
+const SETTINGS_COUNTRY_ITEMS = [
+  ...COMMON_COUNTRY_ITEMS,
+  ...COUNTRY_ITEMS.filter((item) => !COMMON_COUNTRY_CODE_SET.has(item.value)),
+];
 
 type SaveStatus = {
   tone: 'success' | 'error';
@@ -306,38 +313,6 @@ export function SettingsClient({
             />
           </div>
 
-          {/* Country — teaching default, saved with Save Settings */}
-          <div>
-            <label
-              htmlFor="default-country"
-              className="mb-2 block text-sm font-body font-medium text-text-secondary"
-            >
-              {t('settings.country')}
-            </label>
-            <select
-              id="default-country"
-              value={countrySelect}
-              onChange={(event) => setCountrySelect(event.target.value)}
-              className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-            >
-              <option value="">{t('settings.selectCountry')}</option>
-              <optgroup label="Common">
-                {COMMON_COUNTRY_ITEMS.map((item) => (
-                  <option key={`common-${item.value}`} value={item.value}>
-                    {item.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="All countries">
-                {COUNTRY_ITEMS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.name}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </div>
-
           {/* Default Curriculum */}
           <div>
             <label htmlFor="default-curriculum" className="mb-2 block text-sm font-body font-medium text-text-secondary">
@@ -359,6 +334,24 @@ export function SettingsClient({
                 />
               </div>
             )}
+          </div>
+
+          {/* Country — teaching default, saved with Save Settings */}
+          <div>
+            <label
+              htmlFor="default-country"
+              className="mb-2 block text-sm font-body font-medium text-text-secondary"
+            >
+              {t('settings.country')}
+            </label>
+            <AnimatedDropdown
+              id="default-country"
+              text={t('settings.selectCountry')}
+              items={SETTINGS_COUNTRY_ITEMS}
+              selectedValue={countrySelect}
+              triggerAriaLabel={t('settings.country')}
+              onSelect={(item) => setCountrySelect(item.value ?? item.name)}
+            />
           </div>
 
           {/* Save Button */}

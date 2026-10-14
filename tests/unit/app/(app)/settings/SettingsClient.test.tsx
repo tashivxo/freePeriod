@@ -48,7 +48,7 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.selectCurriculum': 'Select curriculum',
   'settings.enterCurriculum': 'Enter curriculum',
   'settings.country': 'Country',
-  'settings.selectCountry': 'Select a country',
+  'settings.selectCountry': 'Select your country',
   'settings.save': 'Save Settings',
   'settings.saving': 'Saving...',
   'settings.saved': 'Settings saved!',
@@ -468,13 +468,31 @@ describe('SettingsClient — dirty save', () => {
     });
   });
 
+  it('places Country after Default Curriculum and uses an animated dropdown', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const grade = screen.getByLabelText(/default grade/i);
+    const curriculum = screen.getByLabelText(/default curriculum/i);
+    const country = screen.getByLabelText(/^country$/i);
+
+    expect(country).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(country.compareDocumentPosition(curriculum) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(curriculum.compareDocumentPosition(grade) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(country).toHaveTextContent(/select your country/i);
+
+    await user.click(country);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'United Arab Emirates' })).toBeInTheDocument();
+  });
+
   it('marks Save dirty when the country changes', async () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
 
     const saveButton = screen.getByRole('button', { name: /save settings/i });
     expect(saveButton).toBeDisabled();
 
-    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getByRole('option', { name: 'United Arab Emirates' }));
 
     expect(saveButton).toBeEnabled();
   });
@@ -484,7 +502,8 @@ describe('SettingsClient — dirty save', () => {
       <SettingsClient {...defaultProps} user={{ ...baseUser, country: 'gb' }} />,
     );
 
-    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getByRole('option', { name: 'United Arab Emirates' }));
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
     await waitFor(() => {

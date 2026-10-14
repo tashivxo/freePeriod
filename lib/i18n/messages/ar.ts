@@ -28,7 +28,7 @@ export const ar: Messages = {
     selectCurriculum: 'اختر المنهج',
     enterCurriculum: 'أدخل المنهج',
     country: 'البلد',
-    selectCountry: 'اختر البلد',
+    selectCountry: 'اختر بلدك',
     save: 'حفظ الإعدادات',
     saving: 'جارٍ الحفظ...',
     saved: 'تم حفظ الإعدادات!',

@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
-import { SparklesIcon } from '@/components/ui/icons/sparkles';
+import { ProjectorIcon } from '@/components/ui/icons/projector';
 import {
   COLOR_BENDS_GOLD,
   COLOR_BENDS_PEACH,
@@ -45,7 +45,7 @@ export function AtmospherePicker() {
   return (
     <div className="mb-6 rounded-xl border border-border bg-background p-4">
       <div className="flex items-start gap-3">
-        <MotionSafeIcon icon={SparklesIcon} size={20} className="mt-0.5 text-text-secondary" />
+        <MotionSafeIcon icon={ProjectorIcon} size={20} className="mt-0.5 text-text-secondary" />
         <div className="min-w-0">
           <p
             id={HEADING_ID}
