@@ -82,6 +82,7 @@ const baseUser: User = {
   default_subject: null,
   default_grade: null,
   default_curriculum: null,
+  country: null,
   plan: 'free',
   is_admin: false,
   generation_count: 5,

@@ -94,6 +94,9 @@ export const COLOR_BENDS_PALETTES = {
 export const COLOR_BENDS_DEFAULT_OPTION = 'C' satisfies keyof typeof COLOR_BENDS_PALETTES;
 export const COLOR_BENDS_PALETTE = COLOR_BENDS_PALETTES[COLOR_BENDS_DEFAULT_OPTION];
 
+export type ColorBendsAtmosphere = 'brand' | 'rainbow';
+export const COLOR_BENDS_ATMOSPHERE_STORAGE_KEY = 'fp-color-bends-atmosphere';
+
 // The shader multiplies band color by intensity (toward black), so light mode
 // stays at 1 to avoid greying the stops; dark mode dims them into glows.
 export const COLOR_BENDS_INTENSITY = {

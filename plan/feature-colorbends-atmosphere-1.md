@@ -2,9 +2,9 @@
 goal: Regional ColorBends atmosphere defaults with a Settings override
 version: 1.3
 date_created: 2026-10-13
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 owner: Tashiv / Arham
-status: 'Planned'
+status: 'In Progress'
 tags:
   - feature
   - colorbends
@@ -15,9 +15,9 @@ tags:
 
 # Introduction
 
-![Status: Planned](https://img.shields.io/badge/status-Planned-blue)
+![Status: In Progress](https://img.shields.io/badge/status-In_Progress-yellow)
 
-Living implementation plan. **Do not start coding until this file’s status is changed from Planned and a kickoff is explicit.** Amend open decisions in place; bump `last_updated` and `version` on each amendment.
+Living implementation plan. Kickoff: 2026-10-14 on `background_color_implementation`. Amend open decisions in place; bump `last_updated` and `version` on each amendment.
 
 **v1.3** folds the GPT 5.6 Terra review (2026-10-13): authenticated-shell provider only, cookie locale as the Arabic signal, zen-style hydration, `schema.sql` + migration dual-write, four-step onboarding test checklist, native radio tiles, and exact RGB-split invariants. See **§11 Architecture**.
 
@@ -78,12 +78,12 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-001 | Add `export type ColorBendsAtmosphere = 'brand' \| 'rainbow'` and `COLOR_BENDS_ATMOSPHERE_STORAGE_KEY = 'fp-color-bends-atmosphere'` next to the palettes in `lib/utils/brand-colors.ts`. | | |
-| TASK-002 | Add `isMiddleEastAtmosphereDefault({ country, curriculum, locale })` in `lib/utils/color-bends-atmosphere.ts` (keep palettes in `brand-colors.ts`). True if uppercase country ∈ `MIDDLE_EAST_COUNTRY_CODES` **or** curriculum ∈ `MIDDLE_EAST_CURRICULA` **or** locale is `'ar'`. Lists in §10.1. | | |
-| TASK-003 | Add `resolveColorBendsAtmosphere({ override, country, curriculum, locale })`. If `override` is `brand` or `rainbow`, return it. Else return `brand` when TASK-002 is true, otherwise `rainbow`. | | |
-| TASK-004 | Unit-test TASK-002/003: each signal alone → brand (AE + GCSE + en; null + UAE MOE + en; GB + GCSE + ar); all false → rainbow; override always wins; nulls → rainbow; lowercase `ae` still matches. | | |
-| TASK-018 | Add `lib/utils/countries.ts`: ISO 3166-1 alpha-2 list with English names, `COUNTRY_ITEMS` for the picker (`value` = code, `name` = English), a **common** group list from §10.3, plus `MIDDLE_EAST_COUNTRY_CODES` from §10.1. No npm geo package. | | |
-| TASK-019 | Dual-write country: add `country text` to `lib/supabase/schema.sql` on `public.users`, **and** `supabase/migrations/009_users_country.sql` (`add column if not exists`, check `country is null or country ~ '^[A-Z]{2}$'`). `User.country: string \| null` in `types/database.ts`. App uppercases before write. Existing rows stay null. | | |
+| TASK-001 | Add `export type ColorBendsAtmosphere = 'brand' \| 'rainbow'` and `COLOR_BENDS_ATMOSPHERE_STORAGE_KEY = 'fp-color-bends-atmosphere'` next to the palettes in `lib/utils/brand-colors.ts`. | Yes | 2026-10-14 |
+| TASK-002 | Add `isMiddleEastAtmosphereDefault({ country, curriculum, locale })` in `lib/utils/color-bends-atmosphere.ts` (keep palettes in `brand-colors.ts`). True if uppercase country ∈ `MIDDLE_EAST_COUNTRY_CODES` **or** curriculum ∈ `MIDDLE_EAST_CURRICULA` **or** locale is `'ar'`. Lists in §10.1. | Yes | 2026-10-14 |
+| TASK-003 | Add `resolveColorBendsAtmosphere({ override, country, curriculum, locale })`. If `override` is `brand` or `rainbow`, return it. Else return `brand` when TASK-002 is true, otherwise `rainbow`. | Yes | 2026-10-14 |
+| TASK-004 | Unit-test TASK-002/003: each signal alone → brand (AE + GCSE + en; null + UAE MOE + en; GB + GCSE + ar); all false → rainbow; override always wins; nulls → rainbow; lowercase `ae` still matches. | Yes | 2026-10-14 |
+| TASK-018 | Add `lib/utils/countries.ts`: ISO 3166-1 alpha-2 list with English names, `COUNTRY_ITEMS` for the picker (`value` = code, `name` = English), a **common** group list from §10.3, plus `MIDDLE_EAST_COUNTRY_CODES` from §10.1. No npm geo package. | Yes | 2026-10-14 |
+| TASK-019 | Dual-write country: add `country text` to `lib/supabase/schema.sql` on `public.users`, **and** `supabase/migrations/009_users_country.sql` (`add column if not exists`, check `country is null or country ~ '^[A-Z]{2}$'`). `User.country: string \| null` in `types/database.ts`. App uppercases before write. Existing rows stay null. | Yes | 2026-10-14 |
 
 ### Implementation Phase 1b
 

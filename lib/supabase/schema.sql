@@ -14,6 +14,7 @@ create table public.users (
   default_subject text,
   default_grade text,
   default_curriculum text,
+  country text constraint users_country_check check (country is null or country ~ '^[A-Z]{2}$'),
   plan text not null default 'free',
   is_admin boolean not null default false,
   generation_count int not null default 0,
