@@ -96,6 +96,71 @@ describe('landing.featureExportAnywhereDesc', () => {
   });
 });
 
+const BACKGROUND_COPY: Record<
+  Locale,
+  {
+    background: string;
+    backgroundDescription: string;
+    backgroundBrand: string;
+    backgroundRainbow: string;
+    backgroundZenLocked: string;
+  }
+> = {
+  en: {
+    background: 'Background',
+    backgroundDescription: 'Colour of the moving bands behind the app.',
+    backgroundBrand: 'FreePeriod colours',
+    backgroundRainbow: 'Multicolour',
+    backgroundZenLocked: 'Turn Zen Mode off to change this.',
+  },
+  ar: {
+    background: 'الخلفية',
+    backgroundDescription: 'لون الأشرطة المتحركة خلف التطبيق.',
+    backgroundBrand: 'ألوان FreePeriod',
+    backgroundRainbow: 'متعدد الألوان',
+    backgroundZenLocked: 'أوقف وضع الهدوء لتغيير هذا.',
+  },
+  es: {
+    background: 'Fondo',
+    backgroundDescription: 'Color de las bandas en movimiento detrás de la aplicación.',
+    backgroundBrand: 'Colores FreePeriod',
+    backgroundRainbow: 'Multicolor',
+    backgroundZenLocked: 'Desactiva el Modo Zen para cambiar esto.',
+  },
+  fr: {
+    background: 'Arrière-plan',
+    backgroundDescription: 'Couleur des bandes en mouvement derrière l’application.',
+    backgroundBrand: 'Couleurs FreePeriod',
+    backgroundRainbow: 'Multicolore',
+    backgroundZenLocked: 'Désactivez le Mode Zen pour modifier ceci.',
+  },
+  'zh-Hans': {
+    background: '背景',
+    backgroundDescription: '应用背后流动色带的颜色。',
+    backgroundBrand: 'FreePeriod 色彩',
+    backgroundRainbow: '多色',
+    backgroundZenLocked: '关闭禅模式后即可更改。',
+  },
+};
+
+describe('settings background copy', () => {
+  it.each(LOCALES)('ships Background tile copy for %s', (locale) => {
+    const settings = getMessages(locale).settings;
+    const expected = BACKGROUND_COPY[locale];
+
+    expect(settings.background).toBe(expected.background);
+    expect(settings.backgroundDescription).toBe(expected.backgroundDescription);
+    expect(settings.backgroundBrand).toBe(expected.backgroundBrand);
+    expect(settings.backgroundRainbow).toBe(expected.backgroundRainbow);
+    expect(settings.backgroundZenLocked).toBe(expected.backgroundZenLocked);
+    expect(settings.backgroundBrand).toContain('FreePeriod');
+
+    for (const value of Object.values(expected)) {
+      expect(value).not.toContain('\u2014');
+    }
+  });
+});
+
 describe('lesson edit copy', () => {
   it.each(LOCALES)('ships Edited, saved toast, and edit-action copy for %s', (locale) => {
     const lesson = getMessages(locale).lesson;

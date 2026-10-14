@@ -123,10 +123,10 @@ Current branch this plan assumes: `colorBends_rework_branch` (palette C + Arham 
 
 | Task | Description | Completed | Date |
 |------|-------------|-----------|------|
-| TASK-012 | Add the Background card in `SettingsClient.tsx` between zen and language per §9. Two tiles wrapping native `<input type="radio" name="fp-atmosphere">`. Instant `setAtmosphere`. When zen is on, radios are `disabled` and the zen-locked sentence is `aria-describedby`. No reset-to-auto control. | | |
-| TASK-013 | Add i18n keys from §9.4 to `en.ts`, `ar.ts`, `es.ts`, `fr.ts`, `zh-Hans.ts`. | | |
-| TASK-014 | Extend `SettingsClient.test.tsx`: click FreePeriod colours → `setAtmosphere('brand')`; click Multicolour → `setAtmosphere('rainbow')`; zen on → radios `disabled`; keyboard arrows / Space apply; group accessible name is Background. | | |
-| TASK-015 | Confirm all five locale message objects still satisfy `Messages`. | | |
+| TASK-012 | Add the Background card in `SettingsClient.tsx` between zen and language per §9. Two tiles wrapping native `<input type="radio" name="fp-atmosphere">`. Instant `setAtmosphere`. When zen is on, radios are `disabled` and the zen-locked sentence is `aria-describedby`. No reset-to-auto control. | Yes | 2026-10-14 |
+| TASK-013 | Add i18n keys from §9.4 to `en.ts`, `ar.ts`, `es.ts`, `fr.ts`, `zh-Hans.ts`. | Yes | 2026-10-14 |
+| TASK-014 | Extend `SettingsClient.test.tsx`: click FreePeriod colours → `setAtmosphere('brand')`; click Multicolour → `setAtmosphere('rainbow')`; zen on → radios `disabled`; keyboard arrows / Space apply; group accessible name is Background. | Yes | 2026-10-14 |
+| TASK-015 | Confirm all five locale message objects still satisfy `Messages`. | Yes | 2026-10-14 |
 
 ### Implementation Phase 5
 

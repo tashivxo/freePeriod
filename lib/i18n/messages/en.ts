@@ -10,6 +10,11 @@ export const en = {
     title: 'Settings',
     zenMode: 'Zen Mode',
     zenModeDescription: 'Are our colorful backgrounds too much for you? Try Zen Mode.',
+    background: 'Background',
+    backgroundDescription: 'Colour of the moving bands behind the app.',
+    backgroundBrand: 'FreePeriod colours',
+    backgroundRainbow: 'Multicolour',
+    backgroundZenLocked: 'Turn Zen Mode off to change this.',
     language: 'Language',
     languageDescription: 'Website and new lesson plans use this language.',
     defaultSubject: 'Default Subject',
@@ -165,6 +170,11 @@ export type Messages = {
     title: string;
     zenMode: string;
     zenModeDescription: string;
+    background: string;
+    backgroundDescription: string;
+    backgroundBrand: string;
+    backgroundRainbow: string;
+    backgroundZenLocked: string;
     language: string;
     languageDescription: string;
     defaultSubject: string;

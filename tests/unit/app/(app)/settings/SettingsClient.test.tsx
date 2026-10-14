@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
+import { COLOR_BENDS_GOLD, COLOR_BENDS_PEACH, COLOR_BENDS_ROSE } from '@/lib/utils/brand-colors';
+import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { useZenMode } from '@/providers/zen-mode';
 import { useLocale } from '@/providers/locale';
 import type { User } from '@/types';
@@ -10,6 +12,7 @@ import type { User } from '@/types';
 const mockSetZenMode = jest.fn();
 const mockSetLocale = jest.fn();
 const mockSetProfileSignals = jest.fn();
+const mockSetAtmosphere = jest.fn();
 
 jest.mock('@/providers/zen-mode', () => ({
   useZenMode: jest.fn(() => ({ zenMode: false, setZenMode: mockSetZenMode })),
@@ -18,7 +21,7 @@ jest.mock('@/providers/zen-mode', () => ({
 jest.mock('@/providers/color-bends-atmosphere', () => ({
   useColorBendsAtmosphere: jest.fn(() => ({
     atmosphere: null,
-    setAtmosphere: jest.fn(),
+    setAtmosphere: mockSetAtmosphere,
     resolvedAtmosphere: 'rainbow',
     setProfileSignals: mockSetProfileSignals,
   })),
@@ -29,6 +32,11 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.zenMode': 'Zen Mode',
   'settings.zenModeDescription':
     'Are our colorful backgrounds too much for you? Try Zen Mode.',
+  'settings.background': 'Background',
+  'settings.backgroundDescription': 'Colour of the moving bands behind the app.',
+  'settings.backgroundBrand': 'FreePeriod colours',
+  'settings.backgroundRainbow': 'Multicolour',
+  'settings.backgroundZenLocked': 'Turn Zen Mode off to change this.',
   'settings.language': 'Language',
   'settings.languageDescription': 'Website and new lesson plans use this language.',
   'settings.defaultSubject': 'Default Subject',
@@ -258,6 +266,127 @@ describe('SettingsClient — zen mode', () => {
     await user.click(screen.getByRole('switch', { name: /zen mode/i }));
 
     expect(mockSetZenMode).toHaveBeenCalledWith(true);
+  });
+});
+
+function atmosphereContext(resolvedAtmosphere: 'brand' | 'rainbow') {
+  return {
+    atmosphere: resolvedAtmosphere,
+    setAtmosphere: mockSetAtmosphere,
+    resolvedAtmosphere,
+    setProfileSignals: mockSetProfileSignals,
+  };
+}
+
+describe('SettingsClient — background', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useZenMode as jest.Mock).mockReturnValue({ zenMode: false, setZenMode: mockSetZenMode });
+    (useColorBendsAtmosphere as jest.Mock).mockReturnValue(atmosphereContext('rainbow'));
+  });
+
+  it('names the radiogroup Background and places it between zen and language', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const group = screen.getByRole('radiogroup', { name: 'Background' });
+    const zen = screen.getByRole('switch', { name: /zen mode/i });
+    const language = screen.getByText('Language');
+
+    expect(
+      zen.compareDocumentPosition(group) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      group.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByRole('radio', { name: /freeperiod colours/i })).toHaveAttribute(
+      'name',
+      'fp-atmosphere',
+    );
+    expect(screen.getByRole('radio', { name: /^multicolour$/i })).toHaveAttribute(
+      'value',
+      'rainbow',
+    );
+    expect(screen.queryByRole('button', { name: /regional default|reset/i })).not.toBeInTheDocument();
+  });
+
+  it('paints FreePeriod colours from the brand atmosphere stops', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const swatch = screen.getByTestId('atmosphere-swatch-brand');
+    const style = swatch.getAttribute('style') ?? '';
+
+    expect(style).toContain(COLOR_BENDS_ROSE);
+    expect(style).toContain(COLOR_BENDS_PEACH);
+    expect(style).toContain(COLOR_BENDS_GOLD);
+    expect(style).toContain('135deg');
+  });
+
+  it('paints Multicolour as overlapping RGB washes', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const style = screen.getByTestId('atmosphere-swatch-rainbow').getAttribute('style') ?? '';
+
+    expect(style).toMatch(/linear-gradient\(\s*20deg/i);
+    expect(style).toMatch(/linear-gradient\(\s*0deg/i);
+    expect(style).toMatch(/linear-gradient\(\s*-20deg/i);
+    expect(style).not.toMatch(/to bottom/i);
+  });
+
+  it('calls setAtmosphere(brand) when FreePeriod colours is chosen', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByRole('radio', { name: /freeperiod colours/i }));
+
+    expect(mockSetAtmosphere).toHaveBeenCalledWith('brand');
+  });
+
+  it('calls setAtmosphere(rainbow) when Multicolour is chosen', async () => {
+    (useColorBendsAtmosphere as jest.Mock).mockReturnValue(atmosphereContext('brand'));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByRole('radio', { name: /^multicolour$/i }));
+
+    expect(mockSetAtmosphere).toHaveBeenCalledWith('rainbow');
+  });
+
+  it('disables both radios and points aria-describedby at the zen lock', async () => {
+    (useZenMode as jest.Mock).mockReturnValue({ zenMode: true, setZenMode: mockSetZenMode });
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const group = screen.getByRole('radiogroup', { name: 'Background' });
+    const lock = screen.getByText('Turn Zen Mode off to change this.');
+    const brand = screen.getByRole('radio', { name: /freeperiod colours/i });
+    const rainbow = screen.getByRole('radio', { name: /^multicolour$/i });
+
+    expect(brand).toBeDisabled();
+    expect(rainbow).toBeDisabled();
+    expect(group).toHaveAttribute('aria-describedby', lock.id);
+    expect(group).toHaveClass('opacity-40');
+
+    await user.click(brand);
+    expect(mockSetAtmosphere).not.toHaveBeenCalled();
+  });
+
+  it('applies the other atmosphere with an arrow key', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const rainbow = screen.getByRole('radio', { name: /^multicolour$/i });
+    expect(rainbow).toBeChecked();
+    rainbow.focus();
+    await user.keyboard('{ArrowLeft}');
+
+    expect(mockSetAtmosphere).toHaveBeenCalledWith('brand');
+  });
+
+  it('applies the focused atmosphere with Space', async () => {
+    (useColorBendsAtmosphere as jest.Mock).mockReturnValue(atmosphereContext('brand'));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const rainbow = screen.getByRole('radio', { name: /^multicolour$/i });
+    rainbow.focus();
+    await user.keyboard(' ');
+
+    expect(mockSetAtmosphere).toHaveBeenCalledWith('rainbow');
   });
 });
 

@@ -23,6 +23,7 @@ import { useZenMode } from '@/providers/zen-mode';
 import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
@@ -231,6 +232,8 @@ export function SettingsClient({
             aria-label={t('settings.zenMode')}
           />
         </div>
+
+        <AtmospherePicker />
 
         <div className="mb-6 rounded-xl border border-border bg-background p-4">
           <div className="mb-3 flex items-start gap-3">
