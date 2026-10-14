@@ -26,7 +26,7 @@ export const en = {
     selectCurriculum: 'Select curriculum',
     enterCurriculum: 'Enter curriculum',
     country: 'Country',
-    selectCountry: 'Select a country',
+    selectCountry: 'Select your country',
     save: 'Save Settings',
     saving: 'Saving...',
     saved: 'Settings saved!',

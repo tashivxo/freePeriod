@@ -1,7 +1,7 @@
 'use client';
 
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
-import { SparklesIcon } from '@/components/ui/icons/sparkles';
+import { ProjectorIcon } from '@/components/ui/icons/projector';
 import {
   COLOR_BENDS_GOLD,
   COLOR_BENDS_PEACH,
@@ -43,27 +43,27 @@ export function AtmospherePicker() {
   const { resolvedAtmosphere, setAtmosphere } = useColorBendsAtmosphere();
 
   return (
-    <div className="mb-6 rounded-xl border border-border bg-background p-4">
-      <div className="flex items-start gap-3">
-        <MotionSafeIcon icon={SparklesIcon} size={20} className="mt-0.5 text-text-secondary" />
-        <div className="min-w-0">
-          <p
-            id={HEADING_ID}
-            className="text-sm font-body font-medium text-text-primary"
-          >
-            {t('settings.background')}
-          </p>
-          <p className="mt-1 text-sm font-body text-text-secondary">
-            {t('settings.backgroundDescription')}
-          </p>
-        </div>
-      </div>
+    <fieldset
+      aria-describedby={zenMode ? ZEN_LOCK_ID : undefined}
+      className="t-resize mb-6 min-w-0 rounded-xl border border-border bg-background p-4"
+    >
+      <legend
+        id={HEADING_ID}
+        className="flex w-full items-center gap-3 p-0 text-sm font-body font-medium text-text-primary"
+      >
+        <MotionSafeIcon icon={ProjectorIcon} size={20} className="mt-0.5 text-text-secondary" />
+        <span>{t('settings.background')}</span>
+      </legend>
+      <p className="ms-8 mt-1 text-sm font-body text-text-secondary">
+        {t('settings.backgroundDescription')}
+      </p>
 
       <div
-        role="radiogroup"
-        aria-labelledby={HEADING_ID}
-        aria-describedby={zenMode ? ZEN_LOCK_ID : undefined}
-        className={cn('mt-4 grid grid-cols-2 gap-3', zenMode && 'opacity-40')}
+        data-testid="atmosphere-tile-grid"
+        className={cn(
+          'mt-4 grid grid-cols-2 gap-3 transition-opacity duration-[length:var(--resize-dur)] motion-reduce:transition-none',
+          zenMode && 'opacity-40',
+        )}
       >
         {OPTIONS.map(({ value, labelKey }) => {
           const selected = resolvedAtmosphere === value;
@@ -71,7 +71,7 @@ export function AtmospherePicker() {
             <label
               key={value}
               className={cn(
-                'flex min-h-11 cursor-pointer flex-col gap-2 rounded-lg border bg-background p-2 text-start transition-colors duration-200 motion-reduce:transition-none',
+                'relative flex min-h-11 cursor-pointer flex-col gap-2 rounded-lg border bg-background p-2 text-start transition-[border-color,box-shadow,background-color] duration-200 motion-reduce:transition-none',
                 'has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-coral/40',
                 selected
                   ? 'border-coral ring-2 ring-coral/20'
@@ -85,8 +85,23 @@ export function AtmospherePicker() {
                 className="block h-16 rounded-md bg-background"
                 style={value === 'brand' ? BRAND_SWATCH : RAINBOW_SWATCH}
               />
-              <span className="flex items-center justify-between gap-2">
+              <span className="flex min-h-11 items-center justify-between gap-3 px-1">
                 <span className="text-sm font-body text-text-primary">{t(labelKey)}</span>
+                <span
+                  data-testid={`atmosphere-indicator-${value}`}
+                  aria-hidden
+                  className={cn(
+                    'grid size-5 shrink-0 place-items-center rounded-full border-2 bg-background',
+                    selected ? 'border-coral' : 'border-text-secondary/50',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'size-2 rounded-full bg-coral transition-transform duration-200 motion-reduce:transition-none',
+                      selected ? 'scale-100' : 'scale-0',
+                    )}
+                  />
+                </span>
                 <input
                   type="radio"
                   name="fp-atmosphere"
@@ -96,7 +111,7 @@ export function AtmospherePicker() {
                   onChange={() => {
                     if (!selected) setAtmosphere(value);
                   }}
-                  className="size-4 shrink-0 accent-[var(--color-coral)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40"
+                  className="absolute inset-0 size-full cursor-pointer opacity-0"
                 />
               </span>
             </label>
@@ -104,11 +119,16 @@ export function AtmospherePicker() {
         })}
       </div>
 
-      {zenMode ? (
-        <p id={ZEN_LOCK_ID} className="mt-3 text-sm font-body text-text-secondary">
+      <div className="t-resize-lock" data-open={zenMode ? 'true' : 'false'}>
+        {/* pt- not mt-: top margin leaks out of a 0fr grid row when collapsed */}
+        <p
+          id={ZEN_LOCK_ID}
+          aria-hidden={zenMode ? undefined : true}
+          className="pt-3 text-sm font-body text-text-secondary"
+        >
           {t('settings.backgroundZenLocked')}
         </p>
-      ) : null}
-    </div>
+      </div>
+    </fieldset>
   );
 }

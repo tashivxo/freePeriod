@@ -151,6 +151,9 @@ html[lang="zh-Hans"] {
   --panel-translate-y: 100px;
   --panel-blur: 2px;
   --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* transitions-dev — card resize */
+  --resize-dur: 300ms;
+  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   /*
    * Token reconciliation (W-TOKENS-01) — P0 bridged primary↔coral and text-secondary.
@@ -495,6 +498,34 @@ html[lang="zh-Hans"] {
 
 @media (prefers-reduced-motion: reduce) {
   .t-panel-collapse { transition: none !important; }
+}
+
+/* transitions-dev — card resize */
+.t-resize {
+  transition:
+    width  var(--resize-dur) var(--resize-ease),
+    height var(--resize-dur) var(--resize-ease);
+  will-change: width, height;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-resize { transition: none !important; }
+}
+
+.t-resize-lock {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--resize-dur) var(--resize-ease);
+}
+.t-resize-lock[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.t-resize-lock > * {
+  overflow: hidden;
+  min-height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-resize-lock { transition: none !important; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

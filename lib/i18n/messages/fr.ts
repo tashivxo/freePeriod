@@ -28,7 +28,7 @@ export const fr: Messages = {
     selectCurriculum: 'Sélectionner un programme',
     enterCurriculum: 'Saisir un programme',
     country: 'Pays',
-    selectCountry: 'Sélectionner un pays',
+    selectCountry: 'Sélectionnez votre pays',
     save: 'Enregistrer les paramètres',
     saving: 'Enregistrement...',
     saved: 'Paramètres enregistrés !',

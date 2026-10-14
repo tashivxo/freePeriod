@@ -28,7 +28,7 @@ export const zhHans: Messages = {
     selectCurriculum: '选择课程纲要',
     enterCurriculum: '输入课程纲要',
     country: '国家',
-    selectCountry: '选择国家',
+    selectCountry: '选择您的国家',
     save: '保存设置',
     saving: '保存中...',
     saved: '设置已保存！',
