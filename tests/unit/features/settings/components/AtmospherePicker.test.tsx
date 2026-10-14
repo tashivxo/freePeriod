@@ -1,6 +1,9 @@
 import React from 'react';
 import { render, screen } from '@/tests/helpers';
 
+const mockSetAtmosphere = jest.fn();
+const mockUseZenMode = jest.fn(() => ({ zenMode: false, setZenMode: jest.fn() }));
+
 const mockMotionSafeIcon = jest.fn(
   ({ icon: Icon }: { icon: React.ComponentType<{ size?: number }> }) => (
     <div data-testid="atmosphere-header-icon" data-icon={(Icon as { displayName?: string }).displayName} />
@@ -12,13 +15,13 @@ jest.mock('@/components/ui/icons/MotionSafeIcon', () => ({
 }));
 
 jest.mock('@/providers/zen-mode', () => ({
-  useZenMode: () => ({ zenMode: false, setZenMode: jest.fn() }),
+  useZenMode: () => mockUseZenMode(),
 }));
 
 jest.mock('@/providers/color-bends-atmosphere', () => ({
   useColorBendsAtmosphere: () => ({
     atmosphere: null,
-    setAtmosphere: jest.fn(),
+    setAtmosphere: mockSetAtmosphere,
     resolvedAtmosphere: 'rainbow',
     setProfileSignals: jest.fn(),
   }),
@@ -34,6 +37,8 @@ import { ProjectorIcon } from '@/components/ui/icons/projector';
 describe('AtmospherePicker', () => {
   beforeEach(() => {
     mockMotionSafeIcon.mockClear();
+    mockSetAtmosphere.mockClear();
+    mockUseZenMode.mockReturnValue({ zenMode: false, setZenMode: jest.fn() });
   });
 
   it('uses ProjectorIcon for the Background card header', () => {
@@ -46,5 +51,39 @@ describe('AtmospherePicker', () => {
     expect(mockMotionSafeIcon).toHaveBeenCalledWith(
       expect.objectContaining({ icon: ProjectorIcon, size: 20 }),
     );
+  });
+
+  it('uses a labelled fieldset and shared native radio name', () => {
+    render(<AtmospherePicker />);
+
+    const group = screen.getByRole('group', { name: 'settings.background' });
+    expect(group.tagName).toBe('FIELDSET');
+    expect(group.querySelector('legend')).toHaveTextContent('settings.background');
+
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    screen.getAllByRole('radio').forEach((radio) => {
+      expect(radio).toHaveAttribute('name', 'fp-atmosphere');
+    });
+  });
+
+  it('sets the chosen atmosphere when a tile is clicked', async () => {
+    const { user } = render(<AtmospherePicker />);
+
+    await user.click(screen.getByRole('radio', { name: 'settings.backgroundBrand' }));
+
+    expect(mockSetAtmosphere).toHaveBeenCalledWith('brand');
+  });
+
+  it('disables both native radios and describes the Zen lock', () => {
+    mockUseZenMode.mockReturnValue({ zenMode: true, setZenMode: jest.fn() });
+    render(<AtmospherePicker />);
+
+    const group = screen.getByRole('group', { name: 'settings.background' });
+    const lock = screen.getByText('settings.backgroundZenLocked');
+
+    expect(screen.getAllByRole('radio').every((radio) => radio.hasAttribute('disabled'))).toBe(true);
+    expect(group).toHaveAttribute('aria-describedby', lock.id);
+    expect(group).not.toHaveClass('opacity-40');
+    expect(screen.getByTestId('atmosphere-tile-grid')).toHaveClass('opacity-40');
   });
 });

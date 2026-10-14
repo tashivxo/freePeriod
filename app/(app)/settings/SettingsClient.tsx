@@ -59,6 +59,20 @@ type DefaultsSnapshot = {
   country: string;
 };
 
+function saveErrorMessage(err: unknown, fallback: string): string {
+  const detail =
+    err != null &&
+    typeof err === 'object' &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string'
+      ? (err as { message: string }).message
+      : null;
+  if (process.env.NODE_ENV === 'development' && detail) {
+    return `${fallback} (${detail})`;
+  }
+  return fallback;
+}
+
 export type SettingsClientProps = {
   user: User;
   email: string;
@@ -149,7 +163,7 @@ export function SettingsClient({
     setSaving(true);
     setSaveStatus(null);
     try {
-      const supabase = await createClient();
+      const supabase = createClient();
       const nextCountry = normalizeCountryCode(countrySelect) ?? '';
       const nextDefaults: DefaultsSnapshot = {
         subject: subjectField.value,
@@ -177,7 +191,10 @@ export function SettingsClient({
       setSaveStatus({ tone: 'success', message: t('settings.saved') });
     } catch (err) {
       console.error(err);
-      setSaveStatus({ tone: 'error', message: t('settings.saveFailed') });
+      setSaveStatus({
+        tone: 'error',
+        message: saveErrorMessage(err, t('settings.saveFailed')),
+      });
     } finally {
       setSaving(false);
     }

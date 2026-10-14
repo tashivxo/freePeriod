@@ -285,10 +285,10 @@ describe('SettingsClient — background', () => {
     (useColorBendsAtmosphere as jest.Mock).mockReturnValue(atmosphereContext('rainbow'));
   });
 
-  it('names the radiogroup Background and places it between zen and language', () => {
+  it('names the background fieldset and places it between zen and language', () => {
     render(<SettingsClient {...defaultProps} />);
 
-    const group = screen.getByRole('radiogroup', { name: 'Background' });
+    const group = screen.getByRole('group', { name: 'Background' });
     const zen = screen.getByRole('switch', { name: /zen mode/i });
     const language = screen.getByText('Language');
 
@@ -298,6 +298,8 @@ describe('SettingsClient — background', () => {
     expect(
       group.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    expect(group.tagName).toBe('FIELDSET');
+    expect(group.querySelector('legend')).toHaveTextContent('Background');
     expect(screen.getByRole('radio', { name: /freeperiod colours/i })).toHaveAttribute(
       'name',
       'fp-atmosphere',
@@ -353,7 +355,7 @@ describe('SettingsClient — background', () => {
     (useZenMode as jest.Mock).mockReturnValue({ zenMode: true, setZenMode: mockSetZenMode });
     const { user } = render(<SettingsClient {...defaultProps} />);
 
-    const group = screen.getByRole('radiogroup', { name: 'Background' });
+    const group = screen.getByRole('group', { name: 'Background' });
     const lock = screen.getByText('Turn Zen Mode off to change this.');
     const brand = screen.getByRole('radio', { name: /freeperiod colours/i });
     const rainbow = screen.getByRole('radio', { name: /^multicolour$/i });
@@ -443,6 +445,7 @@ describe('SettingsClient — dirty save', () => {
     mockUpdate.mockReturnValue({
       eq: jest.fn().mockResolvedValue({ error: null }),
     });
+    (useColorBendsAtmosphere as jest.Mock).mockReturnValue(atmosphereContext('rainbow'));
   });
 
   it('disables Save until a field changes', () => {
@@ -520,6 +523,45 @@ describe('SettingsClient — dirty save', () => {
       country: 'AE',
       curriculum: null,
     });
+    expect(mockSetAtmosphere).not.toHaveBeenCalled();
+  });
+
+  it('saves AE teaching defaults while resolvedAtmosphere stays rainbow', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const subject = screen.getByLabelText(/default subject/i);
+    await user.click(subject);
+    await user.click(screen.getByRole('option', { name: 'English' }));
+
+    const grade = screen.getByLabelText(/default grade/i);
+    await user.click(grade);
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+
+    const curriculum = screen.getByLabelText(/default curriculum/i);
+    await user.click(curriculum);
+    await user.click(screen.getByRole('option', { name: 'UAE MOE' }));
+
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getByRole('option', { name: 'United Arab Emirates' }));
+
+    await user.click(screen.getByRole('button', { name: /save settings/i }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          country: 'AE',
+          default_subject: 'English',
+          default_grade: '5',
+          default_curriculum: 'UAE MOE',
+        }),
+      );
+    });
+    expect(mockSetProfileSignals).toHaveBeenCalledWith({
+      country: 'AE',
+      curriculum: 'UAE MOE',
+    });
+    expect(mockSetAtmosphere).not.toHaveBeenCalled();
+    expect(await screen.findByRole('status')).toHaveTextContent(/settings saved/i);
   });
 });
 
@@ -551,5 +593,28 @@ describe('SettingsClient — save feedback', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
     expect(mockSetProfileSignals).not.toHaveBeenCalled();
+  });
+
+  it('appends the Supabase error message in development when save fails', async () => {
+    const env = process.env as { NODE_ENV?: string };
+    const previousNodeEnv = env.NODE_ENV;
+    env.NODE_ENV = 'development';
+
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({
+        error: { message: "Could not find the 'country' column of 'users' in the schema cache" },
+      }),
+    });
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await changeSubjectToScience(user);
+    await user.click(screen.getByRole('button', { name: /save settings/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /failed to save settings \(could not find the 'country' column/i,
+    );
+    expect(mockSetProfileSignals).not.toHaveBeenCalled();
+
+    env.NODE_ENV = previousNodeEnv;
   });
 });
