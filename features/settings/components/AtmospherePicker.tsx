@@ -123,7 +123,7 @@ export function AtmospherePicker() {
         <p
           id={ZEN_LOCK_ID}
           aria-hidden={zenMode ? undefined : true}
-          className="mt-3 text-sm font-body text-text-secondary"
+          className="pt-3 text-sm font-body text-text-secondary"
         >
           {t('settings.backgroundZenLocked')}
         </p>
