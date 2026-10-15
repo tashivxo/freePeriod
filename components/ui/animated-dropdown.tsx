@@ -4,7 +4,6 @@ import {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useCallback,
   useMemo,
   type ReactNode,
@@ -19,6 +18,7 @@ const LIST_MAX_HEIGHT_PX = 240;
 const TRIGGER_GAP_PX = 4;
 const VIEWPORT_PADDING_PX = 8;
 const MIN_LIST_MAX_HEIGHT_PX = 120;
+const OPEN_SCROLL_THRESHOLD_PX = 280;
 
 export interface DropdownItem {
   name: string;
@@ -80,6 +80,16 @@ function filterDropdownItems(items: DropdownItem[], query: string): DropdownItem
   }
 
   return filtered;
+}
+
+function spaceBelowTrigger(trigger: HTMLElement): number {
+  const rect = trigger.getBoundingClientRect();
+  return window.innerHeight - rect.bottom - TRIGGER_GAP_PX - VIEWPORT_PADDING_PX;
+}
+
+function MenuPortal({ children }: { children: ReactNode }) {
+  if (typeof document === 'undefined') return null;
+  return createPortal(children, document.body);
 }
 
 function computeListboxPosition(
@@ -144,21 +154,32 @@ export function AnimatedDropdown({
   const displayText = selectedItem ? selectedItem.name : text;
 
   const updatePosition = useCallback(() => {
-    if (triggerRef.current) {
-      setListboxPosition(
-        computeListboxPosition(triggerRef.current, menuAlign, menuMinWidth),
-      );
-    }
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setListboxPosition(computeListboxPosition(trigger, menuAlign, menuMinWidth));
   }, [menuAlign, menuMinWidth]);
 
-  useLayoutEffect(() => {
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const handleTriggerClick = useCallback(() => {
     if (open) {
-      updatePosition();
-    } else {
-      setListboxPosition(null);
-      setSearchQuery('');
+      setOpen(false);
+      return;
     }
-  }, [open, updatePosition]);
+
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+
+    if (spaceBelowTrigger(trigger) < OPEN_SCROLL_THRESHOLD_PX) {
+      trigger.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+    }
+
+    setSearchQuery('');
+    setListboxPosition(computeListboxPosition(trigger, menuAlign, menuMinWidth));
+    setOpen(true);
+  }, [menuAlign, menuMinWidth, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -186,7 +207,7 @@ export function AnimatedDropdown({
       ) {
         return;
       }
-      setOpen(false);
+      closeMenu();
     }
 
     if (open) {
@@ -194,12 +215,12 @@ export function AnimatedDropdown({
     }
 
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [open]);
+  }, [closeMenu, open]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        setOpen(false);
+        closeMenu();
       }
     }
 
@@ -207,126 +228,7 @@ export function AnimatedDropdown({
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [open]);
-
-  const listbox =
-    open &&
-    listboxPosition &&
-    typeof document !== 'undefined' &&
-    createPortal(
-      <AnimatePresence>
-        <motion.ul
-          ref={listboxRef}
-          role="listbox"
-          aria-label={text}
-          initial={{ opacity: 0, scale: 0.97, y: -4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: -4 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-          style={{
-            position: 'fixed',
-            top: listboxPosition.top,
-            left: listboxPosition.left,
-            width: listboxPosition.width,
-            maxHeight: listboxPosition.maxHeight,
-          }}
-          className="z-[10000] max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 shadow-xl"
-        >
-          {searchable ? (
-            <li
-              role="presentation"
-              className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-background-elevated)] px-3 py-2"
-            >
-              <input
-                ref={searchRef}
-                type="search"
-                role="searchbox"
-                aria-label={searchPlaceholder}
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={searchPlaceholder}
-                className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 font-body text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-                onKeyDown={(event) => event.stopPropagation()}
-              />
-            </li>
-          ) : null}
-          {visibleItems.map((item, index) => {
-              if (item.header) {
-                return (
-                  <li
-                    key={`header-${index}-${item.name}`}
-                    role="presentation"
-                    className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
-                  >
-                    {item.name}
-                  </li>
-                );
-              }
-
-              const val = item.value ?? item.name;
-              const isSelected = selectedValue === val;
-              const isDisabled = item.disabled === true;
-              return (
-                <li
-                  key={`${index}-${val}`}
-                  role="option"
-                  aria-selected={isSelected}
-                  aria-disabled={isDisabled || undefined}
-                  onClick={() => {
-                    if (isDisabled) {
-                      if (onDisabledSelect) {
-                        onDisabledSelect(item);
-                        setOpen(false);
-                      }
-                      return;
-                    }
-                    onSelect?.(item);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'px-4 py-2.5 text-sm font-body transition-colors duration-100',
-                    item.description ? 'py-3' : 'py-2.5',
-                    isDisabled
-                      ? cn(
-                          'opacity-60',
-                          onDisabledSelect
-                            ? 'cursor-pointer hover:bg-[var(--color-primary-light)]/10'
-                            : 'cursor-not-allowed',
-                        )
-                      : 'cursor-pointer hover:bg-[var(--color-primary-light)]/20',
-                    isSelected
-                      ? 'bg-[var(--color-primary-light)]/20 text-coral'
-                      : 'text-[var(--color-text-primary)]',
-                  )}
-                >
-                  {item.description ? (
-                    <span className="flex min-w-0 flex-col gap-0.5 text-left">
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium">{item.name}</span>
-                        {item.badge && (
-                          <span className="inline-flex rounded-md bg-coral/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral">
-                            {item.badge}
-                          </span>
-                        )}
-                        {item.icon}
-                      </span>
-                      <span className="text-sm leading-snug text-[var(--color-text-secondary)]">
-                        {item.description}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      {item.name}
-                      {item.icon}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-        </motion.ul>
-      </AnimatePresence>,
-      document.body,
-    );
+  }, [closeMenu, open]);
 
   return (
     <div ref={containerRef} className={cn('relative w-full', className)}>
@@ -334,7 +236,7 @@ export function AnimatedDropdown({
         ref={triggerRef}
         type="button"
         id={id}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={handleTriggerClick}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
@@ -347,14 +249,13 @@ export function AnimatedDropdown({
         <span
           className={cn(
             'flex min-w-0 items-center gap-2 font-body text-base',
-            hideTriggerLabel && 'sr-only',
             selectedItem
               ? 'text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)]',
           )}
         >
           {leadingIcon}
-          {displayText}
+          <span className={cn(hideTriggerLabel && 'sr-only')}>{displayText}</span>
         </span>
         {!hideChevron ? (
           <motion.span
@@ -367,7 +268,121 @@ export function AnimatedDropdown({
         ) : null}
       </button>
 
-      {listbox}
+      <AnimatePresence>
+        {open && listboxPosition ? (
+          <MenuPortal key="animated-dropdown-listbox">
+            <motion.ul
+                ref={listboxRef}
+                role="listbox"
+                aria-label={text}
+                initial={{ opacity: 0, scale: 0.97, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: -4 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                style={{
+                  position: 'fixed',
+                  top: listboxPosition.top,
+                  left: listboxPosition.left,
+                  width: listboxPosition.width,
+                  maxHeight: listboxPosition.maxHeight,
+                }}
+                className="z-[10000] max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 shadow-xl"
+              >
+                {searchable ? (
+                  <li
+                    role="presentation"
+                    className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-background-elevated)] px-3 py-2"
+                  >
+                    <input
+                      ref={searchRef}
+                      type="search"
+                      role="searchbox"
+                      aria-label={searchPlaceholder}
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder={searchPlaceholder}
+                      className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 font-body text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
+                      onKeyDown={(event) => event.stopPropagation()}
+                    />
+                  </li>
+                ) : null}
+                {visibleItems.map((item, index) => {
+                  if (item.header) {
+                    return (
+                      <li
+                        key={`header-${index}-${item.name}`}
+                        role="presentation"
+                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                      >
+                        {item.name}
+                      </li>
+                    );
+                  }
+
+                  const val = item.value ?? item.name;
+                  const isSelected = selectedValue === val;
+                  const isDisabled = item.disabled === true;
+                  return (
+                    <li
+                      key={`${index}-${val}`}
+                      role="option"
+                      aria-selected={isSelected}
+                      aria-disabled={isDisabled || undefined}
+                      onClick={() => {
+                        if (isDisabled) {
+                          if (onDisabledSelect) {
+                            onDisabledSelect(item);
+                            closeMenu();
+                          }
+                          return;
+                        }
+                        onSelect?.(item);
+                        closeMenu();
+                      }}
+                      className={cn(
+                        'px-4 py-2.5 text-sm font-body transition-colors duration-100',
+                        item.description ? 'py-3' : 'py-2.5',
+                        isDisabled
+                          ? cn(
+                              'opacity-60',
+                              onDisabledSelect
+                                ? 'cursor-pointer hover:bg-[var(--color-primary-light)]/10'
+                                : 'cursor-not-allowed',
+                            )
+                          : 'cursor-pointer hover:bg-[var(--color-primary-light)]/20',
+                        isSelected
+                          ? 'bg-[var(--color-primary-light)]/20 text-coral'
+                          : 'text-[var(--color-text-primary)]',
+                      )}
+                    >
+                      {item.description ? (
+                        <span className="flex min-w-0 flex-col gap-0.5 text-left">
+                          <span className="flex items-center gap-2">
+                            <span className="font-medium">{item.name}</span>
+                            {item.badge && (
+                              <span className="inline-flex rounded-md bg-coral/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-coral">
+                                {item.badge}
+                              </span>
+                            )}
+                            {item.icon}
+                          </span>
+                          <span className="text-sm leading-snug text-[var(--color-text-secondary)]">
+                            {item.description}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          {item.name}
+                          {item.icon}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+            </motion.ul>
+          </MenuPortal>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

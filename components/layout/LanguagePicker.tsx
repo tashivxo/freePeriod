@@ -54,8 +54,8 @@ export function LanguagePicker({
       }
       triggerClassName={cn(
         variant === 'icon'
-          ? 'relative inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background px-0 text-text-secondary hover:bg-muted hover:text-text-primary transition-[transform,opacity,color,background-color,border-color]'
-          : 'relative inline-flex min-h-[44px] w-auto items-center gap-2 overflow-hidden rounded-xl border border-border bg-background px-4 py-2.5 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral',
+          ? 'relative inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background px-0 text-text-secondary hover:bg-muted hover:text-text-primary transition-[transform,opacity,color,background-color,border-color] dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 dark:hover:text-white'
+          : 'relative inline-flex min-h-[44px] w-auto items-center gap-2 overflow-hidden rounded-xl border border-border bg-background px-4 py-2.5 font-body text-sm font-medium text-text-primary transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral dark:border-white/25 dark:bg-white/10 dark:text-white dark:hover:bg-white/15',
         className,
       )}
       onSelect={(item) => {
