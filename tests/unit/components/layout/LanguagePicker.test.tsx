@@ -93,4 +93,24 @@ describe('LanguagePicker', () => {
     render(<LanguagePicker variant="default" />);
     expect(screen.getByRole('button', { name: /langue/i })).toHaveTextContent('Français');
   });
+
+  it('keeps the languages icon visible on the icon trigger', () => {
+    render(<LanguagePicker variant="icon" />);
+    expect(screen.getByTestId('languages-icon').closest('.sr-only')).toBeNull();
+  });
+
+  it('uses dark-mode contrast classes on the icon trigger', () => {
+    render(<LanguagePicker variant="icon" />);
+    const trigger = screen.getByRole('button', { name: 'Language' });
+    expect(trigger.className).toMatch(/dark:text-white/);
+    expect(trigger.className).toMatch(/dark:border-white\/25/);
+    expect(trigger.className).toMatch(/dark:bg-white\/10/);
+  });
+
+  it('uses dark-mode contrast classes on the default trigger', () => {
+    render(<LanguagePicker variant="default" />);
+    const trigger = screen.getByRole('button', { name: /language/i });
+    expect(trigger.className).toMatch(/dark:text-white/);
+    expect(trigger.className).toMatch(/dark:border-white\/25/);
+  });
 });

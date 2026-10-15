@@ -170,6 +170,89 @@ describe('AnimatedDropdown placement', () => {
     expect(listTop).toBeGreaterThanOrEqual(tightRect.bottom + 4 - 0.5);
     expect(listTop).toBeGreaterThan(tightRect.top);
   });
+
+  it('scrolls the trigger into view when less than 280px remains below', async () => {
+    const { user } = render(
+      <AnimatedDropdown id="scroll-open-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(triggerRect);
+    const scrollIntoView = jest.fn();
+    trigger.scrollIntoView = scrollIntoView;
+
+    await user.click(trigger);
+
+    expect(scrollIntoView).toHaveBeenCalled();
+    expect(scrollIntoView.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ block: 'center' }),
+    );
+    expect(parseFloat(screen.getByRole('listbox').style.top)).toBeGreaterThanOrEqual(
+      triggerRect.bottom + 4 - 0.5,
+    );
+  });
+
+  it('does not scroll when at least 280px remains below the trigger', async () => {
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 900,
+    });
+    const roomyRect = {
+      ...triggerRect,
+      top: 40,
+      bottom: 80,
+      y: 40,
+    } as DOMRect;
+
+    const { user } = render(
+      <AnimatedDropdown id="roomy-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(roomyRect);
+    const scrollIntoView = jest.fn();
+    trigger.scrollIntoView = scrollIntoView;
+
+    await user.click(trigger);
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+  });
+});
+
+describe('AnimatedDropdown trigger label and exit', () => {
+  it('keeps the leading icon visible when hideTriggerLabel is set', () => {
+    render(
+      <AnimatedDropdown
+        id="icon-dd"
+        text="Language"
+        hideTriggerLabel
+        hideChevron
+        leadingIcon={<span data-testid="lead-icon">icon</span>}
+        items={[{ name: 'English', value: 'en' }]}
+      />,
+    );
+
+    expect(screen.getByTestId('lead-icon').closest('.sr-only')).toBeNull();
+    expect(screen.getByText('Language')).toHaveClass('sr-only');
+  });
+
+  it('keeps the listbox mounted through the close animation', async () => {
+    const { user } = render(
+      <AnimatedDropdown id="exit-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    await user.click(trigger);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
 });
 
 describe('AnimatedDropdown search', () => {
