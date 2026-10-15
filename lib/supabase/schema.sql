@@ -33,7 +33,8 @@ create policy "Users can view own row"
 
 create policy "Users can update own row"
   on public.users for update
-  using (auth.uid() = id);
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 create policy "Users can insert own row"
   on public.users for insert
@@ -46,15 +47,24 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'role', '') in ('service_role')
-     or current_user in ('postgres', 'supabase_admin') then
+  if coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+     or coalesce(auth.role(), '') = 'service_role'
+     or session_user in ('postgres', 'supabase_admin') then
     return new;
   end if;
 
   if tg_op = 'INSERT' then
     new.is_admin := false;
-  elsif tg_op = 'UPDATE' and new.is_admin is distinct from old.is_admin then
+    new.plan := 'free';
+    new.generation_count := 0;
+    new.generation_count_reset_at := null;
+    new.deletion_scheduled_at := null;
+  elsif tg_op = 'UPDATE' then
     new.is_admin := old.is_admin;
+    new.plan := old.plan;
+    new.generation_count := old.generation_count;
+    new.generation_count_reset_at := old.generation_count_reset_at;
+    new.deletion_scheduled_at := old.deletion_scheduled_at;
   end if;
 
   return new;
@@ -99,7 +109,8 @@ create policy "Users can insert own lesson plans"
 
 create policy "Users can update own lesson plans"
   on public.lesson_plans for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 create policy "Users can delete own lesson plans"
   on public.lesson_plans for delete

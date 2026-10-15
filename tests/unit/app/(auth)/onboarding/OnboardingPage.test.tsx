@@ -2,11 +2,15 @@ import { render, screen, waitFor } from '@/tests/helpers';
 import { act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock the Supabase client module
+const mockMaybeSingle = jest.fn().mockResolvedValue({ data: { id: 'user-123' }, error: null });
 const mockUpdate = jest.fn().mockReturnValue({
-  eq: jest.fn().mockResolvedValue({ error: null }),
+  eq: jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      maybeSingle: mockMaybeSingle,
+    }),
+  }),
 });
-const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+const mockInsert = jest.fn().mockResolvedValue({ error: null });
 const mockGetUser = jest.fn().mockResolvedValue({
   data: { user: { id: 'user-123' } },
   error: null,
@@ -17,7 +21,7 @@ jest.mock('@/lib/supabase/client', () => ({
     auth: { getUser: mockGetUser },
     from: jest.fn(() => ({
       update: mockUpdate,
-      upsert: mockUpsert,
+      insert: mockInsert,
     })),
   })),
 }));
@@ -88,8 +92,15 @@ describe('OnboardingPage', () => {
     jest.clearAllMocks();
     jest.useRealTimers();
     // Restore return values cleared by clearAllMocks
-    mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
-    mockUpsert.mockResolvedValue({ error: null });
+    mockMaybeSingle.mockResolvedValue({ data: { id: 'user-123' }, error: null });
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
+      }),
+    });
+    mockInsert.mockResolvedValue({ error: null });
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
   });
 
@@ -297,7 +308,7 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('button', { name: /finish/i }));
 
     await waitFor(() => {
-      expect(mockUpsert).toHaveBeenCalledWith(
+      expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           default_subject: 'Mathematics',
           default_grade: '9',
@@ -305,8 +316,46 @@ describe('OnboardingPage', () => {
           country: 'AE',
           onboarding_complete: true,
         }),
-        { onConflict: 'id' },
       );
+      const payload = mockUpdate.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('id');
+      expect(payload).not.toHaveProperty('email');
+      expect(payload).not.toHaveProperty('is_admin');
+      expect(payload).not.toHaveProperty('plan');
+      expect(payload).not.toHaveProperty('generation_count');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('inserts a profile without plan, quota, or deletion fields when no row exists', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user-123',
+          default_subject: 'Mathematics',
+          default_grade: '9',
+          default_curriculum: 'IB',
+          country: 'AE',
+          onboarding_complete: true,
+        }),
+      );
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('plan');
+      expect(payload).not.toHaveProperty('is_admin');
+      expect(payload).not.toHaveProperty('generation_count');
+      expect(payload).not.toHaveProperty('generation_count_reset_at');
+      expect(payload).not.toHaveProperty('deletion_scheduled_at');
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
   });
@@ -350,7 +399,7 @@ describe('OnboardingPage', () => {
   });
 
   it('shows finish errors inside the card above actions', async () => {
-    mockUpsert.mockResolvedValueOnce({ error: { message: 'Database error' } });
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } });
     const { user } = render(<OnboardingPage />);
     await reachCurriculum(user);
 

@@ -5,9 +5,9 @@ import {
   buildSubscriptionPayload,
   type LSSubscriptionWebhookData,
 } from '@/lib/lemonsqueezy/subscriptions';
-import type { Plan } from '@/types';
+import { resolveEffectivePlan } from '@/lib/generation/quota';
 
-const SUBSCRIPTION_EVENTS = new Set([
+const SUBSCRIPTION_STATUS_EVENTS = new Set([
   'subscription_created',
   'subscription_updated',
   'subscription_cancelled',
@@ -15,8 +15,6 @@ const SUBSCRIPTION_EVENTS = new Set([
   'subscription_expired',
   'subscription_paused',
   'subscription_unpaused',
-  'subscription_payment_success',
-  'subscription_payment_failed',
 ]);
 
 function verifySignature(rawBody: string, signature: string, secret: string): boolean {
@@ -69,7 +67,7 @@ export async function POST(request: Request) {
   const eventName = event.meta?.event_name;
   const userId = event.meta?.custom_data?.user_id;
 
-  if (!eventName || !SUBSCRIPTION_EVENTS.has(eventName) || !userId) {
+  if (!eventName || !SUBSCRIPTION_STATUS_EVENTS.has(eventName) || !userId) {
     return NextResponse.json({ received: true });
   }
 
@@ -98,26 +96,33 @@ export async function POST(request: Request) {
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (existing) {
-    await admin.from('subscriptions').update(payload).eq('user_id', userId);
-  } else {
-    await admin.from('subscriptions').insert({
-      ...payload,
-      trial_start: null,
-      trial_end: null,
-      trial_used: false,
-    });
+  const { error: subscriptionError } = existing
+    ? await admin.from('subscriptions').update(payload).eq('user_id', userId)
+    : await admin.from('subscriptions').insert({
+        ...payload,
+        trial_start: null,
+        trial_end: null,
+        trial_used: false,
+      });
+
+  if (subscriptionError) {
+    console.error('[lemonsqueezy] Failed to persist subscription', subscriptionError);
+    return NextResponse.json({ error: 'Failed to persist subscription' }, { status: 500 });
   }
 
-  const activePlans: Plan[] = ['pro', 'pro_plus'];
-  const userPlan: Plan =
-    payload.status === 'active' || payload.status === 'on_trial'
-      ? activePlans.includes(payload.plan)
-        ? payload.plan
-        : 'free'
-      : 'free';
+  const userPlan = resolveEffectivePlan({
+    plan: payload.plan,
+    status: payload.status,
+    trial_end: payload.status === 'trial' || payload.status === 'on_trial' ? payload.ends_at : null,
+    ends_at: payload.ends_at,
+  });
 
-  await admin.from('users').update({ plan: userPlan }).eq('id', userId);
+  const { error: userError } = await admin.from('users').update({ plan: userPlan }).eq('id', userId);
+
+  if (userError) {
+    console.error('[lemonsqueezy] Failed to persist user plan', userError);
+    return NextResponse.json({ error: 'Failed to persist subscription' }, { status: 500 });
+  }
 
   return NextResponse.json({ received: true });
 }

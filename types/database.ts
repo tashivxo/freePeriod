@@ -125,16 +125,16 @@ export type Database = {
       users: {
         Row: User;
         Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at' | 'preferred_locale' | 'country'> & {
-          generation_count?: number;
-          generation_count_reset_at?: string | null;
           onboarding_complete?: boolean;
-          plan?: Plan;
-          is_admin?: boolean;
-          deletion_scheduled_at?: string | null;
           preferred_locale?: Locale;
           country?: string | null;
         };
-        Update: Partial<Omit<User, 'id' | 'created_at'>>;
+        Update: Partial<Omit<User, 'id' | 'created_at' | 'is_admin' | 'plan' | 'generation_count' | 'generation_count_reset_at' | 'deletion_scheduled_at'>> & {
+          plan?: Plan;
+          generation_count?: number;
+          generation_count_reset_at?: string | null;
+          deletion_scheduled_at?: string | null;
+        };
         Relationships: [];
       };
       lesson_plans: {

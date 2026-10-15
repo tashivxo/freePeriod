@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, LessonSection } from '@/types';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type PersistLessonInput = {
   userId: string;
@@ -116,7 +117,8 @@ export async function persistLessonPlan(
     return { ok: false, error: 'Failed to save lesson plan' };
   }
 
-  await supabase
+  const admin = createAdminClient();
+  await admin
     .from('users')
     .update({ generation_count: input.generationCount + 1 })
     .eq('id', input.userId);

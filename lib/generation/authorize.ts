@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Plan } from '@/types';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   getPlanGenerationLimit,
   isRateLimited,
@@ -23,7 +24,7 @@ export async function resolveGenerationAccess(
   const [{ data: subData }, { data: userRecord }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('plan, status, trial_end, renews_at')
+      .select('plan, status, trial_end, renews_at, ends_at')
       .eq('user_id', userId)
       .maybeSingle(),
     supabase
@@ -44,7 +45,8 @@ export async function resolveGenerationAccess(
       now,
     });
     generationCount = 0;
-    await supabase
+    const admin = createAdminClient();
+    await admin
       .from('users')
       .update({
         generation_count: 0,

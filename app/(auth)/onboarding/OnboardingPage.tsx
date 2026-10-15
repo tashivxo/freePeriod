@@ -141,27 +141,41 @@ export function OnboardingPage() {
         user.email?.split('@')[0] ??
         '';
 
-      const { error: updateError } = await supabase
+      const profileFields = {
+        name: displayName,
+        default_subject: defaultSubject,
+        default_grade: grade,
+        default_curriculum: curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect,
+        country: countryCode,
+        onboarding_complete: true,
+      };
+
+      const { data: updated, error: updateError } = await supabase
         .from('users')
-        .upsert(
-          {
-            id: user.id,
-            email: user.email ?? '',
-            name: displayName,
-            default_subject: defaultSubject,
-            default_grade: grade,
-            default_curriculum: curriculumSelect === 'Custom' ? customCurriculum : curriculumSelect,
-            country: countryCode,
-            onboarding_complete: true,
-          },
-          { onConflict: 'id' },
-        );
+        .update(profileFields)
+        .eq('id', user.id)
+        .select('id')
+        .maybeSingle();
 
       if (updateError) {
         setError(updateError.message);
         setIsSubmitting(false);
         setFinishStatus('idle');
         return;
+      }
+
+      if (!updated) {
+        const { error: insertError } = await supabase.from('users').insert({
+          id: user.id,
+          email: user.email ?? '',
+          ...profileFields,
+        });
+        if (insertError) {
+          setError(insertError.message);
+          setIsSubmitting(false);
+          setFinishStatus('idle');
+          return;
+        }
       }
 
       setFinishStatus('redirecting');
