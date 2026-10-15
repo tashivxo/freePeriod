@@ -90,6 +90,7 @@ create table public.lesson_plans (
   curriculum text,
   duration_minutes int not null,
   content jsonb not null default '{}'::jsonb,
+  original_content jsonb,
   model_used text not null,
   token_count int not null default 0,
   template_path text,
@@ -115,6 +116,34 @@ create policy "Users can update own lesson plans"
 create policy "Users can delete own lesson plans"
   on public.lesson_plans for delete
   using (auth.uid() = user_id);
+
+REVOKE UPDATE (original_content) ON public.lesson_plans FROM authenticated, anon;
+
+create or replace function public.protect_lesson_plans_original_content()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.original_content is null then
+      new.original_content := new.content;
+    end if;
+    return new;
+  end if;
+
+  new.original_content := old.original_content;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_lesson_plans_original_content on public.lesson_plans;
+
+create trigger protect_lesson_plans_original_content
+  before insert or update on public.lesson_plans
+  for each row
+  execute function public.protect_lesson_plans_original_content();
 
 -- ============================================================
 -- upload_type enum

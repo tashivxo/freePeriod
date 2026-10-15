@@ -168,4 +168,41 @@ describe('persistLessonPlan', () => {
     expect(supabase.from).not.toHaveBeenCalledWith('users');
     expect(userEq).not.toHaveBeenCalled();
   });
+
+  it('snapshots original_content to the generated content on insert', async () => {
+    const insert = jest.fn(() => ({
+      select: () => ({
+        single: async () => ({ data: { id: 'lesson-1' }, error: null }),
+      }),
+    }));
+    const supabase = mockFrom({
+      lesson_plans: { insert },
+    });
+
+    const result = await persistLessonPlan(supabase as never, {
+      userId: 'user-1',
+      title: 'Fractions',
+      subject: 'Mathematics',
+      grade: '8',
+      curriculum: 'CAPS (South Africa)',
+      durationMinutes: 60,
+      content,
+      modelUsed: 'gemini-2.5-flash',
+      tokenCount: 12,
+      curriculumDocPath: null,
+      templatePath: null,
+      generationCount: 0,
+    });
+
+    expect(result).toEqual({ ok: true, lessonId: 'lesson-1' });
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content,
+        original_content: content,
+      }),
+    );
+    expect(mockCreateAdminClient).toHaveBeenCalled();
+    expect(supabase.from).not.toHaveBeenCalledWith('users');
+  });
 });
+

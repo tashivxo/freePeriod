@@ -15,6 +15,7 @@ const LOCKED_COLUMNS = [
   'created_at',
   'model_used',
   'token_count',
+  'original_content',
 ];
 
 describe('012_lock_lesson_plans_update_columns', () => {
