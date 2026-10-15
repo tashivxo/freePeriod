@@ -38,6 +38,14 @@ export function contentToString(value: unknown): string {
   return JSON.stringify(value, null, 2) ?? '';
 }
 
+/**
+ * HTML for the lesson editor / view. Must round-trip with stripHtml so a
+ * no-op save keeps paragraphs, line breaks, and lists.
+ */
+export function contentToEditorHtml(value: unknown): string {
+  return contentToString(value);
+}
+
 function parseDifferentiationText(text: string): { support: string[]; extension: string[] } {
   const trimmed = text.trim();
   if (!trimmed) return { support: [], extension: [] };
