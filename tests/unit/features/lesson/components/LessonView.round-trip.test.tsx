@@ -143,7 +143,7 @@ describe('LessonView edit round-trip', () => {
   });
 
   it('saves two paragraphs and a list then reopens the same text', async () => {
-    const { user } = renderLesson(lesson);
+    const { user, unmount } = renderLesson(lesson);
 
     await user.click(screen.getByRole('button', { name: 'Edit Hook Activity' }));
     await user.click(screen.getByRole('button', { name: 'Apply structured HTML Hook Activity' }));
@@ -158,6 +158,7 @@ describe('LessonView edit round-trip', () => {
     expect(saved.hook).not.toBe('Para onePara twoItem AItem B');
     expect(JSON.stringify(mockUpdate.mock.calls[0][0])).not.toMatch(/original_content/);
 
+    unmount();
     const { user: user2 } = renderLesson({ ...lesson, content: saved });
     expect(screen.getByTestId('section-content-Hook Activity').textContent).not.toBe(
       'Para onePara twoItem AItem B',
