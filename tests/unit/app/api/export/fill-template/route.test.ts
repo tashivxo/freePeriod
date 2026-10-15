@@ -249,7 +249,11 @@ describe('POST /api/export/fill-template', () => {
       '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>+++unknownField+++</w:t></w:r></w:p></w:body></w:document>';
     const templateBuffer = await makeDocxBuffer(xml);
     mockDownloadedBuffer(templateBuffer);
-    mockCreateReport.mockResolvedValue(templateBuffer);
+    mockFillGeneric.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+    });
 
     const response = await postFill();
 
@@ -258,7 +262,8 @@ describe('POST /api/export/fill-template', () => {
       error: TEMPLATE_UNFILLED_ERROR,
       code: TEMPLATE_UNFILLED_CODE,
     });
-    expect(mockFillGeneric).not.toHaveBeenCalled();
+    expect(mockCreateReport).not.toHaveBeenCalled();
+    expect(mockFillGeneric).toHaveBeenCalled();
   });
 
   it('returns 422 when an XLSX template has no matching placeholders', async () => {
