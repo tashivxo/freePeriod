@@ -41,4 +41,9 @@ describe('normalizePdfPunctuation', () => {
     expect(normalizePdfPunctuation('• Hello')).toBe('• Hello');
     expect(normalizePdfPunctuation('التمثيل')).toBe('التمثيل');
   });
+
+  it('replaces a leading hyphen list marker with U+2022 so lists are not "- - "', () => {
+    expect(normalizePdfPunctuation('- Students will learn')).toBe('• Students will learn');
+    expect(normalizePdfPunctuation('- Students\n- Next')).toBe('• Students\n• Next');
+  });
 });
