@@ -9,6 +9,7 @@ import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
 import { fillGenericPdfTemplate } from '@/lib/export/fill-generic-pdf';
 import { mapTemplateExportError } from '@/lib/export/map-error';
+import { isOwnedStoragePath } from '@/lib/parse/storage-download';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
@@ -69,6 +70,10 @@ export async function POST(request: NextRequest) {
 
   if (!lesson.template_path) {
     return NextResponse.json({ error: 'No template attached to this lesson' }, { status: 400 });
+  }
+
+  if (!isOwnedStoragePath(user.id, lesson.template_path)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   // Download template from Supabase Storage (service role to bypass RLS on storage)

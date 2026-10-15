@@ -101,7 +101,8 @@ create policy "Users can insert own lesson plans"
 
 create policy "Users can update own lesson plans"
   on public.lesson_plans for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 create policy "Users can delete own lesson plans"
   on public.lesson_plans for delete

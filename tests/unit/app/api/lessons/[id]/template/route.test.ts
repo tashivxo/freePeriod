@@ -71,13 +71,6 @@ jest.mock('@/lib/supabase/server', () => ({
       if (table === 'lesson_plans') {
         return {
           select: () => lessonSelectChain,
-          update: () => {
-            lessonPlanUpdateCount += 1;
-            if (lessonPlanUpdateCount > 1) {
-              return lessonRollbackChain;
-            }
-            return lessonUpdateChain;
-          },
         };
       }
       if (table === 'uploads') {
@@ -97,6 +90,25 @@ jest.mock('@/lib/supabase/server', () => ({
         };
       }
       throw new Error(`Unexpected table ${table}`);
+    }),
+  })),
+}));
+
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: jest.fn(() => ({
+    from: jest.fn((table: string) => {
+      if (table === 'lesson_plans') {
+        return {
+          update: () => {
+            lessonPlanUpdateCount += 1;
+            if (lessonPlanUpdateCount > 1) {
+              return lessonRollbackChain;
+            }
+            return lessonUpdateChain;
+          },
+        };
+      }
+      throw new Error(`Unexpected admin table ${table}`);
     }),
   })),
 }));
