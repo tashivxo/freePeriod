@@ -30,7 +30,7 @@ async function GeneratePageContent() {
         .single(),
       supabase
         .from('subscriptions')
-        .select('plan, status, trial_end')
+        .select('plan, status, trial_end, ends_at')
         .eq('user_id', user.id)
         .maybeSingle(),
     ]);

@@ -24,7 +24,7 @@ export async function resolveGenerationAccess(
   const [{ data: subData }, { data: userRecord }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('plan, status, trial_end, renews_at')
+      .select('plan, status, trial_end, renews_at, ends_at')
       .eq('user_id', userId)
       .maybeSingle(),
     supabase
