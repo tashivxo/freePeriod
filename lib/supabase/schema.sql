@@ -46,8 +46,9 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'role', '') in ('service_role')
-     or current_user in ('postgres', 'supabase_admin') then
+  if coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+     or coalesce(auth.role(), '') = 'service_role'
+     or session_user in ('postgres', 'supabase_admin') then
     return new;
   end if;
 
