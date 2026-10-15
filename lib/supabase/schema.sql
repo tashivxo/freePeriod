@@ -55,8 +55,16 @@ begin
 
   if tg_op = 'INSERT' then
     new.is_admin := false;
-  elsif tg_op = 'UPDATE' and new.is_admin is distinct from old.is_admin then
+    new.plan := 'free';
+    new.generation_count := 0;
+    new.generation_count_reset_at := null;
+    new.deletion_scheduled_at := null;
+  elsif tg_op = 'UPDATE' then
     new.is_admin := old.is_admin;
+    new.plan := old.plan;
+    new.generation_count := old.generation_count;
+    new.generation_count_reset_at := old.generation_count_reset_at;
+    new.deletion_scheduled_at := old.deletion_scheduled_at;
   end if;
 
   return new;

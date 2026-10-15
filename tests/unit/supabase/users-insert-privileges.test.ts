@@ -68,3 +68,30 @@ describe('013_lock_users_insert_columns', () => {
     }
   });
 });
+
+const INSERT_SITES = [
+  'app/auth/callback/route.ts',
+  'lib/supabase/middleware.ts',
+  'app/(auth)/onboarding/OnboardingPage.tsx',
+  'app/(auth)/sign-in/SignInPage.tsx',
+  'app/(auth)/sign-up/SignUpPage.tsx',
+  'app/(app)/settings/page.tsx',
+];
+
+describe('client users inserts', () => {
+  it.each(INSERT_SITES)('%s omits plan, quota, is_admin, and deletion_scheduled_at', (rel) => {
+    const src = readFileSync(path.join(process.cwd(), rel), 'utf8');
+    const blocks = [
+      ...src.matchAll(/from\(\s*'users'\s*\)\s*\.insert\(\s*\{([\s\S]*?)\}\s*\)/g),
+    ];
+    expect(blocks.length).toBeGreaterThan(0);
+    for (const block of blocks) {
+      const body = block[1];
+      expect(body).not.toMatch(/\bplan\s*:/);
+      expect(body).not.toMatch(/\bis_admin\s*:/);
+      expect(body).not.toMatch(/\bgeneration_count\s*:/);
+      expect(body).not.toMatch(/\bgeneration_count_reset_at\s*:/);
+      expect(body).not.toMatch(/\bdeletion_scheduled_at\s*:/);
+    }
+  });
+});

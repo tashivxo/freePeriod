@@ -327,6 +327,39 @@ describe('OnboardingPage', () => {
     });
   });
 
+  it('inserts a profile without plan, quota, or deletion fields when no row exists', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user-123',
+          default_subject: 'Mathematics',
+          default_grade: '9',
+          default_curriculum: 'IB',
+          country: 'AE',
+          onboarding_complete: true,
+        }),
+      );
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('plan');
+      expect(payload).not.toHaveProperty('is_admin');
+      expect(payload).not.toHaveProperty('generation_count');
+      expect(payload).not.toHaveProperty('generation_count_reset_at');
+      expect(payload).not.toHaveProperty('deletion_scheduled_at');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
   it('renders logo and supporting line above the card', () => {
     render(<OnboardingPage />);
     expect(screen.getByText('FreePeriod')).toBeInTheDocument();
