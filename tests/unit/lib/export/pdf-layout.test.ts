@@ -181,6 +181,18 @@ describe('layoutPdfFieldText drawn visual order', () => {
     expect(text.text).toBe('Students will learn');
     expect(text.text).not.toMatch(/^- /);
   });
+
+  it.each(['- Students will learn', '* Students will learn', '• Students will learn'])(
+    'strips a leading %j marker and draws only U+2022',
+    (input) => {
+      const lines = layoutPdfFieldText(input, font, SIZE, BOUNDS);
+      const [bullet] = runsOfKind(lines, 'bullet');
+      const [text] = runsOfKind(lines, 'text');
+      expect(bullet.text).toBe('\u2022');
+      expect(text.text).toBe('Students will learn');
+      expect(text.text).not.toMatch(/^[-*\u2022] /);
+    },
+  );
 });
 
 describe('fitPdfFieldFontSize', () => {

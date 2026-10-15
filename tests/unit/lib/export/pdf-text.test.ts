@@ -47,8 +47,14 @@ describe('normalizePdfPunctuation', () => {
     expect(normalizePdfPunctuation('- Students\n- Next')).toBe('• Students\n• Next');
   });
 
-  it('strips a leftover "- " after an existing bullet so lists are not "• - "', () => {
+  it('replaces a leading "* " list marker with U+2022 so lists are not "• * "', () => {
+    expect(normalizePdfPunctuation('* Students will learn')).toBe('• Students will learn');
+    expect(normalizePdfPunctuation('* Students\n* Next')).toBe('• Students\n• Next');
+  });
+
+  it('strips leftover "- " or "* " after an existing bullet so lists are not "• - " or "• * "', () => {
     expect(normalizePdfPunctuation('• - Students will learn')).toBe('• Students will learn');
     expect(normalizePdfPunctuation('• - One\n• - Two')).toBe('• One\n• Two');
+    expect(normalizePdfPunctuation('• * Students will learn')).toBe('• Students will learn');
   });
 });

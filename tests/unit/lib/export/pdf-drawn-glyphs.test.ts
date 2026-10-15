@@ -196,21 +196,24 @@ describe('PDF appearance drawn glyph order', () => {
     expect(drawn.indexOf('45')).toBeLessThan(drawn.indexOf('2026'));
   });
 
-  it('strips a leading "- " before drawing the bullet so glyphs are not "• - "', async () => {
-    const lesson: LessonPlan = {
-      ...sampleLesson,
-      content: {
-        ...sampleLesson.content,
-        objectives: ['- Students will learn'],
-      },
-    };
-    const template = await makePdfWithFields([{ name: 'objectives', multiline: true }]);
-    const result = await fillGenericPdfTemplate(template, lesson);
-    const drawn = drawnGlyphs(result.buffer);
+  it.each(['- Students will learn', '* Students will learn', '• Students will learn'])(
+    'strips a leading list marker from %j before drawing •',
+    async (item) => {
+      const lesson: LessonPlan = {
+        ...sampleLesson,
+        content: {
+          ...sampleLesson.content,
+          objectives: [item],
+        },
+      };
+      const template = await makePdfWithFields([{ name: 'objectives', multiline: true }]);
+      const result = await fillGenericPdfTemplate(template, lesson);
+      const drawn = drawnGlyphs(result.buffer);
 
-    expect(drawn).toContain('\u2022');
-    expect(drawn).toContain('Students will learn');
-    expect(drawn).not.toMatch(/\u2022\s*-/);
-    expect(drawn).not.toMatch(/-\s*Students/);
-  });
+      expect(drawn).toContain('\u2022');
+      expect(drawn).toContain('Students will learn');
+      expect(drawn).not.toMatch(/\u2022\s*[-*]/);
+      expect(drawn).not.toMatch(/[-*]\s*Students/);
+    },
+  );
 });
