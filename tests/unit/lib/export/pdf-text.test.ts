@@ -37,8 +37,8 @@ describe('shapePdfText', () => {
 });
 
 describe('normalizePdfPunctuation', () => {
-  it('maps bullets and dashes without stripping letters', () => {
-    expect(normalizePdfPunctuation('• Hello')).toBe('- Hello');
+  it('maps dashes and quotes without stripping letters or bullets', () => {
+    expect(normalizePdfPunctuation('• Hello')).toBe('• Hello');
     expect(normalizePdfPunctuation('التمثيل')).toBe('التمثيل');
   });
 });

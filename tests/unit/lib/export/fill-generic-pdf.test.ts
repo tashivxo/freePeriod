@@ -191,8 +191,23 @@ describe('fillGenericPdfTemplate Unicode text', () => {
 
     expect(form.getTextField('Lesson Title').getText()).toBe('Exploring States of Matter');
     expect(form.getTextField('objectives').getText()).toBe(
-      '- Students will develop a model that predicts and describes changes in particle motion.',
+      '• Students will develop a model that predicts and describes changes in particle motion.',
     );
+  });
+
+  it('keeps mixed Arabic and English objective bullets', async () => {
+    const lesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        objectives: ['Students will learn', 'التمثيل الضوئي'],
+      },
+    };
+    const template = await makePdfWithFields([{ name: 'objectives', multiline: true }]);
+    const result = await fillGenericPdfTemplate(template, lesson);
+    const text = (await PDFDocument.load(result.buffer)).getForm().getTextField('objectives').getText();
+    expect(text).toContain('• Students will learn');
+    expect(text).toContain('• التمثيل الضوئي');
   });
 
   it('fills Arabic objective bullets instead of dropping them', async () => {
@@ -207,6 +222,6 @@ describe('fillGenericPdfTemplate Unicode text', () => {
     const result = await fillGenericPdfTemplate(template, lesson);
     expect(result.filledCount).toBe(1);
     const text = (await PDFDocument.load(result.buffer)).getForm().getTextField('objectives').getText();
-    expect(text).toContain('سيطور الطلاب نموذجا يصف حركة الجسيمات');
+    expect(text).toContain('• سيطور الطلاب نموذجا يصف حركة الجسيمات');
   });
 });
