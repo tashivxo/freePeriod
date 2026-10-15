@@ -109,4 +109,50 @@ describe('persistLessonPlan', () => {
     expect(maybeSingle).toHaveBeenCalledTimes(2);
     expect(userEq).toHaveBeenCalledWith('id', 'user-1');
   });
+
+  it('does not write generation_count through the user-scoped client', async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-1' }, error: null });
+    const userEq = jest.fn().mockResolvedValue({ error: null });
+    const supabase = mockFrom({
+      lesson_plans: {
+        insert: () => ({
+          select: () => ({
+            single: async () => ({ data: { id: 'lesson-1' }, error: null }),
+          }),
+        }),
+      },
+      users: {
+        update: () => ({ eq: userEq }),
+      },
+      uploads: {
+        update: () => ({
+          eq: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({ maybeSingle }),
+              }),
+            }),
+          }),
+        }),
+      },
+    });
+
+    await persistLessonPlan(supabase as never, {
+      userId: 'user-1',
+      title: 'Fractions',
+      subject: 'Mathematics',
+      grade: '8',
+      curriculum: 'CAPS (South Africa)',
+      durationMinutes: 60,
+      content,
+      modelUsed: 'gemini-2.5-flash',
+      tokenCount: 12,
+      curriculumDocPath: null,
+      templatePath: null,
+      generationCount: 1,
+    });
+
+    expect(supabase.from).not.toHaveBeenCalledWith('users');
+    expect(userEq).not.toHaveBeenCalled();
+  });
 });

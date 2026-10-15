@@ -98,4 +98,13 @@ describe('resolveGenerationAccess', () => {
     expect(access.isRateLimited).toBe(false);
     expect(access.generationLimit).toBeNull();
   });
+
+  it('does not reset generation_count through the user-scoped client', async () => {
+    const sb = mockSupabase({
+      sub: null,
+      user: { generation_count: 50, generation_count_reset_at: null, is_admin: false },
+    });
+    await resolveGenerationAccess(sb as never, 'user-1');
+    expect(sb._updates).toEqual([]);
+  });
 });
