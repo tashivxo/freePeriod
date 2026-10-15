@@ -1,13 +1,10 @@
 import {
-  TextAlignment,
   adjustDimsForRotation,
   componentsToColor,
   cmyk,
   drawTextField,
   grayscale,
   layoutCombedText,
-  layoutMultilineText,
-  layoutSinglelineText,
   reduceRotation,
   rgb,
   rotateInPlace,
@@ -17,7 +14,8 @@ import {
   type PDFFont,
   type PDFTextField,
 } from 'pdf-lib';
-import { paragraphBaseIsRtl, shapePdfText } from '@/lib/export/pdf-text';
+import { fitPdfFieldFontSize, layoutPdfFieldText } from '@/lib/export/pdf-layout';
+import { shapePdfText } from '@/lib/export/pdf-text';
 
 const TF_REGEX = /\/[^\0\t\n\f\r ]+[\0\t\n\f\r ]+(\d*\.\d+|\d+)[\0\t\n\f\r ]+Tf/g;
 const COLOR_REGEX =
@@ -38,33 +36,6 @@ function defaultFontSize(da: string | undefined): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-function fontSizeForBounds(
-  font: PDFFont,
-  requested: number | undefined,
-  bounds: { width: number; height: number },
-  multiline: boolean,
-): number | undefined {
-  if (requested === undefined || requested === 0) return undefined;
-  const glyphHeight = font.heightAtSize(requested, { descender: true });
-  const needed = multiline ? glyphHeight * 1.2 : glyphHeight;
-  return needed <= bounds.height ? requested : undefined;
-}
-
-function clampLinesToBounds<T extends { y: number; height: number }>(
-  lines: T[],
-  bounds: { y: number; height: number },
-): T[] {
-  const minY = bounds.y;
-  const maxY = bounds.y + bounds.height;
-  return lines.map((line) => {
-    const top = line.y + line.height;
-    let y = line.y;
-    if (y < minY) y = minY;
-    if (top > maxY) y = Math.max(minY, maxY - line.height);
-    return y === line.y ? line : { ...line, y };
-  });
-}
-
 function defaultColor(da: string | undefined) {
   if (!da) return undefined;
   const match = lastMatch(da, COLOR_REGEX);
@@ -79,9 +50,9 @@ function defaultColor(da: string | undefined) {
 }
 
 /**
- * Same layout as pdf-lib's default text-field appearance, but draws shaped
- * visual Arabic (presentation forms + bidi) while the field value stays
- * logical Unicode.
+ * Field appearances draw shaped Arabic after wrapping in logical order and
+ * bidi-reordering each visual line. Font size is fixed per field type and
+ * shrinks only when the text would overflow the widget.
  */
 export function unicodeTextFieldAppearanceProvider(): AppearanceProviderFor<PDFTextField> {
   return (textField, widget, font: PDFFont) => {
@@ -90,12 +61,10 @@ export function unicodeTextFieldAppearanceProvider(): AppearanceProviderFor<PDFT
     const widgetColor = defaultColor(widgetDa);
     const fieldColor = defaultColor(fieldDa);
     const widgetFontSize = defaultFontSize(widgetDa);
-    const fieldFontSize = defaultFontSize(fieldDa);
     const rectangle = widget.getRectangle();
     const ap = widget.getAppearanceCharacteristics();
     const bs = widget.getBorderStyle();
     const logical = textField.getText() ?? '';
-    const text = shapePdfText(logical);
     const borderWidth = bs?.getWidth() ?? 0;
     const rotation = reduceRotation(ap?.getRotation());
     const { width, height } = adjustDimsForRotation(rectangle, rotation);
@@ -111,46 +80,28 @@ export function unicodeTextFieldAppearanceProvider(): AppearanceProviderFor<PDFT
       height: height - (borderWidth + padding) * 2,
     };
 
-    const requestedAlignment = textField.getAlignment();
-    const alignment =
-      requestedAlignment === TextAlignment.Left && paragraphBaseIsRtl(logical)
-        ? TextAlignment.Right
-        : requestedAlignment;
-
-    // Noto Arabic metrics are taller than Helvetica. Honor the template DA size
-    // only when that size still fits the widget; otherwise let pdf-lib auto-size.
-    const requestedSize = widgetFontSize ?? fieldFontSize;
-    const fontSizeHint = fontSizeForBounds(font, requestedSize, bounds, textField.isMultiline());
-
     let textLines;
     let fontSize: number;
-    if (textField.isMultiline()) {
-      const layout = layoutMultilineText(text, {
-        alignment,
-        fontSize: fontSizeHint,
-        font,
-        bounds,
-      });
-      textLines = clampLinesToBounds(layout.lines, bounds);
-      fontSize = layout.fontSize;
-    } else if (textField.isCombed()) {
-      const layout = layoutCombedText(text, {
-        fontSize: fontSizeHint,
+    if (textField.isCombed()) {
+      const layout = layoutCombedText(shapePdfText(logical), {
+        fontSize: widgetFontSize,
         font,
         bounds,
         cellCount: textField.getMaxLength() ?? 0,
       });
-      textLines = clampLinesToBounds(layout.cells, bounds);
+      textLines = layout.cells;
       fontSize = layout.fontSize;
     } else {
-      const layout = layoutSinglelineText(text, {
-        alignment,
-        fontSize: fontSizeHint,
-        font,
-        bounds,
-      });
-      textLines = clampLinesToBounds([layout.line], bounds);
-      fontSize = layout.fontSize;
+      const fieldType = textField.isMultiline() ? 'multiline' : 'single';
+      fontSize = fitPdfFieldFontSize(logical, font, bounds, fieldType);
+      textLines = layoutPdfFieldText(logical, font, fontSize, bounds).map((run) => ({
+        text: run.text,
+        encoded: font.encodeText(run.text),
+        x: run.x,
+        y: run.y,
+        width: run.width,
+        height: fontSize,
+      }));
     }
 
     const textColor = widgetColor ?? fieldColor ?? black;

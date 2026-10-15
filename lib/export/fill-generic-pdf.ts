@@ -43,9 +43,9 @@ export function valueForPdfField(
  * keys from `buildTemplateData`. Static PDFs without form fields are unchanged.
  *
  * Field values keep logical Unicode (Arabic included). Appearances embed a
- * Noto Sans Arabic + Latin OFL font and draw shaped, bidi-reordered glyphs
- * because pdf-lib does not shape Arabic or apply the Unicode Bidirectional
- * Algorithm.
+ * Noto Sans Arabic + Latin OFL font and draw glyphs after shaping, wrapping
+ * in logical order, then bidi-reordering each visual line (pdf-lib does not
+ * shape Arabic or apply the Unicode Bidirectional Algorithm).
  */
 export async function fillGenericPdfTemplate(
   templateBuffer: Buffer,

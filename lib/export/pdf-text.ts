@@ -14,11 +14,13 @@ export function containsArabic(text: string): boolean {
 
 /**
  * Map a few punctuation marks to ASCII so English field values stay the same
- * as the previous WinAnsi fill. Does not strip non-ASCII letters.
+ * as the previous WinAnsi fill. Does not strip non-ASCII letters. Keeps U+2022
+ * list bullets, and turns a leading "- " marker into U+2022 so lists are not
+ * drawn as "- - ".
  */
 export function normalizePdfPunctuation(text: string): string {
   return text
-    .replace(/\u2022/g, '-')
+    .replace(/(^|\n)- /g, '$1\u2022 ')
     .replace(/\u2014|\u2013/g, '-')
     .replace(/\u2018|\u2019/g, "'")
     .replace(/\u201c|\u201d/g, '"')
@@ -26,32 +28,54 @@ export function normalizePdfPunctuation(text: string): string {
     .replace(/\u00a0/g, ' ');
 }
 
+/**
+ * True when the first strong bidirectional character is Arabic or R.
+ * Neutrals, digits, and list markers are skipped.
+ */
+export function firstStrongIsRtl(text: string): boolean {
+  for (const char of text) {
+    const type = bidi.getBidiCharTypeName(char);
+    if (type === 'L') return false;
+    if (type === 'R' || type === 'AL') return true;
+  }
+  return false;
+}
+
 export function paragraphBaseIsRtl(text: string): boolean {
   const firstLine = text.split(/\r?\n/).find((line) => line.trim()) ?? '';
-  if (!firstLine || !containsArabic(firstLine)) return false;
-  const shaped = ArabicShaper.convertArabic(firstLine);
-  const { paragraphs } = bidi.getEmbeddingLevels(shaped);
-  return ((paragraphs[0]?.level ?? 0) & 1) === 1;
+  if (!firstLine) return false;
+  return firstStrongIsRtl(firstLine);
+}
+
+/** Presentation-form substitution only. Logical order is unchanged. */
+export function shapeArabicLogical(text: string): string {
+  if (!text || !containsArabic(text)) return text;
+  return ArabicShaper.convertArabic(text);
 }
 
 /**
- * Convert Arabic letters to presentation forms and reorder each line for
- * LTR drawing. pdf-lib does not shape or apply the Unicode Bidirectional
- * Algorithm, so this has to happen before glyphs are encoded.
- *
- * Each newline-separated line is processed on its own so an English bullet
- * line is not reordered by a following Arabic line. Leading ASCII list
- * markers on RTL lines may still land on the visual end of the line.
+ * UAX#9 reorder of one already-wrapped line. `rtl` forces the paragraph
+ * direction so wrapped continuations keep the item's first-strong direction.
+ */
+export function reorderPdfLine(text: string, rtl: boolean): string {
+  if (!text) return text;
+  if (!containsArabic(text) && !rtl) return text;
+  const levels = bidi.getEmbeddingLevels(text, rtl ? 'rtl' : 'ltr');
+  return bidi.getReorderedString(text, levels);
+}
+
+/**
+ * Convert Arabic letters to presentation forms and reorder each newline
+ * separated line for LTR drawing. Wrapping must happen on the logical
+ * shaped string first; use `layoutPdfFieldText` for field appearances.
  */
 export function shapePdfText(text: string): string {
   return text
     .split(/(\r?\n)/)
     .map((part) => {
       if (part === '\n' || part === '\r\n' || part.length === 0) return part;
-      if (!containsArabic(part)) return part;
-      const shaped = ArabicShaper.convertArabic(part);
-      const levels = bidi.getEmbeddingLevels(shaped);
-      return bidi.getReorderedString(shaped, levels);
+      const rtl = firstStrongIsRtl(part);
+      return reorderPdfLine(shapeArabicLogical(part), rtl);
     })
     .join('');
 }
