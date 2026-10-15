@@ -46,6 +46,44 @@ const SUBJECTS = [
   'Music',
 ];
 
+type OnboardingUser = ReturnType<typeof userEvent.setup>;
+
+function countrySelect() {
+  return screen.getByRole('button', { name: /where do you teach/i });
+}
+
+async function chooseSubject(user: OnboardingUser) {
+  await user.click(screen.getByRole('radio', { name: /mathematics/i }));
+  await user.click(screen.getByRole('button', { name: /next/i }));
+}
+
+async function chooseGrade(user: OnboardingUser) {
+  await waitFor(() => {
+    expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
+  });
+  await user.click(screen.getByLabelText(/grade level/i));
+  await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+  await user.click(screen.getByRole('button', { name: /next/i }));
+}
+
+async function chooseCountry(user: OnboardingUser, countryName = 'United Arab Emirates') {
+  await waitFor(() => {
+    expect(countrySelect()).toBeInTheDocument();
+  });
+  await user.click(countrySelect());
+  await user.click(screen.getAllByRole('option', { name: countryName })[0]!);
+  await user.click(screen.getByRole('button', { name: /next/i }));
+}
+
+async function reachCurriculum(user: OnboardingUser) {
+  await chooseSubject(user);
+  await chooseGrade(user);
+  await chooseCountry(user);
+  await waitFor(() => {
+    expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument();
+  });
+}
+
 describe('OnboardingPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -117,68 +155,96 @@ describe('OnboardingPage', () => {
 
   it('shows next button and navigates to step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: /what grade level/i }),
+        screen.getByRole('heading', { name: /what grade do you teach/i }),
       ).toBeInTheDocument();
     });
   });
 
   it('renders grade dropdown on step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
     });
   });
 
-  it('navigates from step 2 to step 3', async () => {
+  it('navigates from step 2 to the country step', async () => {
     const { user } = render(<OnboardingPage />);
-    // Step 1: select subject
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    // Step 2: select grade
-    await waitFor(() => {
-      expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
-    });
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
+    await chooseGrade(user);
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: /what curriculum/i }),
+        screen.getByRole('heading', { name: /where do you teach/i }),
       ).toBeInTheDocument();
     });
+    expect(screen.getByRole('progressbar', { name: /step 3 of 4/i })).toHaveAttribute(
+      'aria-valuenow',
+      '3',
+    );
   });
 
-  it('renders curriculum AnimatedDropdown on step 3', async () => {
+  it('renders country AnimatedDropdown with Common and All countries groups', async () => {
     const { user } = render(<OnboardingPage />);
-    // Navigate to step 3
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
-    });
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByRole('button', { name: /where do you teach/i });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('id', 'country-select');
+    expect(document.querySelector('select#country-select')).toBeNull();
+    expect(screen.getByText(/you can change this in settings/i)).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(screen.getByText('Common')).toBeInTheDocument();
+    expect(screen.getByText('All countries')).toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(
+      0,
+    );
+    for (const countryName of [
+      'Saudi Arabia',
+      'United Kingdom',
+      'United States',
+      'India',
+      'Australia',
+      'South Africa',
+    ]) {
+      expect(screen.getAllByRole('option', { name: countryName }).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByRole('option', { name: 'Afghanistan' })).toBeInTheDocument();
+  });
+
+  it('disables Next on the country step until a country is chosen', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
     });
 
-    // Step 3 uses AnimatedDropdown (not pill buttons)
+    await user.click(countrySelect());
+    await user.click(screen.getAllByRole('option', { name: 'United Kingdom' })[0]!);
+    expect(screen.getByRole('button', { name: /next/i })).toBeEnabled();
+  });
+
+  it('renders curriculum AnimatedDropdown on step 4', async () => {
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    expect(screen.getByRole('progressbar', { name: /step 4 of 4/i })).toHaveAttribute(
+      'aria-valuemax',
+      '4',
+    );
+
     const curriculumTrigger = screen.getByLabelText(/curriculum/i);
     expect(curriculumTrigger).toHaveAttribute('aria-haspopup', 'listbox');
 
-    // Open dropdown and verify preset options including UAE MOE
     await user.click(curriculumTrigger);
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
@@ -188,8 +254,7 @@ describe('OnboardingPage', () => {
 
   it('allows going back from step 2 to step 1', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
@@ -203,25 +268,42 @@ describe('OnboardingPage', () => {
     });
   });
 
+  it('goes back from curriculum to the country step', async () => {
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    await user.click(screen.getByRole('button', { name: /back/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: /where do you teach/i }),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('heading', { name: /select your curriculum/i }),
+    ).not.toBeInTheDocument();
+    expect(countrySelect()).toHaveTextContent('United Arab Emirates');
+  });
+
+  it('step 4 heading and curriculum dropdown use Select your curriculum copy', async () => {
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    expect(
+      screen.getByRole('heading', { name: 'Select your curriculum' }),
+    ).toBeInTheDocument();
+
+    const curriculumTrigger = screen.getByLabelText(/curriculum/i);
+    expect(curriculumTrigger).toHaveTextContent(/select your curriculum/i);
+
+    await user.click(curriculumTrigger);
+    expect(screen.getByRole('listbox', { name: /select your curriculum/i })).toBeInTheDocument();
+  });
+
   it('submits onboarding data and redirects to dashboard', async () => {
     const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
 
-    // Step 1: select subjects
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    // Step 2: select grade
-    await waitFor(() => {
-      expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
-    });
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    // Step 3: select curriculum from dropdown and finish
-    await waitFor(() => {
-      expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument();
-    });
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
@@ -233,6 +315,10 @@ describe('OnboardingPage', () => {
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           default_subject: 'Mathematics',
+          default_grade: '9',
+          default_curriculum: 'IB',
+          country: 'AE',
+          onboarding_complete: true,
         }),
         { onConflict: 'id' },
       );
@@ -246,36 +332,29 @@ describe('OnboardingPage', () => {
     expect(screen.getByText(/set up your teaching profile/i)).toBeInTheDocument();
   });
 
-  it('renders a 3-segment progress indicator for step 1', () => {
+  it('renders a 4-segment progress indicator for step 1', () => {
     render(<OnboardingPage />);
-    const progress = screen.getByRole('progressbar', { name: /step 1 of 3/i });
+    const progress = screen.getByRole('progressbar', { name: /step 1 of 4/i });
     expect(progress).toHaveAttribute('aria-valuenow', '1');
-    expect(progress).toHaveAttribute('aria-valuemax', '3');
+    expect(progress).toHaveAttribute('aria-valuemax', '4');
   });
 
   it('updates progress indicator when advancing to step 2', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await chooseSubject(user);
 
     await waitFor(() => {
-      expect(screen.getByRole('progressbar', { name: /step 2 of 3/i })).toHaveAttribute(
+      expect(screen.getByRole('progressbar', { name: /step 2 of 4/i })).toHaveAttribute(
         'aria-valuenow',
         '2',
       );
     });
   });
 
-  it('selecting Custom curriculum reveals text input on step 3', async () => {
+  it('selecting Custom curriculum reveals text input on step 4', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await reachCurriculum(user);
 
-    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => expect(screen.getByRole('option', { name: 'Custom' })).toBeInTheDocument());
     await user.click(screen.getByRole('option', { name: 'Custom' }));
@@ -288,15 +367,8 @@ describe('OnboardingPage', () => {
   it('shows finish errors inside the card above actions', async () => {
     mockUpsert.mockResolvedValueOnce({ error: { message: 'Database error' } });
     const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
 
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
     await user.click(screen.getByRole('option', { name: 'IB' }));
@@ -311,15 +383,8 @@ describe('OnboardingPage', () => {
 
   it('shows saving then redirecting feedback on successful finish', async () => {
     const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
 
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
     await user.click(screen.getByRole('option', { name: 'IB' }));
@@ -336,15 +401,8 @@ describe('OnboardingPage', () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(<OnboardingPage />);
+    await reachCurriculum(user);
 
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-
-    await waitFor(() => expect(screen.getByLabelText(/curriculum/i)).toBeInTheDocument());
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
     await user.click(screen.getByRole('option', { name: 'IB' }));
@@ -364,19 +422,12 @@ describe('OnboardingPage', () => {
     );
   });
 
-  it('Finish button is disabled until a curriculum is selected on step 3', async () => {
+  it('Finish button is disabled until a curriculum is selected on step 4', async () => {
     const { user } = render(<OnboardingPage />);
-    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument());
-    await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
-    await user.click(screen.getByRole('button', { name: /next/i }));
+    await reachCurriculum(user);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /finish/i })).toBeInTheDocument());
     expect(screen.getByRole('button', { name: /finish/i })).toBeDisabled();
 
-    // Select a curriculum
     await user.click(screen.getByLabelText(/curriculum/i));
     await waitFor(() => expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument());
     await user.click(screen.getByRole('option', { name: 'IB' }));

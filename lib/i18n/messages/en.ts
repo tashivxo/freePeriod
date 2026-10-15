@@ -10,6 +10,11 @@ export const en = {
     title: 'Settings',
     zenMode: 'Zen Mode',
     zenModeDescription: 'Are our colorful backgrounds too much for you? Try Zen Mode.',
+    background: 'Background',
+    backgroundDescription: 'Colour of the moving bands behind the app.',
+    backgroundBrand: 'FreePeriod colours',
+    backgroundRainbow: 'Multicolour',
+    backgroundZenLocked: 'Turn Zen Mode off to change this.',
     language: 'Language',
     languageDescription: 'Website and new lesson plans use this language.',
     defaultSubject: 'Default Subject',
@@ -20,6 +25,8 @@ export const en = {
     defaultCurriculum: 'Default Curriculum',
     selectCurriculum: 'Select curriculum',
     enterCurriculum: 'Enter curriculum',
+    country: 'Country',
+    selectCountry: 'Select your country',
     save: 'Save Settings',
     saving: 'Saving...',
     saved: 'Settings saved!',
@@ -163,6 +170,11 @@ export type Messages = {
     title: string;
     zenMode: string;
     zenModeDescription: string;
+    background: string;
+    backgroundDescription: string;
+    backgroundBrand: string;
+    backgroundRainbow: string;
+    backgroundZenLocked: string;
     language: string;
     languageDescription: string;
     defaultSubject: string;
@@ -173,6 +185,8 @@ export type Messages = {
     defaultCurriculum: string;
     selectCurriculum: string;
     enterCurriculum: string;
+    country: string;
+    selectCountry: string;
     save: string;
     saving: string;
     saved: string;
