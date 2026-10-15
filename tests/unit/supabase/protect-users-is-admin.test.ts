@@ -54,4 +54,23 @@ describe('protect_users_is_admin', () => {
     expect(body).toMatch(/session_user/);
     expect(body).not.toMatch(/\bcurrent_user\b/);
   });
+
+  it('forces plan, quota, and deletion columns to defaults on non-service-role INSERT', () => {
+    const { body } = latestProtectUsersIsAdmin();
+    expect(body).toMatch(/tg_op\s*=\s*'INSERT'/i);
+    expect(body).toMatch(/new\.plan\s*:=\s*'free'/i);
+    expect(body).toMatch(/new\.generation_count\s*:=\s*0/i);
+    expect(body).toMatch(/new\.generation_count_reset_at\s*:=\s*null/i);
+    expect(body).toMatch(/new\.deletion_scheduled_at\s*:=\s*null/i);
+    expect(body).toMatch(/new\.is_admin\s*:=\s*false/i);
+  });
+
+  it('keeps privileged columns unchanged on non-service-role UPDATE', () => {
+    const { body } = latestProtectUsersIsAdmin();
+    expect(body).toMatch(/tg_op\s*=\s*'UPDATE'/i);
+    expect(body).toMatch(/new\.plan\s*:=\s*old\.plan/i);
+    expect(body).toMatch(/new\.generation_count\s*:=\s*old\.generation_count/i);
+    expect(body).toMatch(/new\.generation_count_reset_at\s*:=\s*old\.generation_count_reset_at/i);
+    expect(body).toMatch(/new\.deletion_scheduled_at\s*:=\s*old\.deletion_scheduled_at/i);
+  });
 });
