@@ -38,6 +38,33 @@ function defaultFontSize(da: string | undefined): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
+function fontSizeForBounds(
+  font: PDFFont,
+  requested: number | undefined,
+  bounds: { width: number; height: number },
+  multiline: boolean,
+): number | undefined {
+  if (requested === undefined || requested === 0) return undefined;
+  const glyphHeight = font.heightAtSize(requested, { descender: true });
+  const needed = multiline ? glyphHeight * 1.2 : glyphHeight;
+  return needed <= bounds.height ? requested : undefined;
+}
+
+function clampLinesToBounds<T extends { y: number; height: number }>(
+  lines: T[],
+  bounds: { y: number; height: number },
+): T[] {
+  const minY = bounds.y;
+  const maxY = bounds.y + bounds.height;
+  return lines.map((line) => {
+    const top = line.y + line.height;
+    let y = line.y;
+    if (y < minY) y = minY;
+    if (top > maxY) y = Math.max(minY, maxY - line.height);
+    return y === line.y ? line : { ...line, y };
+  });
+}
+
 function defaultColor(da: string | undefined) {
   if (!da) return undefined;
   const match = lastMatch(da, COLOR_REGEX);
@@ -90,34 +117,39 @@ export function unicodeTextFieldAppearanceProvider(): AppearanceProviderFor<PDFT
         ? TextAlignment.Right
         : requestedAlignment;
 
+    // Noto Arabic metrics are taller than Helvetica. Honor the template DA size
+    // only when that size still fits the widget; otherwise let pdf-lib auto-size.
+    const requestedSize = widgetFontSize ?? fieldFontSize;
+    const fontSizeHint = fontSizeForBounds(font, requestedSize, bounds, textField.isMultiline());
+
     let textLines;
     let fontSize: number;
     if (textField.isMultiline()) {
       const layout = layoutMultilineText(text, {
         alignment,
-        fontSize: widgetFontSize ?? fieldFontSize,
+        fontSize: fontSizeHint,
         font,
         bounds,
       });
-      textLines = layout.lines;
+      textLines = clampLinesToBounds(layout.lines, bounds);
       fontSize = layout.fontSize;
     } else if (textField.isCombed()) {
       const layout = layoutCombedText(text, {
-        fontSize: widgetFontSize ?? fieldFontSize,
+        fontSize: fontSizeHint,
         font,
         bounds,
         cellCount: textField.getMaxLength() ?? 0,
       });
-      textLines = layout.cells;
+      textLines = clampLinesToBounds(layout.cells, bounds);
       fontSize = layout.fontSize;
     } else {
       const layout = layoutSinglelineText(text, {
         alignment,
-        fontSize: widgetFontSize ?? fieldFontSize,
+        fontSize: fontSizeHint,
         font,
         bounds,
       });
-      textLines = [layout.line];
+      textLines = clampLinesToBounds([layout.line], bounds);
       fontSize = layout.fontSize;
     }
 
