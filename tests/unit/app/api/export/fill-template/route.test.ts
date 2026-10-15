@@ -145,6 +145,28 @@ describe('POST /api/export/fill-template', () => {
     lessonRow('user-1/template/plan.docx');
   });
 
+  it('returns 403 and does not download when template_path is outside the user prefix', async () => {
+    lessonRow('other-user/template/secret.docx');
+
+    const response = await postFill();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockFillGeneric).not.toHaveBeenCalled();
+    expect(mockCreateReport).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 and does not download when template_path traverses out of the user prefix', async () => {
+    lessonRow('user-1/../other-user/secret.docx');
+
+    const response = await postFill();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+  });
+
   it('returns 401 when not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'no session' } });
 
