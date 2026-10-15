@@ -223,6 +223,27 @@ describe('POST /api/export/fill-template', () => {
     });
   });
 
+  it('never executes docx-templates JS commands from a user-uploaded +++ template', async () => {
+    const xml =
+      '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>+++EXEC require("fs").writeFileSync("/tmp/pwned","owned")+++</w:t></w:r></w:p></w:body></w:document>';
+    const templateBuffer = await makeDocxBuffer(xml);
+    mockDownloadedBuffer(templateBuffer);
+    mockCreateReport.mockImplementation(() => {
+      throw new Error('docx-templates must not run on user uploads');
+    });
+    mockFillGeneric.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+    });
+
+    const response = await postFill();
+
+    expect(mockCreateReport).not.toHaveBeenCalled();
+    expect(mockFillGeneric).toHaveBeenCalled();
+    expect(response.status).toBe(422);
+  });
+
   it('returns 422 when a +++ DOCX template is unchanged and contains no lesson text', async () => {
     const xml =
       '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>+++unknownField+++</w:t></w:r></w:p></w:body></w:document>';
