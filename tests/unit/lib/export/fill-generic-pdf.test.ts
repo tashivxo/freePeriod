@@ -161,7 +161,7 @@ describe('fillGenericPdfTemplate Unicode text', () => {
     expect(result.filledCount).toBe(1);
     const filled = await PDFDocument.load(result.buffer);
     expect(filled.getForm().getTextField('Lesson Title').getText()).toBe(title);
-    expect(result.buffer.toString('latin1')).toMatch(/FontFile2/);
+    expect(result.buffer.toString('latin1')).toMatch(/NotoSans/);
   });
 
   it('keeps mixed Arabic and English in a title', async () => {
@@ -190,8 +190,23 @@ describe('fillGenericPdfTemplate Unicode text', () => {
     const form = filled.getForm();
 
     expect(form.getTextField('Lesson Title').getText()).toBe('Exploring States of Matter');
-    expect(form.getTextField('objectives').getText()).toContain(
-      'Students will develop a model that predicts and describes changes in particle motion.',
+    expect(form.getTextField('objectives').getText()).toBe(
+      '- Students will develop a model that predicts and describes changes in particle motion.',
     );
+  });
+
+  it('fills Arabic objective bullets instead of dropping them', async () => {
+    const lesson: LessonPlan = {
+      ...sampleLesson,
+      content: {
+        ...sampleLesson.content,
+        objectives: ['سيطور الطلاب نموذجا يصف حركة الجسيمات'],
+      },
+    };
+    const template = await makePdfWithFields([{ name: 'objectives', multiline: true }]);
+    const result = await fillGenericPdfTemplate(template, lesson);
+    expect(result.filledCount).toBe(1);
+    const text = (await PDFDocument.load(result.buffer)).getForm().getTextField('objectives').getText();
+    expect(text).toContain('سيطور الطلاب نموذجا يصف حركة الجسيمات');
   });
 });

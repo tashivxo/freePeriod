@@ -10,13 +10,22 @@ const nextConfig: NextConfig = {
   // Keep pdfjs/tesseract out of the route bundle. Bundling pdfjs-dist makes
   // its createRequire("@napi-rs/canvas") fail, then `new DOMMatrix()` throws
   // at module evaluation and /api/parse-document never starts.
-  serverExternalPackages: ['tesseract.js', 'pdf-parse', 'pdfjs-dist', 'pdf-lib'],
+  serverExternalPackages: [
+    'tesseract.js',
+    'pdf-parse',
+    'pdfjs-dist',
+    'pdf-lib',
+    '@pdf-lib/fontkit',
+    'bidi-js',
+    'arabic-persian-reshaper',
+  ],
   outputFileTracingIncludes: {
     '/api/parse-document': [
       './node_modules/pdfjs-dist/legacy/build/pdf.mjs',
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs',
     ],
+    '/api/export/fill-template': ['./assets/fonts/NotoSansArabicLatin-Regular.ttf'],
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'motion'],
