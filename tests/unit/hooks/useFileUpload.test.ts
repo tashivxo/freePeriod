@@ -226,6 +226,40 @@ describe('useFileUpload', () => {
     );
     expect(result.current.phase).toBe('ready');
   });
+
+  it('rejects a file that exceeds maxSizeBytes before uploading', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'curriculum_doc', accept: '.pdf', maxSizeBytes: 10 }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(pdfFile());
+    });
+
+    expect(result.current.phase).toBe('error');
+    expect(result.current.error).toBe('unit.pdf exceeds the maximum size of 10 B');
+    expect(result.current.file).toBeNull();
+    expect(result.current.isUploading).toBe(false);
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('rejects a zero-byte file before uploading', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'curriculum_doc', accept: '.pdf' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(new File([], 'empty.pdf', { type: 'application/pdf' }));
+    });
+
+    expect(result.current.phase).toBe('error');
+    expect(result.current.error).toBe(
+      'empty.pdf is empty. Please choose a file with content.',
+    );
+    expect(result.current.file).toBeNull();
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
 });
 
 describe('slugifyFileStem', () => {
