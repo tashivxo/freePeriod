@@ -865,7 +865,7 @@ const MIN_VALUE_CELL_WIDTH_DXA = 1600;
 const MIN_SELF_FILL_LABEL_WIDTH_DXA = 5000;
 
 function stripLeadingListMarker(item: string): string {
-  return item.replace(/^(?:[\u2022\-\u2013\u2014][ \t]+)+/, '');
+  return item.replace(/^(?:[*\u2022\u2013\u2014-][ \t]+)+/, '');
 }
 
 function joinBullets(items: string[] | undefined): string {

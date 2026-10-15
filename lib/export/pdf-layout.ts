@@ -29,7 +29,7 @@ export type PdfFieldBounds = {
 
 export type PdfFieldType = 'single' | 'multiline';
 
-const BULLET_PREFIX_RE = /^(?:[\u2022\-\u2013\u2014])[ \t]+/;
+const BULLET_PREFIX_RE = /^(?:[*\u2022\u2013\u2014-])[ \t]+/;
 
 export function firstStrongIsRtl(text: string): boolean {
   return firstStrongFromText(text.replace(BULLET_PREFIX_RE, ''));
@@ -97,7 +97,7 @@ function wrapLogical(
 }
 
 function splitBullet(line: string): { hasBullet: boolean; body: string } {
-  const body = line.replace(/^(?:[\u2022\-\u2013\u2014][ \t]+)+/, '');
+  const body = line.replace(/^(?:[*\u2022\u2013\u2014-][ \t]+)+/, '');
   return { hasBullet: body !== line, body };
 }
 

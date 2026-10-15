@@ -16,12 +16,12 @@ export function containsArabic(text: string): boolean {
 /**
  * Map a few punctuation marks to ASCII so English field values stay the same
  * as the previous WinAnsi fill. Does not strip non-ASCII letters. Keeps U+2022
- * list bullets, and turns a leading "- " marker into U+2022 so lists are not
- * drawn as "- - ".
+ * list bullets, and turns a leading "- ", "* ", or "• " marker into U+2022 so
+ * lists are not drawn as "• - " or "• * ".
  */
 export function normalizePdfPunctuation(text: string): string {
   return text
-    .replace(/(^|\n)(?:[\u2022\-\u2013\u2014][ \t]+)+/g, '$1\u2022 ')
+    .replace(/(^|\n)(?:[*\u2022\u2013\u2014-][ \t]+)+/g, '$1\u2022 ')
     .replace(/\u2014|\u2013/g, '-')
     .replace(/\u2018|\u2019/g, "'")
     .replace(/\u201c|\u201d/g, '"')
