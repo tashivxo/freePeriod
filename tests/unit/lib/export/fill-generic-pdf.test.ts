@@ -142,3 +142,56 @@ describe('fillGenericPdfTemplate', () => {
     expect(isMeaningfulFill(result.filledCount, result.matchedLabels)).toBe(false);
   });
 });
+
+function lessonWithTitle(title: string): LessonPlan {
+  return {
+    ...sampleLesson,
+    title,
+    content: { ...sampleLesson.content, title },
+  };
+}
+
+describe('fillGenericPdfTemplate Unicode text', () => {
+  it('fills an Arabic-only title instead of skipping the field', async () => {
+    const title = 'التمثيل الضوئي';
+    const template = await makePdfWithFields([{ name: 'Lesson Title' }]);
+
+    const result = await fillGenericPdfTemplate(template, lessonWithTitle(title));
+
+    expect(result.filledCount).toBe(1);
+    const filled = await PDFDocument.load(result.buffer);
+    expect(filled.getForm().getTextField('Lesson Title').getText()).toBe(title);
+    expect(result.buffer.toString('latin1')).toMatch(/FontFile2/);
+  });
+
+  it('keeps mixed Arabic and English in a title', async () => {
+    const title = 'Lesson التمثيل الضوئي Grade 8';
+    const template = await makePdfWithFields([{ name: 'Lesson Title' }]);
+
+    const result = await fillGenericPdfTemplate(template, lessonWithTitle(title));
+
+    expect(result.filledCount).toBe(1);
+    const filled = await PDFDocument.load(result.buffer);
+    const text = filled.getForm().getTextField('Lesson Title').getText();
+    expect(text).toBe(title);
+    expect(text).toContain('Lesson');
+    expect(text).toContain('التمثيل الضوئي');
+    expect(text).toContain('Grade 8');
+  });
+
+  it('leaves English-only field values unchanged', async () => {
+    const template = await makePdfWithFields([
+      { name: 'Lesson Title' },
+      { name: 'objectives', multiline: true },
+    ]);
+
+    const result = await fillGenericPdfTemplate(template, sampleLesson);
+    const filled = await PDFDocument.load(result.buffer);
+    const form = filled.getForm();
+
+    expect(form.getTextField('Lesson Title').getText()).toBe('Exploring States of Matter');
+    expect(form.getTextField('objectives').getText()).toContain(
+      'Students will develop a model that predicts and describes changes in particle motion.',
+    );
+  });
+});
