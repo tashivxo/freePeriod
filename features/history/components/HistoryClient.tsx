@@ -14,6 +14,7 @@ type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'durat
 
 export function HistoryClient() {
   const [lessons, setLessons] = useState<LessonCard[]>([]);
+  const [subjectOptions, setSubjectOptions] = useState<string[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -39,7 +40,11 @@ export function HistoryClient() {
     }
 
     const { data } = await query;
-    setLessons(data ?? []);
+    const rows = data ?? [];
+    setLessons(rows);
+    if (!subjectFilter && !debouncedSearch) {
+      setSubjectOptions([...new Set(rows.map((lesson) => lesson.subject))].sort());
+    }
     setInitialLoading(false);
   }, [debouncedSearch, subjectFilter]);
 
@@ -53,27 +58,33 @@ export function HistoryClient() {
     setLessons((prev) => prev.filter((l) => l.id !== id));
   }, []);
 
-  const subjects = [...new Set(lessons.map((l) => l.subject))].sort();
+  const subjects = [
+    ...new Set([
+      ...subjectOptions,
+      ...(subjectFilter ? [subjectFilter] : []),
+    ]),
+  ].sort();
   const hasActiveFilters = Boolean(debouncedSearch || subjectFilter);
+  const showSubjectFilter = subjectOptions.length > 1 || Boolean(subjectFilter);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <BlurText as="h1" text="Lesson Plan History" className="font-display text-3xl font-bold text-text-primary mb-6" />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex h-13 min-w-[200px] flex-1 items-center rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] focus-within:border-coral focus-within:ring-2 focus-within:ring-coral/20">
+          <Search className="pointer-events-none ml-3 size-4 shrink-0 translate-y-px text-text-secondary" />
           <input
             type="text"
             placeholder="Search by title..."
             aria-label="Search lessons by title"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface py-2 pl-9 pr-3 text-base md:text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
+            className="h-full min-w-0 flex-1 border-0 bg-transparent py-0 pl-2.5 pr-3 text-base font-body text-text-primary placeholder:text-text-secondary focus:outline-none"
           />
         </div>
-        {subjects.length > 1 && (
+        {showSubjectFilter && (
           <AnimatedDropdown
             text="All subjects"
             items={[

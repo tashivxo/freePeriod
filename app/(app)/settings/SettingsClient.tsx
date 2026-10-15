@@ -12,7 +12,6 @@ import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Button, buttonVariants } from '@/components/ui/Button';
-import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
@@ -213,14 +212,11 @@ export function SettingsClient({
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="rounded-2xl border border-border bg-surface p-6 md:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <BlurText
-            as="h1"
-            text={t('settings.title')}
-            className="font-display text-2xl font-bold text-text-primary"
-          />
-          <ThemeToggle />
-        </div>
+        <BlurText
+          as="h1"
+          text={t('settings.title')}
+          className="mb-6 font-display text-2xl font-bold text-text-primary"
+        />
 
         <div className="mb-6 flex items-center justify-between gap-4 rounded-xl border border-border bg-background p-4">
           <div className="flex min-w-0 items-start gap-3">

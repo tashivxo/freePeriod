@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@/tests/helpers';
 import { getMessages, isRtl, type Locale } from '@/lib/i18n';
-import { useTheme } from '@/providers/theme';
 import { LocaleProvider, useLocale } from '@/providers/locale';
 import { PricingClient } from '@/features/billing/components/PricingClient';
 
@@ -12,7 +11,6 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-jest.mock('@/providers/theme');
 jest.mock('next/dynamic', () => ({
   __esModule: true,
   default: () => () => null,
@@ -44,8 +42,6 @@ jest.mock('@/lib/supabase/client', () => ({
   })),
 }));
 
-const mockedUseTheme = jest.mocked(useTheme);
-
 function renderPricing(locale: Locale = 'en') {
   document.documentElement.lang = locale;
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
@@ -69,11 +65,6 @@ describe('PricingClient', () => {
     document.cookie = 'fp-locale=; Max-Age=0; path=/';
     document.documentElement.lang = 'en';
     document.documentElement.dir = 'ltr';
-    mockedUseTheme.mockReturnValue({
-      theme: 'light',
-      setTheme: jest.fn(),
-      resolvedTheme: 'light',
-    });
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: 'user-1' } } },
     });
@@ -261,22 +252,5 @@ describe('PricingClient', () => {
     expect(heading).toBeVisible();
     expect(Number(heading.style.opacity || '1')).toBeGreaterThan(0);
     expect(screen.getByText(ar.pricing.subtitle)).toBeVisible();
-  });
-
-  it('renders an interruptible theme toggle that switches to dark', async () => {
-    const mockSetTheme = jest.fn();
-    mockedUseTheme.mockReturnValue({
-      theme: 'light',
-      setTheme: mockSetTheme,
-      resolvedTheme: 'light',
-    });
-
-    const { user, container } = renderPricing();
-    const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
-    expect(toggle).toBeVisible();
-    expect(container.querySelector('.t-icon-swap')).toHaveAttribute('data-state', 'a');
-
-    await user.click(toggle);
-    expect(mockSetTheme).toHaveBeenCalledWith('dark');
   });
 });

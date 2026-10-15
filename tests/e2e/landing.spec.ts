@@ -69,15 +69,4 @@ test.describe('Landing page', () => {
     const afterOpacity = await hero.evaluate((el) => getComputedStyle(el).opacity);
     expect(Number(afterOpacity)).toBeGreaterThan(0);
   });
-
-  test('theme toggle swaps icons without hiding the control', async ({ page }) => {
-    const toggle = page.getByRole('button', { name: /switch to dark mode/i });
-    await expect(toggle).toBeVisible();
-    await expect(toggle.locator('.t-icon-swap')).toHaveAttribute('data-state', 'a');
-    await toggle.click();
-    await expect(page.getByRole('button', { name: /switch to light mode/i })).toBeVisible();
-    await expect(page.locator('.t-icon-swap').first()).toHaveAttribute('data-state', 'b');
-    const darkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-    expect(darkClass).toBe(true);
-  });
 });

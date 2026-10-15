@@ -245,17 +245,6 @@ test.describe('Pricing page – colour scheme accessibility', () => {
         await expect(btn).not.toHaveClass(/bg-text-primary/);
       });
 
-      test(`floating theme toggle is present in ${scheme} mode`, async ({ page }) => {
-        const label =
-          scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
-        const toggle = page.getByRole('button', { name: label });
-        await expect(toggle).toBeVisible();
-        // 'fixed' lives on the wrapper div, not the button (fixed+relative on same element
-        // causes relative to win in Tailwind). Verify wrapper has the fixed class instead.
-        const wrapper = toggle.locator('..');
-        await expect(wrapper).toHaveClass(/fixed/);
-      });
-
       test(`page heading is visible in ${scheme} mode`, async ({ page }) => {
         await expect(
           page.getByRole('heading', { name: 'Plans for every classroom', level: 1 }),
@@ -344,24 +333,5 @@ test.describe('Pricing page – locale and theme motion', () => {
     const afterOpacity = await heading.evaluate((el) => getComputedStyle(el).opacity);
     expect(Number(afterOpacity)).toBeGreaterThan(0);
     await expect(page.getByText(/Empieza gratis y mejora cuando quieras/i)).toBeVisible();
-  });
-
-  test('theme toggle works from pricing without hiding the heading', async ({ page }) => {
-    await page.goto('/pricing');
-    const heading = page.getByRole('heading', { level: 1 });
-    await expect(heading).toBeVisible();
-
-    const toggle = page.getByRole('button', { name: /switch to dark mode/i });
-    await expect(toggle).toBeVisible();
-    await expect(toggle.locator('.t-icon-swap')).toHaveAttribute('data-state', 'a');
-    await toggle.click();
-
-    await expect(page.getByRole('button', { name: /switch to light mode/i })).toBeVisible();
-    await expect(page.locator('.t-icon-swap').first()).toHaveAttribute('data-state', 'b');
-    const darkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
-    expect(darkClass).toBe(true);
-    await expect(heading).toBeVisible();
-    const opacity = await heading.evaluate((el) => getComputedStyle(el).opacity);
-    expect(Number(opacity)).toBeGreaterThan(0);
   });
 });

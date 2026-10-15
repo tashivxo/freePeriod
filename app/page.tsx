@@ -8,7 +8,6 @@ import { SparklesIcon } from '@/components/ui/icons/sparkles';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
-import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MarketingHeader } from '@/components/layout/MarketingHeader';
@@ -311,11 +310,6 @@ export default function HomePage() {
           <MarketingFooter />
         </div>
       </main>
-
-      <ThemeToggle
-        variant="floating-label"
-        wrapperClassName="fixed bottom-6 end-4 z-50"
-      />
     </div>
   );
 }
