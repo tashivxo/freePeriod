@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { ChipRadio } from '@/components/forms/ChipRadio';
-import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
+import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
@@ -403,6 +403,13 @@ function StepGrade({
   );
 }
 
+const ONBOARDING_COUNTRY_ITEMS: DropdownItem[] = [
+  { name: 'Common', header: true },
+  ...COMMON_COUNTRY_ITEMS.map((item) => ({ name: item.name, value: item.value })),
+  { name: 'All countries', header: true },
+  ...COUNTRY_ITEMS.map((item) => ({ name: item.name, value: item.value })),
+];
+
 function StepCountry({
   country,
   error,
@@ -429,29 +436,14 @@ function StepCountry({
       </p>
 
       <div className="mb-6">
-        <select
+        <AnimatedDropdown
           id="country-select"
-          aria-labelledby="onboarding-country-heading"
-          value={country}
-          onChange={(event) => onCountryChange(event.target.value)}
-          className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-        >
-          <option value="">Select your country</option>
-          <optgroup label="Common">
-            {COMMON_COUNTRY_ITEMS.map((item) => (
-              <option key={`common-${item.value}`} value={item.value}>
-                {item.name}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="All countries">
-            {COUNTRY_ITEMS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+          text="Select your country"
+          triggerAriaLabel="Where do you teach?"
+          items={ONBOARDING_COUNTRY_ITEMS}
+          selectedValue={country || undefined}
+          onSelect={(item) => onCountryChange(item.value ?? item.name)}
+        />
       </div>
 
       {error && <StepError message={error} />}
@@ -501,7 +493,7 @@ function StepCurriculum({
   return (
     <div>
       <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
-        What curriculum?
+        Select your curriculum
       </h1>
 
       <div className="mb-6">
@@ -510,7 +502,7 @@ function StepCurriculum({
         </label>
         <AnimatedDropdown
           id="curriculum-select"
-          text="Select a curriculum..."
+          text="Select your curriculum"
           items={CURRICULUM_ITEMS}
           selectedValue={curriculumSelect}
           onSelect={(item) => onCurriculumSelectChange(item.value ?? item.name)}
