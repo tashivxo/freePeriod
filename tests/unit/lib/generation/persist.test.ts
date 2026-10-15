@@ -175,12 +175,8 @@ describe('persistLessonPlan', () => {
         single: async () => ({ data: { id: 'lesson-1' }, error: null }),
       }),
     }));
-    const userEq = jest.fn().mockResolvedValue({ error: null });
     const supabase = mockFrom({
       lesson_plans: { insert },
-      users: {
-        update: () => ({ eq: userEq }),
-      },
     });
 
     const result = await persistLessonPlan(supabase as never, {
@@ -205,6 +201,8 @@ describe('persistLessonPlan', () => {
         original_content: content,
       }),
     );
+    expect(mockCreateAdminClient).toHaveBeenCalled();
+    expect(supabase.from).not.toHaveBeenCalledWith('users');
   });
 });
 
