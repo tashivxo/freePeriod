@@ -33,7 +33,8 @@ create policy "Users can view own row"
 
 create policy "Users can update own row"
   on public.users for update
-  using (auth.uid() = id);
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 create policy "Users can insert own row"
   on public.users for insert

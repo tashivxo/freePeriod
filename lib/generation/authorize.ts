@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Plan } from '@/types';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   getPlanGenerationLimit,
   isRateLimited,
@@ -44,7 +45,8 @@ export async function resolveGenerationAccess(
       now,
     });
     generationCount = 0;
-    await supabase
+    const admin = createAdminClient();
+    await admin
       .from('users')
       .update({
         generation_count: 0,

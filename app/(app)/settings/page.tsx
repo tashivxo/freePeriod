@@ -72,23 +72,20 @@ async function SettingsContent() {
       (typeof metaName === 'string' ? metaName : null) ??
       authUser.email?.split('@')[0] ?? '';
 
-    const { data: newProfile, error: upsertError } = await supabase
+    const { data: newProfile, error: insertError } = await supabase
       .from('users')
-      .upsert(
-        {
-          id: authUser.id,
-          email: authUser.email ?? '',
-          name: displayName,
-          default_subject: null,
-          default_grade: null,
-          default_curriculum: null,
-        },
-        { onConflict: 'id' }
-      )
+      .insert({
+        id: authUser.id,
+        email: authUser.email ?? '',
+        name: displayName,
+        default_subject: null,
+        default_grade: null,
+        default_curriculum: null,
+      })
       .select('*')
       .single();
 
-    if (upsertError || !newProfile) redirect('/onboarding');
+    if (insertError || !newProfile) redirect('/onboarding');
     resolvedProfile = newProfile;
   }
 
