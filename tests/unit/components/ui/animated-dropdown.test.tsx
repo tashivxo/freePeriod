@@ -233,8 +233,13 @@ describe('AnimatedDropdown trigger label and exit', () => {
       />,
     );
 
-    expect(screen.getByTestId('lead-icon').closest('.sr-only')).toBeNull();
-    expect(screen.getByText('Language')).toHaveClass('sr-only');
+    const icon = screen.getByTestId('lead-icon');
+    const label = screen.getByText('Language');
+
+    expect(icon).toBeVisible();
+    expect(icon.closest('.sr-only')).toBeNull();
+    expect(label).toHaveClass('sr-only');
+    expect(label.contains(icon)).toBe(false);
   });
 
   it('keeps the listbox mounted through the close animation', async () => {

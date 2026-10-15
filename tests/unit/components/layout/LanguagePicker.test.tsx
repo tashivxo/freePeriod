@@ -96,7 +96,12 @@ describe('LanguagePicker', () => {
 
   it('keeps the languages icon visible on the icon trigger', () => {
     render(<LanguagePicker variant="icon" />);
-    expect(screen.getByTestId('languages-icon').closest('.sr-only')).toBeNull();
+    const icon = screen.getByTestId('languages-icon');
+    const trigger = screen.getByRole('button', { name: 'Language' });
+
+    expect(icon).toBeVisible();
+    expect(icon.closest('.sr-only')).toBeNull();
+    expect(trigger.contains(icon)).toBe(true);
   });
 
   it('uses dark-mode contrast classes on the icon trigger', () => {

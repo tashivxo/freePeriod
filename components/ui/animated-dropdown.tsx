@@ -242,20 +242,25 @@ export function AnimatedDropdown({
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
         aria-labelledby={triggerAriaLabelledBy}
         className={cn(
-          'h-13 w-full flex items-center justify-between rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] pl-4 pr-3 font-body text-base transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
+          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] pl-4 pr-3 font-body text-base transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
           triggerClassName,
         )}
       >
+        {leadingIcon ? (
+          <span className="inline-flex shrink-0 items-center justify-center text-current">
+            {leadingIcon}
+          </span>
+        ) : null}
         <span
           className={cn(
-            'flex min-w-0 items-center gap-2 font-body text-base',
+            'min-w-0 flex-1 text-left font-body text-base',
+            hideTriggerLabel && 'sr-only',
             selectedItem
               ? 'text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)]',
           )}
         >
-          {leadingIcon}
-          <span className={cn(hideTriggerLabel && 'sr-only')}>{displayText}</span>
+          {displayText}
         </span>
         {!hideChevron ? (
           <motion.span

@@ -45,36 +45,42 @@ const LanguagesIcon = createMultiControlAnimatedIcon({
         animate={controls.latin}
         custom={0}
         d="M7 2h1"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
       <motion.path
         animate={controls.latin}
         custom={1}
         d="M2 5h12"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
       <motion.path
         animate={controls.latin}
         custom={2}
         d="m4 14 6-6 3-3"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
       <motion.path
         animate={controls.latin}
         custom={3}
         d="m5 8 6 6"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
       <motion.path
         animate={controls.script}
         custom={3}
         d="m22 22-5-10-5 10"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
       <motion.path
         animate={controls.script}
         custom={3}
         d="M14 18h6"
+        initial="normal"
         variants={PATH_VARIANTS}
       />
     </svg>
