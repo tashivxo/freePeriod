@@ -37,7 +37,11 @@ export function firstStrongIsRtl(text: string): boolean {
 
 function widthOf(font: PDFFont, text: string, size: number): number {
   if (!text) return 0;
-  return font.widthOfTextAtSize(text, size);
+  let width = 0;
+  for (const char of text) {
+    width += font.widthOfTextAtSize(char, size);
+  }
+  return width;
 }
 
 function lastWhitespaceIndex(line: string): number | undefined {
@@ -93,9 +97,8 @@ function wrapLogical(
 }
 
 function splitBullet(line: string): { hasBullet: boolean; body: string } {
-  const match = line.match(/^(?:[\u2022\-\u2013\u2014])[ \t]+(.*)$/);
-  if (!match) return { hasBullet: false, body: line };
-  return { hasBullet: true, body: match[1] ?? '' };
+  const body = line.replace(/^(?:[\u2022\-\u2013\u2014][ \t]+)+/, '');
+  return { hasBullet: body !== line, body };
 }
 
 function linesFitBox(runs: PdfFieldTextRun[], bounds: PdfFieldBounds): boolean {

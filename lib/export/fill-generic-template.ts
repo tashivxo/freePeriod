@@ -864,9 +864,13 @@ const MIN_VALUE_CELL_WIDTH_DXA = 1600;
 // the same cell below the label, not written into an unrelated neighboring column.
 const MIN_SELF_FILL_LABEL_WIDTH_DXA = 5000;
 
+function stripLeadingListMarker(item: string): string {
+  return item.replace(/^(?:[\u2022\-\u2013\u2014][ \t]+)+/, '');
+}
+
 function joinBullets(items: string[] | undefined): string {
   if (!items?.length) return '';
-  return items.map((item) => `• ${item}`).join('\n');
+  return items.map((item) => `• ${stripLeadingListMarker(item)}`).join('\n');
 }
 
 /**
@@ -876,7 +880,7 @@ function joinBullets(items: string[] | undefined): string {
  */
 function joinBlocks(items: string[] | undefined): string {
   if (!items?.length) return '';
-  return items.map((item) => `• ${item}`).join('\n\n');
+  return items.map((item) => `• ${stripLeadingListMarker(item)}`).join('\n\n');
 }
 
 /** Heuristic: a short line ending in ':' that isn't itself a bullet/dash item is a sub-header. */

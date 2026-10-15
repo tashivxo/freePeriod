@@ -1,5 +1,6 @@
 import { ArabicShaper } from 'arabic-persian-reshaper';
 import bidiFactory from 'bidi-js';
+import { PDFHexString, type PDFFont } from 'pdf-lib';
 
 const bidi = bidiFactory();
 
@@ -20,7 +21,7 @@ export function containsArabic(text: string): boolean {
  */
 export function normalizePdfPunctuation(text: string): string {
   return text
-    .replace(/(^|\n)- /g, '$1\u2022 ')
+    .replace(/(^|\n)(?:[\u2022\-\u2013\u2014][ \t]+)+/g, '$1\u2022 ')
     .replace(/\u2014|\u2013/g, '-')
     .replace(/\u2018|\u2019/g, "'")
     .replace(/\u201c|\u201d/g, '"')
@@ -82,4 +83,19 @@ export function shapePdfText(text: string): string {
 
 export function usesArabicPresentationForms(text: string): boolean {
   return PRESENTATION_FORM_RE.test(text);
+}
+
+/**
+ * Encode already-visual text in left-to-right show order. pdf-lib's
+ * encodeText uses fontkit.layout on the whole string, which applies a second
+ * bidi pass and flips Arabic, digits, and Latin. Encoding one character at a
+ * time keeps the visual order from reshape-then-bidi-once.
+ */
+export function encodePdfDrawText(font: PDFFont, text: string): PDFHexString {
+  if (!text) return font.encodeText('');
+  let hex = '';
+  for (const char of text) {
+    hex += font.encodeText(char).asString();
+  }
+  return PDFHexString.of(hex);
 }

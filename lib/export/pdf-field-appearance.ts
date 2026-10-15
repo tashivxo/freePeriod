@@ -15,7 +15,7 @@ import {
   type PDFTextField,
 } from 'pdf-lib';
 import { fitPdfFieldFontSize, layoutPdfFieldText } from '@/lib/export/pdf-layout';
-import { shapePdfText } from '@/lib/export/pdf-text';
+import { encodePdfDrawText, shapePdfText } from '@/lib/export/pdf-text';
 
 const TF_REGEX = /\/[^\0\t\n\f\r ]+[\0\t\n\f\r ]+(\d*\.\d+|\d+)[\0\t\n\f\r ]+Tf/g;
 const COLOR_REGEX =
@@ -96,7 +96,7 @@ export function unicodeTextFieldAppearanceProvider(): AppearanceProviderFor<PDFT
       fontSize = fitPdfFieldFontSize(logical, font, bounds, fieldType);
       textLines = layoutPdfFieldText(logical, font, fontSize, bounds).map((run) => ({
         text: run.text,
-        encoded: font.encodeText(run.text),
+        encoded: encodePdfDrawText(font, run.text),
         x: run.x,
         y: run.y,
         width: run.width,
