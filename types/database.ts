@@ -72,6 +72,7 @@ export type LessonPlan = {
   curriculum: string | null;
   duration_minutes: number;
   content: LessonSection;
+  original_content?: LessonSection | null;
   model_used: string;
   token_count: number;
   template_path: string | null;
@@ -139,11 +140,12 @@ export type Database = {
       };
       lesson_plans: {
         Row: LessonPlan;
-        Insert: Omit<LessonPlan, 'id' | 'created_at' | 'updated_at' | 'token_count'> & {
+        Insert: Omit<LessonPlan, 'id' | 'created_at' | 'updated_at' | 'token_count' | 'original_content'> & {
           id?: string;
           token_count?: number;
+          original_content?: LessonSection | null;
         };
-        Update: Partial<Omit<LessonPlan, 'id' | 'user_id' | 'created_at'>>;
+        Update: Partial<Omit<LessonPlan, 'id' | 'user_id' | 'created_at' | 'original_content'>>;
         Relationships: [];
       };
       uploads: {

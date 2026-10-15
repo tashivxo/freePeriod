@@ -93,6 +93,7 @@ export async function persistLessonPlan(
       curriculum: input.curriculum,
       duration_minutes: input.durationMinutes,
       content: input.content,
+      original_content: input.content,
       model_used: input.modelUsed,
       token_count: input.tokenCount,
       template_path: input.templatePath,
