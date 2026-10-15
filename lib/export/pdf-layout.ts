@@ -85,7 +85,7 @@ function wrapLogical(
       cut = prevSpace !== undefined && prevSpace > 0 ? prevSpace : cut - 1;
     }
     if (!found) {
-      lines.push(remaining);
+      if (remaining !== undefined) lines.push(remaining);
       break;
     }
   }
