@@ -94,14 +94,19 @@ jest.mock('@/components/ui/icons/languages', () => ({
 const baseUser: User = {
   id: 'user-1',
   email: 'teacher@example.com',
+  name: 'Test Teacher',
   default_subject: null,
   default_grade: null,
   default_curriculum: null,
   country: null,
   preferred_locale: 'en',
   plan: 'free',
-  created_at: '',
-  updated_at: '',
+  is_admin: false,
+  generation_count: 0,
+  generation_count_reset_at: null,
+  onboarding_complete: true,
+  deletion_scheduled_at: null,
+  created_at: '2024-01-01T00:00:00Z',
 };
 
 function expectNoNativeSelects() {
