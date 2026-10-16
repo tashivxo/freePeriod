@@ -397,6 +397,8 @@ describe('SettingsClient — background', () => {
 describe('SettingsClient — language', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSetLocale.mockReset();
+    mockSetLocale.mockResolvedValue(undefined);
     localStorage.clear();
     document.cookie = 'fp-locale=; Max-Age=0; path=/';
     mockUpdate.mockReturnValue({
@@ -453,29 +455,29 @@ describe('SettingsClient — language', () => {
     expect(screen.getByLabelText(/language/i)).toHaveTextContent('العربية');
   });
 
-  it('changing language calls setLocale and persists preferred_locale immediately', async () => {
+  it('changing language calls setLocale once and does not write preferred_locale again', async () => {
+    localStorage.setItem('fp-locale', 'en');
     const { user } = render(<SettingsClient {...defaultProps} />);
 
     const trigger = screen.getByLabelText(/language/i);
     await user.click(trigger);
     await user.click(screen.getByRole('option', { name: 'Español' }));
 
+    expect(mockSetLocale).toHaveBeenCalledTimes(1);
     expect(mockSetLocale).toHaveBeenCalledWith('es');
-    expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'es' });
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('surfaces an error when preferred_locale cannot be saved', async () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
-    mockUpdate.mockReturnValue({
-      eq: jest.fn().mockResolvedValue({ error: { message: 'permission denied' } }),
-    });
+    localStorage.setItem('fp-locale', 'en');
+    mockSetLocale.mockRejectedValue({ message: 'permission denied' });
     const { user } = render(<SettingsClient {...defaultProps} />);
 
     await user.click(screen.getByLabelText(/language/i));
     await user.click(screen.getByRole('option', { name: 'Español' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
-    consoleError.mockRestore();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });
 

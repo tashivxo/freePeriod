@@ -167,4 +167,58 @@ describe('navbar LanguagePicker locale persist', () => {
     expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'ar' });
     expect(mockUpdate).not.toHaveBeenCalledWith({ preferred_locale: 'en' });
   });
+
+  it('surfaces a network TypeError with the existing save-error UI and keeps the local locale', async () => {
+    mockEq.mockRejectedValue(new TypeError('Failed to fetch'));
+    const user = userEvent.setup({ delay: null });
+    render(<NavbarAndSettings showSettings={false} />);
+
+    await chooseArabic(user);
+
+    expect(document.documentElement.lang).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /failed to save settings|فشل حفظ الإعدادات/i,
+    );
+  });
+
+  it('writes preferred_locale once when language is changed in Settings', async () => {
+    localStorage.setItem('fp-locale', 'en');
+    document.cookie = 'fp-locale=en; path=/';
+    const user = userEvent.setup({ delay: null });
+    render(
+      <LocaleProvider>
+        <SettingsClient user={baseUser} email={baseUser.email} planLabel="Free" />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByLabelText(/language/i));
+    await user.click(screen.getByRole('option', { name: 'Español' }));
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+    expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'es' });
+    expect(mockEq).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces a Settings network TypeError with the save-error UI and writes once', async () => {
+    localStorage.setItem('fp-locale', 'en');
+    document.cookie = 'fp-locale=en; path=/';
+    mockEq.mockRejectedValue(new TypeError('Failed to fetch'));
+    const user = userEvent.setup({ delay: null });
+    render(
+      <LocaleProvider>
+        <SettingsClient user={baseUser} email={baseUser.email} planLabel="Free" />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByLabelText(/language/i));
+    await user.click(screen.getByRole('option', { name: 'Español' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(document.getElementById('preferred-locale')).toHaveTextContent('Español');
+    expect(document.documentElement.lang).toBe('es');
+  });
 });
