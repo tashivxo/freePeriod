@@ -212,6 +212,67 @@ describe('useDebouncedLessonSave', () => {
     expect(onSaved).toHaveBeenCalled();
   });
 
+  it('saves two paragraphs and a list, then a no-op edit keeps that content identical', async () => {
+    const structuredHtml =
+      '<p>Para one</p><p>Para two</p><ul><li><p>Item A</p></li><li><p>Item B</p></li></ul>';
+    const structuredText = 'Para one\n\nPara two\n- Item A\n- Item B';
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save('hook', structuredHtml);
+    });
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(true);
+    });
+
+    const savedContent = onSaved.mock.calls[0][0] as LessonSection;
+    expect(savedContent.hook).toBe(structuredText);
+    expect(savedContent.hook).not.toBe('Para onePara twoItem AItem B');
+    expect(JSON.stringify(mockUpdate.mock.calls[0][0])).not.toMatch(/original_content/);
+
+    const { result: reopened } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', savedContent, onSaved),
+    );
+
+    act(() => {
+      reopened.current.save('hook', structuredHtml);
+    });
+
+    await act(async () => {
+      await expect(reopened.current.flush()).resolves.toBe(true);
+    });
+
+    const afterNoOp = onSaved.mock.calls[1][0] as LessonSection;
+    expect(afterNoOp.hook).toBe(structuredText);
+    expect(afterNoOp.hook).toBe(savedContent.hook);
+  });
+
+  it('does not store typed bullet glyphs when saving a list into an array section', async () => {
+    const onSaved = jest.fn();
+
+    const { result } = renderHook(() =>
+      useDebouncedLessonSave('lesson-1', sampleContent, onSaved),
+    );
+
+    act(() => {
+      result.current.save(
+        'objectives',
+        '<ul><li><p>Item A</p></li><li><p>Item B</p></li></ul>',
+      );
+    });
+
+    await act(async () => {
+      await expect(result.current.flush()).resolves.toBe(true);
+    });
+
+    expect(onSaved.mock.calls[0][0].objectives).toEqual(['Item A', 'Item B']);
+  });
+
   it('returns false from flush when the database write fails', async () => {
     mockEq.mockResolvedValue({ error: { message: 'db error' } });
     const onSaved = jest.fn();

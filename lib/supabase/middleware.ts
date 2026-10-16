@@ -152,17 +152,14 @@ export async function updateSession(request: NextRequest) {
         (typeof metaFullName === 'string' ? metaFullName : null) ??
         (typeof metaName === 'string' ? metaName : null) ??
         user.email?.split('@')[0] ?? '';
-      await supabase.from('users').upsert(
-        {
-          id: user.id,
-          email: user.email ?? '',
-          name: displayName,
-          default_subject: null,
-          default_grade: null,
-          default_curriculum: null,
-        },
-        { onConflict: 'id' }
-      );
+      await supabase.from('users').insert({
+        id: user.id,
+        email: user.email ?? '',
+        name: displayName,
+        default_subject: null,
+        default_grade: null,
+        default_curriculum: null,
+      });
       const url = request.nextUrl.clone();
       url.pathname = '/onboarding';
       const redirectResponse = NextResponse.redirect(url);

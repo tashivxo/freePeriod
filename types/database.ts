@@ -72,6 +72,7 @@ export type LessonPlan = {
   curriculum: string | null;
   duration_minutes: number;
   content: LessonSection;
+  original_content?: LessonSection | null;
   model_used: string;
   token_count: number;
   template_path: string | null;
@@ -125,25 +126,26 @@ export type Database = {
       users: {
         Row: User;
         Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at' | 'preferred_locale' | 'country'> & {
-          generation_count?: number;
-          generation_count_reset_at?: string | null;
           onboarding_complete?: boolean;
-          plan?: Plan;
-          is_admin?: boolean;
-          deletion_scheduled_at?: string | null;
           preferred_locale?: Locale;
           country?: string | null;
         };
-        Update: Partial<Omit<User, 'id' | 'created_at'>>;
+        Update: Partial<Omit<User, 'id' | 'created_at' | 'is_admin' | 'plan' | 'generation_count' | 'generation_count_reset_at' | 'deletion_scheduled_at'>> & {
+          plan?: Plan;
+          generation_count?: number;
+          generation_count_reset_at?: string | null;
+          deletion_scheduled_at?: string | null;
+        };
         Relationships: [];
       };
       lesson_plans: {
         Row: LessonPlan;
-        Insert: Omit<LessonPlan, 'id' | 'created_at' | 'updated_at' | 'token_count'> & {
+        Insert: Omit<LessonPlan, 'id' | 'created_at' | 'updated_at' | 'token_count' | 'original_content'> & {
           id?: string;
           token_count?: number;
+          original_content?: LessonSection | null;
         };
-        Update: Partial<Omit<LessonPlan, 'id' | 'user_id' | 'created_at'>>;
+        Update: Partial<Omit<LessonPlan, 'id' | 'user_id' | 'created_at' | 'original_content'>>;
         Relationships: [];
       };
       uploads: {

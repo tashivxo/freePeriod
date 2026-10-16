@@ -38,16 +38,10 @@ jest.mock('@/components/ui/icons/languages', () => ({
   LanguagesIcon: () => <span data-testid="languages-icon" />,
 }));
 
-jest.mock('@/components/ui/icons/MotionSafeIcon', () => ({
-  MotionSafeIcon: ({ icon: Icon, ...props }: { icon: React.ComponentType }) => (
-    <Icon {...props} />
-  ),
-}));
-
 async function openPicker(user: { click: (el: HTMLElement) => Promise<void> }, name: string | RegExp) {
   await user.click(screen.getByRole('button', { name }));
   await waitFor(() => {
-    expect(screen.getByRole('menu')).toHaveClass('is-open');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 }
 
@@ -67,53 +61,61 @@ describe('LanguagePicker', () => {
     const { user } = render(<LanguagePicker variant="icon" />);
     await openPicker(user, 'Language');
     for (const code of LOCALES) {
-      expect(screen.getByRole('menuitem', { name: LOCALE_LABELS[code] })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: LOCALE_LABELS[code] })).toBeInTheDocument();
     }
   });
 
-  it('marks the selected locale with coral wash classes and a check', async () => {
+  it('marks the selected locale with coral styling', async () => {
     mockLocale = 'es';
     const { user } = render(<LanguagePicker variant="icon" />);
     await openPicker(user, 'Idioma');
-    const selected = screen.getByRole('menuitem', { name: LOCALE_LABELS.es });
-    expect(selected.className).toMatch(/primary-light/);
+    const selected = screen.getByRole('option', { name: LOCALE_LABELS.es });
     expect(selected.className).toMatch(/text-coral/);
-    expect(selected.querySelector('svg')).toBeTruthy();
-  });
-
-  it('does not use bg-accent / focus:bg-accent on items', async () => {
-    const { user } = render(<LanguagePicker variant="icon" />);
-    await openPicker(user, 'Language');
-    for (const item of screen.getAllByRole('menuitem')) {
-      expect(item.className).not.toMatch(/bg-accent/);
-      expect(item.className).toMatch(/primary-light/);
-    }
   });
 
   it('calls setLocale once when selecting a different locale', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
     await openPicker(user, 'Language');
-    await user.click(screen.getByRole('menuitem', { name: LOCALE_LABELS.fr }));
+    await user.click(screen.getByRole('option', { name: LOCALE_LABELS.fr }));
     expect(setLocale).toHaveBeenCalledTimes(1);
     expect(setLocale).toHaveBeenCalledWith('fr');
   });
 
-  it('opens an origin-aware t-dropdown from the top-right in LTR', async () => {
+  it('uses AnimatedDropdown listbox semantics instead of a custom menu', async () => {
     const { user } = render(<LanguagePicker variant="icon" />);
     await openPicker(user, 'Language');
-    const menu = screen.getByRole('menu', { name: 'Language' });
-    expect(menu).toHaveClass('t-dropdown');
-    expect(menu).toHaveAttribute('data-origin', 'top-right');
-    expect(menu).toHaveAttribute('data-align', 'end');
-    expect(menu.className).not.toMatch(/transition-all/);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByRole('listbox', { name: 'Language' })).toBeInTheDocument();
   });
 
-  it('opens an origin-aware t-dropdown from the top-left in RTL', async () => {
-    mockLocale = 'ar';
-    const { user } = render(<LanguagePicker variant="icon" />);
-    await openPicker(user, 'اللغة');
-    const menu = screen.getByRole('menu', { name: 'اللغة' });
-    expect(menu).toHaveClass('t-dropdown');
-    expect(menu).toHaveAttribute('data-origin', 'top-left');
+  it('shows the locale label on the default variant trigger', () => {
+    mockLocale = 'fr';
+    render(<LanguagePicker variant="default" />);
+    expect(screen.getByRole('button', { name: /langue/i })).toHaveTextContent('Français');
+  });
+
+  it('keeps the languages icon visible on the icon trigger', () => {
+    render(<LanguagePicker variant="icon" />);
+    const icon = screen.getByTestId('languages-icon');
+    const trigger = screen.getByRole('button', { name: 'Language' });
+
+    expect(icon).toBeVisible();
+    expect(icon.closest('.sr-only')).toBeNull();
+    expect(trigger.contains(icon)).toBe(true);
+  });
+
+  it('uses dark-mode contrast classes on the icon trigger', () => {
+    render(<LanguagePicker variant="icon" />);
+    const trigger = screen.getByRole('button', { name: 'Language' });
+    expect(trigger.className).toMatch(/dark:text-white/);
+    expect(trigger.className).toMatch(/dark:border-white\/25/);
+    expect(trigger.className).toMatch(/dark:bg-white\/10/);
+  });
+
+  it('uses dark-mode contrast classes on the default trigger', () => {
+    render(<LanguagePicker variant="default" />);
+    const trigger = screen.getByRole('button', { name: /language/i });
+    expect(trigger.className).toMatch(/dark:text-white/);
+    expect(trigger.className).toMatch(/dark:border-white\/25/);
   });
 });

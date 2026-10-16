@@ -1,0 +1,22 @@
+Noto fonts for PDF export
+=========================
+
+This directory ships SIL Open Font License (OFL 1.1) Noto fonts used to fill
+PDF form fields that contain Arabic and/or Latin text. See OFL.txt.
+
+Sources (hinted static Regular TTFs):
+  https://github.com/notofonts/notofonts.github.io
+  Noto Sans Regular (latin-greek-cyrillic)
+  Noto Sans Arabic Regular (arabic)
+
+Subset files (kept as the Latin fallback pair):
+  NotoSans-Regular.ttf          ~18 KB   Basic Latin, Latin-1, punctuation
+  NotoSansArabic-Regular.ttf    ~91 KB   Arabic + presentation forms
+
+Runtime file (Noto Sans Arabic plus the Latin fallback, merged so pdf-lib
+form appearances can reference a single Unicode font):
+  NotoSansArabicLatin-Regular.ttf   ~106 KB
+
+Copyright 2022 The Noto Project Authors
+  https://github.com/notofonts/latin-greek-cyrillic
+  https://github.com/notofonts/arabic

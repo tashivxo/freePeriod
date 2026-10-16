@@ -1,4 +1,5 @@
 import React from 'react';
+import { fireEvent } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
 import { COLOR_BENDS_GOLD, COLOR_BENDS_PEACH, COLOR_BENDS_ROSE } from '@/lib/utils/brand-colors';
@@ -472,39 +473,109 @@ describe('SettingsClient — dirty save', () => {
     });
   });
 
-  it('places Country after Default Curriculum as a native select', () => {
-    render(<SettingsClient {...defaultProps} />);
+  it('places Country after Default Curriculum as an AnimatedDropdown listbox', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
 
     const grade = screen.getByLabelText(/default grade/i);
     const curriculum = screen.getByLabelText(/default curriculum/i);
     const country = screen.getByLabelText(/^country$/i);
 
-    expect(country.tagName).toBe('SELECT');
-    expect(country).not.toHaveAttribute('aria-haspopup');
+    expect(country).toHaveAttribute('aria-haspopup', 'listbox');
     expect(country.compareDocumentPosition(curriculum) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
     expect(curriculum.compareDocumentPosition(grade) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(document.querySelector('select')).toBeNull();
 
-    expect(screen.getByRole('option', { name: 'Select your country' })).toBeInTheDocument();
+    await user.click(country);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(screen.getByText('Common')).toBeInTheDocument();
+    expect(screen.getByText('All countries')).toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
 
-    const optgroups = country.querySelectorAll('optgroup');
-    expect(optgroups).toHaveLength(2);
-    expect(optgroups[0]).toHaveAttribute('label', 'Common');
-    expect(optgroups[1]).toHaveAttribute('label', 'All countries');
-
-    const commonOptions = Array.from(optgroups[0].querySelectorAll('option')).map(
-      (el) => el.textContent,
+  it('opens Country from the keyboard and Escape in search returns focus to the trigger', async () => {
+    const { user } = render(
+      <SettingsClient {...defaultProps} user={{ ...baseUser, country: 'GB' }} />,
     );
-    expect(commonOptions).toEqual([
-      'United Arab Emirates',
-      'Saudi Arabia',
-      'United Kingdom',
-      'United States',
-      'India',
-      'Australia',
-      'South Africa',
-    ]);
 
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    const country = screen.getByLabelText(/^country$/i);
+    country.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    const uk = screen.getAllByRole('option', { name: 'United Kingdom' })[0]!;
+    expect(search).toHaveAttribute('aria-activedescendant', uk.id);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(country).toHaveFocus();
+  });
+
+  it('closes Grade on Tab and moves focus to Curriculum', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const grade = screen.getByLabelText(/default grade/i);
+    const curriculum = screen.getByLabelText(/default curriculum/i);
+    await user.click(grade);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(curriculum).toHaveFocus();
+  });
+
+  it('closes Country on Tab from the search box and moves focus to Save', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByLabelText(/default grade/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    const country = screen.getByLabelText(/^country$/i);
+    await user.click(country);
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.keyDown(search, { key: 'Tab' });
+    expect(country).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    await user.tab();
+    expect(screen.getByRole('button', { name: /save settings/i })).toHaveFocus();
+  });
+
+  it('selects Grade and Country options on click and keeps Country open when clicking search', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const grade = screen.getByLabelText(/default grade/i);
+    await user.click(grade);
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(grade).toHaveTextContent('Grade 5');
+
+    const country = screen.getByLabelText(/^country$/i);
+    await user.click(country);
+    const search = screen.getByRole('searchbox');
+    await user.click(search);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(search).toHaveFocus();
+
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(country).toHaveTextContent('United Arab Emirates');
   });
 
   it('marks Save dirty when the country changes', async () => {
@@ -513,7 +584,8 @@ describe('SettingsClient — dirty save', () => {
     const saveButton = screen.getByRole('button', { name: /save settings/i });
     expect(saveButton).toBeDisabled();
 
-    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
 
     expect(saveButton).toBeEnabled();
   });
@@ -523,7 +595,8 @@ describe('SettingsClient — dirty save', () => {
       <SettingsClient {...defaultProps} user={{ ...baseUser, country: 'gb' }} />,
     );
 
-    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 
     await waitFor(() => {
@@ -558,7 +631,8 @@ describe('SettingsClient — dirty save', () => {
     await user.click(curriculum);
     await user.click(screen.getByRole('option', { name: 'UAE MOE' }));
 
-    await user.selectOptions(screen.getByLabelText(/^country$/i), 'AE');
+    await user.click(screen.getByLabelText(/^country$/i));
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
 
     await user.click(screen.getByRole('button', { name: /save settings/i }));
 

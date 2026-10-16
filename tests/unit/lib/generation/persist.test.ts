@@ -1,3 +1,17 @@
+const mockAdminUserEq = jest.fn().mockResolvedValue({ error: null });
+const mockCreateAdminClient = jest.fn(() => ({
+  from: jest.fn((table: string) => {
+    if (table === 'users') {
+      return { update: () => ({ eq: mockAdminUserEq }) };
+    }
+    throw new Error(`Unexpected admin table ${table}`);
+  }),
+}));
+
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: (...args: unknown[]) => mockCreateAdminClient(...args),
+}));
+
 import { linkUploadsToLesson, persistLessonPlan } from '@/lib/generation/persist';
 import type { LessonSection } from '@/types';
 
@@ -63,9 +77,21 @@ describe('linkUploadsToLesson', () => {
 });
 
 describe('persistLessonPlan', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAdminUserEq.mockResolvedValue({ error: null });
+    mockCreateAdminClient.mockImplementation(() => ({
+      from: jest.fn((table: string) => {
+        if (table === 'users') {
+          return { update: () => ({ eq: mockAdminUserEq }) };
+        }
+        throw new Error(`Unexpected admin table ${table}`);
+      }),
+    }));
+  });
+
   it('links curriculum and template uploads after saving the lesson', async () => {
     const maybeSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-1' }, error: null });
-    const userEq = jest.fn().mockResolvedValue({ error: null });
     const supabase = mockFrom({
       lesson_plans: {
         insert: () => ({
@@ -73,9 +99,6 @@ describe('persistLessonPlan', () => {
             single: async () => ({ data: { id: 'lesson-1' }, error: null }),
           }),
         }),
-      },
-      users: {
-        update: () => ({ eq: userEq }),
       },
       uploads: {
         update: () => ({
@@ -107,6 +130,79 @@ describe('persistLessonPlan', () => {
 
     expect(result).toEqual({ ok: true, lessonId: 'lesson-1' });
     expect(maybeSingle).toHaveBeenCalledTimes(2);
-    expect(userEq).toHaveBeenCalledWith('id', 'user-1');
+    expect(mockCreateAdminClient).toHaveBeenCalled();
+    expect(mockAdminUserEq).toHaveBeenCalledWith('id', 'user-1');
+  });
+
+  it('does not write generation_count through the user-scoped client', async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-1' }, error: null });
+    const userEq = jest.fn().mockResolvedValue({ error: null });
+    const supabase = mockFrom({
+      lesson_plans: {
+        insert: () => ({
+          select: () => ({
+            single: async () => ({ data: { id: 'lesson-1' }, error: null }),
+          }),
+        }),
+      },
+      users: {
+        update: () => ({ eq: userEq }),
+      },
+    });
+
+    await persistLessonPlan(supabase as never, {
+      userId: 'user-1',
+      title: 'Fractions',
+      subject: 'Mathematics',
+      grade: '8',
+      curriculum: 'CAPS (South Africa)',
+      durationMinutes: 60,
+      content,
+      modelUsed: 'gemini-2.5-flash',
+      tokenCount: 12,
+      curriculumDocPath: null,
+      templatePath: null,
+      generationCount: 1,
+    });
+
+    expect(supabase.from).not.toHaveBeenCalledWith('users');
+    expect(userEq).not.toHaveBeenCalled();
+  });
+
+  it('snapshots original_content to the generated content on insert', async () => {
+    const insert = jest.fn(() => ({
+      select: () => ({
+        single: async () => ({ data: { id: 'lesson-1' }, error: null }),
+      }),
+    }));
+    const supabase = mockFrom({
+      lesson_plans: { insert },
+    });
+
+    const result = await persistLessonPlan(supabase as never, {
+      userId: 'user-1',
+      title: 'Fractions',
+      subject: 'Mathematics',
+      grade: '8',
+      curriculum: 'CAPS (South Africa)',
+      durationMinutes: 60,
+      content,
+      modelUsed: 'gemini-2.5-flash',
+      tokenCount: 12,
+      curriculumDocPath: null,
+      templatePath: null,
+      generationCount: 0,
+    });
+
+    expect(result).toEqual({ ok: true, lessonId: 'lesson-1' });
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content,
+        original_content: content,
+      }),
+    );
+    expect(mockCreateAdminClient).toHaveBeenCalled();
+    expect(supabase.from).not.toHaveBeenCalledWith('users');
   });
 });
+

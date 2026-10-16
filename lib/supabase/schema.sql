@@ -33,7 +33,8 @@ create policy "Users can view own row"
 
 create policy "Users can update own row"
   on public.users for update
-  using (auth.uid() = id);
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
 
 create policy "Users can insert own row"
   on public.users for insert
@@ -46,15 +47,24 @@ security definer
 set search_path = public
 as $$
 begin
-  if coalesce(auth.jwt() ->> 'role', '') in ('service_role')
-     or current_user in ('postgres', 'supabase_admin') then
+  if coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+     or coalesce(auth.role(), '') = 'service_role'
+     or session_user in ('postgres', 'supabase_admin') then
     return new;
   end if;
 
   if tg_op = 'INSERT' then
     new.is_admin := false;
-  elsif tg_op = 'UPDATE' and new.is_admin is distinct from old.is_admin then
+    new.plan := 'free';
+    new.generation_count := 0;
+    new.generation_count_reset_at := null;
+    new.deletion_scheduled_at := null;
+  elsif tg_op = 'UPDATE' then
     new.is_admin := old.is_admin;
+    new.plan := old.plan;
+    new.generation_count := old.generation_count;
+    new.generation_count_reset_at := old.generation_count_reset_at;
+    new.deletion_scheduled_at := old.deletion_scheduled_at;
   end if;
 
   return new;
@@ -80,6 +90,7 @@ create table public.lesson_plans (
   curriculum text,
   duration_minutes int not null,
   content jsonb not null default '{}'::jsonb,
+  original_content jsonb,
   model_used text not null,
   token_count int not null default 0,
   template_path text,
@@ -99,11 +110,40 @@ create policy "Users can insert own lesson plans"
 
 create policy "Users can update own lesson plans"
   on public.lesson_plans for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 create policy "Users can delete own lesson plans"
   on public.lesson_plans for delete
   using (auth.uid() = user_id);
+
+REVOKE UPDATE (original_content) ON public.lesson_plans FROM authenticated, anon;
+
+create or replace function public.protect_lesson_plans_original_content()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.original_content is null then
+      new.original_content := new.content;
+    end if;
+    return new;
+  end if;
+
+  new.original_content := old.original_content;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_lesson_plans_original_content on public.lesson_plans;
+
+create trigger protect_lesson_plans_original_content
+  before insert or update on public.lesson_plans
+  for each row
+  execute function public.protect_lesson_plans_original_content();
 
 -- ============================================================
 -- upload_type enum

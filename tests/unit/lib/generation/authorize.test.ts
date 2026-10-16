@@ -1,3 +1,24 @@
+const adminUpdates: Record<string, unknown>[] = [];
+const mockCreateAdminClient = jest.fn(() => ({
+  from: jest.fn((table: string) => {
+    if (table === 'users') {
+      return {
+        update: (payload: Record<string, unknown>) => {
+          adminUpdates.push(payload);
+          return {
+            eq: async () => ({ data: null, error: null }),
+          };
+        },
+      };
+    }
+    throw new Error(`unexpected admin table ${table}`);
+  }),
+}));
+
+jest.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: (...args: unknown[]) => mockCreateAdminClient(...args),
+}));
+
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 
 function mockSupabase(opts: {
@@ -40,6 +61,11 @@ function mockSupabase(opts: {
 }
 
 describe('resolveGenerationAccess', () => {
+  beforeEach(() => {
+    adminUpdates.length = 0;
+    jest.clearAllMocks();
+  });
+
   it('resets free count when reset_at is null and applies free limit', async () => {
     const sb = mockSupabase({
       sub: null,
@@ -50,7 +76,8 @@ describe('resolveGenerationAccess', () => {
     expect(access.generationCount).toBe(0);
     expect(access.isRateLimited).toBe(false);
     expect(access.generationLimit).toBe(3);
-    expect(sb._updates[0]).toMatchObject({ generation_count: 0 });
+    expect(sb._updates).toEqual([]);
+    expect(adminUpdates[0]).toMatchObject({ generation_count: 0 });
   });
 
   it('rate-limits free at 3 within window', async () => {
@@ -97,5 +124,14 @@ describe('resolveGenerationAccess', () => {
     expect(access.userPlan).toBe('pro_plus');
     expect(access.isRateLimited).toBe(false);
     expect(access.generationLimit).toBeNull();
+  });
+
+  it('does not reset generation_count through the user-scoped client', async () => {
+    const sb = mockSupabase({
+      sub: null,
+      user: { generation_count: 50, generation_count_reset_at: null, is_admin: false },
+    });
+    await resolveGenerationAccess(sb as never, 'user-1');
+    expect(sb._updates).toEqual([]);
   });
 });

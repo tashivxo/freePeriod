@@ -118,5 +118,50 @@ test.describe('AnimatedDropdown — settings page', () => {
     await page.getByRole('option', { name: 'Custom' }).click();
     await expect(page.getByLabel('Enter curriculum')).toBeVisible();
   });
+
+  test('country dropdown opens below, filters, saves, and persists after reload', async ({
+    page,
+  }) => {
+    const countryDropdown = page.locator('#default-country');
+    await countryDropdown.scrollIntoViewIfNeeded();
+    await countryDropdown.click();
+    const listbox = page.getByRole('listbox');
+    await expect(listbox).toBeVisible();
+
+    const triggerBox = await countryDropdown.boundingBox();
+    const listboxBox = await listbox.boundingBox();
+    expect(listboxBox!.y).toBeGreaterThan(triggerBox!.y + triggerBox!.height - 1);
+
+    await page.getByRole('searchbox').fill('Germany');
+    await page.getByRole('option', { name: 'Germany' }).click();
+    await expect(listbox).not.toBeVisible();
+    await expect(countryDropdown).toContainText('Germany');
+
+    const saveButton = page.getByRole('button', { name: /save settings/i });
+    await expect(saveButton).toBeEnabled();
+    await saveButton.click();
+    await expect(page.getByRole('status')).toContainText(/saved/i);
+
+    await page.reload();
+    await expect(countryDropdown).toContainText('Germany');
+  });
+
+  test('country dropdown stays below the trigger near the viewport bottom', async ({ page }) => {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const countryDropdown = page.locator('#default-country');
+    await countryDropdown.scrollIntoViewIfNeeded();
+    await countryDropdown.click();
+
+    const listbox = page.getByRole('listbox');
+    await expect(listbox).toBeVisible();
+
+    const triggerBox = await countryDropdown.boundingBox();
+    const listboxBox = await listbox.boundingBox();
+    expect(listboxBox!.y).toBeGreaterThan(triggerBox!.y + triggerBox!.height - 1);
+
+    const maxHeight = await listbox.evaluate((el) => parseFloat(getComputedStyle(el).maxHeight));
+    expect(maxHeight).toBeGreaterThan(0);
+    expect(maxHeight).toBeLessThanOrEqual(240);
+  });
 });
 
