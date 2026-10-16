@@ -14,6 +14,7 @@ import {
   formatFileSize,
 } from '@/lib/utils/file-input';
 import { cn } from '@/lib/utils';
+import { useT } from '@/providers/locale';
 import type { UploadType } from '@/types';
 
 interface DocumentUploadZoneProps {
@@ -26,15 +27,84 @@ interface DocumentUploadZoneProps {
   maxSizeBytes?: number;
 }
 
-const SECTION_HEADINGS: Record<UploadType, string> = {
-  curriculum_doc: 'Curriculum Document',
-  template: 'Lesson Plan Template',
+/** Darkened coral-800 for light-mode links. 5.10:1 on white, 4.95:1 on cream. */
+export const UPLOAD_ACTION_COLOR_LIGHT = '#B5486F';
+/** Brand coral-500 for dark-mode links. 8.17:1 on #171717, 6.37:1 on #2C2C2C. */
+export const UPLOAD_ACTION_COLOR_DARK = '#FF8BB0';
+export const UPLOAD_DRAG_BORDER = 'var(--color-coral)';
+export const UPLOAD_DRAG_BACKGROUND =
+  'color-mix(in srgb, var(--color-coral) 32%, var(--color-surface))';
+
+const ACTION_COLOR_CLASS = 'text-[#B5486F] dark:text-[#FF8BB0]';
+
+export type UploadErrorKind =
+  | 'auth'
+  | 'tooLarge'
+  | 'wrongType'
+  | 'empty'
+  | 'network'
+  | 'generic';
+
+const ERROR_KEYS: Record<UploadErrorKind, `generate.upload.${string}`> = {
+  auth: 'generate.upload.errorAuth',
+  tooLarge: 'generate.upload.errorTooLarge',
+  wrongType: 'generate.upload.errorWrongType',
+  empty: 'generate.upload.errorEmpty',
+  network: 'generate.upload.errorNetwork',
+  generic: 'generate.upload.errorGeneric',
 };
 
-const PHASE_LABEL: Record<string, string> = {
-  uploading: 'Uploading…',
-  parsing: 'Reading document…',
-};
+export function classifyUploadError(raw: string): UploadErrorKind {
+  const message = raw.trim().toLowerCase();
+  if (!message) return 'generic';
+
+  if (
+    message.includes('not authenticated') ||
+    message.includes('unauthenticated') ||
+    message.includes('unauthorized') ||
+    message.includes('auth session missing') ||
+    message.includes('jwt')
+  ) {
+    return 'auth';
+  }
+
+  if (
+    message.includes('exceeds the maximum size') ||
+    message.includes('too large') ||
+    message.includes('payload too large') ||
+    message.includes('entity too large')
+  ) {
+    return 'tooLarge';
+  }
+
+  if (
+    message.includes('files are accepted') ||
+    message.includes('file type') ||
+    message.includes('need to be .pdf') ||
+    message.includes('not supported') ||
+    message.includes('mime')
+  ) {
+    return 'wrongType';
+  }
+
+  if (message.includes('is empty') || message.includes('empty file')) {
+    return 'empty';
+  }
+
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('network') ||
+    message === 'upload failed' ||
+    message.includes('load failed') ||
+    message.includes('connection')
+  ) {
+    return 'network';
+  }
+
+  return 'generic';
+}
 
 export function DocumentUploadZone({
   label,
@@ -45,9 +115,13 @@ export function DocumentUploadZone({
   onBusyChange,
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
 }: DocumentUploadZoneProps) {
+  const t = useT();
   const inputId = useId();
   const helpId = useId();
-  const sectionHeading = SECTION_HEADINGS[uploadType];
+  const sectionHeading =
+    uploadType === 'curriculum_doc'
+      ? t('generate.upload.curriculumHeading')
+      : t('generate.upload.templateHeading');
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
 
@@ -132,8 +206,13 @@ export function DocumentUploadZone({
   const ext = file?.name.split('.').pop()?.toUpperCase() ?? '';
   const showProgress = phase === 'uploading' || phase === 'parsing';
   const progressLabel =
-    phase === 'parsing' ? `Reading ${file?.name ?? 'file'}` : `Uploading ${file?.name ?? 'file'}`;
-  const helpText = `${formatAcceptTypes(accept)} · Max ${formatFileSize(maxSizeBytes)}`;
+    phase === 'parsing'
+      ? t('generate.upload.readingFile', { name: file?.name ?? 'file' })
+      : t('generate.upload.uploadingFile', { name: file?.name ?? 'file' });
+  const helpText = `${formatAcceptTypes(accept)} · ${t('generate.upload.helpMax', {
+    size: formatFileSize(maxSizeBytes),
+  })}`;
+  const friendlyError = error ? t(ERROR_KEYS[classifyUploadError(error)]) : null;
 
   return (
     <div className="space-y-2">
@@ -156,8 +235,9 @@ export function DocumentUploadZone({
           isUploading && 'pointer-events-none opacity-60',
         )}
         style={{
-          borderColor: isDragging ? 'var(--color-primary)' : 'var(--color-border)',
-          backgroundColor: isDragging ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+          borderWidth: '2px',
+          borderColor: isDragging ? UPLOAD_DRAG_BORDER : 'var(--color-border)',
+          backgroundColor: isDragging ? UPLOAD_DRAG_BACKGROUND : 'var(--color-surface)',
           outlineColor: 'var(--color-primary)',
         }}
       >
@@ -168,14 +248,15 @@ export function DocumentUploadZone({
             className="text-[var(--color-text-secondary)]"
           />
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {PHASE_LABEL[phase] ?? (
+            {phase === 'uploading' ? (
+              t('generate.upload.uploading')
+            ) : phase === 'parsing' ? (
+              t('generate.upload.parsing')
+            ) : (
               <>
-                Drag and drop a file here, or{' '}
-                <span
-                  className="font-medium underline"
-                  style={{ color: 'var(--color-primary)' }}
-                >
-                  browse
+                {t('generate.upload.dragDropPrompt')}{' '}
+                <span className={`font-medium underline ${ACTION_COLOR_CLASS}`}>
+                  {t('generate.upload.browse')}
                 </span>
               </>
             )}
@@ -202,7 +283,7 @@ export function DocumentUploadZone({
       </p>
 
       {file && (
-        <ul className="space-y-2" aria-label="Selected file" aria-live="polite">
+        <ul className="space-y-2" aria-label={t('generate.upload.selectedFile')} aria-live="polite">
           <li
             className="flex w-full items-center gap-3 rounded-lg border p-3"
             style={{
@@ -258,19 +339,19 @@ export function DocumentUploadZone({
             {phase === 'error' ? (
               <button
                 type="button"
-                aria-label={`Retry upload of ${file.name}`}
+                aria-label={t('generate.upload.retryAria', { name: file.name })}
                 onClick={() => {
                   void handleFile(file);
                 }}
-                className="shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2"
-                style={{ color: 'var(--color-primary)', outlineColor: 'var(--color-primary)' }}
+                className={`shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2 ${ACTION_COLOR_CLASS}`}
+                style={{ outlineColor: 'var(--color-primary)' }}
               >
-                Retry
+                {t('generate.upload.retry')}
               </button>
             ) : null}
             <button
               type="button"
-              aria-label={`Remove ${file.name}`}
+              aria-label={t('generate.upload.removeAria', { name: file.name })}
               disabled={isUploading}
               onClick={() => {
                 void handleRemove();
@@ -287,11 +368,11 @@ export function DocumentUploadZone({
       {uploadType === 'curriculum_doc' && parsedText && (
         <div
           role="region"
-          aria-label="Extracted curriculum text"
+          aria-label={t('generate.upload.extractedRegion')}
           className="max-h-64 overflow-y-auto rounded-lg border border-border bg-background p-3"
         >
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Extracted text sent to generation
+            {t('generate.upload.extractedText')}
           </p>
           <pre className="whitespace-pre-wrap break-words text-sm text-text-primary">
             {parsedText}
@@ -301,11 +382,11 @@ export function DocumentUploadZone({
 
       {phase === 'ready' && !error && (
         <p role="status" className="text-sm text-success">
-          Uploaded. Ready to generate.
+          {t('generate.upload.ready')}
         </p>
       )}
 
-      {error && (
+      {friendlyError && (
         <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
           <XIcon
             ref={errorIconRef}
@@ -314,7 +395,7 @@ export function DocumentUploadZone({
             aria-hidden
             className="mt-0.5 shrink-0"
           />
-          <p className="font-body text-sm text-error">{error}</p>
+          <p className="font-body text-sm text-error">{friendlyError}</p>
         </div>
       )}
     </div>
