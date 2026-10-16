@@ -27,11 +27,35 @@ describe('LessonPlanCard locale meta', () => {
 
     expect(screen.queryByText('Grade 8')).not.toBeInTheDocument();
     expect(screen.queryByText('60m')).not.toBeInTheDocument();
-    expect(screen.getByText(/الصف 8/)).toBeInTheDocument();
+    const grade = screen.getByText((_, node) => {
+      const text = node?.textContent ?? '';
+      return node?.tagName === 'SPAN' && text.includes('الصف') && text.includes('8') && text.includes('\u2068') && text.includes('\u2069');
+    });
+    expect(grade).toBeTruthy();
     const duration = screen.getByText((_, node) => {
       const text = node?.textContent ?? '';
       return node?.tagName === 'SPAN' && text.includes('60') && text.includes('\u2068') && text.includes('\u2069');
     });
     expect(duration).toBeTruthy();
+  });
+
+  it('uses an English Delete aria-label that includes the lesson title', () => {
+    render(<LessonPlanCard lesson={lesson} onDelete={jest.fn()} />);
+    expect(screen.getByRole('button', { name: 'Delete Fractions' })).toBeInTheDocument();
+  });
+
+  it('localizes the History delete aria-label in Arabic', () => {
+    render(
+      <LocaleProvider initialLocale="ar">
+        <LessonPlanCard lesson={lesson} onDelete={jest.fn()} />
+      </LocaleProvider>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Delete Fractions' })).not.toBeInTheDocument();
+    const deleteButton = screen.getByRole('button', {
+      name: (accessibleName) => accessibleName.includes('حذف') && accessibleName.includes('Fractions'),
+    });
+    expect(deleteButton).toHaveAttribute('aria-label');
+    expect(deleteButton.getAttribute('aria-label')).toMatch(/[\u0600-\u06FF]/);
   });
 });

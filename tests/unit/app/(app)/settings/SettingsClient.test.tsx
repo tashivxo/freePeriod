@@ -73,11 +73,25 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.termsOfService': 'Terms of Service',
   'countries.common': 'Common',
   'countries.all': 'All countries',
+  'grades.numbered': 'Grade {n}',
+  'grades.year': 'Year {n}',
+  'grades.kindergarten': 'Kindergarten',
+  'grades.preK': 'Pre-K',
 };
+
+function interpolateLabel(key: string, vars?: Record<string, string>) {
+  const template = SETTINGS_LABELS[key] ?? key;
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, name: string) => vars[name] ?? `{${name}}`);
+}
+
+function gradeOptionName(label: string) {
+  return (accessibleName: string) => accessibleName.replace(/[\u2068\u2069]/g, '') === label;
+}
 
 jest.mock('@/providers/locale', () => ({
   useLocale: jest.fn(() => ({ locale: 'en', setLocale: mockSetLocale, dir: 'ltr', messages: {}, t: jest.fn() })),
-  useT: jest.fn(() => (key: string) => SETTINGS_LABELS[key] ?? key),
+  useT: jest.fn(() => interpolateLabel),
 }));
 
 const mockUpdate = jest.fn().mockReturnValue({
@@ -575,7 +589,7 @@ describe('SettingsClient — dirty save', () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
 
     await user.click(screen.getByLabelText(/default grade/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await user.click(screen.getByRole('option', { name: gradeOptionName('Grade 5') }));
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -600,11 +614,11 @@ describe('SettingsClient — dirty save', () => {
 
     const grade = screen.getByLabelText(/default grade/i);
     await user.click(grade);
-    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await user.click(screen.getByRole('option', { name: gradeOptionName('Grade 5') }));
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
-    expect(grade).toHaveTextContent('Grade 5');
+    expect(grade.textContent?.replace(/[\u2068\u2069]/g, '')).toContain('Grade 5');
 
     const country = screen.getByLabelText(/^country$/i);
     await user.click(country);
@@ -667,7 +681,7 @@ describe('SettingsClient — dirty save', () => {
 
     const grade = screen.getByLabelText(/default grade/i);
     await user.click(grade);
-    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await user.click(screen.getByRole('option', { name: gradeOptionName('Grade 5') }));
 
     const curriculum = screen.getByLabelText(/default curriculum/i);
     await user.click(curriculum);
