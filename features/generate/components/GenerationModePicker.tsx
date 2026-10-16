@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Zap } from 'lucide-react';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { LockIcon } from '@/components/ui/icons/lock';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
+import { useT } from '@/providers/locale';
 
 export type GenerationMode = 'fast' | 'quality';
 
@@ -32,33 +33,47 @@ type GenerationModePickerProps = {
   qualityUnlocked: boolean;
 };
 
-function toDropdownItems(qualityUnlocked: boolean): DropdownItem[] {
-  return GENERATION_MODE_OPTIONS.map((option) => ({
-    name: option.label,
-    value: option.value,
-    description: option.description,
-    disabled: option.value === 'quality' && !qualityUnlocked,
-    icon:
-      option.value === 'quality' && !qualityUnlocked ? (
-        <span data-testid="quality-lock-icon" className="inline-flex items-center gap-1 text-coral">
-          <MotionSafeIcon icon={LockIcon} size={15} />
-          <span className="sr-only">(Pro only)</span>
-        </span>
-      ) : undefined,
-  }));
-}
-
 export function GenerationModePicker({
   id,
   value,
   onChange,
   qualityUnlocked,
 }: GenerationModePickerProps) {
+  const t = useT();
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const selected =
     GENERATION_MODE_OPTIONS.find((option) => option.value === value) ??
     GENERATION_MODE_OPTIONS[0];
+
+  const selectedLabel = selected.value === 'fast' ? t('generate.modeFast') : t('generate.modeQuality');
+  const selectedDescription =
+    selected.value === 'fast' ? t('generate.modeFastDescription') : t('generate.modeQualityDescription');
+
+  const items = useMemo<DropdownItem[]>(
+    () =>
+      GENERATION_MODE_OPTIONS.map((option) => {
+        const label = option.value === 'fast' ? t('generate.modeFast') : t('generate.modeQuality');
+        const description =
+          option.value === 'fast'
+            ? t('generate.modeFastDescription')
+            : t('generate.modeQualityDescription');
+        return {
+          name: label,
+          value: option.value,
+          description,
+          disabled: option.value === 'quality' && !qualityUnlocked,
+          icon:
+            option.value === 'quality' && !qualityUnlocked ? (
+              <span data-testid="quality-lock-icon" className="inline-flex items-center gap-1 text-coral">
+                <MotionSafeIcon icon={LockIcon} size={15} />
+                <span className="sr-only">{t('generate.qualityProOnly')}</span>
+              </span>
+            ) : undefined,
+        };
+      }),
+    [qualityUnlocked, t],
+  );
 
   const handleSelect = (item: DropdownItem) => {
     if (item.value === 'fast' || item.value === 'quality') {
@@ -76,21 +91,24 @@ export function GenerationModePicker({
     <div>
       <AnimatedDropdown
         id={id}
-        text="Select generation mode"
-        items={toDropdownItems(qualityUnlocked)}
+        text={t('generate.selectMode')}
+        items={items}
         selectedValue={value}
         onSelect={handleSelect}
         onDisabledSelect={qualityUnlocked ? undefined : handleDisabledSelect}
-        triggerAriaLabel={`Generation mode: ${selected.label}. ${selected.description}`}
+        triggerAriaLabel={t('generate.modeAria', {
+          label: selectedLabel,
+          description: selectedDescription,
+        })}
       />
-      <p className="mt-1.5 text-sm font-body text-text-secondary">{selected.description}</p>
+      <p className="mt-1.5 text-sm font-body text-text-secondary">{selectedDescription}</p>
 
       {!qualityUnlocked && (
         <p className="mt-2 text-sm font-body text-text-secondary">
           <Link href="/pricing" className="text-coral underline-offset-2 hover:underline">
-            Upgrade to Pro
+            {t('generate.upgradeToPro')}
           </Link>{' '}
-          to unlock Quality mode.
+          {t('generate.unlockQuality')}
         </p>
       )}
 
@@ -98,7 +116,7 @@ export function GenerationModePicker({
         <UpgradePrompt
           open={showUpgrade}
           onDismiss={() => setShowUpgrade(false)}
-          message="Quality mode is available on Pro and Pro+. Upgrade to unlock more thorough lesson plans."
+          message={t('generate.qualityUpgradeMessage')}
           upgradeHref="/pricing"
         />
       )}

@@ -116,6 +116,9 @@ async function SettingsContent() {
       email={email}
       planLabel={planLabel}
       usageLabel={usageLabel}
+      usagePlan={generationAccess.userPlan}
+      generationCount={generationAccess.generationCount}
+      generationLimit={generationAccess.generationLimit}
       manageSubscriptionUrl={manageSubscriptionUrl}
     />
   );

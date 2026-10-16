@@ -35,6 +35,8 @@ export const en = {
     email: 'Email',
     plan: 'Plan',
     usage: 'Usage',
+    usageThisPeriod: '{used} of {limit} used this period',
+    usageUnlimited: '{used} generated this period (Unlimited)',
     manageSubscription: 'Manage subscription',
     logOut: 'Log out',
     deleteAccount: 'Delete account',
@@ -91,6 +93,48 @@ export const en = {
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
+    heading: 'Generate a Lesson',
+    documentTitle: 'Generate | FreePeriod',
+    subject: 'Subject',
+    grade: 'Grade',
+    curriculum: 'Curriculum',
+    duration: 'Duration',
+    selectSubject: 'Select subject',
+    selectGrade: 'Select grade',
+    selectCurriculum: 'Select curriculum (optional)',
+    selectDuration: 'Select duration',
+    customDuration: 'Custom',
+    durationMinutes: '{minutes} min',
+    durationShort: '{minutes}m',
+    enterSubject: 'Enter subject',
+    enterCurriculum: 'Enter curriculum',
+    customDurationInput: 'How long is the lesson? (minutes)',
+    focusLabel: 'Any specific focus or requirements? (optional)',
+    focusPlaceholder: 'E.g. Include hands-on activities, emphasize critical thinking...',
+    modeLabel: 'Generation mode',
+    selectMode: 'Select generation mode',
+    modeFast: 'Fast',
+    modeQuality: 'Quality',
+    modeFastDescription: 'Quicker plans for everyday lessons.',
+    modeQualityDescription: 'More thorough plans. Takes a bit longer.',
+    modeAria: 'Generation mode: {label}. {description}',
+    upgradeToPro: 'Upgrade to Pro',
+    unlockQuality: 'to unlock Quality mode.',
+    qualityProOnly: '(Pro only)',
+    qualityUpgradeMessage:
+      'Quality mode is available on Pro and Pro+. Upgrade to unlock more thorough lesson plans.',
+    submit: 'Generate Lesson Plan',
+    generating: 'Generating...',
+    waitingForUpload: 'Waiting for upload…',
+    alignmentTitle: 'Curriculum alignment notice',
+    alignmentTitleFor: 'Curriculum alignment notice for {curriculum}',
+    alignmentBody:
+      'FreePeriod provides AI-generated curriculum guidance, not verified curriculum compliance. Standards codes are only included when supported by an uploaded curriculum document. Verify the plan against your official requirements before an observation or submission.',
+    alignmentAria: 'Curriculum accuracy notice',
+    errorSelectSubject: 'Please select a subject',
+    errorOneSubject: 'Please enter one subject only',
+    errorSelectGrade: 'Please select a grade',
+    errorDurationRange: 'Enter a duration between {min} and {max} minutes',
     upload: {
       curriculumHeading: 'Curriculum Document',
       templateHeading: 'Lesson Plan Template',
@@ -199,6 +243,12 @@ export const en = {
     noLessons: 'No lessons yet.',
     generateALesson: 'Generate a lesson',
   },
+  grades: {
+    numbered: 'Grade {n}',
+    year: 'Year {n}',
+    kindergarten: 'Kindergarten',
+    preK: 'Pre-K',
+  },
   countries: {
     common: 'Common',
     all: 'All countries',
@@ -269,6 +319,8 @@ export type Messages = {
     email: string;
     plan: string;
     usage: string;
+    usageThisPeriod: string;
+    usageUnlimited: string;
     manageSubscription: string;
     logOut: string;
     deleteAccount: string;
@@ -321,6 +373,46 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+    heading: string;
+    documentTitle: string;
+    subject: string;
+    grade: string;
+    curriculum: string;
+    duration: string;
+    selectSubject: string;
+    selectGrade: string;
+    selectCurriculum: string;
+    selectDuration: string;
+    customDuration: string;
+    durationMinutes: string;
+    durationShort: string;
+    enterSubject: string;
+    enterCurriculum: string;
+    customDurationInput: string;
+    focusLabel: string;
+    focusPlaceholder: string;
+    modeLabel: string;
+    selectMode: string;
+    modeFast: string;
+    modeQuality: string;
+    modeFastDescription: string;
+    modeQualityDescription: string;
+    modeAria: string;
+    upgradeToPro: string;
+    unlockQuality: string;
+    qualityProOnly: string;
+    qualityUpgradeMessage: string;
+    submit: string;
+    generating: string;
+    waitingForUpload: string;
+    alignmentTitle: string;
+    alignmentTitleFor: string;
+    alignmentBody: string;
+    alignmentAria: string;
+    errorSelectSubject: string;
+    errorOneSubject: string;
+    errorSelectGrade: string;
+    errorDurationRange: string;
     upload: {
       curriculumHeading: string;
       templateHeading: string;
@@ -426,6 +518,12 @@ export type Messages = {
     nothingFound: string;
     noLessons: string;
     generateALesson: string;
+  };
+  grades: {
+    numbered: string;
+    year: string;
+    kindergarten: string;
+    preK: string;
   };
   countries: {
     common: string;
