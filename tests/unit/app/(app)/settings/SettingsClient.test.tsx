@@ -528,8 +528,14 @@ describe('SettingsClient — dirty save', () => {
     expect(curriculum).toHaveFocus();
   });
 
-  it('closes Country on Tab from the search box and unmounts the list', async () => {
+  it('closes Country on Tab from the search box and moves focus to Save', async () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByLabelText(/default grade/i));
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
 
     await user.click(screen.getByLabelText(/^country$/i));
     const search = screen.getByRole('searchbox');
@@ -540,6 +546,7 @@ describe('SettingsClient — dirty save', () => {
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /save settings/i })).toHaveFocus();
   });
 
   it('selects Grade and Country options on click and keeps Country open when clicking search', async () => {

@@ -295,6 +295,7 @@ describe('OnboardingPage', () => {
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /back/i })).toHaveFocus();
   });
 
   it('selects a Country option on click and unmounts the list', async () => {

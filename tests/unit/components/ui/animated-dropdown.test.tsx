@@ -484,7 +484,81 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
     expect(screen.getByRole('button', { name: /before grade/i })).toHaveFocus();
   });
 
-  it('closes Country on Tab and Shift+Tab from the search box and unmounts the portal list', async () => {
+  it('focuses the Country trigger on Tab keydown from the portaled search so default Tab hits the next field', async () => {
+    const { user } = render(
+      <div>
+        <button type="button">Before country</button>
+        <AnimatedDropdown
+          id="default-country"
+          text="Select your country"
+          searchable
+          searchPlaceholder="Select your country"
+          items={countryItems}
+        />
+        <button type="button">After country</button>
+      </div>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(search).toHaveFocus();
+
+    const focusAtKeydown: Element[] = [];
+    const recordFocus = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key === 'Tab' && !event.shiftKey) {
+        focusAtKeydown.push(document.activeElement ?? document.body);
+      }
+    };
+    document.addEventListener('keydown', recordFocus);
+    fireEvent.keyDown(search, { key: 'Tab' });
+    document.removeEventListener('keydown', recordFocus);
+
+    expect(focusAtKeydown[0]).toBe(trigger);
+    expect(trigger).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('focuses the Country trigger on Shift+Tab keydown from the portal list so default Shift+Tab hits the previous field', async () => {
+    const { user } = render(
+      <div>
+        <button type="button">Before country</button>
+        <AnimatedDropdown
+          id="default-country"
+          text="Select your country"
+          searchable
+          searchPlaceholder="Select your country"
+          items={countryItems}
+        />
+        <button type="button">After country</button>
+      </div>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const listbox = screen.getByRole('listbox');
+    expect(screen.getByRole('searchbox', { name: /select your country/i })).toHaveFocus();
+
+    const focusAtKeydown: Element[] = [];
+    const recordFocus = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key === 'Tab' && event.shiftKey) {
+        focusAtKeydown.push(document.activeElement ?? document.body);
+      }
+    };
+    document.addEventListener('keydown', recordFocus);
+    fireEvent.keyDown(listbox, { key: 'Tab', shiftKey: true });
+    document.removeEventListener('keydown', recordFocus);
+
+    expect(focusAtKeydown[0]).toBe(trigger);
+    expect(trigger).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes Country on Tab and Shift+Tab from the search box and moves focus to the neighboring fields', async () => {
     const { user } = render(
       <div>
         <button type="button">Before country</button>
@@ -509,6 +583,7 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /after country/i })).toHaveFocus();
 
     await user.click(trigger);
     expect(screen.getByRole('searchbox', { name: /select your country/i })).toHaveFocus();
@@ -516,6 +591,7 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /before country/i })).toHaveFocus();
   });
 
   it('closes Grade when focus leaves the trigger for an outside control', async () => {
