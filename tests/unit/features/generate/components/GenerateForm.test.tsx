@@ -222,7 +222,11 @@ describe('GenerateForm', () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
     await user.click(screen.getByLabelText(/^duration$/i));
     for (const label of ['30 min', '45 min', '60 min', '90 min', '120 min']) {
-      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', {
+          name: (accessibleName) => accessibleName.replace(/[\u2068\u2069]/g, '') === label,
+        }),
+      ).toBeInTheDocument();
     }
     expect(screen.getByRole('option', { name: /custom/i })).toBeInTheDocument();
   });
