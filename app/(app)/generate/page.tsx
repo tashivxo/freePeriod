@@ -1,14 +1,23 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { resolveEffectivePlan } from '@/lib/generation/quota';
 import { GenerateClient } from '@/features/generate/components/GenerateClient';
 import type { Plan } from '@/types';
-import { isLocale, type Locale } from '@/lib/i18n';
+import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
 
-export const metadata: Metadata = {
-  title: 'Generate | FreePeriod',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const raw = (await cookies()).get('fp-locale')?.value;
+  let locale: Locale = DEFAULT_LOCALE;
+  try {
+    const decoded = raw ? decodeURIComponent(raw) : '';
+    if (isLocale(decoded)) locale = decoded;
+  } catch {
+    locale = DEFAULT_LOCALE;
+  }
+  return { title: getMessages(locale).generate.documentTitle };
+}
 
 async function GeneratePageContent() {
   const supabase = await createClient();

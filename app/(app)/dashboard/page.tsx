@@ -70,7 +70,7 @@ async function DashboardContent() {
     resolveGenerationAccess(supabase, user.id),
   ]);
 
-  let cookieLocale: Parameters<typeof formatGenerationUsage>[0]['locale'];
+  let cookieLocale: Locale | undefined;
   try {
     const rawLocale = (await cookies()).get('fp-locale')?.value;
     const decoded = rawLocale ? decodeURIComponent(rawLocale) : '';
