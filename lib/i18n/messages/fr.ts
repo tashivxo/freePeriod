@@ -10,6 +10,10 @@ export const fr: Messages = {
   },
   settings: {
     title: 'Paramètres',
+    documentTitle: 'Paramètres | FreePeriod',
+    planFree: 'Gratuit',
+    planPro: 'Pro',
+    planProPlus: 'Pro+',
     zenMode: 'Mode Zen',
     zenModeDescription: 'Nos arrière-plans colorés sont trop pour vous ? Essayez le Mode Zen.',
     background: 'Arrière-plan',
@@ -238,6 +242,8 @@ export const fr: Messages = {
   },
   history: {
     title: 'Historique des plans de cours',
+    documentTitle: 'Historique des plans de cours | FreePeriod',
+    deleteAria: 'Supprimer {title}',
     searchPlaceholder: 'Rechercher par titre...',
     searchAriaLabel: 'Rechercher des leçons par titre',
     planLesson: 'Planifier une leçon',
