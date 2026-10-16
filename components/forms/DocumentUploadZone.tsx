@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { Check, X } from 'lucide-react';
 import { UploadIcon } from '@/components/ui/icons/upload';
 import { XIcon } from '@/components/ui/icons/x';
@@ -127,7 +127,12 @@ export function classifyUploadError(raw: string): UploadErrorKind {
     return 'timeout';
   }
 
-  if (message.includes('could not be processed')) {
+  if (
+    message.includes('could not be processed') ||
+    message.includes('failed to parse') ||
+    message.includes('failed to read this pdf') ||
+    message.includes('document.xml')
+  ) {
     return 'parse';
   }
 
@@ -168,6 +173,7 @@ export function DocumentUploadZone({
   const { locale } = useLocale();
   const inputId = useId();
   const helpId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const sectionHeading =
     uploadType === 'curriculum_doc'
       ? t('generate.upload.curriculumHeading')
@@ -253,6 +259,18 @@ export function DocumentUploadZone({
     selectFile(event.dataTransfer.files?.[0]);
   };
 
+  const openFilePicker = () => {
+    if (isUploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handleZoneKeyDown = (event: KeyboardEvent<HTMLLabelElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFilePicker();
+    }
+  };
+
   const ext = file?.name.split('.').pop()?.toUpperCase() ?? '';
   const showProgress = phase === 'uploading' || phase === 'parsing';
   const fileFallback = t('generate.upload.fileFallback');
@@ -280,15 +298,19 @@ export function DocumentUploadZone({
 
       <label
         htmlFor={inputId}
+        role="button"
+        tabIndex={0}
         data-dragging={isDragging ? 'true' : 'false'}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        onKeyDown={handleZoneKeyDown}
         className={cn(
           'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4',
           'transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
-          'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
+          'focus-visible:outline-[#B5486F] dark:focus-visible:outline-[#FF8BB0]',
           isDragging ? 'border-solid border-[#B5486F] dark:border-[#FF8BB0]' : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
         )}
@@ -296,7 +318,6 @@ export function DocumentUploadZone({
           borderWidth: '2px',
           borderColor: isDragging ? undefined : 'var(--color-border)',
           backgroundColor: isDragging ? UPLOAD_DRAG_BACKGROUND : 'var(--color-surface)',
-          outlineColor: 'var(--color-primary)',
         }}
       >
         <div className="flex flex-col items-center gap-2 text-center">
@@ -323,8 +344,10 @@ export function DocumentUploadZone({
       </label>
 
       <input
+        ref={fileInputRef}
         id={inputId}
         type="file"
+        tabIndex={-1}
         aria-label={
           uploadType === 'curriculum_doc'
             ? t('generate.upload.inputAriaCurriculum')
@@ -333,6 +356,12 @@ export function DocumentUploadZone({
         aria-describedby={helpId}
         accept={accept}
         className="sr-only"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.currentTarget.click();
+          }
+        }}
         onChange={(e) => {
           const selected = e.target.files?.[0];
           e.target.value = '';

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import { COUNTRY_DROPDOWN_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
+import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -357,7 +357,10 @@ export function SettingsClient({
             <AnimatedDropdown
               id="default-country"
               text={t('settings.selectCountry')}
-              items={COUNTRY_DROPDOWN_ITEMS}
+              items={getCountryDropdownItems({
+                common: t('countries.common'),
+                all: t('countries.all'),
+              })}
               selectedValue={countrySelect || undefined}
               searchable
               searchPlaceholder={t('settings.selectCountry')}

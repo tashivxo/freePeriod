@@ -290,12 +290,19 @@ export const COMMON_COUNTRY_ITEMS: CountryItem[] = COMMON_COUNTRY_CODES.map((val
 }));
 
 /** AnimatedDropdown rows: Common group, then all countries A–Z. */
-export const COUNTRY_DROPDOWN_ITEMS = [
-  { name: 'Common', header: true as const },
-  ...COMMON_COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
-  { name: 'All countries', header: true as const },
-  ...COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
-];
+export function getCountryDropdownItems(labels: { common: string; all: string }) {
+  return [
+    { name: labels.common, header: true as const },
+    ...COMMON_COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
+    { name: labels.all, header: true as const },
+    ...COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
+  ];
+}
+
+export const COUNTRY_DROPDOWN_ITEMS = getCountryDropdownItems({
+  common: 'Common',
+  all: 'All countries',
+});
 
 /** §10.1. Maghreb, IL, TR, and CY stay out until that list is amended. */
 export const MIDDLE_EAST_COUNTRY_CODES = [

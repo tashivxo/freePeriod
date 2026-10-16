@@ -38,10 +38,10 @@ describe('isMiddleEastAtmosphereDefault', () => {
     ).toBe(true);
   });
 
-  it('is true for Arabic locale alone', () => {
+  it('is false for Arabic locale alone', () => {
     expect(
       isMiddleEastAtmosphereDefault({ country: 'GB', curriculum: 'GCSE', locale: 'ar' }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('is false when country, curriculum, and locale all miss', () => {
@@ -73,7 +73,7 @@ describe('isMiddleEastAtmosphereDefault', () => {
 });
 
 describe('resolveColorBendsAtmosphere', () => {
-  it('returns brand when any single ME signal is true', () => {
+  it('returns brand for ME country or curriculum, and ignores Arabic locale', () => {
     expect(
       resolveColorBendsAtmosphere({
         override: null,
@@ -97,7 +97,26 @@ describe('resolveColorBendsAtmosphere', () => {
         curriculum: 'GCSE',
         locale: 'ar',
       }),
-    ).toBe('brand');
+    ).toBe('rainbow');
+  });
+
+  it('keeps an explicit Multicolour override when locale changes to Arabic', () => {
+    expect(
+      resolveColorBendsAtmosphere({
+        override: 'rainbow',
+        country: 'GB',
+        curriculum: 'GCSE',
+        locale: 'en',
+      }),
+    ).toBe('rainbow');
+    expect(
+      resolveColorBendsAtmosphere({
+        override: 'rainbow',
+        country: 'GB',
+        curriculum: 'GCSE',
+        locale: 'ar',
+      }),
+    ).toBe('rainbow');
   });
 
   it('returns rainbow when no ME signal is true', () => {

@@ -76,9 +76,21 @@ jest.mock('@/providers/color-bends-atmosphere', () => ({
 }));
 
 jest.mock('@/providers/locale', () => {
-  const t = (key: string) => key;
+  const { getMessages } = jest.requireActual('@/lib/i18n') as typeof import('@/lib/i18n');
+  const messages = getMessages('en');
+  const t = (key: string, vars?: Record<string, string>) => {
+    const resolved = key.split('.').reduce<unknown>((acc, part) => {
+      if (acc && typeof acc === 'object' && part in acc) {
+        return (acc as Record<string, unknown>)[part];
+      }
+      return undefined;
+    }, messages);
+    if (typeof resolved !== 'string') return key;
+    if (!vars) return resolved;
+    return resolved.replace(/\{(\w+)\}/g, (_, name: string) => vars[name] ?? `{${name}}`);
+  };
   return {
-    useLocale: () => ({ locale: 'en', setLocale: jest.fn(), dir: 'ltr', messages: {}, t }),
+    useLocale: () => ({ locale: 'en', setLocale: jest.fn(), dir: 'ltr', messages, t }),
     useT: () => t,
   };
 });
@@ -120,8 +132,8 @@ describe('AnimatedDropdown consumers', () => {
     );
 
     expectNoNativeSelects();
-    expect(screen.getByLabelText(/settings.language/i)).toHaveAttribute('aria-haspopup', 'listbox');
-    expect(screen.getByLabelText(/settings.country/i)).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(screen.getByLabelText(/^language$/i)).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(screen.getByLabelText(/^country$/i)).toHaveAttribute('aria-haspopup', 'listbox');
   });
 
   it('GenerateForm uses listbox triggers for field dropdowns', () => {
@@ -172,7 +184,7 @@ describe('AnimatedDropdown consumers', () => {
   it('LanguagePicker uses a listbox trigger', () => {
     render(<LanguagePicker variant="icon" />);
     expectNoNativeSelects();
-    expect(screen.getByRole('button', { name: /settings.language/i })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /^language$/i })).toHaveAttribute(
       'aria-haspopup',
       'listbox',
     );

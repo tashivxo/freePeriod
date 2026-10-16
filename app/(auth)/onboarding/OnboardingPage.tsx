@@ -13,14 +13,16 @@ import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import { COUNTRY_DROPDOWN_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
+import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
+import { useT } from '@/providers/locale';
 
 type FinishStatus = 'idle' | 'saving' | 'redirecting';
 
 export function OnboardingPage() {
   const router = useRouter();
+  const t = useT();
   const [step, setStep] = useState(1);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [customSubject, setCustomSubject] = useState('');
@@ -114,7 +116,7 @@ export function OnboardingPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setError('You must be signed in to complete onboarding.');
+        setError(t('onboarding.mustBeSignedIn'));
         setIsSubmitting(false);
         setFinishStatus('idle');
         return;
@@ -123,7 +125,7 @@ export function OnboardingPage() {
       const defaultSubject = selectedSubject || customSubject.trim();
       const countryCode = normalizeCountryCode(country);
       if (!countryCode) {
-        setError('Select a country.');
+        setError(t('onboarding.selectACountry'));
         setIsSubmitting(false);
         setFinishStatus('idle');
         return;
@@ -181,11 +183,11 @@ export function OnboardingPage() {
 
       router.push('/dashboard');
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(t('onboarding.somethingWentWrong'));
       setIsSubmitting(false);
       setFinishStatus('idle');
     }
-  }, [selectedSubject, customSubject, grade, country, curriculumSelect, customCurriculum, router]);
+  }, [selectedSubject, customSubject, grade, country, curriculumSelect, customCurriculum, router, t]);
 
   // Animate on mount
   useEffect(() => {
@@ -200,7 +202,7 @@ export function OnboardingPage() {
             <Logo size="lg" />
           </Link>
           <p className="font-body text-sm leading-relaxed text-text-secondary">
-            Set up your teaching profile
+            {t('onboarding.subtitle')}
           </p>
         </div>
 
@@ -263,13 +265,14 @@ export function OnboardingPage() {
 }
 
 function OnboardingProgress({ step, total = 4 }: { step: number; total?: number }) {
+  const t = useT();
   return (
     <div
       role="progressbar"
       aria-valuenow={step}
       aria-valuemin={1}
       aria-valuemax={total}
-      aria-label={`Step ${step} of ${total}`}
+      aria-label={t('onboarding.stepOf', { step: String(step), total: String(total) })}
       className="mb-6 flex gap-2"
     >
       {Array.from({ length: total }, (_, index) => (
@@ -323,15 +326,16 @@ function StepSubjects({
   onCustomChange: (value: string) => void;
   onNext: () => void;
 }) {
+  const t = useT();
   const hasSubject = Boolean(selectedSubject || customSubject.trim());
 
   return (
     <div>
       <h1 className="mb-2 text-center font-display text-2xl font-bold text-text-primary">
-        What do you teach?
+        {t('onboarding.whatDoYouTeach')}
       </h1>
       <p className="mb-6 text-center font-body text-sm text-text-secondary">
-        Pick one subject, you can change this anytime in settings.
+        {t('onboarding.pickSubjectHint')}
       </p>
 
       <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Subject">
@@ -348,7 +352,7 @@ function StepSubjects({
 
       <input
         type="text"
-        placeholder="Other subject..."
+        placeholder={t('onboarding.otherSubject')}
         value={customSubject}
         onChange={(e) => onCustomChange(e.target.value)}
         className="mb-6 w-full rounded-xl border border-border bg-background px-4 py-3 text-base focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
@@ -361,7 +365,7 @@ function StepSubjects({
         className="w-full"
         disabled={!hasSubject}
       >
-        Next
+        {t('onboarding.next')}
       </Button>
     </div>
   );
@@ -380,19 +384,20 @@ function StepGrade({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const t = useT();
   return (
     <div>
       <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
-        What grade do you teach?
+        {t('onboarding.whatGrade')}
       </h1>
 
       <div className="mb-6">
         <label htmlFor="grade-select" className="mb-2 block text-sm font-medium text-text-secondary">
-          Grade Level
+          {t('onboarding.gradeLevel')}
         </label>
         <AnimatedDropdown
           id="grade-select"
-          text="Select a grade..."
+          text={t('onboarding.selectGrade')}
           items={GRADE_ITEMS}
           selectedValue={grade}
           onSelect={(item) => onGradeChange(item.value ?? item.name)}
@@ -403,10 +408,10 @@ function StepGrade({
 
       <div className="flex gap-3">
         <Button onClick={onBack} variant="outline" className="flex-1">
-          Back
+          {t('onboarding.back')}
         </Button>
         <Button onClick={onNext} className="flex-1" disabled={!grade}>
-          Next
+          {t('onboarding.next')}
         </Button>
       </div>
     </div>
@@ -426,26 +431,30 @@ function StepCountry({
   onNext: () => void;
   onBack: () => void;
 }) {
+  const t = useT();
   return (
     <div>
       <h1
         id="onboarding-country-heading"
         className="mb-2 text-center font-display text-2xl font-bold text-text-primary"
       >
-        Where do you teach?
+        {t('onboarding.whereDoYouTeach')}
       </h1>
       <p className="mb-6 text-center font-body text-sm text-text-secondary">
-        You can change this in Settings.
+        {t('onboarding.changeInSettings')}
       </p>
 
       <div className="mb-6">
         <AnimatedDropdown
           id="country-select"
-          text="Select your country"
-          items={COUNTRY_DROPDOWN_ITEMS}
+          text={t('onboarding.selectCountry')}
+          items={getCountryDropdownItems({
+            common: t('countries.common'),
+            all: t('countries.all'),
+          })}
           selectedValue={country || undefined}
           searchable
-          searchPlaceholder="Select your country"
+          searchPlaceholder={t('onboarding.selectCountry')}
           triggerAriaLabelledBy="onboarding-country-heading"
           onSelect={(item) => onCountryChange(item.value ?? '')}
         />
@@ -455,10 +464,10 @@ function StepCountry({
 
       <div className="flex gap-3">
         <Button onClick={onBack} variant="outline" className="flex-1">
-          Back
+          {t('onboarding.back')}
         </Button>
         <Button onClick={onNext} className="flex-1" disabled={!country}>
-          Next
+          {t('onboarding.next')}
         </Button>
       </div>
     </div>
@@ -488,26 +497,27 @@ function StepCurriculum({
   finishStatus: FinishStatus;
   showDashboardLink: boolean;
 }) {
+  const t = useT();
   const finishLabel =
     finishStatus === 'saving'
-      ? 'Saving…'
+      ? t('onboarding.saving')
       : finishStatus === 'redirecting'
-        ? 'Redirecting…'
-        : 'Finish';
+        ? t('onboarding.redirecting')
+        : t('onboarding.finish');
 
   return (
     <div>
       <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
-        Select your curriculum
+        {t('onboarding.selectCurriculum')}
       </h1>
 
       <div className="mb-6">
         <label htmlFor="curriculum-select" className="mb-2 block text-sm font-medium text-text-secondary">
-          Curriculum
+          {t('onboarding.curriculumLabel')}
         </label>
         <AnimatedDropdown
           id="curriculum-select"
-          text="Select your curriculum"
+          text={t('onboarding.selectCurriculum')}
           items={CURRICULUM_ITEMS}
           selectedValue={curriculumSelect}
           onSelect={(item) => onCurriculumSelectChange(item.value ?? item.name)}
@@ -515,7 +525,7 @@ function StepCurriculum({
         {curriculumSelect === 'Custom' && (
           <div className="mt-3">
             <Input
-              label="Enter curriculum"
+              label={t('onboarding.enterCurriculum')}
               value={customCurriculum}
               onChange={(e) => onCustomCurriculumChange(e.target.value)}
             />
@@ -527,7 +537,7 @@ function StepCurriculum({
 
       <div className="flex gap-3">
         <Button onClick={onBack} variant="outline" className="flex-1" disabled={isSubmitting}>
-          Back
+          {t('onboarding.back')}
         </Button>
         <Button
           onClick={onFinish}
@@ -545,15 +555,15 @@ function StepCurriculum({
 
       {finishStatus === 'redirecting' && (
         <p className="mt-4 text-center text-sm text-text-secondary" role="status" aria-live="polite">
-          Redirecting to your dashboard…
+          {t('onboarding.redirectingToDashboard')}
         </p>
       )}
 
       {showDashboardLink && (
         <p className="mt-4 text-center text-sm text-text-secondary" role="status">
-          Taking a while?{' '}
+          {t('onboarding.takingAWhile')}{' '}
           <Link href="/dashboard" className="font-semibold text-coral hover:underline">
-            Go to dashboard
+            {t('onboarding.goToDashboard')}
           </Link>
         </p>
       )}
