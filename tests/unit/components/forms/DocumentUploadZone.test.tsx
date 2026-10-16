@@ -494,8 +494,8 @@ describe('DocumentUploadZone file input UX', () => {
 
     const input = screen.getByLabelText(/upload lesson plan template/i);
     const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
-    expect(dropzone).toHaveClass('focus-within:outline-[#B5486F]');
-    expect(dropzone).toHaveClass('dark:focus-within:outline-[#FF8BB0]');
+    expect(dropzone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(dropzone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
     expect(contrastRatio('#B5486F', '#FFFBF7')).toBeGreaterThanOrEqual(3);
     expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
 
@@ -518,7 +518,6 @@ describe('DocumentUploadZone file input UX', () => {
     const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
     expect(dropzone).not.toBeNull();
     expect(dropzone).toHaveAttribute('tabindex', '0');
-    expect(dropzone).toHaveClass('focus-visible:outline');
     expect(dropzone).toHaveClass('focus-visible:outline-2');
     expect(dropzone).toHaveClass('focus-visible:outline-offset-2');
     expect(dropzone).toHaveClass('focus-visible:outline-[#B5486F]');
