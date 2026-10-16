@@ -14,7 +14,12 @@ const lesson = {
 describe('LessonPlanCard locale meta', () => {
   it('shows English Grade and compact duration in LTR', () => {
     render(<LessonPlanCard lesson={lesson} />);
-    expect(screen.getByText('Grade 8')).toBeInTheDocument();
+    expect(
+      screen.getByText((_, node) => {
+        const text = (node?.textContent ?? '').replace(/[\u2068\u2069]/g, '');
+        return node?.tagName === 'SPAN' && text === 'Grade 8';
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/60m/)).toBeInTheDocument();
   });
 

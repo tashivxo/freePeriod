@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
-import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { GRADE_ITEMS, formatGradeLabel } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
@@ -31,6 +31,33 @@ import { formatGenerationUsage } from '@/lib/generation/quota';
 import type { Plan, User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
+
+const PLAN_NAME_KEYS: Record<Plan, 'settings.planFree' | 'settings.planPro' | 'settings.planProPlus'> = {
+  free: 'settings.planFree',
+  pro: 'settings.planPro',
+  pro_plus: 'settings.planProPlus',
+};
+
+const ENGLISH_PLAN_NAMES: Record<Plan, string> = {
+  free: 'Free',
+  pro: 'Pro',
+  pro_plus: 'Pro+',
+};
+
+function localizedPlanLabel(
+  plan: Plan,
+  planLabel: string,
+  t: (key: string, vars?: Record<string, string>) => string,
+): string {
+  const key = PLAN_NAME_KEYS[plan];
+  const localized = t(key);
+  if (!localized || localized === key) return planLabel;
+  const english = ENGLISH_PLAN_NAMES[plan];
+  if (planLabel.startsWith(english) && planLabel.length > english.length) {
+    return `${localized}${planLabel.slice(english.length)}`;
+  }
+  return localized;
+}
 
 const LOCALE_ITEMS = LOCALES.map((code) => ({
   name: LOCALE_LABELS[code],
@@ -110,6 +137,15 @@ export function SettingsClient({
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
   const t = useT();
+  const displayPlanLabel = localizedPlanLabel(usagePlan ?? user.plan, planLabel, t);
+  const gradeItems = useMemo(
+    () =>
+      GRADE_ITEMS.map((item) => ({
+        ...item,
+        name: formatGradeLabel(item.value ?? item.name, t),
+      })),
+    [t],
+  );
   const displayUsage =
     typeof generationCount === 'number'
       ? formatGenerationUsage({
@@ -126,6 +162,10 @@ export function SettingsClient({
     gradeSelect !== savedDefaults.grade ||
     curriculumField.value !== savedDefaults.curriculum ||
     countrySelect !== savedDefaults.country;
+
+  useEffect(() => {
+    document.title = t('settings.documentTitle');
+  }, [t]);
 
   useEffect(() => {
     if (hasStoredLocale()) return;
@@ -327,7 +367,7 @@ export function SettingsClient({
             <AnimatedDropdown
               id="default-grade"
               text={t('settings.selectGrade')}
-              items={GRADE_ITEMS}
+              items={gradeItems}
               selectedValue={gradeSelect}
               onSelect={(item) => setGradeSelect(item.value ?? item.name)}
             />
@@ -423,7 +463,7 @@ export function SettingsClient({
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
             <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.plan')}</dt>
-            <dd className="text-sm font-body text-text-primary">{planLabel}</dd>
+            <dd className="text-sm font-body text-text-primary">{displayPlanLabel}</dd>
           </div>
           {displayUsage && (
             <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">

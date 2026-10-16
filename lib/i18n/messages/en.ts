@@ -8,6 +8,10 @@ export const en = {
   },
   settings: {
     title: 'Settings',
+    documentTitle: 'Settings | FreePeriod',
+    planFree: 'Free',
+    planPro: 'Pro',
+    planProPlus: 'Pro+',
     zenMode: 'Zen Mode',
     zenModeDescription: 'Are our colorful backgrounds too much for you? Try Zen Mode.',
     background: 'Background',
@@ -235,6 +239,8 @@ export const en = {
   },
   history: {
     title: 'Lesson Plan History',
+    documentTitle: 'Lesson Plan History | FreePeriod',
+    deleteAria: 'Delete {title}',
     searchPlaceholder: 'Search by title...',
     searchAriaLabel: 'Search lessons by title',
     planLesson: 'Plan Lesson',
@@ -292,6 +298,10 @@ export type Messages = {
   };
   settings: {
     title: string;
+    documentTitle: string;
+    planFree: string;
+    planPro: string;
+    planProPlus: string;
     zenMode: string;
     zenModeDescription: string;
     background: string;
@@ -511,6 +521,8 @@ export type Messages = {
   };
   history: {
     title: string;
+    documentTitle: string;
+    deleteAria: string;
     searchPlaceholder: string;
     searchAriaLabel: string;
     planLesson: string;

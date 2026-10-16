@@ -1,14 +1,27 @@
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSubscription, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { formatGenerationUsage } from '@/lib/generation/quota';
+import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
 import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
 import { SettingsClient } from './SettingsClient';
 import type { Plan, Subscription, User } from '@/types';
 
-export const metadata = { title: 'Settings | FreePeriod' };
+export async function generateMetadata(): Promise<Metadata> {
+  const raw = (await cookies()).get('fp-locale')?.value;
+  let locale: Locale = DEFAULT_LOCALE;
+  try {
+    const decoded = raw ? decodeURIComponent(raw) : '';
+    if (isLocale(decoded)) locale = decoded;
+  } catch {
+    locale = DEFAULT_LOCALE;
+  }
+  return { title: getMessages(locale).settings.documentTitle };
+}
 
 const PLAN_LABELS: Record<Plan, string> = {
   free: 'Free',
