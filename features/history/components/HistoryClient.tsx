@@ -23,6 +23,10 @@ export function HistoryClient() {
   const [subjectFilter, setSubjectFilter] = useState('');
 
   useEffect(() => {
+    document.title = t('history.documentTitle');
+  }, [t]);
+
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);

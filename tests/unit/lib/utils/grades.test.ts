@@ -1,5 +1,8 @@
 import { formatGradeLabel } from '@/lib/utils/grades';
 
+const FSI = '\u2068';
+const PDI = '\u2069';
+
 describe('formatGradeLabel', () => {
   it('formats numeric grades', () => {
     expect(formatGradeLabel('5')).toBe('Grade 5');
@@ -38,9 +41,10 @@ describe('formatGradeLabel', () => {
       return key;
     };
 
-    expect(formatGradeLabel('8', t)).toBe('الصف 8');
-    expect(formatGradeLabel('Grade 8', t)).toBe('الصف 8');
-    expect(formatGradeLabel('Year 7', t)).toBe('السنة 7');
+    expect(formatGradeLabel('8', t)).toBe(`الصف ${FSI}8${PDI}`);
+    expect(formatGradeLabel('Grade 8', t)).toBe(`الصف ${FSI}8${PDI}`);
+    expect(formatGradeLabel('4', t)).toBe(`الصف ${FSI}4${PDI}`);
+    expect(formatGradeLabel('Year 7', t)).toBe(`السنة ${FSI}7${PDI}`);
     expect(formatGradeLabel('K', t)).toBe('رياض الأطفال');
     expect(formatGradeLabel('Pre-K', t)).toBe('ما قبل الروضة');
   });

@@ -10,6 +10,10 @@ export const es: Messages = {
   },
   settings: {
     title: 'Ajustes',
+    documentTitle: 'Ajustes | FreePeriod',
+    planFree: 'Gratis',
+    planPro: 'Pro',
+    planProPlus: 'Pro+',
     zenMode: 'Modo Zen',
     zenModeDescription: '¿Los fondos coloridos son demasiado? Prueba el Modo Zen.',
     background: 'Fondo',
@@ -238,6 +242,8 @@ export const es: Messages = {
   },
   history: {
     title: 'Historial de planes de clase',
+    documentTitle: 'Historial de planes de clase | FreePeriod',
+    deleteAria: 'Eliminar {title}',
     searchPlaceholder: 'Buscar por título...',
     searchAriaLabel: 'Buscar lecciones por título',
     planLesson: 'Planificar lección',

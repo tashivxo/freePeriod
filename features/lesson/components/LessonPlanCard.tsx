@@ -79,7 +79,7 @@ export function LessonPlanCard({ lesson, onDelete, showObjective = false }: Less
               size="icon"
               onClick={() => setConfirming(true)}
               className="absolute top-3 right-3 text-text-secondary/40 hover:text-red-500 opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 [@media(pointer:coarse)]:opacity-100"
-              aria-label={`Delete ${lesson.title}`}
+              aria-label={t('history.deleteAria', { title: lesson.title })}
             >
               <MotionSafeIcon icon={DeleteIcon} size={16} />
             </Button>

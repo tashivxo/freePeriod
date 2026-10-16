@@ -1,4 +1,5 @@
 import type { DropdownItem } from '@/components/ui/animated-dropdown';
+import { isolateBidi } from '@/lib/i18n/format';
 
 /**
  * Raw grade values stored in the database.
@@ -46,13 +47,13 @@ export function formatGradeLabel(g: string, t?: TranslateFn): string {
   if (trimmed === 'K') return t ? t('grades.kindergarten') : 'Kindergarten';
   const yearMatch = trimmed.match(/^Year (\d+)$/);
   if (yearMatch) {
-    return t ? t('grades.year', { n: yearMatch[1]! }) : trimmed;
+    return t ? t('grades.year', { n: isolateBidi(yearMatch[1]!) }) : trimmed;
   }
   const gradeMatch = trimmed.match(/^Grade\s+(.+)$/);
   if (gradeMatch) {
-    return t ? t('grades.numbered', { n: gradeMatch[1]! }) : trimmed;
+    return t ? t('grades.numbered', { n: isolateBidi(gradeMatch[1]!) }) : trimmed;
   }
-  return t ? t('grades.numbered', { n: trimmed }) : `Grade ${trimmed}`;
+  return t ? t('grades.numbered', { n: isolateBidi(trimmed) }) : `Grade ${trimmed}`;
 }
 
 /** Dropdown items for grade selectors — human-readable labels, raw values. */

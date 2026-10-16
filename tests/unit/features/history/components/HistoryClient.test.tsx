@@ -99,6 +99,20 @@ function renderHistory(ui: ReactElement = <HistoryClient />, locale: 'en' | 'ar'
 describe('HistoryClient', () => {
   beforeEach(() => {
     lessonRows = [...allLessons];
+    document.title = '';
+  });
+
+  it('sets the browser document title from locale copy', async () => {
+    renderHistory();
+    await screen.findByRole('heading', { level: 1 });
+    expect(document.title).toBe('Lesson Plan History | FreePeriod');
+  });
+
+  it('sets the Arabic browser document title instead of leftover English', async () => {
+    renderHistory(<HistoryClient />, 'ar');
+    await screen.findByRole('heading', { level: 1 });
+    expect(document.title).toBe('سجل خطط الدروس | FreePeriod');
+    expect(document.title).not.toBe('Lesson Plan History | FreePeriod');
   });
 
   it('keeps the heading and Plan Lesson action as separate elements', async () => {
