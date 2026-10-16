@@ -286,6 +286,14 @@ export const en = {
     somethingWentWrong: 'Something went wrong. Please try again.',
     stepOf: 'Step {step} of {total}',
   },
+  status: {
+    notFoundTitle: "This page is on a free period",
+    notFoundBody: "We couldn't find that page. The link may be old or mistyped.",
+    errorTitle: "Something went wrong",
+    errorBody: "This page ran into a problem. Try again, or head back home.",
+    tryAgain: "Try again",
+    backHome: "Back to home",
+  },
 } as const;
 
 export type Messages = {
@@ -567,5 +575,13 @@ export type Messages = {
     selectACountry: string;
     somethingWentWrong: string;
     stepOf: string;
+  };
+  status: {
+    notFoundTitle: string;
+    notFoundBody: string;
+    errorTitle: string;
+    errorBody: string;
+    tryAgain: string;
+    backHome: string;
   };
 };

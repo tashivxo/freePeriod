@@ -289,4 +289,12 @@ export const es: Messages = {
     somethingWentWrong: 'Algo salió mal. Inténtalo de nuevo.',
     stepOf: 'Paso {step} de {total}',
   },
+  status: {
+    notFoundTitle: "Esta página se tomó un descanso",
+    notFoundBody: "No encontramos esa página. Puede que el enlace sea antiguo o esté mal escrito.",
+    errorTitle: "Algo salió mal",
+    errorBody: "Esta página tuvo un problema. Inténtalo de nuevo o vuelve al inicio.",
+    tryAgain: "Intentar de nuevo",
+    backHome: "Volver al inicio",
+  },
 };
