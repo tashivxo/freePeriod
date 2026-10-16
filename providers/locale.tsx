@@ -15,18 +15,20 @@ import {
   getMessages,
   isLocale,
   isRtl,
+  LOCALE_STORAGE_KEY,
   type Locale,
   type Messages,
 } from '@/lib/i18n';
+import { createClient } from '@/lib/supabase/client';
 
-const STORAGE_KEY = 'fp-locale';
+const STORAGE_KEY = LOCALE_STORAGE_KEY;
 const COOKIE_MAX_AGE = 31536000;
 
 type TranslateVars = Record<string, string>;
 
 interface LocaleContextValue {
   locale: Locale;
-  setLocale: (locale: Locale) => void;
+  setLocale: (locale: Locale) => void | Promise<void>;
   messages: Messages;
   dir: 'ltr' | 'rtl';
   t: (key: string, vars?: TranslateVars) => string;
@@ -85,11 +87,23 @@ export function LocaleProvider({
     }
   }, [initialLocale]);
 
-  const setLocale = useCallback((nextLocale: Locale) => {
+  const setLocale = useCallback(async (nextLocale: Locale) => {
     setLocaleState(nextLocale);
     localStorage.setItem(STORAGE_KEY, nextLocale);
     document.cookie = `${STORAGE_KEY}=${encodeURIComponent(nextLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
     applyDocumentLocale(nextLocale);
+
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('users')
+      .update({ preferred_locale: nextLocale })
+      .eq('id', user.id);
+    if (error) throw error;
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);

@@ -17,7 +17,6 @@ jest.mock('@/lib/ocr/tesseract', () => ({
   extractTextFromImage: (...args: unknown[]) => mockRecognize(...args),
 }));
 
-import { extractTextFromImage } from '@/lib/ocr/tesseract';
 import { parsePdf } from '@/lib/parse/parse-pdf';
 
 describe('parsePdf low-text PDFs', () => {
@@ -31,7 +30,6 @@ describe('parsePdf low-text PDFs', () => {
 
     const parsed = await parsePdf(Buffer.from('%PDF-1.4 low-text'));
 
-    expect(extractTextFromImage).not.toHaveBeenCalled();
     expect(mockRecognize).not.toHaveBeenCalled();
     expect(parsed).toEqual({
       text: '',
