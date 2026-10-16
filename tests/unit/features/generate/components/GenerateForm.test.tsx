@@ -207,6 +207,30 @@ describe('GenerateForm', () => {
     expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.jpg,.png');
   });
 
+  it('tabs to the curriculum upload zone before Generation mode with a visible focus ring', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const prompt = screen.getByLabelText(/any specific focus or requirements/i);
+    const curriculumZone = screen
+      .getByText('Curriculum Document')
+      .closest('div')
+      ?.querySelector('[data-dragging]');
+    const generationMode = screen.getByRole('button', { name: /generation mode:/i });
+
+    expect(curriculumZone).toBeTruthy();
+    expect(
+      (curriculumZone as HTMLElement).compareDocumentPosition(generationMode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(prompt);
+    await user.tab();
+
+    expect(curriculumZone).toHaveFocus();
+    expect(generationMode).not.toHaveFocus();
+    expect(curriculumZone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(curriculumZone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
+  });
+
   it('renders lesson plan template upload zone with accepted types', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();

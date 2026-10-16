@@ -508,6 +508,36 @@ describe('DocumentUploadZone file input UX', () => {
     expect(clickSpy).toHaveBeenCalled();
   });
 
+  it('is a Tab stop with a visible focus-visible coral ring on the dropzone', async () => {
+    const user = userEvent.setup();
+    renderZone({
+      uploadType: 'curriculum_doc',
+      accept: '.pdf,.docx,.xlsx,.jpg,.png',
+    });
+
+    const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
+    expect(dropzone).not.toBeNull();
+    expect(dropzone).toHaveAttribute('tabindex', '0');
+    expect(dropzone).toHaveClass('focus-visible:outline');
+    expect(dropzone).toHaveClass('focus-visible:outline-2');
+    expect(dropzone).toHaveClass('focus-visible:outline-offset-2');
+    expect(dropzone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(dropzone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
+    expect(contrastRatio('#B5486F', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#A33760', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
+
+    const input = screen.getByLabelText(/upload curriculum document/i);
+    const clickSpy = jest.spyOn(input, 'click');
+    (dropzone as HTMLElement).focus();
+    expect(dropzone).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockClear();
+    await user.keyboard(' ');
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
   it('shows the file size, a progress bar while uploading, and a Remove label', async () => {
     let releaseUpload!: (value: { data: { path: string }; error: null }) => void;
     mockUpload.mockImplementation(
