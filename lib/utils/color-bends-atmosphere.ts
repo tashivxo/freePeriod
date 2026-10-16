@@ -16,12 +16,11 @@ export type ColorBendsAtmosphereSignals = {
 export function isMiddleEastAtmosphereDefault({
   country,
   curriculum,
-  locale,
 }: ColorBendsAtmosphereSignals): boolean {
   const code = country?.toUpperCase();
   const countryMatch = code != null && MIDDLE_EAST_COUNTRY_CODE_SET.has(code);
   const curriculumMatch = curriculum != null && MIDDLE_EAST_CURRICULUM_SET.has(curriculum);
-  return countryMatch || curriculumMatch || locale === 'ar';
+  return countryMatch || curriculumMatch;
 }
 
 export function resolveColorBendsAtmosphere({

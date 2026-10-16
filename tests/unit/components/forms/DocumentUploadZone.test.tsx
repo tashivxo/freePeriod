@@ -100,6 +100,16 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('The document could not be processed.')).toBe('parse');
   });
 
+  it('maps known parse 500 server strings to parse, never generic', () => {
+    expect(classifyUploadError('Failed to parse document')).toBe('parse');
+    expect(
+      classifyUploadError(
+        'Failed to read this PDF on the server. Please try again, or upload a DOCX or XLSX copy.',
+      ),
+    ).toBe('parse');
+    expect(classifyUploadError('DOCX document.xml is missing')).toBe('parse');
+  });
+
   it('falls back to generic for unknown raw messages', () => {
     expect(classifyUploadError('duplicate key value violates unique constraint')).toBe('generic');
   });
@@ -458,6 +468,75 @@ describe('DocumentUploadZone file input UX', () => {
     expect(alert).not.toHaveTextContent('duplicate key');
   });
 
+  it('maps a parse 500 with a raw server error string to the parse message, never the raw string', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'DOCX document.xml is missing' }),
+    });
+    const user = userEvent.setup();
+    renderZone();
+
+    const file = new File(['%PDF-1.7'], 'plan.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'The document could not be processed. Please try a different file.',
+    );
+    expect(alert).not.toHaveTextContent('document.xml');
+    expect(alert).not.toHaveTextContent("Couldn't upload this file. Please try again.");
+  });
+
+  it('shows a 3:1 focus ring and opens the file picker with Enter or Space', async () => {
+    const user = userEvent.setup();
+    renderZone();
+
+    const input = screen.getByLabelText(/upload lesson plan template/i);
+    const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
+    expect(dropzone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(dropzone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
+    expect(contrastRatio('#B5486F', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
+
+    const clickSpy = jest.spyOn(input, 'click');
+    input.focus();
+    await user.keyboard('{Enter}');
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockClear();
+    await user.keyboard(' ');
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it('is a Tab stop with a visible focus-visible coral ring on the dropzone', async () => {
+    const user = userEvent.setup();
+    renderZone({
+      uploadType: 'curriculum_doc',
+      accept: '.pdf,.docx,.xlsx,.jpg,.png',
+    });
+
+    const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
+    expect(dropzone).not.toBeNull();
+    expect(dropzone).toHaveAttribute('tabindex', '0');
+    expect(dropzone).toHaveClass('focus-visible:outline-2');
+    expect(dropzone).toHaveClass('focus-visible:outline-offset-2');
+    expect(dropzone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(dropzone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
+    expect(contrastRatio('#B5486F', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#A33760', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
+
+    const input = screen.getByLabelText(/upload curriculum document/i);
+    const clickSpy = jest.spyOn(input, 'click');
+    (dropzone as HTMLElement).focus();
+    expect(dropzone).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(clickSpy).toHaveBeenCalled();
+    clickSpy.mockClear();
+    await user.keyboard(' ');
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
   it('shows the file size, a progress bar while uploading, and a Remove label', async () => {
     let releaseUpload!: (value: { data: { path: string }; error: null }) => void;
     mockUpload.mockImplementation(
@@ -572,6 +651,42 @@ describe('DocumentUploadZone file input UX', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
     );
+  });
+
+  it('maps a low-text PDF 422 to the scanned/no-text message, not the timeout copy', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        error:
+          'No readable text was found in this document. Please upload a clearer curriculum file.',
+      }),
+    });
+    const user = userEvent.setup();
+    renderWithLocale(
+      <DocumentUploadZone
+        label="Upload curriculum document"
+        accept=".pdf,.docx,.xlsx,.jpg,.png"
+        uploadType="curriculum_doc"
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+        onBusyChange={onBusyChange}
+      />,
+    );
+
+    const file = new File(['%PDF-1.7'], 'scan.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload curriculum document/i), file);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+    );
+    expect(alert).not.toHaveTextContent(/taking too long/i);
+    expect(
+      screen.queryByText(
+        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('maps a parse timeout to the timeout copy', async () => {

@@ -37,6 +37,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 import { GenerateForm } from '@/features/generate/components/GenerateForm';
+import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
 // --- Constants ---
 
@@ -206,6 +207,30 @@ describe('GenerateForm', () => {
     expect(input).toHaveAttribute('accept', '.pdf,.docx,.xlsx,.jpg,.png');
   });
 
+  it('tabs to the curriculum upload zone before Generation mode with a visible focus ring', async () => {
+    const { user } = render(<GenerateForm onSubmit={onSubmit} />);
+    const prompt = screen.getByLabelText(/any specific focus or requirements/i);
+    const curriculumZone = screen
+      .getByText('Curriculum Document')
+      .closest('div')
+      ?.querySelector('[data-dragging]');
+    const generationMode = screen.getByRole('button', { name: /generation mode:/i });
+
+    expect(curriculumZone).toBeTruthy();
+    expect(
+      (curriculumZone as HTMLElement).compareDocumentPosition(generationMode) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(prompt);
+    await user.tab();
+
+    expect(curriculumZone).toHaveFocus();
+    expect(generationMode).not.toHaveFocus();
+    expect(curriculumZone).toHaveClass('focus-visible:outline-[#B5486F]');
+    expect(curriculumZone).toHaveClass('dark:focus-visible:outline-[#FF8BB0]');
+  });
+
   it('renders lesson plan template upload zone with accepted types', () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     expect(screen.getByText('Lesson Plan Template')).toBeInTheDocument();
@@ -361,7 +386,9 @@ describe('GenerateForm', () => {
 
     await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
 
-    expect(await screen.findByText(/please enter one subject only/i)).toBeInTheDocument();
+    const alert = await screen.findByText(/please enter one subject only/i);
+    expect(alert.closest('[role="alert"]')).toBeTruthy();
+    expectErrorXIcon(alert.closest('[role="alert"]') as HTMLElement);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -383,7 +410,9 @@ describe('GenerateForm', () => {
     await user.click(screen.getByRole('option', { name: 'Science' }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/please select a grade/i);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/please select a grade/i);
+    expectErrorXIcon(alert);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -396,7 +425,9 @@ describe('GenerateForm', () => {
     await user.click(screen.getByRole('option', { name: 'Custom' }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/enter a duration between/i);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/enter a duration between/i);
+    expectErrorXIcon(alert);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

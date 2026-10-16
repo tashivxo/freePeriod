@@ -310,3 +310,100 @@ describe('lesson edit copy', () => {
   });
 });
 
+type ExtraMessages = {
+  history?: {
+    title?: string;
+    searchPlaceholder?: string;
+    planLesson?: string;
+    allSubjects?: string;
+  };
+  onboarding?: Record<string, string>;
+  countries?: { common?: string; all?: string };
+};
+
+function extra(locale: Locale): ExtraMessages {
+  return getMessages(locale) as unknown as ExtraMessages;
+}
+
+const HISTORY_SEARCH: Record<Locale, string> = {
+  en: 'Search by title...',
+  ar: 'ابحث حسب العنوان...',
+  es: 'Buscar por título...',
+  fr: 'Rechercher par titre...',
+  'zh-Hans': '按标题搜索...',
+};
+
+const COUNTRY_GROUPS: Record<Locale, { common: string; all: string }> = {
+  en: { common: 'Common', all: 'All countries' },
+  ar: { common: 'شائع', all: 'كل البلدان' },
+  es: { common: 'Comunes', all: 'Todos los países' },
+  fr: { common: 'Courants', all: 'Tous les pays' },
+  'zh-Hans': { common: '常用', all: '所有国家' },
+};
+
+const ONBOARDING_REQUIRED: Record<Locale, { whereDoYouTeach: string; selectCurriculum: string }> = {
+  en: {
+    whereDoYouTeach: 'Where do you teach?',
+    selectCurriculum: 'Select your curriculum',
+  },
+  ar: {
+    whereDoYouTeach: 'أين تُدرّس؟',
+    selectCurriculum: 'اختر منهجك',
+  },
+  es: {
+    whereDoYouTeach: '¿Dónde das clase?',
+    selectCurriculum: 'Selecciona tu currículo',
+  },
+  fr: {
+    whereDoYouTeach: 'Où enseignez-vous ?',
+    selectCurriculum: 'Sélectionnez votre programme',
+  },
+  'zh-Hans': {
+    whereDoYouTeach: '你在哪里任教？',
+    selectCurriculum: '选择你的课程纲要',
+  },
+};
+
+describe('history search copy', () => {
+  it.each(LOCALES)('ships Search by title placeholder for %s', (locale) => {
+    const placeholder = extra(locale).history?.searchPlaceholder;
+    expect(placeholder).toBe(HISTORY_SEARCH[locale]);
+    expect(placeholder).not.toContain('\u2014');
+  });
+});
+
+describe('onboarding copy', () => {
+  it.each(LOCALES)('ships onboarding headings and country group labels for %s', (locale) => {
+    const onboarding = extra(locale).onboarding;
+    const countries = extra(locale).countries;
+    const expected = ONBOARDING_REQUIRED[locale];
+    const groups = COUNTRY_GROUPS[locale];
+
+    expect(onboarding?.whereDoYouTeach).toBe(expected.whereDoYouTeach);
+    expect(onboarding?.selectCurriculum).toBe(expected.selectCurriculum);
+    expect(onboarding?.whatDoYouTeach).toBeTruthy();
+    expect(onboarding?.next).toBeTruthy();
+    expect(onboarding?.back).toBeTruthy();
+    expect(onboarding?.finish).toBeTruthy();
+    expect(countries?.common).toBe(groups.common);
+    expect(countries?.all).toBe(groups.all);
+
+    for (const value of Object.values(onboarding ?? {})) {
+      expect(value).not.toContain('\u2014');
+    }
+    expect(groups.common).not.toContain('\u2014');
+    expect(groups.all).not.toContain('\u2014');
+  });
+
+  it('keeps Arabic and Chinese as real translations, not English copies', () => {
+    const en = extra('en').onboarding;
+    const ar = extra('ar').onboarding;
+    const zh = extra('zh-Hans').onboarding;
+
+    expect(ar?.whereDoYouTeach).not.toBe(en?.whereDoYouTeach);
+    expect(zh?.selectCurriculum).not.toBe(en?.selectCurriculum);
+    expect(ar?.whereDoYouTeach).toMatch(/[\u0600-\u06FF]/);
+    expect(zh?.selectCurriculum).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+

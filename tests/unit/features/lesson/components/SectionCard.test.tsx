@@ -36,6 +36,7 @@ jest.mock('@/features/lesson/components/LessonEditor', () => ({
 }));
 
 import { SectionCard } from '@/features/lesson/components/SectionCard';
+import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
 function renderCard(ui: ReactElement) {
   return render(<LocaleProvider initialLocale="en">{ui}</LocaleProvider>);
@@ -244,11 +245,14 @@ describe('SectionCard', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     const error = await screen.findByText("Couldn't save, try again");
-    expect(error).toHaveClass('text-red-700', 'dark:text-red-300');
-    expect(error).toHaveAttribute('id');
+    const alert = error.closest('[role="alert"]') as HTMLElement;
+    expect(alert).toHaveClass('text-error');
+    expect(alert).not.toHaveClass('text-red-700');
+    expect(alert).toHaveAttribute('id');
+    expectErrorXIcon(alert);
     expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute(
       'aria-describedby',
-      error.id,
+      alert.id,
     );
     expect(screen.getByTestId('lesson-editor')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
