@@ -12,3 +12,15 @@ describe('Input field error', () => {
     expectErrorXIcon(alert);
   });
 });
+
+describe('Input theme tokens', () => {
+  it('uses theme background and text tokens and does not transition color or background', () => {
+    render(<Input label="Email" />);
+    const input = document.querySelector('input');
+    expect(input).toHaveClass('bg-background');
+    expect(input).toHaveClass('text-text-primary');
+    expect(input?.className ?? '').not.toMatch(/transition-colors/);
+    expect(input?.className ?? '').not.toMatch(/background-color/);
+    expect(input?.className ?? '').not.toMatch(/transition-\[.*color/);
+  });
+});

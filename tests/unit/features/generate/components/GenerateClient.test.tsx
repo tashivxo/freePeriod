@@ -41,24 +41,40 @@ jest.mock('animejs', () => ({
   remove: jest.fn(),
 }));
 
-jest.mock('@/providers/locale', () => ({
-  useLocale: () => ({
-    locale: 'en',
-    setLocale: jest.fn(),
-    dir: 'ltr',
-    messages: {},
-    t: (key: string) => key,
-  }),
-  useT: () => (key: string, vars?: Record<string, string>) => {
-    if (key === 'generate.planLanguageHint' && vars?.language) {
-      return `New plans will be written in ${vars.language}`;
+jest.mock('@/providers/locale', () => {
+  const { getMessages } = jest.requireActual('@/lib/i18n') as typeof import('@/lib/i18n');
+  const messages = getMessages('en');
+
+  function resolveMessage(key: string): string {
+    const parts = key.split('.');
+    let current: unknown = messages;
+    for (const part of parts) {
+      if (current && typeof current === 'object' && part in current) {
+        current = (current as Record<string, unknown>)[part];
+      } else {
+        return key;
+      }
     }
-    const labels: Record<string, string> = {
-      'nav.settings': 'Settings',
-    };
-    return labels[key] ?? key;
-  },
-}));
+    return typeof current === 'string' ? current : key;
+  }
+
+  function translate(key: string, vars?: Record<string, string>) {
+    const template = resolveMessage(key);
+    if (!vars) return template;
+    return template.replace(/\{(\w+)\}/g, (_, name: string) => vars[name] ?? `{${name}}`);
+  }
+
+  return {
+    useLocale: () => ({
+      locale: 'en',
+      setLocale: jest.fn(),
+      dir: 'ltr',
+      messages,
+      t: translate,
+    }),
+    useT: () => translate,
+  };
+});
 
 import { GenerateClient } from '@/features/generate/components/GenerateClient';
 
@@ -71,12 +87,18 @@ const defaults = {
 describe('GenerateClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    document.title = '';
     (global.fetch as jest.Mock) = jest.fn(
       () =>
         new Promise(() => {
           /* keep loading screen visible */
         }),
     );
+  });
+
+  it('sets the browser document title from locale copy', () => {
+    render(<GenerateClient defaults={defaults} />);
+    expect(document.title).toBe('Generate | FreePeriod');
   });
 
   it('shows the generation loading screen after the user submits the form', async () => {

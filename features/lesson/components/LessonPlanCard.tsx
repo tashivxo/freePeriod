@@ -8,7 +8,9 @@ import { DeleteIcon } from '@/components/ui/icons/delete';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatDurationShort } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
+import { useT } from '@/providers/locale';
 import type { LessonPlan } from '@/types';
 
 export type LessonPlanCardData = Pick<
@@ -25,6 +27,7 @@ type LessonPlanCardProps = {
 };
 
 export function LessonPlanCard({ lesson, onDelete, showObjective = false }: LessonPlanCardProps) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
 
   const handleDeleteConfirm = async () => {
@@ -48,9 +51,9 @@ export function LessonPlanCard({ lesson, onDelete, showObjective = false }: Less
             </span>
             <span className="inline-flex items-center gap-1">
               <MotionSafeIcon icon={ClockIcon} size={12} />
-              {lesson.duration_minutes}m
+              {formatDurationShort(lesson.duration_minutes, t)}
             </span>
-            <span>{formatGradeLabel(lesson.grade)}</span>
+            <span>{formatGradeLabel(lesson.grade, t)}</span>
           </div>
           {showObjective && lesson.firstObjective && (
             <p className="text-xs font-body text-text-secondary line-clamp-2">
