@@ -513,6 +513,60 @@ describe('SettingsClient — dirty save', () => {
     expect(country).toHaveFocus();
   });
 
+  it('closes Grade on Tab and moves focus to Curriculum', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const grade = screen.getByLabelText(/default grade/i);
+    const curriculum = screen.getByLabelText(/default curriculum/i);
+    await user.click(grade);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(curriculum).toHaveFocus();
+  });
+
+  it('closes Country on Tab from the search box and unmounts the list', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByLabelText(/^country$/i));
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('selects Grade and Country options on click and keeps Country open when clicking search', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    const grade = screen.getByLabelText(/default grade/i);
+    await user.click(grade);
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(grade).toHaveTextContent('Grade 5');
+
+    const country = screen.getByLabelText(/^country$/i);
+    await user.click(country);
+    const search = screen.getByRole('searchbox');
+    await user.click(search);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(search).toHaveFocus();
+
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(country).toHaveTextContent('United Arab Emirates');
+  });
+
   it('marks Save dirty when the country changes', async () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
 

@@ -249,6 +249,68 @@ describe('OnboardingPage', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('closes Grade on Tab and moves focus to Back', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+
+    const grade = await screen.findByLabelText(/grade level/i);
+    await user.click(grade);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /back/i })).toHaveFocus();
+  });
+
+  it('selects a Grade option on click and unmounts the list', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+
+    const grade = await screen.findByLabelText(/grade level/i);
+    await user.click(grade);
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(grade).toHaveTextContent('Grade 9');
+  });
+
+  it('closes Country on Tab from search and keeps it open when clicking the search box', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+
+    await user.click(search);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(search).toHaveFocus();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('selects a Country option on click and unmounts the list', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    await user.click(trigger);
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveTextContent('United Arab Emirates');
+  });
+
   it('disables Next on the country step until a country is chosen', async () => {
     const { user } = render(<OnboardingPage />);
     await chooseSubject(user);

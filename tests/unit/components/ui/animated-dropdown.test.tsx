@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
@@ -439,6 +440,217 @@ describe('AnimatedDropdown keyboard', () => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
     expect(trigger).toHaveFocus();
+  });
+});
+
+describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
+  const gradeItems = [
+    { name: 'Grade 5', value: '5' },
+    { name: 'Grade 6', value: '6' },
+  ];
+  const countryItems = [
+    { name: 'Common', header: true },
+    { name: 'Germany', value: 'DE' },
+    { name: 'All countries', header: true },
+    { name: 'Ghana', value: 'GH' },
+  ];
+
+  it('closes Grade on Tab and Shift+Tab and lets focus move to the next or previous control', async () => {
+    const { user } = render(
+      <div>
+        <button type="button">Before grade</button>
+        <AnimatedDropdown id="default-grade" text="Select grade" items={gradeItems} />
+        <button type="button">After grade</button>
+      </div>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select grade/i });
+    await user.click(trigger);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /after grade/i })).toHaveFocus();
+
+    await user.click(trigger);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    trigger.focus();
+    await user.tab({ shift: true });
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /before grade/i })).toHaveFocus();
+  });
+
+  it('closes Country on Tab and Shift+Tab from the search box and unmounts the portal list', async () => {
+    const { user } = render(
+      <div>
+        <button type="button">Before country</button>
+        <AnimatedDropdown
+          id="default-country"
+          text="Select your country"
+          searchable
+          searchPlaceholder="Select your country"
+          items={countryItems}
+        />
+        <button type="button">After country</button>
+      </div>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(search).toHaveFocus();
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    await user.click(trigger);
+    expect(screen.getByRole('searchbox', { name: /select your country/i })).toHaveFocus();
+    await user.tab({ shift: true });
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes Grade when focus leaves the trigger for an outside control', async () => {
+    const { user } = render(
+      <div>
+        <AnimatedDropdown id="default-grade" text="Select grade" items={gradeItems} />
+        <button type="button">After grade</button>
+      </div>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select grade/i });
+    const after = screen.getByRole('button', { name: /after grade/i });
+    await user.click(trigger);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.blur(trigger, { relatedTarget: after });
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes Country when focus leaves the search box for an outside control', async () => {
+    const { user } = render(
+      <div>
+        <AnimatedDropdown
+          id="default-country"
+          text="Select your country"
+          searchable
+          searchPlaceholder="Select your country"
+          items={countryItems}
+        />
+        <button type="button">After country</button>
+      </div>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /select your country/i }));
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    const after = screen.getByRole('button', { name: /after country/i });
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.blur(search, { relatedTarget: after });
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not treat focus moving into the portaled Country search or options as leaving', async () => {
+    const { user } = render(
+      <AnimatedDropdown
+        id="default-country"
+        text="Select your country"
+        searchable
+        searchPlaceholder="Select your country"
+        items={countryItems}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    const option = screen.getByRole('option', { name: 'Germany' });
+    const listbox = screen.getByRole('listbox');
+
+    fireEvent.blur(trigger, { relatedTarget: search });
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.blur(search, { relatedTarget: option });
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    fireEvent.blur(listbox, { relatedTarget: search });
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+  });
+
+  it('selects a Grade option on click and unmounts the portal list', async () => {
+    const onSelect = jest.fn();
+    const { user } = render(
+      <AnimatedDropdown
+        id="default-grade"
+        text="Select grade"
+        items={gradeItems}
+        onSelect={onSelect}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /select grade/i }));
+    await user.click(screen.getByRole('option', { name: 'Grade 5' }));
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: '5' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('selects a Country option on click and unmounts the portal list', async () => {
+    const onSelect = jest.fn();
+    const { user } = render(
+      <AnimatedDropdown
+        id="default-country"
+        text="Select your country"
+        searchable
+        searchPlaceholder="Select your country"
+        items={countryItems}
+        onSelect={onSelect}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /select your country/i }));
+    expect(screen.getByRole('searchbox', { name: /select your country/i })).toHaveFocus();
+    await user.click(screen.getByRole('option', { name: 'Germany' }));
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'DE' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('keeps Country open when clicking into the search box', async () => {
+    const { user } = render(
+      <AnimatedDropdown
+        id="default-country"
+        text="Select your country"
+        searchable
+        searchPlaceholder="Select your country"
+        items={countryItems}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.click(search);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(search).toHaveFocus();
   });
 });
 
