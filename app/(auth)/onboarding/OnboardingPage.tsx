@@ -498,7 +498,7 @@ function StepCurriculum({
   return (
     <div>
       <h1 className="mb-6 text-center font-display text-2xl font-bold text-text-primary">
-        What curriculum?
+        Select your curriculum
       </h1>
 
       <div className="mb-6">
@@ -507,7 +507,7 @@ function StepCurriculum({
         </label>
         <AnimatedDropdown
           id="curriculum-select"
-          text="Select a curriculum..."
+          text="Select your curriculum"
           items={CURRICULUM_ITEMS}
           selectedValue={curriculumSelect}
           onSelect={(item) => onCurriculumSelectChange(item.value ?? item.name)}
