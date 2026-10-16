@@ -4,7 +4,7 @@ export const adekPack: CurriculumPack = {
   id: 'adek',
   curriculumValues: ['ADEK (Abu Dhabi)'],
   authority: 'ADEK',
-  displayName: 'ADEK (Abu Dhabi) — Guideline Pack',
+  displayName: 'ADEK (Abu Dhabi), Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

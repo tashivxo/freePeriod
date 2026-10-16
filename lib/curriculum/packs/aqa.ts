@@ -4,7 +4,7 @@ export const aqaPack: CurriculumPack = {
   id: 'aqa',
   curriculumValues: ['AQA'],
   authority: 'AQA',
-  displayName: 'AQA — Guideline Pack',
+  displayName: 'AQA, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

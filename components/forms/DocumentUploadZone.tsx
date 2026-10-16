@@ -14,6 +14,7 @@ import {
   formatFileSize,
 } from '@/lib/utils/file-input';
 import { cn } from '@/lib/utils';
+import { useLocale, useT } from '@/providers/locale';
 import type { UploadType } from '@/types';
 
 interface DocumentUploadZoneProps {
@@ -26,18 +27,136 @@ interface DocumentUploadZoneProps {
   maxSizeBytes?: number;
 }
 
-const SECTION_HEADINGS: Record<UploadType, string> = {
-  curriculum_doc: 'Curriculum Document',
-  template: 'Lesson Plan Template',
+/** Darkened coral for light-mode links. 6.42:1 on white, 5.02:1 on the drag tint. */
+export const UPLOAD_ACTION_COLOR_LIGHT = '#A33760';
+/** Coral-300 for dark-mode links. 11.11:1 on #171717, 5.79:1 on the drag tint. */
+export const UPLOAD_ACTION_COLOR_DARK = '#FFB8D0';
+export const UPLOAD_DRAG_BORDER = 'var(--color-coral)';
+export const UPLOAD_DRAG_BORDER_LIGHT = '#B5486F';
+export const UPLOAD_DRAG_BORDER_DARK = '#FF8BB0';
+export const UPLOAD_ERROR_COLOR_LIGHT = '#B91C1C';
+export const UPLOAD_ERROR_COLOR_DARK = '#FCA5A5';
+export const UPLOAD_DRAG_BACKGROUND =
+  'color-mix(in srgb, var(--color-coral) 32%, var(--color-surface))';
+
+const ACTION_COLOR_CLASS = 'text-[#A33760] dark:text-[#FFB8D0]';
+const ERROR_TEXT_CLASS = 'text-[#B91C1C] dark:text-[#FCA5A5]';
+
+export type UploadErrorKind =
+  | 'auth'
+  | 'tooLarge'
+  | 'wrongType'
+  | 'empty'
+  | 'network'
+  | 'noText'
+  | 'timeout'
+  | 'parse'
+  | 'generic';
+
+const ERROR_KEYS: Record<UploadErrorKind, `generate.upload.${string}`> = {
+  auth: 'generate.upload.errorAuth',
+  tooLarge: 'generate.upload.errorTooLarge',
+  wrongType: 'generate.upload.errorWrongType',
+  empty: 'generate.upload.errorEmpty',
+  network: 'generate.upload.errorNetwork',
+  noText: 'generate.upload.errorNoText',
+  timeout: 'generate.upload.errorTimeout',
+  parse: 'generate.upload.errorParse',
+  generic: 'generate.upload.errorGeneric',
 };
 
-const PHASE_LABEL: Record<string, string> = {
-  uploading: 'Uploading…',
-  parsing: 'Reading document…',
-};
+export function classifyUploadError(raw: string): UploadErrorKind {
+  const message = raw.trim().toLowerCase();
+  if (!message) return 'generic';
+
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('network') ||
+    message.includes('retryable') ||
+    message === 'upload failed' ||
+    message.includes('load failed') ||
+    message.includes('offline')
+  ) {
+    return 'network';
+  }
+
+  if (
+    message.includes('not authenticated') ||
+    message.includes('unauthenticated') ||
+    message.includes('unauthorized') ||
+    message.includes('auth session missing') ||
+    message.includes('jwt')
+  ) {
+    return 'auth';
+  }
+
+  if (
+    message.includes('exceeds the maximum size') ||
+    message.includes('too large') ||
+    message.includes('payload too large') ||
+    message.includes('entity too large')
+  ) {
+    return 'tooLarge';
+  }
+
+  if (
+    message.includes('files are accepted') ||
+    message.includes('file type') ||
+    message.includes('need to be .pdf') ||
+    message.includes('not supported') ||
+    message.includes('mime')
+  ) {
+    return 'wrongType';
+  }
+
+  if (message.includes('is empty') || message.includes('empty file')) {
+    return 'empty';
+  }
+
+  if (
+    message.includes('no extractable text') ||
+    message.includes('no readable text') ||
+    message.includes('scanned pdf')
+  ) {
+    return 'noText';
+  }
+
+  if (message.includes('taking too long')) {
+    return 'timeout';
+  }
+
+  if (message.includes('could not be processed')) {
+    return 'parse';
+  }
+
+  return 'generic';
+}
+
+function uploadErrorVars(
+  raw: string,
+  kind: UploadErrorKind,
+  maxSizeBytes: number,
+  locale: string,
+  fileFallback: string,
+): Record<string, string> {
+  if (kind === 'tooLarge') {
+    const match = raw.match(/^(.+?) exceeds the maximum size of /i);
+    return {
+      name: match?.[1] ?? fileFallback,
+      size: formatFileSize(maxSizeBytes, locale),
+    };
+  }
+  if (kind === 'empty') {
+    const match = raw.match(/^(.+?) is empty/i);
+    return { name: match?.[1] ?? fileFallback };
+  }
+  return {};
+}
 
 export function DocumentUploadZone({
-  label,
+  label: _label,
   accept,
   uploadType,
   onUploadComplete,
@@ -45,9 +164,14 @@ export function DocumentUploadZone({
   onBusyChange,
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
 }: DocumentUploadZoneProps) {
+  const t = useT();
+  const { locale } = useLocale();
   const inputId = useId();
   const helpId = useId();
-  const sectionHeading = SECTION_HEADINGS[uploadType];
+  const sectionHeading =
+    uploadType === 'curriculum_doc'
+      ? t('generate.upload.curriculumHeading')
+      : t('generate.upload.templateHeading');
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
 
@@ -131,9 +255,22 @@ export function DocumentUploadZone({
 
   const ext = file?.name.split('.').pop()?.toUpperCase() ?? '';
   const showProgress = phase === 'uploading' || phase === 'parsing';
+  const fileFallback = t('generate.upload.fileFallback');
   const progressLabel =
-    phase === 'parsing' ? `Reading ${file?.name ?? 'file'}` : `Uploading ${file?.name ?? 'file'}`;
-  const helpText = `${formatAcceptTypes(accept)} · Max ${formatFileSize(maxSizeBytes)}`;
+    phase === 'parsing'
+      ? t('generate.upload.readingFile', { name: file?.name ?? fileFallback })
+      : t('generate.upload.uploadingFile', { name: file?.name ?? fileFallback });
+  const helpText = `${formatAcceptTypes(accept, t('generate.upload.filesSuffix'))} · ${t(
+    'generate.upload.helpMax',
+    { size: formatFileSize(maxSizeBytes, locale) },
+  )}`;
+  const errorKind = error ? classifyUploadError(error) : null;
+  const friendlyError = errorKind
+    ? t(
+        ERROR_KEYS[errorKind],
+        uploadErrorVars(error ?? '', errorKind, maxSizeBytes, locale, fileFallback),
+      )
+    : null;
 
   return (
     <div className="space-y-2">
@@ -152,12 +289,13 @@ export function DocumentUploadZone({
           'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4',
           'transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
           'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
-          isDragging ? 'border-solid' : 'border-dashed',
+          isDragging ? 'border-solid border-[#B5486F] dark:border-[#FF8BB0]' : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
         )}
         style={{
-          borderColor: isDragging ? 'var(--color-primary)' : 'var(--color-border)',
-          backgroundColor: isDragging ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+          borderWidth: '2px',
+          borderColor: isDragging ? undefined : 'var(--color-border)',
+          backgroundColor: isDragging ? UPLOAD_DRAG_BACKGROUND : 'var(--color-surface)',
           outlineColor: 'var(--color-primary)',
         }}
       >
@@ -168,14 +306,15 @@ export function DocumentUploadZone({
             className="text-[var(--color-text-secondary)]"
           />
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {PHASE_LABEL[phase] ?? (
+            {phase === 'uploading' ? (
+              t('generate.upload.uploading')
+            ) : phase === 'parsing' ? (
+              t('generate.upload.parsing')
+            ) : (
               <>
-                Drag and drop a file here, or{' '}
-                <span
-                  className="font-medium underline"
-                  style={{ color: 'var(--color-primary)' }}
-                >
-                  browse
+                {t('generate.upload.dragDropPrompt')}{' '}
+                <span className={`font-medium underline ${ACTION_COLOR_CLASS}`}>
+                  {t('generate.upload.browse')}
                 </span>
               </>
             )}
@@ -186,7 +325,11 @@ export function DocumentUploadZone({
       <input
         id={inputId}
         type="file"
-        aria-label={label}
+        aria-label={
+          uploadType === 'curriculum_doc'
+            ? t('generate.upload.inputAriaCurriculum')
+            : t('generate.upload.inputAriaTemplate')
+        }
         aria-describedby={helpId}
         accept={accept}
         className="sr-only"
@@ -202,7 +345,7 @@ export function DocumentUploadZone({
       </p>
 
       {file && (
-        <ul className="space-y-2" aria-label="Selected file" aria-live="polite">
+        <ul className="space-y-2" aria-label={t('generate.upload.selectedFile')} aria-live="polite">
           <li
             className="flex w-full items-center gap-3 rounded-lg border p-3"
             style={{
@@ -238,7 +381,7 @@ export function DocumentUploadZone({
                   className="shrink-0 text-xs"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
-                  {formatFileSize(file.size)}
+                  {formatFileSize(file.size, locale)}
                 </span>
               </div>
               {showProgress ? (
@@ -258,19 +401,19 @@ export function DocumentUploadZone({
             {phase === 'error' ? (
               <button
                 type="button"
-                aria-label={`Retry upload of ${file.name}`}
+                aria-label={t('generate.upload.retryAria', { name: file.name })}
                 onClick={() => {
                   void handleFile(file);
                 }}
-                className="shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2"
-                style={{ color: 'var(--color-primary)', outlineColor: 'var(--color-primary)' }}
+                className={`shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2 ${ACTION_COLOR_CLASS}`}
+                style={{ outlineColor: 'var(--color-primary)' }}
               >
-                Retry
+                {t('generate.upload.retry')}
               </button>
             ) : null}
             <button
               type="button"
-              aria-label={`Remove ${file.name}`}
+              aria-label={t('generate.upload.removeAria', { name: file.name })}
               disabled={isUploading}
               onClick={() => {
                 void handleRemove();
@@ -287,11 +430,11 @@ export function DocumentUploadZone({
       {uploadType === 'curriculum_doc' && parsedText && (
         <div
           role="region"
-          aria-label="Extracted curriculum text"
+          aria-label={t('generate.upload.extractedRegion')}
           className="max-h-64 overflow-y-auto rounded-lg border border-border bg-background p-3"
         >
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Extracted text sent to generation
+            {t('generate.upload.extractedText')}
           </p>
           <pre className="whitespace-pre-wrap break-words text-sm text-text-primary">
             {parsedText}
@@ -301,12 +444,12 @@ export function DocumentUploadZone({
 
       {phase === 'ready' && !error && (
         <p role="status" className="text-sm text-success">
-          Uploaded. Ready to generate.
+          {t('generate.upload.ready')}
         </p>
       )}
 
-      {error && (
-        <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+      {friendlyError && (
+        <div role="alert" className={`flex gap-3 rounded-xl bg-error/10 p-3 ${ERROR_TEXT_CLASS}`}>
           <XIcon
             ref={errorIconRef}
             size={24}
@@ -314,7 +457,7 @@ export function DocumentUploadZone({
             aria-hidden
             className="mt-0.5 shrink-0"
           />
-          <p className="font-body text-sm text-error">{error}</p>
+          <p className={`font-body text-sm ${ERROR_TEXT_CLASS}`}>{friendlyError}</p>
         </div>
       )}
     </div>

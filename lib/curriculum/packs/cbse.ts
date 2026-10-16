@@ -4,7 +4,7 @@ export const cbsePack: CurriculumPack = {
   id: 'cbse',
   curriculumValues: ['CBSE (India)'],
   authority: 'CBSE',
-  displayName: 'CBSE (India) — Guideline Pack',
+  displayName: 'CBSE (India), Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

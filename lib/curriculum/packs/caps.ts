@@ -4,7 +4,7 @@ export const capsPack: CurriculumPack = {
   id: 'caps',
   curriculumValues: ['CAPS (South Africa)'],
   authority: 'CAPS',
-  displayName: 'CAPS (South Africa) — Guideline Pack',
+  displayName: 'CAPS (South Africa), Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [
