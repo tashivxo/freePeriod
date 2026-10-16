@@ -91,6 +91,30 @@ export const en = {
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
+    upload: {
+      curriculumHeading: 'Curriculum Document',
+      templateHeading: 'Lesson Plan Template',
+      dragDropPrompt: 'Drag and drop a file here, or',
+      browse: 'browse',
+      uploading: 'Uploading…',
+      parsing: 'Reading document…',
+      helpMax: 'Max {size}',
+      retry: 'Retry',
+      retryAria: 'Retry upload of {name}',
+      removeAria: 'Remove {name}',
+      uploadingFile: 'Uploading {name}',
+      readingFile: 'Reading {name}',
+      extractedText: 'Extracted text sent to generation',
+      extractedRegion: 'Extracted curriculum text',
+      selectedFile: 'Selected file',
+      ready: 'Uploaded. Ready to generate.',
+      errorAuth: 'Please sign in again to upload.',
+      errorTooLarge: 'This file is too large. Please choose a smaller file.',
+      errorWrongType: 'This file type is not supported. Please choose a different file.',
+      errorEmpty: 'This file is empty. Please choose a file with content.',
+      errorNetwork: 'Upload failed. Check your connection and try again.',
+      errorGeneric: "Couldn't upload this file. Please try again.",
+    },
   },
   pricing: {
     title: 'Plans for every classroom',
@@ -247,6 +271,30 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+    upload: {
+      curriculumHeading: string;
+      templateHeading: string;
+      dragDropPrompt: string;
+      browse: string;
+      uploading: string;
+      parsing: string;
+      helpMax: string;
+      retry: string;
+      retryAria: string;
+      removeAria: string;
+      uploadingFile: string;
+      readingFile: string;
+      extractedText: string;
+      extractedRegion: string;
+      selectedFile: string;
+      ready: string;
+      errorAuth: string;
+      errorTooLarge: string;
+      errorWrongType: string;
+      errorEmpty: string;
+      errorNetwork: string;
+      errorGeneric: string;
+    };
   };
   lesson: {
     edited: string;
