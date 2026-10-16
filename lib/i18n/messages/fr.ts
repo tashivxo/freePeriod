@@ -290,4 +290,12 @@ export const fr: Messages = {
     somethingWentWrong: 'Une erreur s’est produite. Veuillez réessayer.',
     stepOf: 'Étape {step} sur {total}',
   },
+  status: {
+    notFoundTitle: "Cette page fait une pause",
+    notFoundBody: "Nous n'avons pas trouvé cette page. Le lien est peut-être ancien ou mal saisi.",
+    errorTitle: "Une erreur s'est produite",
+    errorBody: "Cette page a rencontré un problème. Réessayez ou revenez à l'accueil.",
+    tryAgain: "Réessayer",
+    backHome: "Retour à l'accueil",
+  },
 };

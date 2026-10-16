@@ -285,4 +285,12 @@ export const zhHans: Messages = {
     somethingWentWrong: '出了点问题。请重试。',
     stepOf: '第 {step} 步，共 {total} 步',
   },
+  status: {
+    notFoundTitle: "这个页面正在休息",
+    notFoundBody: "找不到这个页面。链接可能已过期或输入有误。",
+    errorTitle: "出了点问题",
+    errorBody: "这个页面遇到了问题。请重试，或返回首页。",
+    tryAgain: "重试",
+    backHome: "返回首页",
+  },
 };
