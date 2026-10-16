@@ -37,6 +37,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 import { GenerateForm } from '@/features/generate/components/GenerateForm';
+import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
 // --- Constants ---
 
@@ -361,7 +362,9 @@ describe('GenerateForm', () => {
 
     await user.click(screen.getByRole('button', { name: /generate lesson plan/i }));
 
-    expect(await screen.findByText(/please enter one subject only/i)).toBeInTheDocument();
+    const alert = await screen.findByText(/please enter one subject only/i);
+    expect(alert.closest('[role="alert"]')).toBeTruthy();
+    expectErrorXIcon(alert.closest('[role="alert"]') as HTMLElement);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -383,7 +386,9 @@ describe('GenerateForm', () => {
     await user.click(screen.getByRole('option', { name: 'Science' }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/please select a grade/i);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/please select a grade/i);
+    expectErrorXIcon(alert);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -396,7 +401,9 @@ describe('GenerateForm', () => {
     await user.click(screen.getByRole('option', { name: 'Custom' }));
     await user.click(screen.getByRole('button', { name: /generate/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/enter a duration between/i);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/enter a duration between/i);
+    expectErrorXIcon(alert);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

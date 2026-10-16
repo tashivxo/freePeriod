@@ -106,6 +106,7 @@ import { FILLED_TEMPLATE_DOWNLOAD_MESSAGE } from '@/lib/export/export-error';
 import { FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL } from '@/lib/export/copy';
 import { TEMPLATE_UNFILLED_ERROR } from '@/lib/export/fill-template-result';
 import { LessonView } from '@/features/lesson/components/LessonView';
+import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
 const lesson: LessonPlan = {
   id: 'lesson-1',
@@ -156,6 +157,26 @@ describe('LessonView', () => {
     render(<LessonView lesson={lesson} />);
 
     expect(screen.getByText('Science · Grade 9')).toBeInTheDocument();
+  });
+
+  it('shows a save error as an alert with the animated X icon and text-error', () => {
+    (useDebouncedLessonSave as jest.Mock).mockReturnValue({
+      save: mockSave,
+      flush: mockFlush,
+      cancel: mockCancel,
+      revert: jest.fn(),
+      status: 'error',
+      error: 'db write failed',
+      isDirty: false,
+    });
+
+    render(<LessonView lesson={lesson} />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent("Couldn't save, try again");
+    expect(alert).toHaveClass('text-error');
+    expect(alert).not.toHaveClass('text-red-700');
+    expectErrorXIcon(alert);
   });
 
   it('shows save status text in the header', () => {

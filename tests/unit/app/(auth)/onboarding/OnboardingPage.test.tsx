@@ -40,6 +40,7 @@ jest.mock('animejs', () => ({
 }));
 
 import { OnboardingPage } from '@/app/(auth)/onboarding/OnboardingPage';
+import { LocaleProvider } from '@/providers/locale';
 
 const SUBJECTS = [
   'Mathematics',
@@ -588,6 +589,33 @@ describe('OnboardingPage', () => {
       'href',
       '/dashboard',
     );
+  });
+
+  it('translates onboarding headings and country group labels in Arabic', async () => {
+    const { user } = render(
+      <LocaleProvider initialLocale="ar">
+        <OnboardingPage />
+      </LocaleProvider>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'ماذا تُدرّس؟' })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('مادة أخرى...')).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /mathematics/i }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    expect(await screen.findByRole('heading', { name: 'أي صف تُدرّس؟' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('المستوى الدراسي'));
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    expect(await screen.findByRole('heading', { name: 'أين تُدرّس؟' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('أين تُدرّس؟'));
+    expect(screen.getByText('شائع')).toBeInTheDocument();
+    expect(screen.getByText('كل البلدان')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
+    await user.click(screen.getByRole('button', { name: 'التالي' }));
+
+    expect(await screen.findByRole('heading', { name: 'اختر منهجك' })).toBeInTheDocument();
   });
 
   it('Finish button is disabled until a curriculum is selected on step 4', async () => {
