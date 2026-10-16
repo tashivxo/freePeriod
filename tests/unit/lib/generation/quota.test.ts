@@ -168,6 +168,36 @@ describe('formatGenerationUsage', () => {
       formatGenerationUsage({ plan: 'pro_plus', generationCount: 10, generationLimit: null }),
     ).toBe('10 generated this period (Unlimited)');
   });
+
+  it('localizes limited usage as one interpolated string with bidi-isolated numbers', () => {
+    const label = formatGenerationUsage({
+      plan: 'free',
+      generationCount: 3,
+      generationLimit: 3,
+      locale: 'ar',
+    });
+
+    expect(label).not.toBe('3 of 3 used this period');
+    expect(label).not.toMatch(/^3 of /);
+    expect(label).toMatch(/[\u0600-\u06FF]/);
+    expect(label).toContain('\u2068');
+    expect(label).toContain('\u2069');
+    expect(label.indexOf('\u2068')).toBeLessThan(label.indexOf('3'));
+  });
+
+  it('localizes unlimited usage without leftover English in Arabic', () => {
+    const label = formatGenerationUsage({
+      plan: 'pro_plus',
+      generationCount: 10,
+      generationLimit: null,
+      locale: 'ar',
+    });
+
+    expect(label).not.toMatch(/generated this period/i);
+    expect(label).not.toMatch(/unlimited/i);
+    expect(label).toMatch(/[\u0600-\u06FF]/);
+    expect(label).toContain('\u2068');
+  });
 });
 
 describe('periodEndForReset', () => {

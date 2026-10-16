@@ -466,3 +466,25 @@ describe('generate form copy', () => {
   });
 });
 
+describe('settings usage copy', () => {
+  it.each(LOCALES)('ships one interpolated usage string for %s', (locale) => {
+    const settings = getMessages(locale).settings as unknown as Record<string, string>;
+    expect(settings.usageThisPeriod).toContain('{used}');
+    expect(settings.usageThisPeriod).toContain('{limit}');
+    expect(settings.usageUnlimited).toContain('{used}');
+    expect(settings.usageThisPeriod).not.toContain('\u2014');
+    expect(settings.usageUnlimited).not.toContain('\u2014');
+  });
+
+  it('keeps Arabic and Chinese usage lines as real translations', () => {
+    const en = getMessages('en').settings as unknown as Record<string, string>;
+    const ar = getMessages('ar').settings as unknown as Record<string, string>;
+    const zh = getMessages('zh-Hans').settings as unknown as Record<string, string>;
+
+    expect(ar.usageThisPeriod).not.toBe(en.usageThisPeriod);
+    expect(zh.usageThisPeriod).not.toBe(en.usageThisPeriod);
+    expect(ar.usageThisPeriod).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.usageThisPeriod).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
