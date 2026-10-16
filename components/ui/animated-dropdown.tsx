@@ -7,7 +7,9 @@ import {
   useCallback,
   useMemo,
   type ChangeEvent,
+  type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -218,6 +220,28 @@ export function AnimatedDropdown({
     }
   }, []);
 
+  const isInsideDropdown = useCallback((target: EventTarget | null) => {
+    if (!(target instanceof Node)) return false;
+    return Boolean(
+      containerRef.current?.contains(target) || listboxRef.current?.contains(target),
+    );
+  }, []);
+
+  const handleWidgetBlur = useCallback(
+    (event: FocusEvent<HTMLElement>) => {
+      if (!open) return;
+      if (isInsideDropdown(event.relatedTarget)) return;
+      closeMenu();
+    },
+    [closeMenu, isInsideDropdown, open],
+  );
+
+  const handleListMouseDown = useCallback((event: MouseEvent<HTMLUListElement>) => {
+    const target = event.target as Node;
+    if (searchRef.current?.contains(target)) return;
+    event.preventDefault();
+  }, []);
+
   const scrollOptionIntoView = useCallback(
     (index: number) => {
       if (index < 0) return;
@@ -321,6 +345,10 @@ export function AnimatedDropdown({
         selectIndex(activeIndex);
         return true;
       }
+      if (event.key === 'Tab') {
+        closeMenu();
+        return true;
+      }
       return false;
     },
     [activeIndex, closeMenu, scrollOptionIntoView, selectIndex, visibleItems],
@@ -421,6 +449,7 @@ export function AnimatedDropdown({
         id={id}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
+        onBlur={handleWidgetBlur}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id ?? 'animated-dropdown'}-listbox` : undefined}
@@ -481,6 +510,9 @@ export function AnimatedDropdown({
                   maxHeight: listboxPosition.maxHeight,
                 }}
                 className="z-[10000] max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 shadow-xl"
+                onKeyDown={handleListKeyDown}
+                onBlur={handleWidgetBlur}
+                onMouseDown={handleListMouseDown}
               >
                 {searchable ? (
                   <li
@@ -501,6 +533,7 @@ export function AnimatedDropdown({
                       placeholder={searchPlaceholder}
                       className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 font-body text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
                       onKeyDown={handleSearchKeyDown}
+                      onBlur={handleWidgetBlur}
                     />
                   </li>
                 ) : null}
