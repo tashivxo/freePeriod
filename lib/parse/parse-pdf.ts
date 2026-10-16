@@ -10,12 +10,13 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedContent> {
     const text = cleanExtractedText(result.text);
 
     if (text.length < 20) {
-      // OCR sees rendered pixels, so it remains the fallback for scanned PDFs.
-      // Load Tesseract only for that path so image-PDF OCR cannot break module
-      // evaluation for text PDFs or other upload types.
-      const { extractTextFromImage } = await import('@/lib/ocr/tesseract');
-      const ocrText = cleanExtractedText(await extractTextFromImage(buffer));
-      return { text: ocrText, type: 'pdf', metadata: { ocr: true } };
+      // Tesseract cannot read PDF bytes and hangs on Vercel. Return empty text
+      // so the parse-document route can 422 with the existing no-text copy.
+      return {
+        text: '',
+        type: 'pdf',
+        metadata: { pages: result.total, ocr: false, noTextLayer: true },
+      };
     }
 
     // pdf-parse v2 exposes page text but not text-item font/color/coordinates

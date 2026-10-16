@@ -399,6 +399,8 @@ describe('SettingsClient — background', () => {
 describe('SettingsClient — language', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
+    document.cookie = 'fp-locale=; Max-Age=0; path=/';
     mockUpdate.mockReturnValue({
       eq: jest.fn().mockResolvedValue({ error: null }),
     });
@@ -420,7 +422,7 @@ describe('SettingsClient — language', () => {
     ).toBeInTheDocument();
   });
 
-  it('syncs locale from user.preferred_locale on mount', () => {
+  it('applies user.preferred_locale on mount only when no client locale is stored', () => {
     render(
       <SettingsClient
         {...defaultProps}
@@ -429,6 +431,28 @@ describe('SettingsClient — language', () => {
     );
 
     expect(mockSetLocale).toHaveBeenCalledWith('fr');
+  });
+
+  it('does not override an existing client locale with user.preferred_locale', () => {
+    localStorage.setItem('fp-locale', 'ar');
+    document.cookie = 'fp-locale=ar; path=/';
+    (useLocale as jest.Mock).mockReturnValue({
+      locale: 'ar',
+      setLocale: mockSetLocale,
+      dir: 'rtl',
+      messages: {},
+      t: jest.fn(),
+    });
+
+    render(
+      <SettingsClient
+        {...defaultProps}
+        user={{ ...baseUser, preferred_locale: 'en' }}
+      />,
+    );
+
+    expect(mockSetLocale).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/language/i)).toHaveTextContent('العربية');
   });
 
   it('changing language calls setLocale and persists preferred_locale immediately', async () => {
@@ -440,6 +464,20 @@ describe('SettingsClient — language', () => {
 
     expect(mockSetLocale).toHaveBeenCalledWith('es');
     expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'es' });
+  });
+
+  it('surfaces an error when preferred_locale cannot be saved', async () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: { message: 'permission denied' } }),
+    });
+    const { user } = render(<SettingsClient {...defaultProps} />);
+
+    await user.click(screen.getByLabelText(/language/i));
+    await user.click(screen.getByRole('option', { name: 'Español' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/failed to save settings/i);
+    consoleError.mockRestore();
   });
 });
 
