@@ -574,6 +574,42 @@ describe('DocumentUploadZone file input UX', () => {
     );
   });
 
+  it('maps a low-text PDF 422 to the scanned/no-text message, not the timeout copy', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        error:
+          'No readable text was found in this document. Please upload a clearer curriculum file.',
+      }),
+    });
+    const user = userEvent.setup();
+    renderWithLocale(
+      <DocumentUploadZone
+        label="Upload curriculum document"
+        accept=".pdf,.docx,.xlsx,.jpg,.png"
+        uploadType="curriculum_doc"
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+        onBusyChange={onBusyChange}
+      />,
+    );
+
+    const file = new File(['%PDF-1.7'], 'scan.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload curriculum document/i), file);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+    );
+    expect(alert).not.toHaveTextContent(/taking too long/i);
+    expect(
+      screen.queryByText(
+        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it('maps a parse timeout to the timeout copy', async () => {
     (global.fetch as jest.Mock).mockRejectedValue(
       new DOMException('The operation was aborted.', 'AbortError'),

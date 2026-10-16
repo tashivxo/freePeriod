@@ -18,7 +18,7 @@ import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
-import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { hasStoredLocale, isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
@@ -112,6 +112,7 @@ export function SettingsClient({
     countrySelect !== savedDefaults.country;
 
   useEffect(() => {
+    if (hasStoredLocale()) return;
     if (user.preferred_locale && isLocale(user.preferred_locale)) {
       setLocale(user.preferred_locale);
     }
@@ -134,8 +135,8 @@ export function SettingsClient({
   }, [saveStatus]);
 
   const handleLocaleChange = async (nextLocale: Locale) => {
-    setLocale(nextLocale);
     try {
+      await Promise.resolve(setLocale(nextLocale));
       const supabase = createClient();
       const { error } = await supabase
         .from('users')
@@ -143,7 +144,10 @@ export function SettingsClient({
         .eq('id', user.id);
       if (error) throw error;
     } catch (err) {
-      console.error(err);
+      setSaveStatus({
+        tone: 'error',
+        message: saveErrorMessage(err, t('settings.saveFailed')),
+      });
     }
   };
 

@@ -8,7 +8,7 @@ import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 import { drainSseEvents } from '@/lib/generation/sse';
 import { useLocale } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
-import type { Locale } from '@/lib/i18n';
+import { hasStoredLocale, type Locale } from '@/lib/i18n';
 
 type GenerationPhase = 'idle' | 'generating' | 'error';
 
@@ -40,6 +40,7 @@ export function GenerateClient({
   const showOverlay = phase === 'generating' || phase === 'error';
 
   useEffect(() => {
+    if (hasStoredLocale()) return;
     if (preferredLocale && preferredLocale !== locale) {
       setLocale(preferredLocale);
     }
