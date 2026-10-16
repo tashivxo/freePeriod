@@ -346,6 +346,10 @@ export function AnimatedDropdown({
         return true;
       }
       if (event.key === 'Tab') {
+        const active = document.activeElement;
+        if (active && listboxRef.current?.contains(active)) {
+          triggerRef.current?.focus();
+        }
         closeMenu();
         return true;
       }
