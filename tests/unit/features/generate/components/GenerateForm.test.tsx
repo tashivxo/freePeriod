@@ -270,7 +270,7 @@ describe('GenerateForm', () => {
 
   it('accepts a blank lesson-plan template and shows success', async () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
-    const file = new File([''], 'Blank Daily English lesson plan template.docx', {
+    const file = new File(['PK'], 'Blank Daily English lesson plan template.docx', {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 

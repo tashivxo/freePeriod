@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { requiresExtractedText } from '@/lib/parse/types';
 import { getTemplateFileRejection, isPdfTemplateMime } from '@/lib/lesson/template-path';
+import { DEFAULT_MAX_UPLOAD_BYTES, formatFileSize } from '@/lib/utils/file-input';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -15,6 +16,7 @@ interface UseFileUploadProps {
   uploadType: UploadType;
   onParsed?: (uploadId: string, text: string) => void;
   accept?: string;
+  maxSizeBytes?: number;
 }
 
 interface UseFileUploadReturn {
@@ -82,6 +84,7 @@ export function useFileUpload({
   uploadType,
   onParsed,
   accept = '',
+  maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
 }: UseFileUploadProps): UseFileUploadReturn {
   const [file, setFile] = useState<File | null>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
@@ -127,6 +130,18 @@ export function useFileUpload({
         );
         return;
       }
+    }
+
+    if (incoming.size === 0) {
+      rejectFile(`${incoming.name} is empty. Please choose a file with content.`);
+      return;
+    }
+
+    if (incoming.size > maxSizeBytes) {
+      rejectFile(
+        `${incoming.name} exceeds the maximum size of ${formatFileSize(maxSizeBytes)}`,
+      );
+      return;
     }
 
     setError(null);
