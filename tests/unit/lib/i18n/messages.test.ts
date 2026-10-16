@@ -407,3 +407,62 @@ describe('onboarding copy', () => {
   });
 });
 
+const GENERATE_FORM_KEYS = [
+  'heading',
+  'documentTitle',
+  'subject',
+  'grade',
+  'curriculum',
+  'duration',
+  'selectSubject',
+  'selectGrade',
+  'selectCurriculum',
+  'selectDuration',
+  'customDuration',
+  'durationMinutes',
+  'durationShort',
+  'focusLabel',
+  'focusPlaceholder',
+  'modeLabel',
+  'selectMode',
+  'modeFast',
+  'modeQuality',
+  'modeFastDescription',
+  'modeQualityDescription',
+  'upgradeToPro',
+  'unlockQuality',
+  'submit',
+  'generating',
+  'waitingForUpload',
+  'alignmentTitle',
+  'alignmentBody',
+  'alignmentAria',
+] as const;
+
+describe('generate form copy', () => {
+  it.each(LOCALES)('ships generate chrome, mode, and alignment strings for %s', (locale) => {
+    const generate = getMessages(locale).generate as unknown as Record<string, string>;
+    for (const key of GENERATE_FORM_KEYS) {
+      expect(generate[key]).toBeTruthy();
+      expect(generate[key]).not.toContain('\u2014');
+    }
+    expect(generate.durationMinutes).toContain('{minutes}');
+    expect(generate.durationShort).toContain('{minutes}');
+    expect(generate.documentTitle).toContain('FreePeriod');
+  });
+
+  it('keeps Arabic and Chinese generate chrome as real translations', () => {
+    const en = getMessages('en').generate as unknown as Record<string, string>;
+    const ar = getMessages('ar').generate as unknown as Record<string, string>;
+    const zh = getMessages('zh-Hans').generate as unknown as Record<string, string>;
+
+    expect(ar.heading).not.toBe(en.heading);
+    expect(ar.focusLabel).not.toBe(en.focusLabel);
+    expect(ar.modeFast).not.toBe(en.modeFast);
+    expect(zh.heading).not.toBe(en.heading);
+    expect(zh.submit).not.toBe(en.submit);
+    expect(ar.heading).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.heading).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+

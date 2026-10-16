@@ -55,6 +55,7 @@ jest.mock('@/providers/locale', () => ({
     }
     const labels: Record<string, string> = {
       'nav.settings': 'Settings',
+      'generate.documentTitle': 'Generate | FreePeriod',
     };
     return labels[key] ?? key;
   },
@@ -71,12 +72,18 @@ const defaults = {
 describe('GenerateClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    document.title = '';
     (global.fetch as jest.Mock) = jest.fn(
       () =>
         new Promise(() => {
           /* keep loading screen visible */
         }),
     );
+  });
+
+  it('sets the browser document title from locale copy', () => {
+    render(<GenerateClient defaults={defaults} />);
+    expect(document.title).toBe('Generate | FreePeriod');
   });
 
   it('shows the generation loading screen after the user submits the form', async () => {

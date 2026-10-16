@@ -28,4 +28,20 @@ describe('formatGradeLabel', () => {
     expect(formatGradeLabel('   ')).toBe('');
     expect(formatGradeLabel(' 5 ')).toBe('Grade 5');
   });
+
+  it('localizes numbered, year, and kindergarten labels when a translator is provided', () => {
+    const t = (key: string, vars?: Record<string, string>) => {
+      if (key === 'grades.numbered') return `الصف ${vars?.n}`;
+      if (key === 'grades.year') return `السنة ${vars?.n}`;
+      if (key === 'grades.kindergarten') return 'رياض الأطفال';
+      if (key === 'grades.preK') return 'ما قبل الروضة';
+      return key;
+    };
+
+    expect(formatGradeLabel('8', t)).toBe('الصف 8');
+    expect(formatGradeLabel('Grade 8', t)).toBe('الصف 8');
+    expect(formatGradeLabel('Year 7', t)).toBe('السنة 7');
+    expect(formatGradeLabel('K', t)).toBe('رياض الأطفال');
+    expect(formatGradeLabel('Pre-K', t)).toBe('ما قبل الروضة');
+  });
 });

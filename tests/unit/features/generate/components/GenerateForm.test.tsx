@@ -38,6 +38,8 @@ jest.mock('next/navigation', () => ({
 
 import { GenerateForm } from '@/features/generate/components/GenerateForm';
 import { expectErrorXIcon } from '@/tests/helpers/error-icon';
+import { LocaleProvider } from '@/providers/locale';
+import { getMessages } from '@/lib/i18n';
 
 // --- Constants ---
 
@@ -77,6 +79,49 @@ describe('GenerateForm', () => {
     expect(
       screen.getByRole('heading', { name: /generate a lesson/i }),
     ).toBeInTheDocument();
+  });
+
+  it('renders Arabic generate copy instead of leftover English chrome', () => {
+    render(
+      <LocaleProvider initialLocale="ar">
+        <GenerateForm onSubmit={onSubmit} defaults={{ curriculum: 'IB' }} />
+      </LocaleProvider>,
+    );
+
+    const leftoverEnglish = [
+      'Generate a Lesson',
+      'Subject',
+      'Grade',
+      'Curriculum',
+      'Duration',
+      'Generation mode',
+      'Any specific focus or requirements? (optional)',
+      'E.g. Include hands-on activities, emphasize critical thinking...',
+      'Generate Lesson Plan',
+      'Upgrade to Pro',
+      'to unlock Quality mode.',
+      'Curriculum alignment notice',
+      'Select duration',
+      'Select generation mode',
+      'Waiting for upload…',
+    ];
+    for (const english of leftoverEnglish) {
+      expect(screen.queryByText(english)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByPlaceholderText(/include hands-on activities/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^min 60$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^60 min$/)).not.toBeInTheDocument();
+
+    const ar = getMessages('ar').generate as Record<string, string>;
+    expect(ar.heading).toMatch(/[\u0600-\u06FF]/);
+    expect(screen.getByRole('heading', { name: ar.heading })).toBeInTheDocument();
+    expect(screen.getByText(ar.subject)).toBeInTheDocument();
+    expect(screen.getByText(ar.grade)).toBeInTheDocument();
+    expect(screen.getByText(ar.duration)).toBeInTheDocument();
+    expect(screen.getByLabelText(ar.focusLabel)).toBeInTheDocument();
+
+    const durationTrigger = screen.getByLabelText(ar.duration);
+    expect(durationTrigger.textContent ?? '').toMatch(/\u2068.+\u2069/);
   });
 
   it('shows the curriculum accuracy notice before generation', () => {

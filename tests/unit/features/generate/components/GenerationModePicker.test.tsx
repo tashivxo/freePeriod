@@ -1,4 +1,6 @@
 import { render, screen } from '@/tests/helpers';
+import { LocaleProvider } from '@/providers/locale';
+import { getMessages } from '@/lib/i18n';
 import {
   GenerationModePicker,
   GENERATION_MODE_OPTIONS,
@@ -110,5 +112,28 @@ describe('GenerationModePicker', () => {
         expect.objectContaining({ value: 'quality', label: 'Quality' }),
       ]),
     );
+  });
+
+  it('translates Fast, Quality, and the upgrade line in Arabic', () => {
+    render(
+      <LocaleProvider initialLocale="ar">
+        <GenerationModePicker
+          id="generation-mode-picker"
+          value="fast"
+          onChange={onChange}
+          qualityUnlocked={false}
+        />
+      </LocaleProvider>,
+    );
+
+    expect(screen.queryByText('Fast')).not.toBeInTheDocument();
+    expect(screen.queryByText('Quality')).not.toBeInTheDocument();
+    expect(screen.queryByText(/upgrade to pro/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/quicker plans for everyday lessons/i)).not.toBeInTheDocument();
+    const ar = getMessages('ar').generate as Record<string, string>;
+    expect(ar.modeFast).toMatch(/[\u0600-\u06FF]/);
+    expect(screen.getByText(ar.modeFast)).toBeInTheDocument();
+    expect(screen.getByText(ar.modeFastDescription)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: ar.upgradeToPro })).toHaveAttribute('href', '/pricing');
   });
 });
