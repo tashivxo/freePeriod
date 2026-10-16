@@ -1,4 +1,5 @@
 import React from 'react';
+import { fireEvent } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
 import { COLOR_BENDS_GOLD, COLOR_BENDS_PEACH, COLOR_BENDS_ROSE } from '@/lib/utils/brand-colors';
@@ -537,15 +538,18 @@ describe('SettingsClient — dirty save', () => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByLabelText(/^country$/i));
+    const country = screen.getByLabelText(/^country$/i);
+    await user.click(country);
     const search = screen.getByRole('searchbox');
     expect(search).toHaveFocus();
     expect(screen.getByRole('listbox')).toBeInTheDocument();
 
-    await user.tab();
+    fireEvent.keyDown(search, { key: 'Tab' });
+    expect(country).toHaveFocus();
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    await user.tab();
     expect(screen.getByRole('button', { name: /save settings/i })).toHaveFocus();
   });
 

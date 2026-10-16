@@ -579,18 +579,33 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
     expect(search).toHaveFocus();
     expect(screen.getByRole('listbox')).toBeInTheDocument();
 
+    const focusAtTab: Element[] = [];
+    const recordTab = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key === 'Tab' && !event.shiftKey) {
+        focusAtTab.push(document.activeElement ?? document.body);
+      }
+    };
+    document.addEventListener('keydown', recordTab);
     await user.tab();
+    document.removeEventListener('keydown', recordTab);
+    expect(focusAtTab[0]).toBe(trigger);
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+
+    await user.click(trigger);
+    const searchAgain = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(searchAgain).toHaveFocus();
+    fireEvent.keyDown(searchAgain, { key: 'Tab' });
+    expect(trigger).toHaveFocus();
+    await user.tab();
     expect(screen.getByRole('button', { name: /after country/i })).toHaveFocus();
 
     await user.click(trigger);
-    expect(screen.getByRole('searchbox', { name: /select your country/i })).toHaveFocus();
+    const searchShift = screen.getByRole('searchbox', { name: /select your country/i });
+    fireEvent.keyDown(searchShift, { key: 'Tab', shiftKey: true });
+    expect(trigger).toHaveFocus();
     await user.tab({ shift: true });
-    await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    });
     expect(screen.getByRole('button', { name: /before country/i })).toHaveFocus();
   });
 

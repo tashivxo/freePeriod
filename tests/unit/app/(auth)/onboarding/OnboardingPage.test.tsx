@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@/tests/helpers';
-import { act } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mockMaybeSingle = jest.fn().mockResolvedValue({ data: { id: 'user-123' }, error: null });
@@ -291,10 +291,12 @@ describe('OnboardingPage', () => {
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     expect(search).toHaveFocus();
 
-    await user.tab();
+    fireEvent.keyDown(search, { key: 'Tab' });
+    expect(trigger).toHaveFocus();
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
+    await user.tab();
     expect(screen.getByRole('button', { name: /back/i })).toHaveFocus();
   });
 
