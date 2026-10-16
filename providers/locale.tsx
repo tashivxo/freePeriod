@@ -93,17 +93,24 @@ export function LocaleProvider({
     document.cookie = `${STORAGE_KEY}=${encodeURIComponent(nextLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
     applyDocumentLocale(nextLocale);
 
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const supabase = createClient();
+      if (typeof supabase.auth?.getUser !== 'function') return;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      if (typeof supabase.from !== 'function') return;
 
-    const { error } = await supabase
-      .from('users')
-      .update({ preferred_locale: nextLocale })
-      .eq('id', user.id);
-    if (error) throw error;
+      const { error } = await supabase
+        .from('users')
+        .update({ preferred_locale: nextLocale })
+        .eq('id', user.id);
+      if (error) throw error;
+    } catch (err) {
+      if (err instanceof TypeError) return;
+      throw err;
+    }
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
