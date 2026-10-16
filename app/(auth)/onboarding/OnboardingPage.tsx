@@ -13,11 +13,7 @@ import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import {
-  COMMON_COUNTRY_ITEMS,
-  COUNTRY_ITEMS,
-  normalizeCountryCode,
-} from '@/lib/utils/countries';
+import { COUNTRY_DROPDOWN_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 
@@ -443,29 +439,16 @@ function StepCountry({
       </p>
 
       <div className="mb-6">
-        <select
+        <AnimatedDropdown
           id="country-select"
-          aria-labelledby="onboarding-country-heading"
-          value={country}
-          onChange={(event) => onCountryChange(event.target.value)}
-          className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-        >
-          <option value="">Select your country</option>
-          <optgroup label="Common">
-            {COMMON_COUNTRY_ITEMS.map((item) => (
-              <option key={`common-${item.value}`} value={item.value}>
-                {item.name}
-              </option>
-            ))}
-          </optgroup>
-          <optgroup label="All countries">
-            {COUNTRY_ITEMS.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.name}
-              </option>
-            ))}
-          </optgroup>
-        </select>
+          text="Select your country"
+          items={COUNTRY_DROPDOWN_ITEMS}
+          selectedValue={country || undefined}
+          searchable
+          searchPlaceholder="Select your country"
+          triggerAriaLabelledBy="onboarding-country-heading"
+          onSelect={(item) => onCountryChange(item.value ?? '')}
+        />
       </div>
 
       {error && <StepError message={error} />}

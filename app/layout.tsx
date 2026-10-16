@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
-import { Manrope, Noto_Sans_Arabic, Noto_Sans_SC } from 'next/font/google';
+import { Manrope, Noto_Sans_Arabic } from 'next/font/google';
+import localFont from 'next/font/local';
 import { DEFAULT_LOCALE, isLocale, isRtl, type Locale } from '@/lib/i18n';
 import { LocaleProvider } from '@/providers/locale';
 import { ThemeProvider } from '@/providers/theme';
@@ -24,13 +25,16 @@ const notoSansArabic = Noto_Sans_Arabic({
   weight: ['400', '500', '600', '700'],
 });
 
-const notoSansSC = Noto_Sans_SC({
-  subsets: ['latin'],
+const notoSansSC = localFont({
+  src: [
+    { path: './fonts/noto-sans-sc-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/noto-sans-sc-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/noto-sans-sc-600.woff2', weight: '600', style: 'normal' },
+    { path: './fonts/noto-sans-sc-700.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
   preload: false,
   variable: '--font-noto-sans-sc',
-  weight: ['400', '500', '600', '700'],
-  // next/font only exposes latin for this family; the files still cover Hans glyphs.
   adjustFontFallback: false,
 });
 
