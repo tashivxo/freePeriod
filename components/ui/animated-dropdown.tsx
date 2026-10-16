@@ -6,6 +6,8 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  type ChangeEvent,
+  type KeyboardEvent,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -92,6 +94,49 @@ function MenuPortal({ children }: { children: ReactNode }) {
   return createPortal(children, document.body);
 }
 
+function itemValue(item: DropdownItem): string {
+  return item.value ?? item.name;
+}
+
+function isNavigable(item: DropdownItem): boolean {
+  return !item.header && !item.disabled;
+}
+
+function indexOfValue(items: DropdownItem[], value?: string): number {
+  if (!value) return -1;
+  return items.findIndex((item) => !item.header && itemValue(item) === value);
+}
+
+function firstNavigableIndex(items: DropdownItem[]): number {
+  return items.findIndex((item) => isNavigable(item));
+}
+
+function lastNavigableIndex(items: DropdownItem[]): number {
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (isNavigable(items[i]!)) return i;
+  }
+  return -1;
+}
+
+function nextNavigableIndex(
+  items: DropdownItem[],
+  from: number,
+  direction: 1 | -1,
+): number {
+  let index = from + direction;
+  while (index >= 0 && index < items.length) {
+    if (isNavigable(items[index]!)) return index;
+    index += direction;
+  }
+  return from;
+}
+
+function highlightIndexOnOpen(items: DropdownItem[], selectedValue?: string): number {
+  const selected = indexOfValue(items, selectedValue);
+  if (selected >= 0) return selected;
+  return firstNavigableIndex(items);
+}
+
 function computeListboxPosition(
   trigger: HTMLElement,
   menuAlign: 'stretch' | 'end',
@@ -137,10 +182,17 @@ export function AnimatedDropdown({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [listboxPosition, setListboxPosition] = useState<ListboxPosition | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const optionIdPrefix = `${id ?? 'animated-dropdown'}-option`;
+
+  const optionDomId = useCallback(
+    (index: number) => `${optionIdPrefix}-${index}`,
+    [optionIdPrefix],
+  );
 
   const visibleItems = useMemo(
     () => (searchable ? filterDropdownItems(items, searchQuery) : items),
@@ -159,16 +211,30 @@ export function AnimatedDropdown({
     setListboxPosition(computeListboxPosition(trigger, menuAlign, menuMinWidth));
   }, [menuAlign, menuMinWidth]);
 
-  const closeMenu = useCallback(() => {
+  const closeMenu = useCallback((restoreFocus = false) => {
     setOpen(false);
+    if (restoreFocus) {
+      triggerRef.current?.focus();
+    }
   }, []);
 
-  const handleTriggerClick = useCallback(() => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
+  const scrollOptionIntoView = useCallback(
+    (index: number) => {
+      if (index < 0) return;
+      const optionId = optionDomId(index);
+      const scroll = () => {
+        document.getElementById(optionId)?.scrollIntoView({ block: 'nearest' });
+      };
+      if (document.getElementById(optionId)) {
+        scroll();
+        return;
+      }
+      requestAnimationFrame(scroll);
+    },
+    [optionDomId],
+  );
 
+  const openMenu = useCallback(() => {
     const trigger = triggerRef.current;
     if (!trigger) return;
 
@@ -176,10 +242,127 @@ export function AnimatedDropdown({
       trigger.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
     }
 
+    const highlight = highlightIndexOnOpen(items, selectedValue);
     setSearchQuery('');
     setListboxPosition(computeListboxPosition(trigger, menuAlign, menuMinWidth));
+    setActiveIndex(highlight);
     setOpen(true);
-  }, [menuAlign, menuMinWidth, open]);
+    scrollOptionIntoView(highlight);
+  }, [items, menuAlign, menuMinWidth, scrollOptionIntoView, selectedValue]);
+
+  const handleTriggerClick = useCallback(() => {
+    if (open) {
+      closeMenu();
+      return;
+    }
+    openMenu();
+  }, [closeMenu, open, openMenu]);
+
+  const selectIndex = useCallback(
+    (index: number) => {
+      const item = visibleItems[index];
+      if (!item || item.header) return;
+      if (item.disabled) {
+        if (onDisabledSelect) {
+          onDisabledSelect(item);
+          closeMenu(true);
+        }
+        return;
+      }
+      onSelect?.(item);
+      closeMenu(true);
+    },
+    [closeMenu, onDisabledSelect, onSelect, visibleItems],
+  );
+
+  const handleListKeyDown = useCallback(
+    (event: { key: string; preventDefault: () => void; stopPropagation: () => void }) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closeMenu(true);
+        return true;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = nextNavigableIndex(visibleItems, activeIndex, 1);
+        setActiveIndex(next);
+        scrollOptionIntoView(next);
+        return true;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = nextNavigableIndex(visibleItems, activeIndex, -1);
+        setActiveIndex(next);
+        scrollOptionIntoView(next);
+        return true;
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = firstNavigableIndex(visibleItems);
+        setActiveIndex(next);
+        scrollOptionIntoView(next);
+        return true;
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = lastNavigableIndex(visibleItems);
+        setActiveIndex(next);
+        scrollOptionIntoView(next);
+        return true;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        selectIndex(activeIndex);
+        return true;
+      }
+      return false;
+    },
+    [activeIndex, closeMenu, scrollOptionIntoView, selectIndex, visibleItems],
+  );
+
+  const handleTriggerKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>) => {
+      if (!open) {
+        if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openMenu();
+        }
+        return;
+      }
+      if (event.key === ' ') {
+        event.preventDefault();
+        selectIndex(activeIndex);
+        return;
+      }
+      handleListKeyDown(event);
+    },
+    [activeIndex, handleListKeyDown, open, openMenu, selectIndex],
+  );
+
+  const handleSearchKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      handleListKeyDown(event);
+    },
+    [handleListKeyDown],
+  );
+
+  const handleSearchChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const nextQuery = event.target.value;
+      setSearchQuery(nextQuery);
+      const nextVisible = filterDropdownItems(items, nextQuery);
+      const nextActive = highlightIndexOnOpen(nextVisible, selectedValue);
+      setActiveIndex(nextActive);
+      scrollOptionIntoView(nextActive);
+    },
+    [items, scrollOptionIntoView, selectedValue],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -218,15 +401,15 @@ export function AnimatedDropdown({
   }, [closeMenu, open]);
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
+    function handleDocumentKeyDown(e: globalThis.KeyboardEvent) {
       if (e.key === 'Escape') {
-        closeMenu();
+        closeMenu(true);
       }
     }
 
     if (open) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      document.addEventListener('keydown', handleDocumentKeyDown);
+      return () => document.removeEventListener('keydown', handleDocumentKeyDown);
     }
   }, [closeMenu, open]);
 
@@ -237,8 +420,13 @@ export function AnimatedDropdown({
         type="button"
         id={id}
         onClick={handleTriggerClick}
+        onKeyDown={handleTriggerKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? `${id ?? 'animated-dropdown'}-listbox` : undefined}
+        aria-activedescendant={
+          open && !searchable && activeIndex >= 0 ? optionDomId(activeIndex) : undefined
+        }
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
         aria-labelledby={triggerAriaLabelledBy}
         className={cn(
@@ -278,6 +466,7 @@ export function AnimatedDropdown({
           <MenuPortal key="animated-dropdown-listbox">
             <motion.ul
                 ref={listboxRef}
+                id={`${id ?? 'animated-dropdown'}-listbox`}
                 role="listbox"
                 aria-label={text}
                 initial={{ opacity: 0, scale: 0.97, y: -4 }}
@@ -303,11 +492,15 @@ export function AnimatedDropdown({
                       type="search"
                       role="searchbox"
                       aria-label={searchPlaceholder}
+                      aria-controls={`${id ?? 'animated-dropdown'}-listbox`}
+                      aria-activedescendant={
+                        open && activeIndex >= 0 ? optionDomId(activeIndex) : undefined
+                      }
                       value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
+                      onChange={handleSearchChange}
                       placeholder={searchPlaceholder}
                       className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 font-body text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)] focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-                      onKeyDown={(event) => event.stopPropagation()}
+                      onKeyDown={handleSearchKeyDown}
                     />
                   </li>
                 ) : null}
@@ -327,12 +520,15 @@ export function AnimatedDropdown({
                   const val = item.value ?? item.name;
                   const isSelected = selectedValue === val;
                   const isDisabled = item.disabled === true;
+                  const isActive = index === activeIndex;
                   return (
                     <li
                       key={`${index}-${val}`}
+                      id={optionDomId(index)}
                       role="option"
                       aria-selected={isSelected}
                       aria-disabled={isDisabled || undefined}
+                      data-active={isActive || undefined}
                       onClick={() => {
                         if (isDisabled) {
                           if (onDisabledSelect) {
@@ -358,6 +554,7 @@ export function AnimatedDropdown({
                         isSelected
                           ? 'bg-[var(--color-primary-light)]/20 text-coral'
                           : 'text-[var(--color-text-primary)]',
+                        isActive && !isSelected && 'bg-[var(--color-primary-light)]/10',
                       )}
                     >
                       {item.description ? (
