@@ -4,7 +4,7 @@ export const ocrPack: CurriculumPack = {
   id: 'ocr',
   curriculumValues: ['OCR'],
   authority: 'OCR',
-  displayName: 'OCR — Guideline Pack',
+  displayName: 'OCR, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

@@ -4,7 +4,7 @@ export const gcsePack: CurriculumPack = {
   id: 'gcse',
   curriculumValues: ['GCSE'],
   authority: 'GCSE',
-  displayName: 'GCSE — Guideline Pack',
+  displayName: 'GCSE, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [
