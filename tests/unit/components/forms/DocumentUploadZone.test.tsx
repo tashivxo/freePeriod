@@ -54,8 +54,13 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('Auth session missing')).toBe('auth');
   });
 
+  it('does not treat a network getUser failure as auth', () => {
+    expect(classifyUploadError('Failed to fetch')).toBe('network');
+    expect(classifyUploadError('AuthRetryableFetchError')).toBe('network');
+  });
+
   it('maps oversized and wrong-type files', () => {
-    expect(classifyUploadError('huge.pdf exceeds the maximum size of 10 B')).toBe('tooLarge');
+    expect(classifyUploadError('huge.pdf exceeds the maximum size of 10 MB')).toBe('tooLarge');
     expect(classifyUploadError('Payload too large')).toBe('tooLarge');
     expect(classifyUploadError('Only .pdf files are accepted. You uploaded a .txt file.')).toBe(
       'wrongType',
@@ -76,28 +81,65 @@ describe('classifyUploadError', () => {
     expect(classifyUploadError('Upload failed')).toBe('network');
   });
 
+  it('maps missing text, timeouts, and parse failures distinctly', () => {
+    expect(
+      classifyUploadError(
+        'No readable text was found in this document. Please upload a clearer curriculum file.',
+      ),
+    ).toBe('noText');
+    expect(
+      classifyUploadError(
+        'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+      ),
+    ).toBe('noText');
+    expect(
+      classifyUploadError(
+        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+      ),
+    ).toBe('timeout');
+    expect(classifyUploadError('The document could not be processed.')).toBe('parse');
+  });
+
   it('falls back to generic for unknown raw messages', () => {
     expect(classifyUploadError('duplicate key value violates unique constraint')).toBe('generic');
-    expect(classifyUploadError('The document could not be processed.')).toBe('generic');
   });
 });
 
 describe('DocumentUploadZone action contrast', () => {
-  it('uses a darker coral that meets WCAG AA on white, and brand coral on dark surfaces', () => {
-    // Light: #B5486F is a darkened coral-800, 5.10:1 on white (AA for text is 4.5:1).
-    // Brand coral-500 #FF8BB0 is only 2.19:1 on white and cannot be used for links.
+  // 32% brand coral on white / #171717, and 10% error on cream / #171717.
+  const LIGHT_DRAG_TINT = '#FFDAE6';
+  const DARK_DRAG_TINT = '#613C48';
+  const LIGHT_ERROR_TINT = '#FDE9E5';
+  const DARK_ERROR_TINT = '#2D1C1C';
+
+  it('uses a darker coral that meets WCAG AA on white, cream, and the drag tint', () => {
     const lightOnWhite = contrastRatio(UPLOAD_ACTION_COLOR_LIGHT, '#FFFFFF');
     const lightOnCream = contrastRatio(UPLOAD_ACTION_COLOR_LIGHT, '#FFFBF7');
+    const lightOnDrag = contrastRatio(UPLOAD_ACTION_COLOR_LIGHT, LIGHT_DRAG_TINT);
     const darkOnNearBlack = contrastRatio(UPLOAD_ACTION_COLOR_DARK, '#171717');
     const darkOnCard = contrastRatio(UPLOAD_ACTION_COLOR_DARK, '#2C2C2C');
+    const darkOnDrag = contrastRatio(UPLOAD_ACTION_COLOR_DARK, DARK_DRAG_TINT);
 
-    expect(UPLOAD_ACTION_COLOR_LIGHT).toBe('#B5486F');
-    expect(UPLOAD_ACTION_COLOR_DARK).toBe('#FF8BB0');
     expect(lightOnWhite).toBeGreaterThanOrEqual(4.5);
     expect(lightOnCream).toBeGreaterThanOrEqual(4.5);
+    expect(lightOnDrag).toBeGreaterThanOrEqual(4.5);
     expect(darkOnNearBlack).toBeGreaterThanOrEqual(4.5);
     expect(darkOnCard).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio('#FF8BB0', '#FFFFFF')).toBeLessThan(4.5);
+    expect(darkOnDrag).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#FF8BB0', LIGHT_DRAG_TINT)).toBeLessThan(4.5);
+    expect(contrastRatio('#B5486F', LIGHT_DRAG_TINT)).toBeLessThan(4.5);
+  });
+
+  it('uses a light-mode drag border of at least 3:1 against the page', () => {
+    expect(contrastRatio('#B5486F', '#FFFBF7')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#FF8BB0', '#FFFBF7')).toBeLessThan(3);
+    expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
+  });
+
+  it('uses darker error text of at least 4.5:1 on the error tint', () => {
+    expect(contrastRatio('#B91C1C', LIGHT_ERROR_TINT)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#EF4444', LIGHT_ERROR_TINT)).toBeLessThan(4.5);
+    expect(contrastRatio('#FCA5A5', DARK_ERROR_TINT)).toBeGreaterThanOrEqual(4.5);
   });
 });
 
@@ -274,8 +316,8 @@ describe('DocumentUploadZone file input UX', () => {
     renderZone();
 
     const browse = screen.getByText('browse');
-    expect(browse).toHaveClass('text-[#B5486F]');
-    expect(browse).toHaveClass('dark:text-[#FF8BB0]');
+    expect(browse).toHaveClass(`text-[${UPLOAD_ACTION_COLOR_LIGHT}]`);
+    expect(browse).toHaveClass(`dark:text-[${UPLOAD_ACTION_COLOR_DARK}]`);
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
@@ -286,8 +328,8 @@ describe('DocumentUploadZone file input UX', () => {
     await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
 
     const retry = await screen.findByRole('button', { name: /retry upload of retry\.pdf/i });
-    expect(retry).toHaveClass('text-[#B5486F]');
-    expect(retry).toHaveClass('dark:text-[#FF8BB0]');
+    expect(retry).toHaveClass(`text-[${UPLOAD_ACTION_COLOR_LIGHT}]`);
+    expect(retry).toHaveClass(`dark:text-[${UPLOAD_ACTION_COLOR_DARK}]`);
   });
 
   it('highlights the drop zone with a solid 2px coral border and a stronger coral tint', async () => {
@@ -301,9 +343,14 @@ describe('DocumentUploadZone file input UX', () => {
     expect(dropzone).toHaveAttribute('data-dragging', 'true');
     expect(dropzone).toHaveClass('border-solid');
     expect(dropzone).toHaveClass('border-2');
+    expect(dropzone).toHaveClass('border-[#B5486F]');
+    expect(dropzone).toHaveClass('dark:border-[#FF8BB0]');
     expect((dropzone as HTMLElement).style.borderWidth).toBe('2px');
-    expect((dropzone as HTMLElement).style.borderColor).toBe(UPLOAD_DRAG_BORDER);
     expect((dropzone as HTMLElement).style.backgroundColor).toBe(UPLOAD_DRAG_BACKGROUND);
+    const browse = screen.getByText('browse');
+    expect(contrastRatio(UPLOAD_ACTION_COLOR_LIGHT, '#FFDAE6')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(UPLOAD_ACTION_COLOR_DARK, '#613C48')).toBeGreaterThanOrEqual(4.5);
+    expect(browse).toHaveClass(`text-[${UPLOAD_ACTION_COLOR_LIGHT}]`);
 
     fireEvent.dragLeave(dropzone!);
     expect(dropzone).toHaveAttribute('data-dragging', 'false');
@@ -321,23 +368,21 @@ describe('DocumentUploadZone file input UX', () => {
     expect(onUploadComplete).toHaveBeenCalled();
   });
 
-  it('rejects an oversized file with friendly copy and does not upload', async () => {
+  it('rejects an oversized file with the file name and the 10 MB limit', async () => {
     const user = userEvent.setup();
-    renderZone({ maxSizeBytes: 10 });
+    renderZone();
 
-    const file = new File(['%PDF-1.7 extra'], 'huge.pdf', { type: 'application/pdf' });
+    const file = new File(['%PDF-1.7'], 'huge.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 });
     await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent(
-      'This file is too large. Please choose a smaller file.',
-    );
-    expect(alert).not.toHaveTextContent('huge.pdf exceeds the maximum size');
+    expect(alert).toHaveTextContent('huge.pdf is too large. The maximum size is 10 MB.');
     expect(screen.queryByText('huge.pdf')).not.toBeInTheDocument();
     expect(mockUpload).not.toHaveBeenCalled();
   });
 
-  it('rejects a zero-byte file with friendly copy', async () => {
+  it('rejects a zero-byte file with the file name', async () => {
     const user = userEvent.setup();
     renderZone();
 
@@ -345,7 +390,7 @@ describe('DocumentUploadZone file input UX', () => {
     await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'This file is empty. Please choose a file with content.',
+      'empty.pdf is empty. Please choose a file with content.',
     );
     expect(mockUpload).not.toHaveBeenCalled();
   });
@@ -360,6 +405,25 @@ describe('DocumentUploadZone file input UX', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Please sign in again to upload.');
+    expect(alert).not.toHaveTextContent('Not authenticated');
+  });
+
+  it('maps an offline getUser failure to the network message, not sign-in', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Failed to fetch', name: 'AuthRetryableFetchError' },
+    });
+    const user = userEvent.setup();
+    renderZone();
+
+    const file = new File(['%PDF-1.7'], 'plan.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'Upload failed. Check your connection and try again.',
+    );
+    expect(alert).not.toHaveTextContent('Please sign in again to upload.');
     expect(alert).not.toHaveTextContent('Not authenticated');
   });
 
@@ -441,7 +505,7 @@ describe('DocumentUploadZone file input UX', () => {
     await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /couldn't upload this file/i,
+      'The document could not be processed. Please try a different file.',
     );
     await user.click(screen.getByRole('button', { name: /retry upload of retry\.pdf/i }));
 
@@ -479,5 +543,62 @@ describe('DocumentUploadZone file input UX', () => {
     expect(
       screen.getByText((content) => content.includes(ar.dragDropPrompt)),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText(ar.inputAriaTemplate)).toBeInTheDocument();
+    const help = screen.getByText((content) => content.includes(ar.helpMax.split('{size}')[0].trim()));
+    expect(help.textContent).not.toMatch(/MB\s*10/);
+    expect(help.textContent).toMatch(/\u2066/);
+  });
+
+  it('maps a scanned curriculum PDF to a text-based file suggestion', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: '   ' }),
+    });
+    const user = userEvent.setup();
+    renderWithLocale(
+      <DocumentUploadZone
+        label="Upload curriculum document"
+        accept=".pdf,.docx,.xlsx,.jpg,.png"
+        uploadType="curriculum_doc"
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+        onBusyChange={onBusyChange}
+      />,
+    );
+
+    const file = new File(['%PDF-1.7'], 'scan.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload curriculum document/i), file);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+    );
+  });
+
+  it('maps a parse timeout to the timeout copy', async () => {
+    (global.fetch as jest.Mock).mockRejectedValue(
+      new DOMException('The operation was aborted.', 'AbortError'),
+    );
+    const user = userEvent.setup();
+    renderZone();
+
+    const file = new File(['%PDF-1.7'], 'slow.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+    );
+    expect(screen.queryByText("Couldn't upload this file. Please try again.")).not.toBeInTheDocument();
+  });
+
+  it('styles error copy with the AA red in light and dark mode', async () => {
+    const user = userEvent.setup();
+    renderZone();
+
+    const file = new File([], 'empty.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveClass('text-[#B91C1C]');
+    expect(alert).toHaveClass('dark:text-[#FCA5A5]');
   });
 });

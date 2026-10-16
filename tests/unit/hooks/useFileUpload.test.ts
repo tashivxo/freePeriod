@@ -2,6 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { slugifyFileStem, useFileUpload } from '@/hooks/useFileUpload';
 
+const mockGetUser = jest.fn();
 const mockUpload = jest.fn();
 const mockRemove = jest.fn();
 const mockInsertSingle = jest.fn();
@@ -10,10 +11,7 @@ const mockDeleteEq = jest.fn();
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user: { id: 'user-123' } },
-        error: null,
-      }),
+      getUser: (...args: unknown[]) => mockGetUser(...args),
     },
     from: jest.fn(() => ({
       insert: () => ({
@@ -47,6 +45,10 @@ function templateFile(name = 'blank.docx') {
 describe('useFileUpload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
     mockUpload.mockResolvedValue({ data: { path: 'ok' }, error: null });
     mockInsertSingle.mockResolvedValue({ data: { id: 'upload-1' }, error: null });
     mockRemove.mockResolvedValue({ data: null, error: null });
@@ -259,6 +261,36 @@ describe('useFileUpload', () => {
     );
     expect(result.current.file).toBeNull();
     expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('throws Not authenticated only when the session is actually missing', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'curriculum_doc', accept: '.pdf' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(pdfFile());
+    });
+
+    expect(result.current.error).toBe('Not authenticated');
+  });
+
+  it('treats an offline getUser failure as a network error, not auth', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Failed to fetch', name: 'AuthRetryableFetchError' },
+    });
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'curriculum_doc', accept: '.pdf' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(pdfFile());
+    });
+
+    expect(result.current.error).toBe('Failed to fetch');
+    expect(result.current.error).not.toBe('Not authenticated');
   });
 });
 

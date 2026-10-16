@@ -304,7 +304,7 @@ describe('GenerateForm', () => {
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      /couldn't upload this file/i,
+      /no extractable text/i,
     );
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
     expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
