@@ -137,12 +137,6 @@ export function SettingsClient({
   const handleLocaleChange = async (nextLocale: Locale) => {
     try {
       await Promise.resolve(setLocale(nextLocale));
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('users')
-        .update({ preferred_locale: nextLocale })
-        .eq('id', user.id);
-      if (error) throw error;
     } catch (err) {
       setSaveStatus({
         tone: 'error',

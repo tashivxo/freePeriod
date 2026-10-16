@@ -228,4 +228,32 @@ describe('LocaleProvider', () => {
 
     expect(caught).toMatchObject({ message: 'permission denied' });
   });
+
+  it('applies locale locally then rejects a network TypeError so callers can surface it', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+    mockEq.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.setLocale('ar');
+      } catch (err) {
+        caught = err;
+      }
+    });
+
+    expect(result.current.locale).toBe('ar');
+    expect(result.current.dir).toBe('rtl');
+    expect(document.documentElement.lang).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(caught).toBeInstanceOf(TypeError);
+    expect((caught as TypeError).message).toMatch(/failed to fetch/i);
+  });
 });
