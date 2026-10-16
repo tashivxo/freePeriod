@@ -36,15 +36,23 @@ export const GRADES = [
 
 export type Grade = (typeof GRADES)[number];
 
+type TranslateFn = (key: string, vars?: Record<string, string>) => string;
+
 /** Human-readable label for a stored grade value (display only). */
-export function formatGradeLabel(g: string): string {
+export function formatGradeLabel(g: string, t?: TranslateFn): string {
   const trimmed = g.trim();
   if (!trimmed) return '';
-  if (trimmed === 'Pre-K') return 'Pre-K';
-  if (trimmed === 'K') return 'Kindergarten';
-  if (/^Year \d+$/.test(trimmed)) return trimmed;
-  if (/^Grade\s+.+$/.test(trimmed)) return trimmed;
-  return `Grade ${trimmed}`;
+  if (trimmed === 'Pre-K') return t ? t('grades.preK') : 'Pre-K';
+  if (trimmed === 'K') return t ? t('grades.kindergarten') : 'Kindergarten';
+  const yearMatch = trimmed.match(/^Year (\d+)$/);
+  if (yearMatch) {
+    return t ? t('grades.year', { n: yearMatch[1]! }) : trimmed;
+  }
+  const gradeMatch = trimmed.match(/^Grade\s+(.+)$/);
+  if (gradeMatch) {
+    return t ? t('grades.numbered', { n: gradeMatch[1]! }) : trimmed;
+  }
+  return t ? t('grades.numbered', { n: trimmed }) : `Grade ${trimmed}`;
 }
 
 /** Dropdown items for grade selectors — human-readable labels, raw values. */

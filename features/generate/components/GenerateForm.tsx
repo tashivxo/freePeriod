@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+'use client';
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
@@ -9,10 +11,11 @@ import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import { GenerationModePicker } from '@/features/generate/components/GenerationModePicker';
 import { usePresetField } from '@/lib/forms/usePresetField';
+import { formatDurationMinutes } from '@/lib/i18n/format';
 import { LOCALE_LABELS } from '@/lib/i18n';
 import { useLocale, useT } from '@/providers/locale';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
-import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { GRADE_ITEMS, formatGradeLabel } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCurriculumPack } from '@/lib/curriculum/packs';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
@@ -29,11 +32,6 @@ function isPaidPlan(plan: Plan): boolean {
 const DURATION_PRESETS = [30, 45, 60, 90, 120];
 const CUSTOM_DURATION_MIN = 1;
 const CUSTOM_DURATION_MAX = 300;
-
-const DURATION_ITEMS = [
-  ...DURATION_PRESETS.map((d) => ({ name: `${d} min`, value: String(d) })),
-  { name: 'Custom', value: 'custom' },
-];
 
 const CURRICULUM_DOC_ACCEPT = '.pdf,.docx,.xlsx,.jpg,.png';
 const TEMPLATE_ACCEPT = FILLABLE_TEMPLATE_ACCEPT;
@@ -103,6 +101,26 @@ export function GenerateForm({
 
   const qualityUnlocked = isPaidPlan(userPlan);
 
+  const durationItems = useMemo(
+    () => [
+      ...DURATION_PRESETS.map((d) => ({
+        name: formatDurationMinutes(d, t),
+        value: String(d),
+      })),
+      { name: t('generate.customDuration'), value: 'custom' },
+    ],
+    [t],
+  );
+
+  const gradeItems = useMemo(
+    () =>
+      GRADE_ITEMS.map((item) => ({
+        ...item,
+        name: formatGradeLabel(item.value ?? item.name, t),
+      })),
+    [t],
+  );
+
   useEffect(() => {
     if (!qualityUnlocked) {
       setGenerationMode('fast');
@@ -142,19 +160,22 @@ export function GenerateForm({
 
     const nextErrors: FieldErrors = {};
     if (!subjectField.value.trim()) {
-      nextErrors.subject = 'Please select a subject';
+      nextErrors.subject = t('generate.errorSelectSubject');
     } else if (/[,;/]|\band\b/i.test(subjectField.value)) {
-      nextErrors.subject = 'Please enter one subject only';
+      nextErrors.subject = t('generate.errorOneSubject');
     }
     if (!grade.trim()) {
-      nextErrors.grade = 'Please select a grade';
+      nextErrors.grade = t('generate.errorSelectGrade');
     }
 
     let duration = Number.parseInt(durationSelect, 10);
     if (durationSelect === 'custom') {
       const custom = parseCustomDuration(customDuration);
       if (custom === null) {
-        nextErrors.duration = `Enter a duration between ${CUSTOM_DURATION_MIN} and ${CUSTOM_DURATION_MAX} minutes`;
+        nextErrors.duration = t('generate.errorDurationRange', {
+          min: String(CUSTOM_DURATION_MIN),
+          max: String(CUSTOM_DURATION_MAX),
+        });
       } else {
         duration = custom;
       }
@@ -196,7 +217,7 @@ export function GenerateForm({
       onSubmit={handleSubmit}
       className="w-full max-w-3xl mx-auto rounded-2xl border border-border bg-surface/50 backdrop-blur p-6 md:p-8"
     >
-      <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Generate a Lesson</h2>
+      <h2 className="font-display text-2xl font-bold text-text-primary mb-2">{t('generate.heading')}</h2>
       <p className="text-sm text-text-secondary mb-6">
         {t('generate.planLanguageHint', { language: LOCALE_LABELS[locale] ?? LOCALE_LABELS.en })}{' '}
         <Link href="/settings" className="text-coral hover:underline">
@@ -214,11 +235,11 @@ export function GenerateForm({
             htmlFor="subject-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Subject
+            {t('generate.subject')}
           </label>
           <AnimatedDropdown
             id="subject-select"
-            text="Select subject"
+            text={t('generate.selectSubject')}
             items={SUBJECT_ITEMS}
             selectedValue={subjectField.select}
             onSelect={(item) => {
@@ -229,7 +250,7 @@ export function GenerateForm({
           {subjectField.isCustom && (
             <div className="mt-2">
               <Input
-                label="Enter subject"
+                label={t('generate.enterSubject')}
                 value={subjectField.custom}
                 onChange={(e) => {
                   subjectField.setCustom(e.target.value);
@@ -250,12 +271,12 @@ export function GenerateForm({
             htmlFor="grade-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Grade
+            {t('generate.grade')}
           </label>
           <AnimatedDropdown
             id="grade-select"
-            text="Select grade"
-            items={GRADE_ITEMS}
+            text={t('generate.selectGrade')}
+            items={gradeItems}
             selectedValue={grade}
             onSelect={(item) => {
               setGrade(item.value ?? item.name);
@@ -271,11 +292,11 @@ export function GenerateForm({
             htmlFor="curriculum-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Curriculum
+            {t('generate.curriculum')}
           </label>
           <AnimatedDropdown
             id="curriculum-select"
-            text="Select curriculum (optional)"
+            text={t('generate.selectCurriculum')}
             items={CURRICULUM_ITEMS}
             selectedValue={curriculumField.select}
             onSelect={(item) => curriculumField.setSelect(item.value ?? item.name)}
@@ -283,7 +304,7 @@ export function GenerateForm({
           {curriculumField.isCustom && (
             <div className="mt-2">
               <Input
-                label="Enter curriculum"
+                label={t('generate.enterCurriculum')}
                 value={curriculumField.custom}
                 onChange={(e) => curriculumField.setCustom(e.target.value)}
               />
@@ -300,12 +321,12 @@ export function GenerateForm({
             htmlFor="duration-select"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Duration
+            {t('generate.duration')}
           </label>
           <AnimatedDropdown
             id="duration-select"
-            text="Select duration"
-            items={DURATION_ITEMS}
+            text={t('generate.selectDuration')}
+            items={durationItems}
             selectedValue={durationSelect}
             onSelect={(item) => {
               setDurationSelect(item.value ?? String(item.name));
@@ -315,7 +336,7 @@ export function GenerateForm({
           {durationSelect === 'custom' && (
             <div className="mt-2">
               <Input
-                label="How long is the lesson? (minutes)"
+                label={t('generate.customDurationInput')}
                 type="number"
                 min={CUSTOM_DURATION_MIN}
                 max={CUSTOM_DURATION_MAX}
@@ -339,13 +360,13 @@ export function GenerateForm({
             htmlFor="teacher-prompt"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Any specific focus or requirements? (optional)
+            {t('generate.focusLabel')}
           </label>
           <textarea
             id="teacher-prompt"
             value={teacherPrompt}
             onChange={(e) => setTeacherPrompt(e.target.value)}
-            placeholder="E.g. Include hands-on activities, emphasize critical thinking..."
+            placeholder={t('generate.focusPlaceholder')}
             className="w-full h-24 rounded-xl border border-border bg-background px-3 py-2 text-base font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral resize-none"
           />
         </div>
@@ -374,7 +395,7 @@ export function GenerateForm({
             htmlFor="generation-mode-picker"
             className="mb-2 block text-sm font-body font-medium text-text-secondary"
           >
-            Generation mode
+            {t('generate.modeLabel')}
           </label>
           <GenerationModePicker
             id="generation-mode-picker"
@@ -391,10 +412,10 @@ export function GenerateForm({
           isLoading={busy}
           className="w-full mt-6"
         >
-          {uploadsBusy && !isGenerating ? 'Waiting for upload…' : busy ? 'Generating...' : (
+          {uploadsBusy && !isGenerating ? t('generate.waitingForUpload') : busy ? t('generate.generating') : (
             <>
               <Plus className="h-5 w-5 mr-2" />
-              Generate Lesson Plan
+              {t('generate.submit')}
             </>
           )}
         </Button>
