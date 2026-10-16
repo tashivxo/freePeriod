@@ -1,6 +1,24 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { getMessages, isLocale } from '@/lib/i18n';
 import { LocaleProvider, useLocale, useT } from '@/providers/locale';
+
+const mockGetUser = jest.fn();
+const mockUpdate = jest.fn();
+const mockEq = jest.fn();
+
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      getUser: (...args: unknown[]) => mockGetUser(...args),
+    },
+    from: jest.fn(() => ({
+      update: (...args: unknown[]) => {
+        mockUpdate(...args);
+        return { eq: (...eqArgs: unknown[]) => mockEq(...eqArgs) };
+      },
+    })),
+  })),
+}));
 
 describe('i18n helpers', () => {
   it('isLocale returns true for supported locales', () => {
@@ -31,6 +49,9 @@ describe('LocaleProvider', () => {
     document.cookie = 'fp-locale=; Max-Age=0; path=/';
     document.documentElement.lang = 'en';
     document.documentElement.dir = 'ltr';
+    jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockEq.mockResolvedValue({ error: null });
   });
 
   it('defaults locale to en', () => {
@@ -129,5 +150,82 @@ describe('LocaleProvider', () => {
     expect(result.current('generate.planLanguageHint', { language: 'English' })).toBe(
       'New plans will be written in English',
     );
+  });
+
+  it('persists preferred_locale for a signed-in user after setLocale', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    await act(async () => {
+      await result.current.setLocale('ar');
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'ar' });
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-123');
+  });
+
+  it('applies RTL and Arabic strings immediately while preferred_locale save is in flight', async () => {
+    let resolveEq: ((value: { error: null }) => void) | undefined;
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+    mockEq.mockReturnValue(
+      new Promise<{ error: null }>((resolve) => {
+        resolveEq = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    act(() => {
+      void result.current.setLocale('ar');
+    });
+
+    expect(result.current.locale).toBe('ar');
+    expect(result.current.dir).toBe('rtl');
+    expect(result.current.t('settings.language')).toBe('اللغة');
+    expect(document.documentElement.lang).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(localStorage.getItem('fp-locale')).toBe('ar');
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({ preferred_locale: 'ar' });
+    });
+
+    expect(result.current.locale).toBe('ar');
+    expect(result.current.dir).toBe('rtl');
+    resolveEq?.({ error: null });
+  });
+
+  it('rejects when preferred_locale cannot be saved so callers can surface the error', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+    mockEq.mockResolvedValue({ error: { message: 'permission denied' } });
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.setLocale('fr');
+      } catch (err) {
+        caught = err;
+      }
+    });
+
+    expect(caught).toMatchObject({ message: 'permission denied' });
   });
 });
