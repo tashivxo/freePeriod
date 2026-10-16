@@ -6,7 +6,7 @@ import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 import { drainSseEvents } from '@/lib/generation/sse';
-import { useLocale } from '@/providers/locale';
+import { useLocale, useT } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
 import { hasStoredLocale, type Locale } from '@/lib/i18n';
 
@@ -29,6 +29,7 @@ export function GenerateClient({
 }: GenerateClientProps) {
   const router = useRouter();
   const { locale, setLocale } = useLocale();
+  const t = useT();
   const generationLocale = locale ?? 'en';
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
@@ -38,6 +39,10 @@ export function GenerateClient({
 
   const isGenerating = phase === 'generating';
   const showOverlay = phase === 'generating' || phase === 'error';
+
+  useEffect(() => {
+    document.title = t('generate.documentTitle');
+  }, [t]);
 
   useEffect(() => {
     if (hasStoredLocale()) return;

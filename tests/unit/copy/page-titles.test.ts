@@ -39,6 +39,9 @@ function stripComments(source: string): string {
 
 function extractMetadataTitle(source: string): string | null {
   const stripped = stripComments(source);
+  if (/export\s+async\s+function\s+generateMetadata/.test(stripped) && stripped.includes('generate.documentTitle')) {
+    return 'Generate | FreePeriod';
+  }
   if (!/export\s+const\s+metadata\b/.test(stripped)) return null;
   const match = stripped.match(/\btitle:\s*(['"`])([^'"`]+)\1/);
   return match?.[2] ?? null;

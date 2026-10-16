@@ -27,7 +27,8 @@ import { cn } from '@/lib/utils';
 import { ExternalLink, LogOut } from 'lucide-react';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
-import type { User } from '@/types';
+import { formatGenerationUsage } from '@/lib/generation/quota';
+import type { Plan, User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
 
@@ -67,6 +68,9 @@ export type SettingsClientProps = {
   email: string;
   planLabel: string;
   usageLabel?: string;
+  usagePlan?: Plan;
+  generationCount?: number;
+  generationLimit?: number | null;
   manageSubscriptionUrl?: string | null;
 };
 
@@ -75,6 +79,9 @@ export function SettingsClient({
   email,
   planLabel,
   usageLabel,
+  usagePlan,
+  generationCount,
+  generationLimit,
   manageSubscriptionUrl = null,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
@@ -103,6 +110,15 @@ export function SettingsClient({
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
   const t = useT();
+  const displayUsage =
+    typeof generationCount === 'number'
+      ? formatGenerationUsage({
+          plan: usagePlan ?? user.plan,
+          generationCount,
+          generationLimit: generationLimit ?? null,
+          locale,
+        })
+      : usageLabel;
   const { setProfileSignals } = useColorBendsAtmosphere();
 
   const isDirty =
@@ -409,10 +425,10 @@ export function SettingsClient({
             <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.plan')}</dt>
             <dd className="text-sm font-body text-text-primary">{planLabel}</dd>
           </div>
-          {usageLabel && (
+          {displayUsage && (
             <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
               <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.usage')}</dt>
-              <dd className="text-sm font-body text-text-primary">{usageLabel}</dd>
+              <dd className="text-sm font-body text-text-primary">{displayUsage}</dd>
             </div>
           )}
         </dl>

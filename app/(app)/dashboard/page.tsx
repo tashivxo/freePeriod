@@ -1,8 +1,10 @@
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { formatGenerationUsage } from '@/lib/generation/quota';
+import { isLocale, type Locale } from '@/lib/i18n';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { BlurText } from '@/components/ui/effects/BlurText';
@@ -68,10 +70,20 @@ async function DashboardContent() {
     resolveGenerationAccess(supabase, user.id),
   ]);
 
+  let cookieLocale: Locale | undefined;
+  try {
+    const rawLocale = (await cookies()).get('fp-locale')?.value;
+    const decoded = rawLocale ? decodeURIComponent(rawLocale) : '';
+    cookieLocale = isLocale(decoded) ? decoded : undefined;
+  } catch {
+    cookieLocale = undefined;
+  }
+
   const usageLabel = formatGenerationUsage({
     plan: generationAccess.userPlan,
     generationCount: generationAccess.generationCount,
     generationLimit: generationAccess.generationLimit,
+    locale: cookieLocale,
   });
 
   const authName = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? '') as string;

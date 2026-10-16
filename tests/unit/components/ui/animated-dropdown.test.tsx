@@ -824,4 +824,12 @@ describe('AnimatedDropdown locked options', () => {
       expect.objectContaining({ value: 'quality' }),
     );
   });
+
+  it('uses theme background tokens and does not transition color or background', () => {
+    render(<AnimatedDropdown id="theme-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />);
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    expect(trigger.className).toMatch(/background-elevated|--color-background/);
+    expect(trigger.className).not.toMatch(/transition-colors/);
+    expect(trigger.className).not.toMatch(/background-color/);
+  });
 });

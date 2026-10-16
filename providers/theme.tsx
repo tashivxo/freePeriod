@@ -59,6 +59,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   function setTheme(t: Theme) {
     setThemeState(t);
     localStorage.setItem('fp-theme', t);
+    const resolved = resolveTheme(t);
+    setResolvedTheme(resolved);
+    document.documentElement.classList.toggle('dark', resolved === 'dark');
   }
 
   return (
