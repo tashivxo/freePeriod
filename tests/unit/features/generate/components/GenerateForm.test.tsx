@@ -239,7 +239,7 @@ describe('GenerateForm', () => {
     });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
+      'This file type is not supported. Please choose a different file.',
     );
     expect(screen.queryByText(/notes\.txt/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/reading document/i)).not.toBeInTheDocument();
@@ -303,7 +303,9 @@ describe('GenerateForm', () => {
       file,
     );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no readable text/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /no extractable text/i,
+    );
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument();
     expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
   });
