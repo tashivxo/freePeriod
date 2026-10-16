@@ -260,6 +260,188 @@ describe('AnimatedDropdown trigger label and exit', () => {
   });
 });
 
+describe('AnimatedDropdown keyboard', () => {
+  const keyboardItems = [
+    { name: 'Common', header: true },
+    { name: 'Alpha', value: 'a' },
+    { name: 'All', header: true },
+    { name: 'Beta', value: 'b' },
+    { name: 'Gamma', value: 'c' },
+  ];
+
+  it('opens on ArrowDown, Enter, and Space and highlights the current value', async () => {
+    const { user } = render(
+      <AnimatedDropdown
+        id="kb-open"
+        text="Pick"
+        selectedValue="b"
+        items={keyboardItems}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /^beta$/i });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const beta = screen.getByRole('option', { name: 'Beta' });
+    expect(beta).toHaveAttribute('id');
+    expect(trigger).toHaveAttribute('aria-activedescendant', beta.id);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'Beta' }).id,
+    );
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    trigger.focus();
+    await user.keyboard(' ');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'Beta' }).id,
+    );
+  });
+
+  it('moves the active option with ArrowDown, ArrowUp, Home, and End and scrolls it into view', async () => {
+    const { user } = render(
+      <AnimatedDropdown id="kb-move" text="Pick" items={keyboardItems} />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const alpha = screen.getByRole('option', { name: 'Alpha' });
+    const beta = screen.getByRole('option', { name: 'Beta' });
+    const gamma = screen.getByRole('option', { name: 'Gamma' });
+    const betaScroll = jest.fn();
+    const gammaScroll = jest.fn();
+    const alphaScroll = jest.fn();
+    beta.scrollIntoView = betaScroll;
+    gamma.scrollIntoView = gammaScroll;
+    alpha.scrollIntoView = alphaScroll;
+
+    expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
+
+    await user.keyboard('{ArrowDown}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', beta.id);
+    expect(betaScroll).toHaveBeenCalled();
+
+    await user.keyboard('{End}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', gamma.id);
+    expect(gammaScroll).toHaveBeenCalled();
+
+    await user.keyboard('{Home}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
+    expect(alphaScroll).toHaveBeenCalled();
+
+    await user.keyboard('{ArrowUp}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
+  });
+
+  it('selects the active option on Enter', async () => {
+    const onSelect = jest.fn();
+    const { user } = render(
+      <AnimatedDropdown
+        id="kb-enter"
+        text="Pick"
+        items={keyboardItems}
+        onSelect={onSelect}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('{Enter}');
+
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'b' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+
+  it('puts aria-activedescendant on the search input and navigates Country-style options', async () => {
+    const onSelect = jest.fn();
+    const { user } = render(
+      <AnimatedDropdown
+        id="default-country"
+        text="Select your country"
+        searchable
+        searchPlaceholder="Select your country"
+        selectedValue="DE"
+        onSelect={onSelect}
+        items={[
+          { name: 'Common', header: true },
+          { name: 'United Arab Emirates', value: 'AE' },
+          { name: 'All countries', header: true },
+          { name: 'Germany', value: 'DE' },
+          { name: 'Ghana', value: 'GH' },
+        ]}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /germany/i });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(search).toHaveFocus();
+    const germany = screen.getByRole('option', { name: 'Germany' });
+    expect(germany).toHaveAttribute('id');
+    expect(search).toHaveAttribute('aria-activedescendant', germany.id);
+
+    await user.keyboard('{ArrowDown}');
+    expect(search).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'Ghana' }).id,
+    );
+
+    await user.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ value: 'GH' }));
+  });
+
+  it('closes from the Country search input on Escape and returns focus to the trigger', async () => {
+    const { user } = render(
+      <AnimatedDropdown
+        id="country-select"
+        text="Select your country"
+        searchable
+        searchPlaceholder="Select your country"
+        items={[
+          { name: 'Common', header: true },
+          { name: 'Germany', value: 'DE' },
+        ]}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox', { name: /select your country/i });
+    expect(search).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+});
+
 describe('AnimatedDropdown search', () => {
   it('filters options when searchable is enabled', async () => {
     const { user } = render(

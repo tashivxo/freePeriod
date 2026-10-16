@@ -492,6 +492,27 @@ describe('SettingsClient — dirty save', () => {
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
+  it('opens Country from the keyboard and Escape in search returns focus to the trigger', async () => {
+    const { user } = render(
+      <SettingsClient {...defaultProps} user={{ ...baseUser, country: 'GB' }} />,
+    );
+
+    const country = screen.getByLabelText(/^country$/i);
+    country.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    const uk = screen.getAllByRole('option', { name: 'United Kingdom' })[0]!;
+    expect(search).toHaveAttribute('aria-activedescendant', uk.id);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(country).toHaveFocus();
+  });
+
   it('marks Save dirty when the country changes', async () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
 

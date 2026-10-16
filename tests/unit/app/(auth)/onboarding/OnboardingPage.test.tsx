@@ -229,6 +229,26 @@ describe('OnboardingPage', () => {
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
+  it('opens Country from the keyboard and Escape in search returns focus to the trigger', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    expect(search.getAttribute('aria-activedescendant')).toBeTruthy();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+
   it('disables Next on the country step until a country is chosen', async () => {
     const { user } = render(<OnboardingPage />);
     await chooseSubject(user);
