@@ -199,7 +199,9 @@ describe('GenerateForm', () => {
   it('pre-fills grade from defaults', () => {
     render(<GenerateForm onSubmit={onSubmit} defaults={defaults} />);
     // Radix Select shows selected value as text in the trigger button (not .value)
-    expect(screen.getByLabelText('Grade').textContent?.trim()).toBe('Grade 9');
+    expect(screen.getByLabelText('Grade').textContent?.replace(/[\u2068\u2069]/g, '').trim()).toBe(
+      'Grade 9',
+    );
   });
 
   it('pre-fills curriculum from defaults', () => {
@@ -214,7 +216,11 @@ describe('GenerateForm', () => {
     const { user } = render(<GenerateForm onSubmit={onSubmit} />);
     await user.click(screen.getByLabelText(/^grade$/i));
     for (const grade of GRADES) {
-      expect(screen.getByRole('option', { name: grade })).toBeInTheDocument();
+      expect(
+        screen.getByRole('option', {
+          name: (accessibleName) => accessibleName.replace(/[\u2068\u2069]/g, '') === grade,
+        }),
+      ).toBeInTheDocument();
     }
   });
 

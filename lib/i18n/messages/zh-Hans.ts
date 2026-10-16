@@ -10,6 +10,10 @@ export const zhHans: Messages = {
   },
   settings: {
     title: '设置',
+    documentTitle: '设置 | FreePeriod',
+    planFree: '免费',
+    planPro: 'Pro',
+    planProPlus: 'Pro+',
     zenMode: '禅模式',
     zenModeDescription: '彩色背景会不会太花？试试禅模式。',
     background: '背景',
@@ -234,6 +238,8 @@ export const zhHans: Messages = {
   },
   history: {
     title: '教案历史',
+    documentTitle: '教案历史 | FreePeriod',
+    deleteAria: '删除 {title}',
     searchPlaceholder: '按标题搜索...',
     searchAriaLabel: '按标题搜索教案',
     planLesson: '规划课程',

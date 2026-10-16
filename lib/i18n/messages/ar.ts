@@ -10,6 +10,10 @@ export const ar: Messages = {
   },
   settings: {
     title: 'الإعدادات',
+    documentTitle: 'الإعدادات | FreePeriod',
+    planFree: 'مجاني',
+    planPro: 'Pro',
+    planProPlus: 'Pro+',
     zenMode: 'وضع الهدوء',
     zenModeDescription: 'هل الخلفيات الملونة كثيرة عليك؟ جرّب وضع الهدوء.',
     background: 'الخلفية',
@@ -238,6 +242,8 @@ export const ar: Messages = {
   },
   history: {
     title: 'سجل خطط الدروس',
+    documentTitle: 'سجل خطط الدروس | FreePeriod',
+    deleteAria: 'حذف {title}',
     searchPlaceholder: 'ابحث حسب العنوان...',
     searchAriaLabel: 'البحث في الدروس حسب العنوان',
     planLesson: 'خطط درسا',

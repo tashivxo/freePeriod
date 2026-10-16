@@ -466,6 +466,92 @@ describe('generate form copy', () => {
   });
 });
 
+const HISTORY_DOCUMENT_TITLE: Record<Locale, string> = {
+  en: 'Lesson Plan History | FreePeriod',
+  ar: 'سجل خطط الدروس | FreePeriod',
+  es: 'Historial de planes de clase | FreePeriod',
+  fr: 'Historique des plans de cours | FreePeriod',
+  'zh-Hans': '教案历史 | FreePeriod',
+};
+
+const SETTINGS_DOCUMENT_TITLE: Record<Locale, string> = {
+  en: 'Settings | FreePeriod',
+  ar: 'الإعدادات | FreePeriod',
+  es: 'Ajustes | FreePeriod',
+  fr: 'Paramètres | FreePeriod',
+  'zh-Hans': '设置 | FreePeriod',
+};
+
+const HISTORY_DELETE_ARIA: Record<Locale, string> = {
+  en: 'Delete {title}',
+  ar: 'حذف {title}',
+  es: 'Eliminar {title}',
+  fr: 'Supprimer {title}',
+  'zh-Hans': '删除 {title}',
+};
+
+const SETTINGS_PLAN_FREE: Record<Locale, string> = {
+  en: 'Free',
+  ar: 'مجاني',
+  es: 'Gratis',
+  fr: 'Gratuit',
+  'zh-Hans': '免费',
+};
+
+describe('history and settings leftover English copy', () => {
+  it.each(LOCALES)('ships history documentTitle and deleteAria for %s', (locale) => {
+    const history = getMessages(locale).history as unknown as Record<string, string>;
+    expect(history.documentTitle).toBe(HISTORY_DOCUMENT_TITLE[locale]);
+    expect(history.documentTitle).toContain('FreePeriod');
+    expect(history.documentTitle).toContain(' | ');
+    expect(history.documentTitle).not.toContain('\u2014');
+    expect(history.deleteAria).toBe(HISTORY_DELETE_ARIA[locale]);
+    expect(history.deleteAria).toContain('{title}');
+    expect(history.deleteAria).not.toContain('\u2014');
+  });
+
+  it.each(LOCALES)('ships settings documentTitle and plan names for %s', (locale) => {
+    const settings = getMessages(locale).settings as unknown as Record<string, string>;
+    expect(settings.documentTitle).toBe(SETTINGS_DOCUMENT_TITLE[locale]);
+    expect(settings.documentTitle).toContain('FreePeriod');
+    expect(settings.documentTitle).toContain(' | ');
+    expect(settings.documentTitle).not.toContain('\u2014');
+    expect(settings.planFree).toBe(SETTINGS_PLAN_FREE[locale]);
+    expect(settings.planPro).toBe('Pro');
+    expect(settings.planProPlus).toBe('Pro+');
+    expect(settings.planFree).not.toContain('\u2014');
+    expect(settings.planPro).not.toContain('\u2014');
+    expect(settings.planProPlus).not.toContain('\u2014');
+  });
+
+  it('keeps Arabic and Chinese history/settings leftovers as real translations', () => {
+    const enHistory = getMessages('en').history as unknown as Record<string, string>;
+    const arHistory = getMessages('ar').history as unknown as Record<string, string>;
+    const zhHistory = getMessages('zh-Hans').history as unknown as Record<string, string>;
+    const enSettings = getMessages('en').settings as unknown as Record<string, string>;
+    const arSettings = getMessages('ar').settings as unknown as Record<string, string>;
+    const zhSettings = getMessages('zh-Hans').settings as unknown as Record<string, string>;
+
+    expect(arHistory.documentTitle).not.toBe(enHistory.documentTitle);
+    expect(zhHistory.documentTitle).not.toBe(enHistory.documentTitle);
+    expect(arHistory.deleteAria).not.toBe(enHistory.deleteAria);
+    expect(zhHistory.deleteAria).not.toBe(enHistory.deleteAria);
+    expect(arSettings.documentTitle).not.toBe(enSettings.documentTitle);
+    expect(zhSettings.documentTitle).not.toBe(enSettings.documentTitle);
+    expect(arSettings.planFree).not.toBe(enSettings.planFree);
+    expect(zhSettings.planFree).not.toBe(enSettings.planFree);
+
+    expect(arHistory.documentTitle).toMatch(/[\u0600-\u06FF]/);
+    expect(arHistory.deleteAria).toMatch(/[\u0600-\u06FF]/);
+    expect(arSettings.documentTitle).toMatch(/[\u0600-\u06FF]/);
+    expect(arSettings.planFree).toMatch(/[\u0600-\u06FF]/);
+    expect(zhHistory.documentTitle).toMatch(/[\u4e00-\u9fff]/);
+    expect(zhHistory.deleteAria).toMatch(/[\u4e00-\u9fff]/);
+    expect(zhSettings.documentTitle).toMatch(/[\u4e00-\u9fff]/);
+    expect(zhSettings.planFree).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
 describe('settings usage copy', () => {
   it.each(LOCALES)('ships one interpolated usage string for %s', (locale) => {
     const settings = getMessages(locale).settings as unknown as Record<string, string>;

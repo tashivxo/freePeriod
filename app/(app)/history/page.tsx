@@ -1,7 +1,20 @@
+import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { HistoryClient } from '@/features/history/components/HistoryClient';
+import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
 
-export const metadata = { title: 'Lesson Plan History | FreePeriod' };
+export async function generateMetadata(): Promise<Metadata> {
+  const raw = (await cookies()).get('fp-locale')?.value;
+  let locale: Locale = DEFAULT_LOCALE;
+  try {
+    const decoded = raw ? decodeURIComponent(raw) : '';
+    if (isLocale(decoded)) locale = decoded;
+  } catch {
+    locale = DEFAULT_LOCALE;
+  }
+  return { title: getMessages(locale).history.documentTitle };
+}
 
 function HistorySkeleton() {
   return (

@@ -39,8 +39,10 @@ function stripComments(source: string): string {
 
 function extractMetadataTitle(source: string): string | null {
   const stripped = stripComments(source);
-  if (/export\s+async\s+function\s+generateMetadata/.test(stripped) && stripped.includes('generate.documentTitle')) {
-    return 'Generate | FreePeriod';
+  if (/export\s+async\s+function\s+generateMetadata/.test(stripped)) {
+    if (stripped.includes('generate.documentTitle')) return 'Generate | FreePeriod';
+    if (stripped.includes('history.documentTitle')) return 'Lesson Plan History | FreePeriod';
+    if (stripped.includes('settings.documentTitle')) return 'Settings | FreePeriod';
   }
   if (!/export\s+const\s+metadata\b/.test(stripped)) return null;
   const match = stripped.match(/\btitle:\s*(['"`])([^'"`]+)\1/);
@@ -71,5 +73,22 @@ describe('page title metadata uses a pipe separator', () => {
       expect(titles[file]).not.toContain(EM_DASH);
       expect(titles[file]).not.toMatch(/, FreePeriod$|^FreePeriod,/);
     }
+  });
+
+  it('localizes history and settings browser titles via generateMetadata and documentTitle', () => {
+    const history = stripComments(
+      readFileSync(path.join(process.cwd(), 'app/(app)/history/page.tsx'), 'utf8'),
+    );
+    const settings = stripComments(
+      readFileSync(path.join(process.cwd(), 'app/(app)/settings/page.tsx'), 'utf8'),
+    );
+
+    expect(history).toMatch(/export\s+async\s+function\s+generateMetadata/);
+    expect(history).toContain('history.documentTitle');
+    expect(history).not.toMatch(/export\s+const\s+metadata\b/);
+
+    expect(settings).toMatch(/export\s+async\s+function\s+generateMetadata/);
+    expect(settings).toContain('settings.documentTitle');
+    expect(settings).not.toMatch(/export\s+const\s+metadata\b/);
   });
 });
