@@ -30,6 +30,7 @@ import {
 } from '@/features/lesson/components/FilledTemplateChoiceDialog';
 import { FILL_MY_TEMPLATE_LABEL } from '@/features/lesson/components/filled-template-copy';
 import { Button } from '@/components/ui/Button';
+import { FieldError } from '@/components/ui/FieldError';
 import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import type { LessonPlan, LessonSectionKey } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
@@ -356,9 +357,10 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
             </span>
           )}
           {saveStatus === 'error' && saveError && (
-            <span role="status" className="font-medium text-red-700 dark:text-red-300">
-              {t('lesson.saveFailed')}
-            </span>
+            <FieldError
+              message={t('lesson.saveFailed')}
+              className="mt-0 font-medium"
+            />
           )}
         </div>
 

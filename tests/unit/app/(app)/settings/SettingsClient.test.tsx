@@ -71,6 +71,8 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.legalDescription': 'How we handle your data and the rules for using FreePeriod.',
   'settings.privacyPolicy': 'Privacy Policy',
   'settings.termsOfService': 'Terms of Service',
+  'countries.common': 'Common',
+  'countries.all': 'All countries',
 };
 
 jest.mock('@/providers/locale', () => ({

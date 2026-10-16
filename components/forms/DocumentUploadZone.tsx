@@ -127,7 +127,12 @@ export function classifyUploadError(raw: string): UploadErrorKind {
     return 'timeout';
   }
 
-  if (message.includes('could not be processed')) {
+  if (
+    message.includes('could not be processed') ||
+    message.includes('failed to parse') ||
+    message.includes('failed to read this pdf') ||
+    message.includes('document.xml')
+  ) {
     return 'parse';
   }
 
@@ -289,6 +294,7 @@ export function DocumentUploadZone({
           'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4',
           'transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
           'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
+          'focus-within:outline-[#B5486F] dark:focus-within:outline-[#FF8BB0]',
           isDragging ? 'border-solid border-[#B5486F] dark:border-[#FF8BB0]' : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
         )}
@@ -296,7 +302,6 @@ export function DocumentUploadZone({
           borderWidth: '2px',
           borderColor: isDragging ? undefined : 'var(--color-border)',
           backgroundColor: isDragging ? UPLOAD_DRAG_BACKGROUND : 'var(--color-surface)',
-          outlineColor: 'var(--color-primary)',
         }}
       >
         <div className="flex flex-col items-center gap-2 text-center">
@@ -333,6 +338,12 @@ export function DocumentUploadZone({
         aria-describedby={helpId}
         accept={accept}
         className="sr-only"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.currentTarget.click();
+          }
+        }}
         onChange={(e) => {
           const selected = e.target.files?.[0];
           e.target.value = '';

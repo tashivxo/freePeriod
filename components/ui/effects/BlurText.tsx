@@ -43,7 +43,7 @@ export function BlurText({
           transition={{ duration, delay: i * delay, ease: 'easeOut' }}
           style={{
             display: 'inline-block',
-            marginRight: i < words.length - 1 ? '0.3em' : 0,
+            marginInlineEnd: i < words.length - 1 ? '0.3em' : 0,
           }}
         >
           {word}

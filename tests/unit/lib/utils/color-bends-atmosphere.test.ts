@@ -73,7 +73,7 @@ describe('isMiddleEastAtmosphereDefault', () => {
 });
 
 describe('resolveColorBendsAtmosphere', () => {
-  it('returns brand when any single ME signal is true', () => {
+  it('returns brand for ME country or curriculum, and ignores Arabic locale', () => {
     expect(
       resolveColorBendsAtmosphere({
         override: null,

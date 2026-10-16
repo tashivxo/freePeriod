@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
+import { FieldError } from '@/components/ui/FieldError';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
@@ -239,9 +240,7 @@ export function GenerateForm({
             </div>
           )}
           {!subjectField.isCustom && errors.subject && (
-            <p className="mt-1 text-sm text-error" role="alert">
-              {errors.subject}
-            </p>
+            <FieldError message={errors.subject} />
           )}
         </div>
 
@@ -263,11 +262,7 @@ export function GenerateForm({
               setErrors((prev) => ({ ...prev, grade: undefined }));
             }}
           />
-          {errors.grade && (
-            <p className="mt-1 text-sm text-error" role="alert">
-              {errors.grade}
-            </p>
-          )}
+          {errors.grade && <FieldError message={errors.grade} />}
         </div>
 
         {/* Curriculum */}
@@ -334,9 +329,7 @@ export function GenerateForm({
             </div>
           )}
           {durationSelect !== 'custom' && errors.duration && (
-            <p className="mt-1 text-sm text-error" role="alert">
-              {errors.duration}
-            </p>
+            <FieldError message={errors.duration} />
           )}
         </div>
 
