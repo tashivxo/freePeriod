@@ -56,6 +56,10 @@ function countryTrigger() {
   return screen.getByLabelText(/where do you teach/i);
 }
 
+function countrySelect() {
+  return screen.getByRole('button', { name: /where do you teach/i });
+}
+
 async function chooseCountryOption(user: OnboardingUser, code = 'AE') {
   const labelByCode: Record<string, string> = {
     AE: 'United Arab Emirates',
@@ -229,6 +233,36 @@ describe('OnboardingPage', () => {
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
+  it('renders country AnimatedDropdown with Common and All countries groups', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByRole('button', { name: /where do you teach/i });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('id', 'country-select');
+    expect(document.querySelector('select#country-select')).toBeNull();
+    expect(screen.getByText(/you can change this in settings/i)).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(screen.getByText('Common')).toBeInTheDocument();
+    expect(screen.getByText('All countries')).toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(
+      0,
+    );
+    for (const countryName of [
+      'Saudi Arabia',
+      'United Kingdom',
+      'United States',
+      'India',
+      'Australia',
+      'South Africa',
+    ]) {
+      expect(screen.getAllByRole('option', { name: countryName }).length).toBeGreaterThan(0);
+    }
+    expect(screen.getByRole('option', { name: 'Afghanistan' })).toBeInTheDocument();
+  });
+
   it('opens Country from the keyboard and Escape in search returns focus to the trigger', async () => {
     const { user } = render(<OnboardingPage />);
     await chooseSubject(user);
@@ -374,7 +408,26 @@ describe('OnboardingPage', () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: /what curriculum/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: /select your curriculum/i }),
+    ).not.toBeInTheDocument();
     expect(countryTrigger()).toHaveTextContent('United Arab Emirates');
+    expect(countrySelect()).toHaveTextContent('United Arab Emirates');
+  });
+
+  it('step 4 heading and curriculum dropdown use Select your curriculum copy', async () => {
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    expect(
+      screen.getByRole('heading', { name: 'Select your curriculum' }),
+    ).toBeInTheDocument();
+
+    const curriculumTrigger = screen.getByLabelText(/curriculum/i);
+    expect(curriculumTrigger).toHaveTextContent(/select your curriculum/i);
+
+    await user.click(curriculumTrigger);
+    expect(screen.getByRole('listbox', { name: /select your curriculum/i })).toBeInTheDocument();
   });
 
   it('submits onboarding data and redirects to dashboard', async () => {
