@@ -9,7 +9,7 @@ import {
   type ChangeEvent,
   type FocusEvent,
   type KeyboardEvent,
-  type MouseEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -236,7 +236,7 @@ export function AnimatedDropdown({
     [closeMenu, isInsideDropdown, open],
   );
 
-  const handleListMouseDown = useCallback((event: MouseEvent<HTMLUListElement>) => {
+  const handleListMouseDown = useCallback((event: ReactMouseEvent<HTMLUListElement>) => {
     const target = event.target as Node;
     if (searchRef.current?.contains(target)) return;
     event.preventDefault();
