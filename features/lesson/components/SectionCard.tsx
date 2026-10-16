@@ -6,6 +6,7 @@ import { animate } from 'animejs';
 import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { SUCCESS } from '@/lib/utils/brand-colors';
 import { Button } from '@/components/ui/Button';
+import { FieldError } from '@/components/ui/FieldError';
 import { stripHtml } from '@/lib/lesson/content';
 import { useT } from '@/providers/locale';
 
@@ -226,13 +227,11 @@ export function SectionCard({
                   </Button>
                 </div>
                 {errorMessage ? (
-                  <p
+                  <FieldError
                     id={errorId}
-                    role="alert"
-                    className="mt-3 font-body text-sm font-medium text-red-700 dark:text-red-300"
-                  >
-                    {errorMessage}
-                  </p>
+                    message={errorMessage}
+                    className="mt-3 font-medium"
+                  />
                 ) : null}
               </div>
             ) : (

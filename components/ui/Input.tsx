@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { FieldError } from '@/components/ui/FieldError';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -61,15 +62,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {endAdornment}
         </div>
       )}
-      {error && (
-        <p
-          id={`${inputId}-error`}
-          role="alert"
-          className="mt-1 text-sm text-error"
-        >
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={`${inputId}-error`} message={error} />}
     </div>
   );
 });

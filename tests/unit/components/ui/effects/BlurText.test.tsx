@@ -53,6 +53,17 @@ describe('BlurText', () => {
     expect(heading?.textContent).toContain('Settings');
   });
 
+  it('separates words with a logical end margin so RTL does not concatenate them', () => {
+    render(<BlurText text="Lesson Plan History" as="h1" />);
+    const heading = document.querySelector('h1');
+    const wordSpans = heading?.querySelectorAll('span') ?? [];
+    expect(wordSpans.length).toBe(3);
+    expect(wordSpans[0]).toHaveStyle({ marginInlineEnd: '0.3em' });
+    expect(wordSpans[1]).toHaveStyle({ marginInlineEnd: '0.3em' });
+    expect(wordSpans[2]).toHaveStyle({ marginInlineEnd: '0' });
+    expect(wordSpans[0]).not.toHaveStyle({ marginRight: '0.3em' });
+  });
+
   it('applies custom delay', () => {
     // Shouldn't throw when a numeric delay is provided
     expect(() => render(<BlurText text="Test" delay={0.05} />)).not.toThrow();

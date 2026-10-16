@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import { COUNTRY_DROPDOWN_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
+import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -18,7 +18,7 @@ import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
 import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
-import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { hasStoredLocale, isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
@@ -112,6 +112,7 @@ export function SettingsClient({
     countrySelect !== savedDefaults.country;
 
   useEffect(() => {
+    if (hasStoredLocale()) return;
     if (user.preferred_locale && isLocale(user.preferred_locale)) {
       setLocale(user.preferred_locale);
     }
@@ -134,16 +135,13 @@ export function SettingsClient({
   }, [saveStatus]);
 
   const handleLocaleChange = async (nextLocale: Locale) => {
-    setLocale(nextLocale);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('users')
-        .update({ preferred_locale: nextLocale })
-        .eq('id', user.id);
-      if (error) throw error;
+      await Promise.resolve(setLocale(nextLocale));
     } catch (err) {
-      console.error(err);
+      setSaveStatus({
+        tone: 'error',
+        message: saveErrorMessage(err, t('settings.saveFailed')),
+      });
     }
   };
 
@@ -353,7 +351,10 @@ export function SettingsClient({
             <AnimatedDropdown
               id="default-country"
               text={t('settings.selectCountry')}
-              items={COUNTRY_DROPDOWN_ITEMS}
+              items={getCountryDropdownItems({
+                common: t('countries.common'),
+                all: t('countries.all'),
+              })}
               selectedValue={countrySelect || undefined}
               searchable
               searchPlaceholder={t('settings.selectCountry')}

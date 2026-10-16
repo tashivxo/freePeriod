@@ -24,6 +24,7 @@ jest.mock('next/navigation', () => ({
 import { SignUpPage } from '@/app/(auth)/sign-up/SignUpPage';
 import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
+import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
 function renderSignUpPage() {
   return render(
@@ -106,6 +107,28 @@ describe('SignUpPage', () => {
     expect(
       screen.getByText(/you must agree to the terms of service and privacy policy/i),
     ).toBeInTheDocument();
+  });
+
+  it('shows the animated X icon on the terms checkbox error', async () => {
+    const { user } = renderSignUpPage();
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await fillMatchingPasswords(user);
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    const alert = screen.getByText(/you must agree to the terms of service and privacy policy/i)
+      .closest('[role="alert"]');
+    expect(alert).toBeTruthy();
+    expectErrorXIcon(alert as HTMLElement);
+  });
+
+  it('shows the animated X icon on shared field errors', async () => {
+    const { user } = renderSignUpPage();
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    const alert = screen.getByText(/name is required/i).closest('[role="alert"]');
+    expect(alert).toBeTruthy();
+    expectErrorXIcon(alert as HTMLElement);
   });
 
   it('shows validation error for short password', async () => {

@@ -224,6 +224,27 @@ describe('POST /api/parse-document', () => {
     expect(body.error).toMatch(/No readable text/i);
   });
 
+  it('returns 422 JSON for a low-text PDF that skipped OCR', async () => {
+    mockParseUploadedFile.mockResolvedValue({
+      text: '',
+      type: 'pdf',
+      metadata: { pages: 1, ocr: false, noTextLayer: true },
+    });
+
+    const res = await POST(
+      request({
+        storagePath: 'user-1/curriculum_doc/scan.pdf',
+        uploadId: 'upload-scan',
+        uploadType: 'curriculum_doc',
+      }),
+    );
+
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toMatch(/No readable text/i);
+    expect(mockParseUploadedFile).toHaveBeenCalled();
+  });
+
   it('returns 500 JSON with a useful error when the parser throws', async () => {
     mockParseUploadedFile.mockRejectedValue(new ReferenceError('DOMMatrix is not defined'));
 

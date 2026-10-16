@@ -132,7 +132,7 @@ describe('ColorBendsAtmosphereProvider', () => {
     expect(result.current.resolvedAtmosphere).toBe('rainbow');
   });
 
-  it('uses locale ar from useLocale to flip the default to brand', () => {
+  it('does not flip the default to brand when locale is Arabic', () => {
     mockLocale('ar');
 
     const { result } = renderHook(() => useColorBendsAtmosphere(), {
@@ -140,6 +140,24 @@ describe('ColorBendsAtmosphereProvider', () => {
     });
 
     expect(result.current.atmosphere).toBeNull();
-    expect(result.current.resolvedAtmosphere).toBe('brand');
+    expect(result.current.resolvedAtmosphere).toBe('rainbow');
+  });
+
+  it('keeps a Multicolour preference after the locale changes to Arabic', () => {
+    mockLocale('en');
+    const { result, rerender } = renderHook(() => useColorBendsAtmosphere(), {
+      wrapper: createWrapper('GB', 'GCSE'),
+    });
+
+    act(() => {
+      result.current.setAtmosphere('rainbow');
+    });
+    expect(result.current.resolvedAtmosphere).toBe('rainbow');
+
+    mockLocale('ar');
+    rerender();
+
+    expect(result.current.atmosphere).toBe('rainbow');
+    expect(result.current.resolvedAtmosphere).toBe('rainbow');
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
@@ -30,6 +30,7 @@ export function LanguagePicker({
   const t = useT();
   const { ref: iconRef, animationDisabled } = useMotionSafeIconRef();
   const iconSize = variant === 'icon' ? 18 : 16;
+  const [persistError, setPersistError] = useState<string | null>(null);
 
   const picker = (
     <AnimatedDropdown
@@ -61,19 +62,33 @@ export function LanguagePicker({
       onSelect={(item) => {
         const nextLocale = item.value ?? item.name;
         if (LOCALES.includes(nextLocale as Locale)) {
-          setLocale(nextLocale as Locale);
+          setPersistError(null);
+          void Promise.resolve(setLocale(nextLocale as Locale)).catch(() => {
+            setPersistError(t('settings.saveFailed'));
+          });
         }
       }}
     />
   );
 
+  const content = (
+    <>
+      {picker}
+      {persistError ? (
+        <p role="alert" className="mt-2 font-body text-sm text-error">
+          {persistError}
+        </p>
+      ) : null}
+    </>
+  );
+
   if (wrapperClassName) {
     return (
       <div className={wrapperClassName} style={style}>
-        {picker}
+        {content}
       </div>
     );
   }
 
-  return <div style={style}>{picker}</div>;
+  return <div style={style}>{content}</div>;
 }

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
+import { FieldError } from '@/components/ui/FieldError';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useT } from '@/providers/locale';
@@ -340,11 +341,7 @@ export function SignUpPage() {
                 </Link>
               </span>
             </div>
-            {termsError && (
-              <p role="alert" className="px-1 text-sm text-error">
-                {termsError}
-              </p>
-            )}
+            {termsError && <FieldError message={termsError} className="px-1" />}
           </div>
 
           <Button type="submit" className="w-full" isLoading={authBusy} disabled={submitDisabled}>

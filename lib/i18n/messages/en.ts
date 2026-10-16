@@ -189,6 +189,47 @@ export const en = {
     cancel: 'Cancel',
     saveFailed: "Couldn't save, try again",
   },
+  history: {
+    title: 'Lesson Plan History',
+    searchPlaceholder: 'Search by title...',
+    searchAriaLabel: 'Search lessons by title',
+    planLesson: 'Plan Lesson',
+    allSubjects: 'All subjects',
+    nothingFound: 'Nothing found, try a different search.',
+    noLessons: 'No lessons yet.',
+    generateALesson: 'Generate a lesson',
+  },
+  countries: {
+    common: 'Common',
+    all: 'All countries',
+  },
+  onboarding: {
+    subtitle: 'Set up your teaching profile',
+    whatDoYouTeach: 'What do you teach?',
+    pickSubjectHint: 'Pick one subject, you can change this anytime in settings.',
+    otherSubject: 'Other subject...',
+    next: 'Next',
+    whatGrade: 'What grade do you teach?',
+    gradeLevel: 'Grade Level',
+    selectGrade: 'Select a grade...',
+    back: 'Back',
+    whereDoYouTeach: 'Where do you teach?',
+    changeInSettings: 'You can change this in Settings.',
+    selectCountry: 'Select your country',
+    selectCurriculum: 'Select your curriculum',
+    curriculumLabel: 'Curriculum',
+    enterCurriculum: 'Enter curriculum',
+    finish: 'Finish',
+    saving: 'Saving…',
+    redirecting: 'Redirecting…',
+    redirectingToDashboard: 'Redirecting to your dashboard…',
+    takingAWhile: 'Taking a while?',
+    goToDashboard: 'Go to dashboard',
+    mustBeSignedIn: 'You must be signed in to complete onboarding.',
+    selectACountry: 'Select a country.',
+    somethingWentWrong: 'Something went wrong. Please try again.',
+    stepOf: 'Step {step} of {total}',
+  },
 } as const;
 
 export type Messages = {
@@ -375,5 +416,46 @@ export type Messages = {
     hidePassword: string;
     showConfirmPassword: string;
     hideConfirmPassword: string;
+  };
+  history: {
+    title: string;
+    searchPlaceholder: string;
+    searchAriaLabel: string;
+    planLesson: string;
+    allSubjects: string;
+    nothingFound: string;
+    noLessons: string;
+    generateALesson: string;
+  };
+  countries: {
+    common: string;
+    all: string;
+  };
+  onboarding: {
+    subtitle: string;
+    whatDoYouTeach: string;
+    pickSubjectHint: string;
+    otherSubject: string;
+    next: string;
+    whatGrade: string;
+    gradeLevel: string;
+    selectGrade: string;
+    back: string;
+    whereDoYouTeach: string;
+    changeInSettings: string;
+    selectCountry: string;
+    selectCurriculum: string;
+    curriculumLabel: string;
+    enterCurriculum: string;
+    finish: string;
+    saving: string;
+    redirecting: string;
+    redirectingToDashboard: string;
+    takingAWhile: string;
+    goToDashboard: string;
+    mustBeSignedIn: string;
+    selectACountry: string;
+    somethingWentWrong: string;
+    stepOf: string;
   };
 };
