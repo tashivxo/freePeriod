@@ -14,7 +14,7 @@ import {
   formatFileSize,
 } from '@/lib/utils/file-input';
 import { cn } from '@/lib/utils';
-import { useT } from '@/providers/locale';
+import { useLocale, useT } from '@/providers/locale';
 import type { UploadType } from '@/types';
 
 interface DocumentUploadZoneProps {
@@ -27,15 +27,20 @@ interface DocumentUploadZoneProps {
   maxSizeBytes?: number;
 }
 
-/** Darkened coral-800 for light-mode links. 5.10:1 on white, 4.95:1 on cream. */
-export const UPLOAD_ACTION_COLOR_LIGHT = '#B5486F';
-/** Brand coral-500 for dark-mode links. 8.17:1 on #171717, 6.37:1 on #2C2C2C. */
-export const UPLOAD_ACTION_COLOR_DARK = '#FF8BB0';
+/** Darkened coral for light-mode links. 6.42:1 on white, 5.02:1 on the drag tint. */
+export const UPLOAD_ACTION_COLOR_LIGHT = '#A33760';
+/** Coral-300 for dark-mode links. 11.11:1 on #171717, 5.79:1 on the drag tint. */
+export const UPLOAD_ACTION_COLOR_DARK = '#FFB8D0';
 export const UPLOAD_DRAG_BORDER = 'var(--color-coral)';
+export const UPLOAD_DRAG_BORDER_LIGHT = '#B5486F';
+export const UPLOAD_DRAG_BORDER_DARK = '#FF8BB0';
+export const UPLOAD_ERROR_COLOR_LIGHT = '#B91C1C';
+export const UPLOAD_ERROR_COLOR_DARK = '#FCA5A5';
 export const UPLOAD_DRAG_BACKGROUND =
   'color-mix(in srgb, var(--color-coral) 32%, var(--color-surface))';
 
-const ACTION_COLOR_CLASS = 'text-[#B5486F] dark:text-[#FF8BB0]';
+const ACTION_COLOR_CLASS = 'text-[#A33760] dark:text-[#FFB8D0]';
+const ERROR_TEXT_CLASS = 'text-[#B91C1C] dark:text-[#FCA5A5]';
 
 export type UploadErrorKind =
   | 'auth'
@@ -43,6 +48,9 @@ export type UploadErrorKind =
   | 'wrongType'
   | 'empty'
   | 'network'
+  | 'noText'
+  | 'timeout'
+  | 'parse'
   | 'generic';
 
 const ERROR_KEYS: Record<UploadErrorKind, `generate.upload.${string}`> = {
@@ -51,12 +59,28 @@ const ERROR_KEYS: Record<UploadErrorKind, `generate.upload.${string}`> = {
   wrongType: 'generate.upload.errorWrongType',
   empty: 'generate.upload.errorEmpty',
   network: 'generate.upload.errorNetwork',
+  noText: 'generate.upload.errorNoText',
+  timeout: 'generate.upload.errorTimeout',
+  parse: 'generate.upload.errorParse',
   generic: 'generate.upload.errorGeneric',
 };
 
 export function classifyUploadError(raw: string): UploadErrorKind {
   const message = raw.trim().toLowerCase();
   if (!message) return 'generic';
+
+  if (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('network') ||
+    message.includes('retryable') ||
+    message === 'upload failed' ||
+    message.includes('load failed') ||
+    message.includes('offline')
+  ) {
+    return 'network';
+  }
 
   if (
     message.includes('not authenticated') ||
@@ -92,22 +116,47 @@ export function classifyUploadError(raw: string): UploadErrorKind {
   }
 
   if (
-    message.includes('failed to fetch') ||
-    message.includes('networkerror') ||
-    message.includes('network error') ||
-    message.includes('network') ||
-    message === 'upload failed' ||
-    message.includes('load failed') ||
-    message.includes('connection')
+    message.includes('no extractable text') ||
+    message.includes('no readable text') ||
+    message.includes('scanned pdf')
   ) {
-    return 'network';
+    return 'noText';
+  }
+
+  if (message.includes('taking too long')) {
+    return 'timeout';
+  }
+
+  if (message.includes('could not be processed')) {
+    return 'parse';
   }
 
   return 'generic';
 }
 
+function uploadErrorVars(
+  raw: string,
+  kind: UploadErrorKind,
+  maxSizeBytes: number,
+  locale: string,
+  fileFallback: string,
+): Record<string, string> {
+  if (kind === 'tooLarge') {
+    const match = raw.match(/^(.+?) exceeds the maximum size of /i);
+    return {
+      name: match?.[1] ?? fileFallback,
+      size: formatFileSize(maxSizeBytes, locale),
+    };
+  }
+  if (kind === 'empty') {
+    const match = raw.match(/^(.+?) is empty/i);
+    return { name: match?.[1] ?? fileFallback };
+  }
+  return {};
+}
+
 export function DocumentUploadZone({
-  label,
+  label: _label,
   accept,
   uploadType,
   onUploadComplete,
@@ -116,6 +165,7 @@ export function DocumentUploadZone({
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
 }: DocumentUploadZoneProps) {
   const t = useT();
+  const { locale } = useLocale();
   const inputId = useId();
   const helpId = useId();
   const sectionHeading =
@@ -205,14 +255,22 @@ export function DocumentUploadZone({
 
   const ext = file?.name.split('.').pop()?.toUpperCase() ?? '';
   const showProgress = phase === 'uploading' || phase === 'parsing';
+  const fileFallback = t('generate.upload.fileFallback');
   const progressLabel =
     phase === 'parsing'
-      ? t('generate.upload.readingFile', { name: file?.name ?? 'file' })
-      : t('generate.upload.uploadingFile', { name: file?.name ?? 'file' });
-  const helpText = `${formatAcceptTypes(accept)} · ${t('generate.upload.helpMax', {
-    size: formatFileSize(maxSizeBytes),
-  })}`;
-  const friendlyError = error ? t(ERROR_KEYS[classifyUploadError(error)]) : null;
+      ? t('generate.upload.readingFile', { name: file?.name ?? fileFallback })
+      : t('generate.upload.uploadingFile', { name: file?.name ?? fileFallback });
+  const helpText = `${formatAcceptTypes(accept, t('generate.upload.filesSuffix'))} · ${t(
+    'generate.upload.helpMax',
+    { size: formatFileSize(maxSizeBytes, locale) },
+  )}`;
+  const errorKind = error ? classifyUploadError(error) : null;
+  const friendlyError = errorKind
+    ? t(
+        ERROR_KEYS[errorKind],
+        uploadErrorVars(error ?? '', errorKind, maxSizeBytes, locale, fileFallback),
+      )
+    : null;
 
   return (
     <div className="space-y-2">
@@ -231,12 +289,12 @@ export function DocumentUploadZone({
           'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4',
           'transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
           'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2',
-          isDragging ? 'border-solid' : 'border-dashed',
+          isDragging ? 'border-solid border-[#B5486F] dark:border-[#FF8BB0]' : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
         )}
         style={{
           borderWidth: '2px',
-          borderColor: isDragging ? UPLOAD_DRAG_BORDER : 'var(--color-border)',
+          borderColor: isDragging ? undefined : 'var(--color-border)',
           backgroundColor: isDragging ? UPLOAD_DRAG_BACKGROUND : 'var(--color-surface)',
           outlineColor: 'var(--color-primary)',
         }}
@@ -267,7 +325,11 @@ export function DocumentUploadZone({
       <input
         id={inputId}
         type="file"
-        aria-label={label}
+        aria-label={
+          uploadType === 'curriculum_doc'
+            ? t('generate.upload.inputAriaCurriculum')
+            : t('generate.upload.inputAriaTemplate')
+        }
         aria-describedby={helpId}
         accept={accept}
         className="sr-only"
@@ -319,7 +381,7 @@ export function DocumentUploadZone({
                   className="shrink-0 text-xs"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
-                  {formatFileSize(file.size)}
+                  {formatFileSize(file.size, locale)}
                 </span>
               </div>
               {showProgress ? (
@@ -387,7 +449,7 @@ export function DocumentUploadZone({
       )}
 
       {friendlyError && (
-        <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
+        <div role="alert" className={`flex gap-3 rounded-xl bg-error/10 p-3 ${ERROR_TEXT_CLASS}`}>
           <XIcon
             ref={errorIconRef}
             size={24}
@@ -395,7 +457,7 @@ export function DocumentUploadZone({
             aria-hidden
             className="mt-0.5 shrink-0"
           />
-          <p className="font-body text-sm text-error">{friendlyError}</p>
+          <p className={`font-body text-sm ${ERROR_TEXT_CLASS}`}>{friendlyError}</p>
         </div>
       )}
     </div>

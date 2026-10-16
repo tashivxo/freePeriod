@@ -108,11 +108,20 @@ export const en = {
       extractedRegion: 'Extracted curriculum text',
       selectedFile: 'Selected file',
       ready: 'Uploaded. Ready to generate.',
+      inputAriaCurriculum: 'Upload curriculum document',
+      inputAriaTemplate: 'Upload lesson plan template',
+      fileFallback: 'file',
+      filesSuffix: 'files',
       errorAuth: 'Please sign in again to upload.',
-      errorTooLarge: 'This file is too large. Please choose a smaller file.',
+      errorTooLarge: '{name} is too large. The maximum size is {size}.',
       errorWrongType: 'This file type is not supported. Please choose a different file.',
-      errorEmpty: 'This file is empty. Please choose a file with content.',
+      errorEmpty: '{name} is empty. Please choose a file with content.',
       errorNetwork: 'Upload failed. Check your connection and try again.',
+      errorNoText:
+        'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+      errorTimeout:
+        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+      errorParse: 'The document could not be processed. Please try a different file.',
       errorGeneric: "Couldn't upload this file. Please try again.",
     },
   },
@@ -288,11 +297,18 @@ export type Messages = {
       extractedRegion: string;
       selectedFile: string;
       ready: string;
+      inputAriaCurriculum: string;
+      inputAriaTemplate: string;
+      fileFallback: string;
+      filesSuffix: string;
       errorAuth: string;
       errorTooLarge: string;
       errorWrongType: string;
       errorEmpty: string;
       errorNetwork: string;
+      errorNoText: string;
+      errorTimeout: string;
+      errorParse: string;
       errorGeneric: string;
     };
   };

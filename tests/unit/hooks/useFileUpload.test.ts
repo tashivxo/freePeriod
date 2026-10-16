@@ -206,7 +206,7 @@ describe('useFileUpload', () => {
     expect(result.current.file?.name).toBe('unit.pdf');
     expect(result.current.phase).toBe('error');
     expect(result.current.storagePath).toBeNull();
-    expect(result.current.error).toMatch(/no readable text/i);
+    expect(result.current.error).toMatch(/no extractable text/i);
   });
 
   it('slugifies filename stems so new storage keys have no spaces', async () => {
