@@ -67,6 +67,20 @@ function applyDocumentLocale(locale: Locale) {
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
 }
 
+function isNetworkFailure(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const message = err.message.toLowerCase();
+  const name = err.name.toLowerCase();
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('load failed') ||
+    message.includes('offline') ||
+    name.includes('fetch')
+  );
+}
+
 export function LocaleProvider({
   children,
   initialLocale = DEFAULT_LOCALE,
@@ -108,7 +122,7 @@ export function LocaleProvider({
         .eq('id', user.id);
       if (error) throw error;
     } catch (err) {
-      if (err instanceof TypeError) return;
+      if (err instanceof TypeError && !isNetworkFailure(err)) return;
       throw err;
     }
   }, []);
