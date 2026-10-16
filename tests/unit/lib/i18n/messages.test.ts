@@ -161,6 +161,136 @@ describe('settings background copy', () => {
   });
 });
 
+const UPLOAD_COPY: Record<
+  Locale,
+  {
+    browse: string;
+    errorAuth: string;
+    errorNetwork: string;
+    errorTooLarge: string;
+    errorWrongType: string;
+    errorGeneric: string;
+    inputAriaTemplate: string;
+    fileFallback: string;
+    filesSuffix: string;
+  }
+> = {
+  en: {
+    browse: 'browse',
+    errorAuth: 'Please sign in again to upload.',
+    errorNetwork: 'Upload failed. Check your connection and try again.',
+    errorTooLarge: '{name} is too large. The maximum size is {size}.',
+    errorWrongType: 'This file type is not supported. Please choose a different file.',
+    errorGeneric: "Couldn't upload this file. Please try again.",
+    inputAriaTemplate: 'Upload lesson plan template',
+    fileFallback: 'file',
+    filesSuffix: 'files',
+  },
+  ar: {
+    browse: 'تصفح',
+    errorAuth: 'يرجى تسجيل الدخول مرة أخرى للرفع.',
+    errorNetwork: 'فشل الرفع. تحقق من اتصالك وحاول مرة أخرى.',
+    errorTooLarge: '{name} كبير جدا. الحد الأقصى {size}.',
+    errorWrongType: 'نوع الملف غير مدعوم. يرجى اختيار ملف مختلف.',
+    errorGeneric: 'تعذر رفع هذا الملف. يرجى المحاولة مرة أخرى.',
+    inputAriaTemplate: 'رفع قالب خطة الدرس',
+    fileFallback: 'ملف',
+    filesSuffix: 'ملفات',
+  },
+  es: {
+    browse: 'explorar',
+    errorAuth: 'Vuelve a iniciar sesión para subir.',
+    errorNetwork: 'Error al subir. Comprueba tu conexión e inténtalo de nuevo.',
+    errorTooLarge: '{name} es demasiado grande. El tamaño máximo es {size}.',
+    errorWrongType: 'Este tipo de archivo no es compatible. Elige otro archivo.',
+    errorGeneric: 'No se pudo subir este archivo. Inténtalo de nuevo.',
+    inputAriaTemplate: 'Subir plantilla de plan de clase',
+    fileFallback: 'archivo',
+    filesSuffix: 'archivos',
+  },
+  fr: {
+    browse: 'parcourir',
+    errorAuth: 'Veuillez vous reconnecter pour téléverser.',
+    errorNetwork: 'Échec du téléversement. Vérifiez votre connexion et réessayez.',
+    errorTooLarge: '{name} est trop volumineux. La taille maximale est {size}.',
+    errorWrongType: 'Ce type de fichier n’est pas pris en charge. Veuillez en choisir un autre.',
+    errorGeneric: 'Impossible de téléverser ce fichier. Veuillez réessayer.',
+    inputAriaTemplate: 'Téléverser un modèle de plan de cours',
+    fileFallback: 'fichier',
+    filesSuffix: 'fichiers',
+  },
+  'zh-Hans': {
+    browse: '浏览',
+    errorAuth: '请重新登录后再上传。',
+    errorNetwork: '上传失败。请检查网络连接后重试。',
+    errorTooLarge: '{name} 太大。最大大小为 {size}。',
+    errorWrongType: '不支持此文件类型。请选择其他文件。',
+    errorGeneric: '无法上传此文件。请重试。',
+    inputAriaTemplate: '上传教案模板',
+    fileFallback: '文件',
+    filesSuffix: '文件',
+  },
+};
+
+describe('generate upload copy', () => {
+  it.each(LOCALES)('ships DocumentUploadZone strings for %s', (locale) => {
+    const upload = getMessages(locale).generate.upload;
+    const expected = UPLOAD_COPY[locale];
+
+    expect(upload.browse).toBe(expected.browse);
+    expect(upload.errorAuth).toBe(expected.errorAuth);
+    expect(upload.errorNetwork).toBe(expected.errorNetwork);
+    expect(upload.errorTooLarge).toBe(expected.errorTooLarge);
+    expect(upload.errorWrongType).toBe(expected.errorWrongType);
+    expect(upload.errorGeneric).toBe(expected.errorGeneric);
+    expect(upload.inputAriaTemplate).toBe(expected.inputAriaTemplate);
+    expect(upload.fileFallback).toBe(expected.fileFallback);
+    expect(upload.filesSuffix).toBe(expected.filesSuffix);
+
+    expect(upload.inputAriaCurriculum).toBeTruthy();
+    expect(upload.errorTooLarge).toContain('{name}');
+    expect(upload.errorTooLarge).toContain('{size}');
+    expect(upload.errorEmpty).toContain('{name}');
+    expect(upload.errorNoText).toBeTruthy();
+    expect(upload.errorTimeout).toBeTruthy();
+    expect(upload.errorParse).toBeTruthy();
+    expect(upload.uploadingFile).toContain('{name}');
+    expect(upload.curriculumHeading).toBeTruthy();
+    expect(upload.templateHeading).toBeTruthy();
+    expect(upload.dragDropPrompt).toBeTruthy();
+    expect(upload.uploading).toBeTruthy();
+    expect(upload.parsing).toBeTruthy();
+    expect(upload.helpMax).toContain('{size}');
+    expect(upload.retry).toBeTruthy();
+    expect(upload.retryAria).toContain('{name}');
+    expect(upload.removeAria).toContain('{name}');
+    expect(upload.uploadingFile).toContain('{name}');
+    expect(upload.readingFile).toContain('{name}');
+    expect(upload.extractedText).toBeTruthy();
+    expect(upload.extractedRegion).toBeTruthy();
+    expect(upload.selectedFile).toBeTruthy();
+    expect(upload.ready).toBeTruthy();
+    expect(upload.errorEmpty).toBeTruthy();
+
+    for (const value of Object.values(upload)) {
+      expect(value).not.toContain('\u2014');
+    }
+  });
+
+  it('keeps Arabic and Chinese as real translations, not English copies', () => {
+    const en = getMessages('en').generate.upload;
+    const ar = getMessages('ar').generate.upload;
+    const zh = getMessages('zh-Hans').generate.upload;
+
+    expect(ar.browse).not.toBe(en.browse);
+    expect(ar.errorAuth).not.toBe(en.errorAuth);
+    expect(zh.browse).not.toBe(en.browse);
+    expect(zh.errorNetwork).not.toBe(en.errorNetwork);
+    expect(ar.dragDropPrompt).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.dragDropPrompt).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
 describe('lesson edit copy', () => {
   it.each(LOCALES)('ships Edited, saved toast, and edit-action copy for %s', (locale) => {
     const lesson = getMessages(locale).lesson;

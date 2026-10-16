@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { requiresExtractedText } from '@/lib/parse/types';
 import { getTemplateFileRejection, isPdfTemplateMime } from '@/lib/lesson/template-path';
+import { DEFAULT_MAX_UPLOAD_BYTES, formatFileSize } from '@/lib/utils/file-input';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -15,6 +16,7 @@ interface UseFileUploadProps {
   uploadType: UploadType;
   onParsed?: (uploadId: string, text: string) => void;
   accept?: string;
+  maxSizeBytes?: number;
 }
 
 interface UseFileUploadReturn {
@@ -54,6 +56,21 @@ function parseTimeoutError(): Error {
   );
 }
 
+function isNetworkAuthError(error: { message?: string; name?: string; status?: number } | null): boolean {
+  if (!error) return false;
+  const message = (error.message ?? '').toLowerCase();
+  const name = (error.name ?? '').toLowerCase();
+  return (
+    name.includes('retryable') ||
+    name.includes('fetch') ||
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('offline') ||
+    message.includes('load failed') ||
+    error.status === 0
+  );
+}
+
 async function fetchParseDocument(
   body: { storagePath: string; uploadId: string; uploadType: UploadType },
   timeoutMs: number,
@@ -82,6 +99,7 @@ export function useFileUpload({
   uploadType,
   onParsed,
   accept = '',
+  maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
 }: UseFileUploadProps): UseFileUploadReturn {
   const [file, setFile] = useState<File | null>(null);
   const [storagePath, setStoragePath] = useState<string | null>(null);
@@ -129,6 +147,18 @@ export function useFileUpload({
       }
     }
 
+    if (incoming.size === 0) {
+      rejectFile(`${incoming.name} is empty. Please choose a file with content.`);
+      return;
+    }
+
+    if (incoming.size > maxSizeBytes) {
+      rejectFile(
+        `${incoming.name} exceeds the maximum size of ${formatFileSize(maxSizeBytes)}`,
+      );
+      return;
+    }
+
     setError(null);
     inFlightRef.current = true;
     setIsUploading(true);
@@ -151,6 +181,9 @@ export function useFileUpload({
         const supabase = createClient();
 
         const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (isNetworkAuthError(userError)) {
+          throw new Error('Failed to fetch');
+        }
         if (userError || !userData.user) {
           throw new Error('Not authenticated');
         }
@@ -198,7 +231,7 @@ export function useFileUpload({
         PARSE_DOCUMENT_TIMEOUT_MS,
       );
       if (!parseResponse.ok) {
-        let message = 'The document could not be processed.';
+        let message = 'The document could not be processed. Please try a different file.';
         try {
           const data = (await parseResponse.json()) as { error?: string };
           if (data.error) message = data.error;
@@ -211,7 +244,7 @@ export function useFileUpload({
       const extracted = parsedData.text ?? '';
       if (requiresExtractedText(uploadType) && !extracted.trim()) {
         throw new Error(
-          'No readable text was found in this document. Please upload a clearer curriculum file.',
+          'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
         );
       }
 

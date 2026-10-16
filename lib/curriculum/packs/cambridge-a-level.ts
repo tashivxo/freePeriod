@@ -4,7 +4,7 @@ export const cambridgeALevelPack: CurriculumPack = {
   id: 'cambridge-a-level',
   curriculumValues: ['A-Level'],
   authority: 'CAMBRIDGE',
-  displayName: 'Cambridge International AS & A Level — Guideline Pack',
+  displayName: 'Cambridge International AS & A Level, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

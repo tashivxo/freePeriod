@@ -2,6 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -67,7 +68,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Template upload not found' }, { status: 400 });
   }
 
-  const { data: lesson, error: lessonUpdateError } = await supabase
+  const admin = createAdminClient();
+  const { data: lesson, error: lessonUpdateError } = await admin
     .from('lesson_plans')
     .update({ template_path: templatePath })
     .eq('id', lessonId)
@@ -88,7 +90,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .eq('lesson_id', lessonId);
 
     if (unlinkError) {
-      await supabase
+      await admin
         .from('lesson_plans')
         .update({ template_path: previousTemplatePath })
         .eq('id', lessonId)
@@ -110,7 +112,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .maybeSingle();
 
   if (linkError || !linkedUpload) {
-    await supabase
+    await admin
       .from('lesson_plans')
       .update({ template_path: previousTemplatePath })
       .eq('id', lessonId)

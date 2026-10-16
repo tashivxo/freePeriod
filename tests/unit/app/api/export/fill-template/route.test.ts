@@ -145,6 +145,28 @@ describe('POST /api/export/fill-template', () => {
     lessonRow('user-1/template/plan.docx');
   });
 
+  it('returns 403 and does not download when template_path is outside the user prefix', async () => {
+    lessonRow('other-user/template/secret.docx');
+
+    const response = await postFill();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+    expect(mockFillGeneric).not.toHaveBeenCalled();
+    expect(mockCreateReport).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 and does not download when template_path traverses out of the user prefix', async () => {
+    lessonRow('user-1/../other-user/secret.docx');
+
+    const response = await postFill();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(mockStorageDownload).not.toHaveBeenCalled();
+  });
+
   it('returns 401 when not authenticated', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'no session' } });
 
@@ -223,12 +245,37 @@ describe('POST /api/export/fill-template', () => {
     });
   });
 
+  it('never executes docx-templates JS commands from a user-uploaded +++ template', async () => {
+    const xml =
+      '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>+++EXEC require("fs").writeFileSync("/tmp/pwned","owned")+++</w:t></w:r></w:p></w:body></w:document>';
+    const templateBuffer = await makeDocxBuffer(xml);
+    mockDownloadedBuffer(templateBuffer);
+    mockCreateReport.mockImplementation(() => {
+      throw new Error('docx-templates must not run on user uploads');
+    });
+    mockFillGeneric.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+    });
+
+    const response = await postFill();
+
+    expect(mockCreateReport).not.toHaveBeenCalled();
+    expect(mockFillGeneric).toHaveBeenCalled();
+    expect(response.status).toBe(422);
+  });
+
   it('returns 422 when a +++ DOCX template is unchanged and contains no lesson text', async () => {
     const xml =
       '<?xml version="1.0"?><w:document><w:body><w:p><w:r><w:t>+++unknownField+++</w:t></w:r></w:p></w:body></w:document>';
     const templateBuffer = await makeDocxBuffer(xml);
     mockDownloadedBuffer(templateBuffer);
-    mockCreateReport.mockResolvedValue(templateBuffer);
+    mockFillGeneric.mockResolvedValue({
+      buffer: templateBuffer,
+      filledCount: 0,
+      matchedLabels: [],
+    });
 
     const response = await postFill();
 
@@ -237,7 +284,8 @@ describe('POST /api/export/fill-template', () => {
       error: TEMPLATE_UNFILLED_ERROR,
       code: TEMPLATE_UNFILLED_CODE,
     });
-    expect(mockFillGeneric).not.toHaveBeenCalled();
+    expect(mockCreateReport).not.toHaveBeenCalled();
+    expect(mockFillGeneric).toHaveBeenCalled();
   });
 
   it('returns 422 when an XLSX template has no matching placeholders', async () => {

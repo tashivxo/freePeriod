@@ -289,6 +289,14 @@ export const COMMON_COUNTRY_ITEMS: CountryItem[] = COMMON_COUNTRY_CODES.map((val
   name: COUNTRY_NAME_BY_CODE[value],
 }));
 
+/** AnimatedDropdown rows: Common group, then all countries A–Z. */
+export const COUNTRY_DROPDOWN_ITEMS = [
+  { name: 'Common', header: true as const },
+  ...COMMON_COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
+  { name: 'All countries', header: true as const },
+  ...COUNTRY_ITEMS.map(({ name, value }) => ({ name, value })),
+];
+
 /** §10.1. Maghreb, IL, TR, and CY stay out until that list is amended. */
 export const MIDDLE_EAST_COUNTRY_CODES = [
   'AE',

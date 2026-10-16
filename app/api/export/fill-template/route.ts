@@ -3,19 +3,18 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
-import createReport from 'docx-templates';
 import * as XLSX from 'xlsx';
 import { contentDispositionAttachment } from '@/lib/export/content-disposition';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import { fillGenericDocxTemplate } from '@/lib/export/fill-generic-template';
 import { fillGenericPdfTemplate } from '@/lib/export/fill-generic-pdf';
 import { mapTemplateExportError } from '@/lib/export/map-error';
+import { isOwnedStoragePath } from '@/lib/parse/storage-download';
 import {
   TEMPLATE_UNFILLED_CODE,
   TEMPLATE_UNFILLED_ERROR,
   TEMPLATE_UNFILLED_NO_PDF_FIELDS_ERROR,
   isMeaningfulFill,
-  templateDataAppearsInText,
 } from '@/lib/export/fill-template-result';
 import type { LessonPlan, LessonSection } from '@/types';
 
@@ -73,6 +72,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No template attached to this lesson' }, { status: 400 });
   }
 
+  if (!isOwnedStoragePath(user.id, lesson.template_path)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   // Download template from Supabase Storage (service role to bypass RLS on storage)
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -94,33 +97,9 @@ export async function POST(request: NextRequest) {
     const filename = `${lesson.title || 'lesson-plan'}-filled.${ext}`;
 
   // ---------- DOCX ----------
+  // Never run docx-templates on user uploads: its sandbox is not a security
+  // boundary, and +++ EXEC/INS commands in a .docx would otherwise execute JS.
   if (ext === 'docx') {
-    const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(templateBuffer);
-    const xml = (await zip.file('word/document.xml')?.async('string')) ?? '';
-    const cmdDelimCount = (xml.match(/\+\+\+/g) || []).length;
-
-    if (cmdDelimCount > 0) {
-      // Template authored with docx-templates command syntax (e.g. +++INS field+++)
-      const filledBuffer = Buffer.from(
-        await createReport({ template: templateBuffer, data: templateData, failFast: false }),
-      );
-      const filledZip = await JSZip.loadAsync(filledBuffer);
-      const filledXml = (await filledZip.file('word/document.xml')?.async('string')) ?? '';
-      const remainingDelims = (filledXml.match(/\+\+\+/g) || []).length;
-      // Unchanged +++ count and no lesson text in the output means nothing filled.
-      if (
-        remainingDelims >= cmdDelimCount &&
-        !templateDataAppearsInText(filledXml, templateData)
-      ) {
-        return unfilledTemplateResponse();
-      }
-      return filledFileResponse(filledBuffer, filename, DOCX_CONTENT_TYPE);
-    }
-
-    // Plain form-style template (labels in table cells, value cells that may
-    // already contain sample/stub text) — fill by matching known field labels
-    // to the adjacent value cell.
     const result = await fillGenericDocxTemplate(templateBuffer, {
       ...lesson,
       content: lesson.content as LessonSection,

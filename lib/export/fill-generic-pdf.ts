@@ -1,8 +1,4 @@
-import {
-  PDFDocument,
-  PDFTextField,
-  StandardFonts,
-} from 'pdf-lib';
+import { PDFDocument, PDFTextField } from 'pdf-lib';
 import type { LessonPlan } from '@/types';
 import { buildTemplateData } from '@/lib/lesson/template-data';
 import {
@@ -10,6 +6,9 @@ import {
   normalizeLabel,
   type FillGenericTemplateResult,
 } from '@/lib/export/fill-generic-template';
+import { embedPdfUnicodeFont } from '@/lib/export/pdf-fonts';
+import { unicodeTextFieldAppearanceProvider } from '@/lib/export/pdf-field-appearance';
+import { normalizePdfPunctuation } from '@/lib/export/pdf-text';
 
 export function pdfFieldLookupKey(fieldName: string): string {
   return normalizeLabel(
@@ -18,17 +17,6 @@ export function pdfFieldLookupKey(fieldName: string): string {
       .replace(/[_/]+/g, ' ')
       .replace(/([a-z])([A-Z])/g, '$1 $2'),
   );
-}
-
-function toPdfWinAnsi(text: string): string {
-  return text
-    .replace(/\u2022/g, '-')
-    .replace(/\u2014|\u2013/g, '-')
-    .replace(/\u2018|\u2019/g, "'")
-    .replace(/\u201c|\u201d/g, '"')
-    .replace(/\u2026/g, '...')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[^\t\n\r\x20-\x7E]/g, '');
 }
 
 export function valueForPdfField(
@@ -53,6 +41,11 @@ export function valueForPdfField(
  * Fills PDF AcroForm text fields by matching field names to lesson labels
  * (the same map used for generic DOCX templates) and {{placeholder}} / camelCase
  * keys from `buildTemplateData`. Static PDFs without form fields are unchanged.
+ *
+ * Field values keep logical Unicode (Arabic included). Appearances embed a
+ * Noto Sans Arabic + Latin OFL font and draw glyphs after shaping, wrapping
+ * in logical order, then bidi-reordering each visual line (pdf-lib does not
+ * shape Arabic or apply the Unicode Bidirectional Algorithm).
  */
 export async function fillGenericPdfTemplate(
   templateBuffer: Buffer,
@@ -74,6 +67,7 @@ export async function fillGenericPdfTemplate(
   const formFieldCount = form.getFields().length;
   let filledCount = 0;
   const matchedLabels: string[] = [];
+  const filledFields: PDFTextField[] = [];
 
   for (const field of form.getFields()) {
     if (!(field instanceof PDFTextField)) continue;
@@ -82,7 +76,7 @@ export async function fillGenericPdfTemplate(
     if (!value?.trim()) continue;
 
     const maxLength = field.getMaxLength();
-    let text = toPdfWinAnsi(value);
+    let text = normalizePdfPunctuation(value);
     if (typeof maxLength === 'number' && maxLength > 0) {
       text = text.slice(0, maxLength);
     }
@@ -95,17 +89,27 @@ export async function fillGenericPdfTemplate(
     }
     filledCount += 1;
     matchedLabels.push(pdfFieldLookupKey(name));
+    filledFields.push(field);
   }
 
-  try {
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    form.updateFieldAppearances(font);
-  } catch {
-    // Values are still stored even if appearance streams cannot be rebuilt.
+  if (filledFields.length > 0) {
+    try {
+      const font = await embedPdfUnicodeFont(pdfDoc);
+      const appearances = unicodeTextFieldAppearanceProvider();
+      for (const field of filledFields) {
+        try {
+          field.updateAppearances(font, appearances);
+        } catch {
+          // Values are still stored even if appearance streams cannot be rebuilt.
+        }
+      }
+    } catch {
+      // Values are still stored even if the Unicode font cannot be embedded.
+    }
   }
 
   return {
-    buffer: Buffer.from(await pdfDoc.save()),
+    buffer: Buffer.from(await pdfDoc.save({ updateFieldAppearances: false })),
     filledCount,
     matchedLabels,
     formFieldCount,

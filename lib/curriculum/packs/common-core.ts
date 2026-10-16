@@ -4,7 +4,7 @@ export const commonCorePack: CurriculumPack = {
   id: 'common-core',
   curriculumValues: ['Common Core'],
   authority: 'COMMON_CORE',
-  displayName: 'Common Core — Guideline Pack',
+  displayName: 'Common Core, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

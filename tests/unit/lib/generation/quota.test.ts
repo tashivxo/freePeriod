@@ -54,6 +54,42 @@ describe('resolveEffectivePlan', () => {
     ).toBe('pro_plus');
   });
 
+  it('returns the paid plan when Lemon Squeezy status is on_trial', () => {
+    expect(
+      resolveEffectivePlan({ plan: 'pro', status: 'on_trial', trial_end: null }),
+    ).toBe('pro');
+    expect(
+      resolveEffectivePlan({ plan: 'pro_plus', status: 'on_trial', trial_end: future }),
+    ).toBe('pro_plus');
+  });
+
+  it('keeps cancelled paid access until ends_at', () => {
+    expect(
+      resolveEffectivePlan({
+        plan: 'pro',
+        status: 'cancelled',
+        trial_end: null,
+        ends_at: future,
+      }),
+    ).toBe('pro');
+    expect(
+      resolveEffectivePlan({
+        plan: 'pro_plus',
+        status: 'cancelled',
+        trial_end: null,
+        ends_at: future,
+      }),
+    ).toBe('pro_plus');
+    expect(
+      resolveEffectivePlan({
+        plan: 'pro',
+        status: 'cancelled',
+        trial_end: null,
+        ends_at: past,
+      }),
+    ).toBe('free');
+  });
+
   it('returns free when trial expired', () => {
     expect(
       resolveEffectivePlan({ plan: 'pro', status: 'trial', trial_end: past }),

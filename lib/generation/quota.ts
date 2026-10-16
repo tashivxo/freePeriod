@@ -22,15 +22,32 @@ export type SubscriptionSnapshot = {
   plan: Plan | null;
   status: string | null;
   trial_end: string | null;
+  ends_at?: string | null;
 } | null;
 
-export function resolveEffectivePlan(sub: SubscriptionSnapshot, isAdmin?: boolean): Plan {
+function isPaidPlan(plan: Plan | null | undefined): plan is 'pro' | 'pro_plus' {
+  return plan === 'pro' || plan === 'pro_plus';
+}
+
+export function resolveEffectivePlan(
+  sub: SubscriptionSnapshot,
+  isAdmin?: boolean,
+  now: Date = new Date(),
+): Plan {
   if (isAdmin) return 'pro_plus';
-  if (!sub?.plan) return 'free';
-  if (sub.status === 'active' && (sub.plan === 'pro' || sub.plan === 'pro_plus')) {
+  if (!sub || !isPaidPlan(sub.plan)) return 'free';
+
+  if (sub.status === 'active' || sub.status === 'on_trial') {
     return sub.plan;
   }
-  if (sub.status === 'trial' && isTrialActive(sub.trial_end) && (sub.plan === 'pro' || sub.plan === 'pro_plus')) {
+  if (sub.status === 'trial' && isTrialActive(sub.trial_end)) {
+    return sub.plan;
+  }
+  if (
+    sub.status === 'cancelled' &&
+    sub.ends_at &&
+    new Date(sub.ends_at).getTime() > now.getTime()
+  ) {
     return sub.plan;
   }
   return 'free';

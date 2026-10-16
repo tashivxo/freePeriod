@@ -1,12 +1,16 @@
 import { render, screen, waitFor } from '@/tests/helpers';
-import { act } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// Mock the Supabase client module
+const mockMaybeSingle = jest.fn().mockResolvedValue({ data: { id: 'user-123' }, error: null });
 const mockUpdate = jest.fn().mockReturnValue({
-  eq: jest.fn().mockResolvedValue({ error: null }),
+  eq: jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      maybeSingle: mockMaybeSingle,
+    }),
+  }),
 });
-const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+const mockInsert = jest.fn().mockResolvedValue({ error: null });
 const mockGetUser = jest.fn().mockResolvedValue({
   data: { user: { id: 'user-123' } },
   error: null,
@@ -17,7 +21,7 @@ jest.mock('@/lib/supabase/client', () => ({
     auth: { getUser: mockGetUser },
     from: jest.fn(() => ({
       update: mockUpdate,
-      upsert: mockUpsert,
+      insert: mockInsert,
     })),
   })),
 }));
@@ -48,8 +52,23 @@ const SUBJECTS = [
 
 type OnboardingUser = ReturnType<typeof userEvent.setup>;
 
+function countryTrigger() {
+  return screen.getByLabelText(/where do you teach/i);
+}
+
 function countrySelect() {
   return screen.getByRole('button', { name: /where do you teach/i });
+}
+
+async function chooseCountryOption(user: OnboardingUser, code = 'AE') {
+  const labelByCode: Record<string, string> = {
+    AE: 'United Arab Emirates',
+    GB: 'United Kingdom',
+  };
+  await user.click(countryTrigger());
+  await user.click(
+    screen.getAllByRole('option', { name: labelByCode[code] ?? code })[0]!,
+  );
 }
 
 async function chooseSubject(user: OnboardingUser) {
@@ -66,12 +85,11 @@ async function chooseGrade(user: OnboardingUser) {
   await user.click(screen.getByRole('button', { name: /next/i }));
 }
 
-async function chooseCountry(user: OnboardingUser, countryName = 'United Arab Emirates') {
+async function chooseCountry(user: OnboardingUser, code = 'AE') {
   await waitFor(() => {
-    expect(countrySelect()).toBeInTheDocument();
+    expect(countryTrigger()).toBeInTheDocument();
   });
-  await user.click(countrySelect());
-  await user.click(screen.getAllByRole('option', { name: countryName })[0]!);
+  await chooseCountryOption(user, code);
   await user.click(screen.getByRole('button', { name: /next/i }));
 }
 
@@ -89,8 +107,15 @@ describe('OnboardingPage', () => {
     jest.clearAllMocks();
     jest.useRealTimers();
     // Restore return values cleared by clearAllMocks
-    mockUpdate.mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
-    mockUpsert.mockResolvedValue({ error: null });
+    mockMaybeSingle.mockResolvedValue({ data: { id: 'user-123' }, error: null });
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
+      }),
+    });
+    mockInsert.mockResolvedValue({ error: null });
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } }, error: null });
   });
 
@@ -189,6 +214,25 @@ describe('OnboardingPage', () => {
     );
   });
 
+  it('renders a country AnimatedDropdown named by the heading', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(screen.getByText(/you can change this in settings/i)).toBeInTheDocument();
+    expect(document.querySelector('select')).toBeNull();
+
+    await user.click(trigger);
+    expect(screen.getByText('Common')).toBeInTheDocument();
+    expect(screen.getByText('All countries')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('option', { name: 'United Arab Emirates' }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
   it('renders country AnimatedDropdown with Common and All countries groups', async () => {
     const { user } = render(<OnboardingPage />);
     await chooseSubject(user);
@@ -219,6 +263,91 @@ describe('OnboardingPage', () => {
     expect(screen.getByRole('option', { name: 'Afghanistan' })).toBeInTheDocument();
   });
 
+  it('opens Country from the keyboard and Escape in search returns focus to the trigger', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+    expect(search.getAttribute('aria-activedescendant')).toBeTruthy();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveFocus();
+  });
+
+  it('closes Grade on Tab and moves focus to Back', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+
+    const grade = await screen.findByLabelText(/grade level/i);
+    await user.click(grade);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+
+    await user.tab();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /back/i })).toHaveFocus();
+  });
+
+  it('selects a Grade option on click and unmounts the list', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+
+    const grade = await screen.findByLabelText(/grade level/i);
+    await user.click(grade);
+    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(grade).toHaveTextContent('Grade 9');
+  });
+
+  it('closes Country on Tab from search and keeps it open when clicking the search box', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    await user.click(trigger);
+    const search = screen.getByRole('searchbox');
+    expect(search).toHaveFocus();
+
+    await user.click(search);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(search).toHaveFocus();
+
+    fireEvent.keyDown(search, { key: 'Tab' });
+    expect(trigger).toHaveFocus();
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    await user.tab();
+    expect(screen.getByRole('button', { name: /back/i })).toHaveFocus();
+  });
+
+  it('selects a Country option on click and unmounts the list', async () => {
+    const { user } = render(<OnboardingPage />);
+    await chooseSubject(user);
+    await chooseGrade(user);
+
+    const trigger = await screen.findByLabelText(/where do you teach/i);
+    await user.click(trigger);
+    await user.click(screen.getAllByRole('option', { name: 'United Arab Emirates' })[0]!);
+    await waitFor(() => {
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveTextContent('United Arab Emirates');
+  });
+
   it('disables Next on the country step until a country is chosen', async () => {
     const { user } = render(<OnboardingPage />);
     await chooseSubject(user);
@@ -228,8 +357,7 @@ describe('OnboardingPage', () => {
       expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
     });
 
-    await user.click(countrySelect());
-    await user.click(screen.getAllByRole('option', { name: 'United Kingdom' })[0]!);
+    await chooseCountryOption(user, 'GB');
     expect(screen.getByRole('button', { name: /next/i })).toBeEnabled();
   });
 
@@ -279,9 +407,11 @@ describe('OnboardingPage', () => {
         screen.getByRole('heading', { name: /where do you teach/i }),
       ).toBeInTheDocument();
     });
+    expect(screen.queryByRole('heading', { name: /what curriculum/i })).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: /select your curriculum/i }),
     ).not.toBeInTheDocument();
+    expect(countryTrigger()).toHaveTextContent('United Arab Emirates');
     expect(countrySelect()).toHaveTextContent('United Arab Emirates');
   });
 
@@ -312,7 +442,7 @@ describe('OnboardingPage', () => {
     await user.click(screen.getByRole('button', { name: /finish/i }));
 
     await waitFor(() => {
-      expect(mockUpsert).toHaveBeenCalledWith(
+      expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           default_subject: 'Mathematics',
           default_grade: '9',
@@ -320,8 +450,46 @@ describe('OnboardingPage', () => {
           country: 'AE',
           onboarding_complete: true,
         }),
-        { onConflict: 'id' },
       );
+      const payload = mockUpdate.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('id');
+      expect(payload).not.toHaveProperty('email');
+      expect(payload).not.toHaveProperty('is_admin');
+      expect(payload).not.toHaveProperty('plan');
+      expect(payload).not.toHaveProperty('generation_count');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
+
+  it('inserts a profile without plan, quota, or deletion fields when no row exists', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { user } = render(<OnboardingPage />);
+    await reachCurriculum(user);
+
+    await user.click(screen.getByLabelText(/curriculum/i));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'IB' })).toBeInTheDocument();
+    });
+    await user.click(screen.getByRole('option', { name: 'IB' }));
+    await user.click(screen.getByRole('button', { name: /finish/i }));
+
+    await waitFor(() => {
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user-123',
+          default_subject: 'Mathematics',
+          default_grade: '9',
+          default_curriculum: 'IB',
+          country: 'AE',
+          onboarding_complete: true,
+        }),
+      );
+      const payload = mockInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(payload).not.toHaveProperty('plan');
+      expect(payload).not.toHaveProperty('is_admin');
+      expect(payload).not.toHaveProperty('generation_count');
+      expect(payload).not.toHaveProperty('generation_count_reset_at');
+      expect(payload).not.toHaveProperty('deletion_scheduled_at');
       expect(mockPush).toHaveBeenCalledWith('/dashboard');
     });
   });
@@ -365,7 +533,7 @@ describe('OnboardingPage', () => {
   });
 
   it('shows finish errors inside the card above actions', async () => {
-    mockUpsert.mockResolvedValueOnce({ error: { message: 'Database error' } });
+    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } });
     const { user } = render(<OnboardingPage />);
     await reachCurriculum(user);
 

@@ -91,6 +91,39 @@ export const en = {
   },
   generate: {
     planLanguageHint: 'New plans will be written in {language}',
+    upload: {
+      curriculumHeading: 'Curriculum Document',
+      templateHeading: 'Lesson Plan Template',
+      dragDropPrompt: 'Drag and drop a file here, or',
+      browse: 'browse',
+      uploading: 'Uploading…',
+      parsing: 'Reading document…',
+      helpMax: 'Max {size}',
+      retry: 'Retry',
+      retryAria: 'Retry upload of {name}',
+      removeAria: 'Remove {name}',
+      uploadingFile: 'Uploading {name}',
+      readingFile: 'Reading {name}',
+      extractedText: 'Extracted text sent to generation',
+      extractedRegion: 'Extracted curriculum text',
+      selectedFile: 'Selected file',
+      ready: 'Uploaded. Ready to generate.',
+      inputAriaCurriculum: 'Upload curriculum document',
+      inputAriaTemplate: 'Upload lesson plan template',
+      fileFallback: 'file',
+      filesSuffix: 'files',
+      errorAuth: 'Please sign in again to upload.',
+      errorTooLarge: '{name} is too large. The maximum size is {size}.',
+      errorWrongType: 'This file type is not supported. Please choose a different file.',
+      errorEmpty: '{name} is empty. Please choose a file with content.',
+      errorNetwork: 'Upload failed. Check your connection and try again.',
+      errorNoText:
+        'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
+      errorTimeout:
+        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
+      errorParse: 'The document could not be processed. Please try a different file.',
+      errorGeneric: "Couldn't upload this file. Please try again.",
+    },
   },
   pricing: {
     title: 'Plans for every classroom',
@@ -247,6 +280,37 @@ export type Messages = {
   };
   generate: {
     planLanguageHint: string;
+    upload: {
+      curriculumHeading: string;
+      templateHeading: string;
+      dragDropPrompt: string;
+      browse: string;
+      uploading: string;
+      parsing: string;
+      helpMax: string;
+      retry: string;
+      retryAria: string;
+      removeAria: string;
+      uploadingFile: string;
+      readingFile: string;
+      extractedText: string;
+      extractedRegion: string;
+      selectedFile: string;
+      ready: string;
+      inputAriaCurriculum: string;
+      inputAriaTemplate: string;
+      fileFallback: string;
+      filesSuffix: string;
+      errorAuth: string;
+      errorTooLarge: string;
+      errorWrongType: string;
+      errorEmpty: string;
+      errorNetwork: string;
+      errorNoText: string;
+      errorTimeout: string;
+      errorParse: string;
+      errorGeneric: string;
+    };
   };
   lesson: {
     edited: string;

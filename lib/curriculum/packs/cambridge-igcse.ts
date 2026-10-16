@@ -4,7 +4,7 @@ export const cambridgeIgcsePack: CurriculumPack = {
   id: 'cambridge-igcse',
   curriculumValues: ['Cambridge IGCSE'],
   authority: 'CAMBRIDGE',
-  displayName: 'Cambridge International IGCSE — Guideline Pack',
+  displayName: 'Cambridge International IGCSE, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

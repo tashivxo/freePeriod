@@ -4,7 +4,7 @@ export const uaeMoePack: CurriculumPack = {
   id: 'uae-moe',
   curriculumValues: ['UAE MOE'],
   authority: 'UAE_MOE',
-  displayName: 'UAE MOE — Guideline Pack',
+  displayName: 'UAE MOE, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

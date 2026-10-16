@@ -9,7 +9,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
-import { contentToString, isRecord, stripHtml } from '@/lib/lesson/content';
+import { contentToEditorHtml, contentToString, isRecord, stripHtml } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { downloadBlob } from '@/lib/download-blob';
@@ -430,7 +430,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           <div key={section.key} className="section-card">
             <SectionCard
               title={section.label}
-              content={contentToString(content[section.key])}
+              content={contentToEditorHtml(content[section.key])}
               viewContent={
                 isRecord(content[section.key]) ? (
                   <SectionValueView value={content[section.key]} />

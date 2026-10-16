@@ -4,7 +4,7 @@ export const edexcelPack: CurriculumPack = {
   id: 'edexcel',
   curriculumValues: ['Edexcel'],
   authority: 'EDEXCEL',
-  displayName: 'Edexcel — Guideline Pack',
+  displayName: 'Edexcel, Guideline Pack',
   coverage: 'guideline',
   lastReviewed: '2026-08-17',
   sourceNotes: [

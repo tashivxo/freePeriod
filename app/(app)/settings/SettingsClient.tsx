@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { GRADE_ITEMS } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
-import { COMMON_COUNTRY_ITEMS, COUNTRY_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
+import { COUNTRY_DROPDOWN_ITEMS, normalizeCountryCode } from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { Input } from '@/components/ui/Input';
@@ -350,28 +350,15 @@ export function SettingsClient({
             >
               {t('settings.country')}
             </label>
-            <select
+            <AnimatedDropdown
               id="default-country"
-              value={countrySelect}
-              onChange={(event) => setCountrySelect(event.target.value)}
-              className="h-13 w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] px-4 font-body text-base text-text-primary transition-colors duration-150 hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none"
-            >
-              <option value="">{t('settings.selectCountry')}</option>
-              <optgroup label="Common">
-                {COMMON_COUNTRY_ITEMS.map((item) => (
-                  <option key={`common-${item.value}`} value={item.value}>
-                    {item.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="All countries">
-                {COUNTRY_ITEMS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.name}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
+              text={t('settings.selectCountry')}
+              items={COUNTRY_DROPDOWN_ITEMS}
+              selectedValue={countrySelect || undefined}
+              searchable
+              searchPlaceholder={t('settings.selectCountry')}
+              onSelect={(item) => setCountrySelect(item.value ?? '')}
+            />
           </div>
 
           {/* Save Button */}

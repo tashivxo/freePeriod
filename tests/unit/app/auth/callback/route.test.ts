@@ -57,6 +57,42 @@ describe('GET /auth/callback', () => {
     expect(response.headers.get('location')).toBe('http://localhost:3000/update-password');
   });
 
+  it('inserts a profile without plan, quota, or deletion fields when none exists', async () => {
+    const insert = jest.fn().mockResolvedValue({ error: null });
+    const upsert = jest.fn().mockResolvedValue({ error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'users') {
+        return {
+          select: jest.fn().mockReturnThis(),
+          eq: jest.fn().mockReturnThis(),
+          maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+          insert,
+        };
+      }
+      return { upsert };
+    });
+
+    const response = await GET(callbackRequest('?code=pkce-code'));
+
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user-1',
+        email: 't@example.com',
+        default_subject: null,
+        default_grade: null,
+        default_curriculum: null,
+      }),
+    );
+    const payload = insert.mock.calls[0][0] as Record<string, unknown>;
+    expect(payload).not.toHaveProperty('plan');
+    expect(payload).not.toHaveProperty('is_admin');
+    expect(payload).not.toHaveProperty('generation_count');
+    expect(payload).not.toHaveProperty('generation_count_reset_at');
+    expect(payload).not.toHaveProperty('deletion_scheduled_at');
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/onboarding');
+  });
+
   it('defaults bare PKCE code callback to /onboarding when onboarding incomplete', async () => {
     const response = await GET(callbackRequest('?code=pkce-code'));
 
