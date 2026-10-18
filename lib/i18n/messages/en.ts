@@ -12,6 +12,8 @@ export const en = {
     planFree: 'Free',
     planPro: 'Pro',
     planProPlus: 'Pro+',
+    planWithTrial: '{plan} · Trial ({days} days left)',
+    planWithTrialOne: '{plan} · Trial ({days} day left)',
     zenMode: 'Zen Mode',
     zenModeDescription: 'Are our colorful backgrounds too much for you? Try Zen Mode.',
     background: 'Background',
@@ -35,6 +37,8 @@ export const en = {
     saving: 'Saving...',
     saved: 'Settings saved!',
     saveFailed: 'Failed to save settings',
+    deleteFailed: 'Failed to delete account',
+    somethingWentWrong: 'Something went wrong. Please try again.',
     account: 'Account',
     email: 'Email',
     plan: 'Plan',
@@ -139,6 +143,10 @@ export const en = {
     errorOneSubject: 'Please enter one subject only',
     errorSelectGrade: 'Please select a grade',
     errorDurationRange: 'Enter a duration between {min} and {max} minutes',
+    errorRequestFailed: 'Request failed',
+    errorNoStream: 'No response stream',
+    errorIncomplete: 'Generation stopped before the lesson was saved. Please try again.',
+    errorConnectionLost: 'Connection lost. Please try again.',
     upload: {
       curriculumHeading: 'Curriculum Document',
       templateHeading: 'Lesson Plan Template',
@@ -249,6 +257,13 @@ export const en = {
     noLessons: 'No lessons yet.',
     generateALesson: 'Generate a lesson',
   },
+  dashboard: {
+    greeting: 'Hi, {name}!',
+    greetingFallback: 'there',
+    newLessonPlan: 'New Lesson Plan',
+    noLessons: 'No lessons yet. Create your first one!',
+    generateLesson: 'Generate Lesson',
+  },
   grades: {
     numbered: 'Grade {n}',
     year: 'Year {n}',
@@ -263,6 +278,7 @@ export const en = {
     subtitle: 'Set up your teaching profile',
     whatDoYouTeach: 'What do you teach?',
     pickSubjectHint: 'Pick one subject, you can change this anytime in settings.',
+    subjectAria: 'Subject',
     otherSubject: 'Other subject...',
     next: 'Next',
     whatGrade: 'What grade do you teach?',
@@ -296,292 +312,8 @@ export const en = {
   },
 } as const;
 
-export type Messages = {
-  nav: {
-    dashboard: string;
-    generate: string;
-    history: string;
-    settings: string;
-    homeAriaLabel: string;
-  };
-  settings: {
-    title: string;
-    documentTitle: string;
-    planFree: string;
-    planPro: string;
-    planProPlus: string;
-    zenMode: string;
-    zenModeDescription: string;
-    background: string;
-    backgroundDescription: string;
-    backgroundBrand: string;
-    backgroundRainbow: string;
-    backgroundZenLocked: string;
-    language: string;
-    languageDescription: string;
-    defaultSubject: string;
-    selectSubject: string;
-    enterSubject: string;
-    defaultGrade: string;
-    selectGrade: string;
-    defaultCurriculum: string;
-    selectCurriculum: string;
-    enterCurriculum: string;
-    country: string;
-    selectCountry: string;
-    save: string;
-    saving: string;
-    saved: string;
-    saveFailed: string;
-    account: string;
-    email: string;
-    plan: string;
-    usage: string;
-    usageThisPeriod: string;
-    usageUnlimited: string;
-    manageSubscription: string;
-    logOut: string;
-    deleteAccount: string;
-    deleteConfirmDescription: string;
-    deleteConfirmLabel: string;
-    deleting: string;
-    confirmDeletion: string;
-    cancel: string;
-    legal: string;
-    legalDescription: string;
-    privacyPolicy: string;
-    termsOfService: string;
-  };
-  landing: {
-    headerHome: string;
-    headerPricing: string;
-    headerSignIn: string;
-    backToHome: string;
-    heroHeadline1: string;
-    heroHeadlineHighlight: string;
-    heroHeadline2: string;
-    heroSub: string;
-    heroCtaPrimary: string;
-    heroCtaSecondary: string;
-    heroStatTime: string;
-    heroStatFree: string;
-    featuresTitle: string;
-    featuresSub: string;
-    featureStructuredPlans: string;
-    featureStructuredPlansDesc: string;
-    featureAiPowered: string;
-    featureAiPoweredDesc: string;
-    featureExportAnywhere: string;
-    featureExportAnywhereDesc: string;
-    ctaHeadline: string;
-    ctaSub: string;
-    ctaBandTitle: string;
-    ctaBandSub: string;
-    conversionPoint1: string;
-    conversionPoint2: string;
-    conversionPoint3: string;
-    ctaButton: string;
-    footerNavAriaLabel: string;
-    footerContact: string;
-    footerTagline: string;
-    tryLightMode: string;
-    tryDarkMode: string;
-    switchToLightMode: string;
-    switchToDarkMode: string;
-  };
-  generate: {
-    planLanguageHint: string;
-    heading: string;
-    documentTitle: string;
-    subject: string;
-    grade: string;
-    curriculum: string;
-    duration: string;
-    selectSubject: string;
-    selectGrade: string;
-    selectCurriculum: string;
-    selectDuration: string;
-    customDuration: string;
-    durationMinutes: string;
-    durationShort: string;
-    enterSubject: string;
-    enterCurriculum: string;
-    customDurationInput: string;
-    focusLabel: string;
-    focusPlaceholder: string;
-    modeLabel: string;
-    selectMode: string;
-    modeFast: string;
-    modeQuality: string;
-    modeFastDescription: string;
-    modeQualityDescription: string;
-    modeAria: string;
-    upgradeToPro: string;
-    unlockQuality: string;
-    qualityProOnly: string;
-    qualityUpgradeMessage: string;
-    submit: string;
-    generating: string;
-    waitingForUpload: string;
-    alignmentTitle: string;
-    alignmentTitleFor: string;
-    alignmentBody: string;
-    alignmentAria: string;
-    errorSelectSubject: string;
-    errorOneSubject: string;
-    errorSelectGrade: string;
-    errorDurationRange: string;
-    upload: {
-      curriculumHeading: string;
-      templateHeading: string;
-      dragDropPrompt: string;
-      browse: string;
-      uploading: string;
-      parsing: string;
-      helpMax: string;
-      retry: string;
-      retryAria: string;
-      removeAria: string;
-      uploadingFile: string;
-      readingFile: string;
-      extractedText: string;
-      extractedRegion: string;
-      selectedFile: string;
-      ready: string;
-      inputAriaCurriculum: string;
-      inputAriaTemplate: string;
-      fileFallback: string;
-      filesSuffix: string;
-      errorAuth: string;
-      errorTooLarge: string;
-      errorWrongType: string;
-      errorEmpty: string;
-      errorNetwork: string;
-      errorNoText: string;
-      errorTimeout: string;
-      errorParse: string;
-      errorGeneric: string;
-    };
-  };
-  lesson: {
-    edited: string;
-    savedToast: string;
-    discardEdits: string;
-    leaveWithoutSaving: string;
-    save: string;
-    cancel: string;
-    saveFailed: string;
-  };
-  pricing: {
-    title: string;
-    subtitle: string;
-    billingPeriodAria: string;
-    monthly: string;
-    annual: string;
-    savePercent: string;
-    mostPopular: string;
-    freePrice: string;
-    perMonth: string;
-    billedAnnually: string;
-    trustFooter: string;
-    checkoutRedirecting: string;
-    checkoutSettingUp: string;
-    checkoutError: string;
-    plans: {
-      free: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        feature3: string;
-        feature4: string;
-        feature5: string;
-        feature6: string;
-        cta: string;
-      };
-      pro: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        feature3: string;
-        feature4: string;
-        feature5: string;
-        cta: string;
-      };
-      pro_plus: {
-        name: string;
-        description: string;
-        feature1: string;
-        feature2: string;
-        cta: string;
-      };
-    };
-  };
-  auth: {
-    confirmPassword: string;
-    confirmPasswordRequired: string;
-    passwordsDoNotMatch: string;
-    showPassword: string;
-    hidePassword: string;
-    showConfirmPassword: string;
-    hideConfirmPassword: string;
-  };
-  history: {
-    title: string;
-    documentTitle: string;
-    deleteAria: string;
-    searchPlaceholder: string;
-    searchAriaLabel: string;
-    planLesson: string;
-    allSubjects: string;
-    nothingFound: string;
-    noLessons: string;
-    generateALesson: string;
-  };
-  grades: {
-    numbered: string;
-    year: string;
-    kindergarten: string;
-    preK: string;
-  };
-  countries: {
-    common: string;
-    all: string;
-  };
-  onboarding: {
-    subtitle: string;
-    whatDoYouTeach: string;
-    pickSubjectHint: string;
-    otherSubject: string;
-    next: string;
-    whatGrade: string;
-    gradeLevel: string;
-    selectGrade: string;
-    back: string;
-    whereDoYouTeach: string;
-    changeInSettings: string;
-    selectCountry: string;
-    selectCurriculum: string;
-    curriculumLabel: string;
-    enterCurriculum: string;
-    finish: string;
-    saving: string;
-    redirecting: string;
-    redirectingToDashboard: string;
-    takingAWhile: string;
-    goToDashboard: string;
-    mustBeSignedIn: string;
-    selectACountry: string;
-    somethingWentWrong: string;
-    stepOf: string;
-  };
-  status: {
-    notFoundTitle: string;
-    notFoundBody: string;
-    errorTitle: string;
-    errorBody: string;
-    tryAgain: string;
-    backHome: string;
-  };
+type DeepStringify<T> = {
+  [K in keyof T]: T[K] extends string ? string : DeepStringify<T[K]>;
 };
+
+export type Messages = DeepStringify<typeof en>;

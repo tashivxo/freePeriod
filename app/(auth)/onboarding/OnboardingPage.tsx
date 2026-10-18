@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
 import { SUBJECTS } from '@/lib/utils/subjects';
-import { GRADE_ITEMS } from '@/lib/utils/grades';
+import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { XIcon } from '@/components/ui/icons/x';
@@ -338,7 +338,7 @@ function StepSubjects({
         {t('onboarding.pickSubjectHint')}
       </p>
 
-      <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label="Subject">
+      <div className="mb-4 flex flex-wrap justify-center gap-2" role="radiogroup" aria-label={t('onboarding.subjectAria')}>
         {SUBJECTS.map((subject) => (
           <ChipRadio
             key={subject}
@@ -398,7 +398,7 @@ function StepGrade({
         <AnimatedDropdown
           id="grade-select"
           text={t('onboarding.selectGrade')}
-          items={GRADE_ITEMS}
+          items={getGradeItems(t)}
           selectedValue={grade}
           onSelect={(item) => onGradeChange(item.value ?? item.name)}
         />

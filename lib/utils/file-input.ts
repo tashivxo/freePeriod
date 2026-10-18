@@ -1,16 +1,11 @@
+import { isolateBidi } from '@/lib/i18n/format';
+import { isLocale, isRtl } from '@/lib/i18n/locales';
+
 export const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-const LTR_ISOLATE = '\u2066';
-const POP_ISOLATE = '\u2069';
-
-function isRtlLocale(locale: string): boolean {
-  const base = locale.toLowerCase().split('-')[0];
-  return base === 'ar' || base === 'he' || base === 'fa' || base === 'ur';
-}
 
 function formatSizeLabel(value: string, unit: string, locale: string): string {
   const text = `${value} ${unit}`;
-  return isRtlLocale(locale) ? `${LTR_ISOLATE}${text}${POP_ISOLATE}` : text;
+  return isLocale(locale) && isRtl(locale) ? isolateBidi(text) : text;
 }
 
 export function formatFileSize(bytes: number, locale = 'en'): string {

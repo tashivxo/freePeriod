@@ -1,5 +1,5 @@
 import type { DropdownItem } from '@/components/ui/animated-dropdown';
-import { isolateBidi } from '@/lib/i18n/format';
+import { isolateBidi, type TranslateFn } from '@/lib/i18n/format';
 
 /**
  * Raw grade values stored in the database.
@@ -37,27 +37,27 @@ export const GRADES = [
 
 export type Grade = (typeof GRADES)[number];
 
-type TranslateFn = (key: string, vars?: Record<string, string>) => string;
-
 /** Human-readable label for a stored grade value (display only). */
-export function formatGradeLabel(g: string, t?: TranslateFn): string {
+export function formatGradeLabel(g: string, t: TranslateFn): string {
   const trimmed = g.trim();
   if (!trimmed) return '';
-  if (trimmed === 'Pre-K') return t ? t('grades.preK') : 'Pre-K';
-  if (trimmed === 'K') return t ? t('grades.kindergarten') : 'Kindergarten';
+  if (trimmed === 'Pre-K') return t('grades.preK');
+  if (trimmed === 'K') return t('grades.kindergarten');
   const yearMatch = trimmed.match(/^Year (\d+)$/);
   if (yearMatch) {
-    return t ? t('grades.year', { n: isolateBidi(yearMatch[1]!) }) : trimmed;
+    return t('grades.year', { n: isolateBidi(yearMatch[1]!) });
   }
   const gradeMatch = trimmed.match(/^Grade\s+(.+)$/);
   if (gradeMatch) {
-    return t ? t('grades.numbered', { n: isolateBidi(gradeMatch[1]!) }) : trimmed;
+    return t('grades.numbered', { n: isolateBidi(gradeMatch[1]!) });
   }
-  return t ? t('grades.numbered', { n: isolateBidi(trimmed) }) : `Grade ${trimmed}`;
+  return t('grades.numbered', { n: isolateBidi(trimmed) });
 }
 
 /** Dropdown items for grade selectors — human-readable labels, raw values. */
-export const GRADE_ITEMS: DropdownItem[] = (GRADES as readonly string[]).map((g) => ({
-  name: formatGradeLabel(g),
-  value: g,
-}));
+export function getGradeItems(t: TranslateFn): DropdownItem[] {
+  return (GRADES as readonly string[]).map((g) => ({
+    name: formatGradeLabel(g, t),
+    value: g,
+  }));
+}

@@ -76,7 +76,9 @@ function NavbarAndSettings({ showSettings }: { showSettings: boolean }) {
         <SettingsClient
           user={baseUser}
           email={baseUser.email}
-          planLabel="Free"
+          usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
         />
       ) : null}
     </LocaleProvider>
@@ -188,7 +190,7 @@ describe('navbar LanguagePicker locale persist', () => {
     const user = userEvent.setup({ delay: null });
     render(
       <LocaleProvider>
-        <SettingsClient user={baseUser} email={baseUser.email} planLabel="Free" />
+        <SettingsClient user={baseUser} email={baseUser.email} usagePlan="free" generationCount={0} generationLimit={3} />
       </LocaleProvider>,
     );
 
@@ -209,7 +211,7 @@ describe('navbar LanguagePicker locale persist', () => {
     const user = userEvent.setup({ delay: null });
     render(
       <LocaleProvider>
-        <SettingsClient user={baseUser} email={baseUser.email} planLabel="Free" />
+        <SettingsClient user={baseUser} email={baseUser.email} usagePlan="free" generationCount={0} generationLimit={3} />
       </LocaleProvider>,
     );
 

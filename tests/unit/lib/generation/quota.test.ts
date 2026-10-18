@@ -151,22 +151,40 @@ describe('shouldResetGenerationWindow', () => {
 });
 
 describe('formatGenerationUsage', () => {
+  const FSI = '\u2068';
+  const PDI = '\u2069';
+
   it('formats free plan with limit', () => {
     expect(
-      formatGenerationUsage({ plan: 'free', generationCount: 2, generationLimit: 3 }),
-    ).toBe('2 of 3 used this period');
+      formatGenerationUsage({
+        plan: 'free',
+        generationCount: 2,
+        generationLimit: 3,
+        locale: 'en',
+      }),
+    ).toBe(`${FSI}2${PDI} of ${FSI}3${PDI} used this period`);
   });
 
   it('formats pro plan with limit', () => {
     expect(
-      formatGenerationUsage({ plan: 'pro', generationCount: 5, generationLimit: 20 }),
-    ).toBe('5 of 20 used this period');
+      formatGenerationUsage({
+        plan: 'pro',
+        generationCount: 5,
+        generationLimit: 20,
+        locale: 'en',
+      }),
+    ).toBe(`${FSI}5${PDI} of ${FSI}20${PDI} used this period`);
   });
 
   it('formats pro_plus as unlimited', () => {
     expect(
-      formatGenerationUsage({ plan: 'pro_plus', generationCount: 10, generationLimit: null }),
-    ).toBe('10 generated this period (Unlimited)');
+      formatGenerationUsage({
+        plan: 'pro_plus',
+        generationCount: 10,
+        generationLimit: null,
+        locale: 'en',
+      }),
+    ).toBe(`${FSI}10${PDI} generated this period (Unlimited)`);
   });
 
   it('localizes limited usage as one interpolated string with bidi-isolated numbers', () => {

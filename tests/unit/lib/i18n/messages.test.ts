@@ -381,6 +381,7 @@ describe('onboarding copy', () => {
 
     expect(onboarding?.whereDoYouTeach).toBe(expected.whereDoYouTeach);
     expect(onboarding?.selectCurriculum).toBe(expected.selectCurriculum);
+    expect(onboarding?.subjectAria).toBeTruthy();
     expect(onboarding?.whatDoYouTeach).toBeTruthy();
     expect(onboarding?.next).toBeTruthy();
     expect(onboarding?.back).toBeTruthy();
@@ -437,6 +438,10 @@ const GENERATE_FORM_KEYS = [
   'alignmentTitle',
   'alignmentBody',
   'alignmentAria',
+  'errorRequestFailed',
+  'errorNoStream',
+  'errorIncomplete',
+  'errorConnectionLost',
 ] as const;
 
 describe('generate form copy', () => {
@@ -519,6 +524,10 @@ describe('history and settings leftover English copy', () => {
     expect(settings.planFree).toBe(SETTINGS_PLAN_FREE[locale]);
     expect(settings.planPro).toBe('Pro');
     expect(settings.planProPlus).toBe('Pro+');
+    expect(settings.planWithTrial).toContain('{plan}');
+    expect(settings.planWithTrial).toContain('{days}');
+    expect(settings.planWithTrialOne).toContain('{plan}');
+    expect(settings.planWithTrialOne).toContain('{days}');
     expect(settings.planFree).not.toContain('\u2014');
     expect(settings.planPro).not.toContain('\u2014');
     expect(settings.planProPlus).not.toContain('\u2014');
@@ -549,6 +558,30 @@ describe('history and settings leftover English copy', () => {
     expect(zhHistory.deleteAria).toMatch(/[\u4e00-\u9fff]/);
     expect(zhSettings.documentTitle).toMatch(/[\u4e00-\u9fff]/);
     expect(zhSettings.planFree).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
+describe('dashboard leftover English copy', () => {
+  it.each(LOCALES)('ships dashboard greeting and empty-state strings for %s', (locale) => {
+    const dashboard = getMessages(locale).dashboard;
+    expect(dashboard.greeting).toContain('{name}');
+    expect(dashboard.greetingFallback).toBeTruthy();
+    expect(dashboard.newLessonPlan).toBeTruthy();
+    expect(dashboard.noLessons).toBeTruthy();
+    expect(dashboard.generateLesson).toBeTruthy();
+    expect(dashboard.greeting).not.toContain('\u2014');
+    expect(dashboard.noLessons).not.toContain('\u2014');
+  });
+
+  it('keeps Arabic and Chinese dashboard copy as real translations', () => {
+    const en = getMessages('en').dashboard;
+    const ar = getMessages('ar').dashboard;
+    const zh = getMessages('zh-Hans').dashboard;
+
+    expect(ar.greeting).not.toBe(en.greeting);
+    expect(zh.newLessonPlan).not.toBe(en.newLessonPlan);
+    expect(ar.greeting).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.generateLesson).toMatch(/[\u4e00-\u9fff]/);
   });
 });
 

@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
 import { Manrope, Noto_Sans_Arabic } from 'next/font/google';
 import localFont from 'next/font/local';
-import { DEFAULT_LOCALE, isLocale, isRtl, type Locale } from '@/lib/i18n';
+import { isRtl } from '@/lib/i18n';
+import { readLocaleCookie } from '@/lib/i18n/server';
 import { LocaleProvider } from '@/providers/locale';
 import { ThemeProvider } from '@/providers/theme';
 import { ZenModeProvider } from '@/providers/zen-mode';
@@ -77,17 +77,6 @@ const localeBootstrapScript = `
     }
   })();
 `;
-
-async function readLocaleCookie(): Promise<Locale> {
-  const raw = (await cookies()).get('fp-locale')?.value;
-  if (!raw) return DEFAULT_LOCALE;
-  try {
-    const decoded = decodeURIComponent(raw);
-    return isLocale(decoded) ? decoded : DEFAULT_LOCALE;
-  } catch {
-    return DEFAULT_LOCALE;
-  }
-}
 
 export default async function RootLayout({
   children,

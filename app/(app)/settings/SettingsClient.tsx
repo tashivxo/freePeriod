@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
-import { GRADE_ITEMS, formatGradeLabel } from '@/lib/utils/grades';
+import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCountryDropdownItems, normalizeCountryCode } from '@/lib/utils/countries';
 import { usePresetField } from '@/lib/forms/usePresetField';
@@ -16,17 +16,17 @@ import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { Switch } from '@/components/ui/switch';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { useZenMode } from '@/providers/zen-mode';
+import { FieldError } from '@/components/ui/FieldError';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
-import { hasStoredLocale, isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { cn } from '@/lib/utils';
 import { ExternalLink, LogOut } from 'lucide-react';
-import { XIcon } from '@/components/ui/icons/x';
-import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { formatGenerationUsage } from '@/lib/generation/quota';
 import type { Plan, User } from '@/types';
 
@@ -38,25 +38,15 @@ const PLAN_NAME_KEYS: Record<Plan, 'settings.planFree' | 'settings.planPro' | 's
   pro_plus: 'settings.planProPlus',
 };
 
-const ENGLISH_PLAN_NAMES: Record<Plan, string> = {
-  free: 'Free',
-  pro: 'Pro',
-  pro_plus: 'Pro+',
-};
-
-function localizedPlanLabel(
+function planDisplayLabel(
   plan: Plan,
-  planLabel: string,
+  trialDays: number | null | undefined,
   t: (key: string, vars?: Record<string, string>) => string,
 ): string {
-  const key = PLAN_NAME_KEYS[plan];
-  const localized = t(key);
-  if (!localized || localized === key) return planLabel;
-  const english = ENGLISH_PLAN_NAMES[plan];
-  if (planLabel.startsWith(english) && planLabel.length > english.length) {
-    return `${localized}${planLabel.slice(english.length)}`;
-  }
-  return localized;
+  const name = t(PLAN_NAME_KEYS[plan]);
+  if (trialDays == null) return name;
+  const key = trialDays === 1 ? 'settings.planWithTrialOne' : 'settings.planWithTrial';
+  return t(key, { plan: name, days: String(trialDays) });
 }
 
 const LOCALE_ITEMS = LOCALES.map((code) => ({
@@ -93,22 +83,20 @@ function saveErrorMessage(err: unknown, fallback: string): string {
 export type SettingsClientProps = {
   user: User;
   email: string;
-  planLabel: string;
-  usageLabel?: string;
   usagePlan?: Plan;
   generationCount?: number;
   generationLimit?: number | null;
+  trialDays?: number | null;
   manageSubscriptionUrl?: string | null;
 };
 
 export function SettingsClient({
   user,
   email,
-  planLabel,
-  usageLabel,
   usagePlan,
   generationCount,
   generationLimit,
+  trialDays = null,
   manageSubscriptionUrl = null,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
@@ -129,23 +117,12 @@ export function SettingsClient({
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const { ref: deleteErrorIconRef, animationDisabled: deleteErrorIconMotionDisabled } =
-    useMotionSafeIconRef();
-  const { ref: saveErrorIconRef, animationDisabled: saveErrorIconMotionDisabled } =
-    useMotionSafeIconRef();
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
   const t = useT();
-  const displayPlanLabel = localizedPlanLabel(usagePlan ?? user.plan, planLabel, t);
-  const gradeItems = useMemo(
-    () =>
-      GRADE_ITEMS.map((item) => ({
-        ...item,
-        name: formatGradeLabel(item.value ?? item.name, t),
-      })),
-    [t],
-  );
+  const displayPlanLabel = planDisplayLabel(usagePlan ?? user.plan, trialDays, t);
+  const gradeItems = useMemo(() => getGradeItems(t), [t]);
   const displayUsage =
     typeof generationCount === 'number'
       ? formatGenerationUsage({
@@ -154,7 +131,7 @@ export function SettingsClient({
           generationLimit: generationLimit ?? null,
           locale,
         })
-      : usageLabel;
+      : null;
   const { setProfileSignals } = useColorBendsAtmosphere();
 
   const isDirty =
@@ -163,26 +140,7 @@ export function SettingsClient({
     curriculumField.value !== savedDefaults.curriculum ||
     countrySelect !== savedDefaults.country;
 
-  useEffect(() => {
-    document.title = t('settings.documentTitle');
-  }, [t]);
-
-  useEffect(() => {
-    if (hasStoredLocale()) return;
-    if (user.preferred_locale && isLocale(user.preferred_locale)) {
-      setLocale(user.preferred_locale);
-    }
-  }, [setLocale, user.preferred_locale]);
-
-  useEffect(() => {
-    if (!deleteError || deleteErrorIconMotionDisabled) return;
-    deleteErrorIconRef.current?.startAnimation();
-  }, [deleteError, deleteErrorIconMotionDisabled, deleteErrorIconRef]);
-
-  useEffect(() => {
-    if (saveStatus?.tone !== 'error' || saveErrorIconMotionDisabled) return;
-    saveErrorIconRef.current?.startAnimation();
-  }, [saveStatus, saveErrorIconMotionDisabled, saveErrorIconRef]);
+  useDocumentTitle(t('settings.documentTitle'));
 
   useEffect(() => {
     if (saveStatus?.tone !== 'success') return;
@@ -192,7 +150,7 @@ export function SettingsClient({
 
   const handleLocaleChange = async (nextLocale: Locale) => {
     try {
-      await Promise.resolve(setLocale(nextLocale));
+      await setLocale(nextLocale);
     } catch (err) {
       setSaveStatus({
         tone: 'error',
@@ -251,14 +209,14 @@ export function SettingsClient({
       const res = await fetch('/api/user/delete', { method: 'POST' });
       const data = (await res.json()) as { error?: string; graceDays?: number };
       if (!res.ok) {
-        setDeleteError(data.error ?? 'Failed to delete account');
+        setDeleteError(data.error ?? t('settings.deleteFailed'));
         return;
       }
       const supabase = createClient();
       await supabase.auth.signOut();
       router.push('/sign-in?deleted=1');
     } catch {
-      setDeleteError('Something went wrong. Please try again.');
+      setDeleteError(t('settings.somethingWentWrong'));
     } finally {
       setDeleting(false);
     }
@@ -436,19 +394,7 @@ export function SettingsClient({
             </div>
           )}
           {saveStatus?.tone === 'error' && (
-            <div
-              role="alert"
-              className="mt-3 flex gap-3 rounded-xl bg-error/10 p-3 text-error"
-            >
-              <XIcon
-                ref={saveErrorIconRef}
-                size={24}
-                animationDisabled={saveErrorIconMotionDisabled}
-                aria-hidden
-                className="mt-0.5 shrink-0"
-              />
-              <p className="font-body text-sm text-error">{saveStatus.message}</p>
-            </div>
+            <FieldError variant="banner" className="mt-3" message={saveStatus.message} />
           )}
         </div>
       </div>
@@ -515,18 +461,7 @@ export function SettingsClient({
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
               />
-              {deleteError && (
-                <div role="alert" className="flex gap-3 rounded-xl bg-error/10 p-3 text-error">
-                  <XIcon
-                    ref={deleteErrorIconRef}
-                    size={24}
-                    animationDisabled={deleteErrorIconMotionDisabled}
-                    aria-hidden
-                    className="mt-0.5 shrink-0"
-                  />
-                  <p className="font-body text-sm text-error">{deleteError}</p>
-                </div>
-              )}
+              {deleteError && <FieldError variant="banner" message={deleteError} />}
               <div className="flex gap-2">
                 <Button
                   className="flex-1 bg-error hover:bg-error/90 text-white"

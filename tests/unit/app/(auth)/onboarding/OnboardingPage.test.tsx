@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@/tests/helpers';
+import { stripBidiIsolates, visibleName } from '@/tests/helpers/bidi';
 import { act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -82,7 +83,7 @@ async function chooseGrade(user: OnboardingUser) {
     expect(screen.getByLabelText(/grade level/i)).toBeInTheDocument();
   });
   await user.click(screen.getByLabelText(/grade level/i));
-  await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+  await user.click(screen.getByRole('option', { name: visibleName('Grade 9') }));
   await user.click(screen.getByRole('button', { name: /next/i }));
 }
 
@@ -305,11 +306,11 @@ describe('OnboardingPage', () => {
 
     const grade = await screen.findByLabelText(/grade level/i);
     await user.click(grade);
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('option', { name: visibleName('Grade 9') }));
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
-    expect(grade).toHaveTextContent('Grade 9');
+    expect(stripBidiIsolates(grade.textContent ?? '')).toContain('Grade 9');
   });
 
   it('closes Country on Tab from search and keeps it open when clicking the search box', async () => {
@@ -589,6 +590,7 @@ describe('OnboardingPage', () => {
       'href',
       '/dashboard',
     );
+    jest.useRealTimers();
   });
 
   it('translates onboarding headings and country group labels in Arabic', async () => {
@@ -605,7 +607,7 @@ describe('OnboardingPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'أي صف تُدرّس؟' })).toBeInTheDocument();
     await user.click(screen.getByLabelText('المستوى الدراسي'));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(screen.getByRole('option', { name: visibleName('الصف 9') }));
     await user.click(screen.getByRole('button', { name: 'التالي' }));
 
     expect(await screen.findByRole('heading', { name: 'أين تُدرّس؟' })).toBeInTheDocument();

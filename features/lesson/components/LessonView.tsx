@@ -331,7 +331,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         <div className="flex flex-wrap items-center gap-4 text-sm font-body text-text-secondary">
           <span className="inline-flex items-center gap-1">
             <MotionSafeIcon icon={BookTextIcon} size={16} />
-            {lesson.subject} · {formatGradeLabel(lesson.grade)}
+            {lesson.subject} · {formatGradeLabel(lesson.grade, t)}
           </span>
           <span className="inline-flex items-center gap-1">
             <MotionSafeIcon icon={ClockIcon} size={16} />

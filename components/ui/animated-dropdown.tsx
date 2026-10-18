@@ -463,7 +463,7 @@ export function AnimatedDropdown({
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
         aria-labelledby={triggerAriaLabelledBy}
         className={cn(
-          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] pl-4 pr-3 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
+          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] ps-4 pe-3 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
           triggerClassName,
         )}
       >

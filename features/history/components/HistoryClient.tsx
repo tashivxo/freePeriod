@@ -9,6 +9,7 @@ import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useT } from '@/providers/locale';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
@@ -22,9 +23,7 @@ export function HistoryClient() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('');
 
-  useEffect(() => {
-    document.title = t('history.documentTitle');
-  }, [t]);
+  useDocumentTitle(t('history.documentTitle'));
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -56,10 +55,14 @@ export function HistoryClient() {
       query = query.ilike('title', `%${debouncedSearch}%`);
     }
 
-    const [{ data }] = await Promise.all([query, refreshSubjects()]);
+    const { data } = await query;
     setLessons(data ?? []);
     setInitialLoading(false);
-  }, [debouncedSearch, subjectFilter, refreshSubjects]);
+  }, [debouncedSearch, subjectFilter]);
+
+  useEffect(() => {
+    void refreshSubjects();
+  }, [refreshSubjects]);
 
   useEffect(() => {
     fetchLessons();

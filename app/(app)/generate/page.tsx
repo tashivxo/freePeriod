@@ -1,21 +1,14 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { resolveEffectivePlan } from '@/lib/generation/quota';
 import { GenerateClient } from '@/features/generate/components/GenerateClient';
 import type { Plan } from '@/types';
-import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
+import { getMessages } from '@/lib/i18n';
+import { readLocaleCookie } from '@/lib/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const raw = (await cookies()).get('fp-locale')?.value;
-  let locale: Locale = DEFAULT_LOCALE;
-  try {
-    const decoded = raw ? decodeURIComponent(raw) : '';
-    if (isLocale(decoded)) locale = decoded;
-  } catch {
-    locale = DEFAULT_LOCALE;
-  }
+  const locale = await readLocaleCookie();
   return { title: getMessages(locale).generate.documentTitle };
 }
 
@@ -28,13 +21,12 @@ async function GeneratePageContent() {
   let defaults: { subject: string; grade: string; curriculum: string } | undefined;
 
   let userPlan: Plan = 'free';
-  let preferredLocale: Locale | undefined;
 
   if (user) {
     const [{ data: userData }, { data: subData }] = await Promise.all([
       supabase
         .from('users')
-        .select('default_subject, default_grade, default_curriculum, is_admin, preferred_locale')
+        .select('default_subject, default_grade, default_curriculum, is_admin')
         .eq('id', user.id)
         .single(),
       supabase
@@ -47,10 +39,6 @@ async function GeneratePageContent() {
     userPlan = resolveEffectivePlan(subData, userData?.is_admin ?? false);
 
     if (userData) {
-      if (isLocale(userData.preferred_locale)) {
-        preferredLocale = userData.preferred_locale;
-      }
-
       if (userData.default_subject || userData.default_grade || userData.default_curriculum) {
         defaults = {
           subject: userData.default_subject ?? '',
@@ -65,7 +53,6 @@ async function GeneratePageContent() {
     <GenerateClient
       defaults={defaults}
       plan={userPlan}
-      preferredLocale={preferredLocale}
     />
   );
 }

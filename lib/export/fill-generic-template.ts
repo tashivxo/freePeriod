@@ -2,11 +2,13 @@ import JSZip from 'jszip';
 import type { LessonPlan } from '@/types';
 import { inferTeachingStrategies, parseActivityBlock } from '@/lib/export/docx';
 import { formatICanStatements } from '@/lib/export/lesson-document';
+import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
 const DOCUMENT_XML_PATH = 'word/document.xml';
 const DEFAULT_RESOURCES = 'Whiteboard / projector, teacher-created handout';
+const tEn = createT('en');
 
 function escapeXml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1445,7 +1447,7 @@ function buildFieldMap(lesson: LessonPlan): Map<string, string> {
     c.title || lesson.title,
   );
   set(['Subject'], lesson.subject);
-  set(['Grade', 'Grade Level', 'Class', 'Year Group', 'Grade/Class'], formatGradeLabel(lesson.grade));
+  set(['Grade', 'Grade Level', 'Class', 'Year Group', 'Grade/Class'], formatGradeLabel(lesson.grade, tEn));
   set(
     ['Duration', 'Time Allocation', 'Lesson Duration'],
     lesson.duration_minutes ? `${lesson.duration_minutes} minutes` : undefined,
