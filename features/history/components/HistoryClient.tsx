@@ -87,31 +87,35 @@ export function HistoryClient() {
         </Button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
-          <input
-            type="text"
-            placeholder={t('history.searchPlaceholder')}
-            aria-label={t('history.searchAriaLabel')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-border bg-surface py-2 ps-9 pe-3 text-base md:text-sm font-body text-text-primary placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
-          />
+      {/* Filters stay under the h-14 nav while lesson cards scroll beneath. */}
+      <div className="sticky top-14 z-30 -mx-4 mb-6 border-b border-border/50 bg-background/90 px-4 py-3 backdrop-blur-md">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 w-full flex-1">
+            <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
+              <Search className="size-4 text-text-secondary" aria-hidden />
+            </span>
+            <input
+              type="text"
+              placeholder={t('history.searchPlaceholder')}
+              aria-label={t('history.searchAriaLabel')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-13 w-full rounded-xl border-2 border-border bg-surface py-0 ps-9 pe-3 text-base font-body text-text-primary placeholder:text-text-secondary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
+            />
+          </div>
+          {allSubjects.length > 1 && (
+            <AnimatedDropdown
+              text={t('history.allSubjects')}
+              items={[
+                { name: t('history.allSubjects'), value: '' } as DropdownItem,
+                ...allSubjects.map((s) => ({ name: s, value: s } as DropdownItem)),
+              ]}
+              selectedValue={subjectFilter || undefined}
+              onSelect={(item) => setSubjectFilter(item.value ?? '')}
+              className="w-full min-w-0 sm:w-auto sm:min-w-[10rem] sm:flex-none"
+            />
+          )}
         </div>
-        {allSubjects.length > 1 && (
-          <AnimatedDropdown
-            text={t('history.allSubjects')}
-            items={[
-              { name: t('history.allSubjects'), value: '' } as DropdownItem,
-              ...allSubjects.map((s) => ({ name: s, value: s } as DropdownItem)),
-            ]}
-            selectedValue={subjectFilter || undefined}
-            onSelect={(item) => setSubjectFilter(item.value ?? '')}
-            className="min-w-[160px] flex-none w-auto"
-          />
-        )}
       </div>
 
       {/* Grid */}

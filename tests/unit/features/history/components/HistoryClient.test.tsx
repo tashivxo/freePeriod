@@ -96,6 +96,29 @@ function renderHistory(ui: ReactElement = <HistoryClient />, locale: 'en' | 'ar'
   return render(<LocaleProvider initialLocale={locale}>{ui}</LocaleProvider>);
 }
 
+function getSearchInput() {
+  return screen.getByRole('textbox', { name: /search lessons by title/i });
+}
+
+function getSearchField() {
+  const input = getSearchInput();
+  const field = input.parentElement;
+  expect(field).toBeInstanceOf(HTMLElement);
+  return { input, field: field as HTMLElement };
+}
+
+function getSearchIconWrap(field: HTMLElement) {
+  const svg = field.querySelector('svg');
+  expect(svg).not.toBeNull();
+  const parent = svg!.parentElement;
+  const wrap = parent === field ? svg! : (parent as HTMLElement);
+  return { svg: svg as SVGElement, wrap };
+}
+
+function classOf(el: Element) {
+  return el.getAttribute('class') ?? '';
+}
+
 describe('HistoryClient', () => {
   beforeEach(() => {
     lessonRows = [...allLessons];
@@ -179,5 +202,107 @@ describe('HistoryClient', () => {
 
     await screen.findByText('Fractions');
     expect(screen.queryByRole('button', { name: /all subjects/i })).not.toBeInTheDocument();
+  });
+
+  it('centres the search icon on the input text with logical start inset, not translate hacks', async () => {
+    renderHistory();
+    await screen.findByRole('heading', { level: 1 });
+
+    const { input, field } = getSearchField();
+    const { wrap } = getSearchIconWrap(field);
+
+    expect(classOf(wrap)).toMatch(/\babsolute\b/);
+    expect(classOf(wrap)).toMatch(/\binset-y-0\b/);
+    expect(classOf(wrap)).toMatch(/\bstart-0\b/);
+    expect(classOf(wrap)).toMatch(/\bflex\b/);
+    expect(classOf(wrap)).toMatch(/\bitems-center\b/);
+    expect(classOf(wrap)).toMatch(/\bpointer-events-none\b/);
+    expect(classOf(wrap)).toMatch(/\bps-3\b/);
+    expect(classOf(wrap)).not.toMatch(/top-1\/2/);
+    expect(classOf(wrap)).not.toMatch(/-translate-y-1\/2/);
+    expect(classOf(wrap)).not.toMatch(/\bleft-/);
+    expect(classOf(input)).toMatch(/\bps-9\b/);
+    expect(classOf(input)).not.toMatch(/\bpl-/);
+  });
+
+  it('keeps the search icon logically inset in Arabic RTL at the same classes', async () => {
+    document.documentElement.dir = 'rtl';
+    renderHistory(<HistoryClient />, 'ar');
+
+    const input = await screen.findByRole('textbox', { name: 'البحث في الدروس حسب العنوان' });
+    const field = input.parentElement as HTMLElement;
+    const { wrap } = getSearchIconWrap(field);
+
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(classOf(wrap)).toMatch(/\bstart-0\b/);
+    expect(classOf(wrap)).toMatch(/\binset-y-0\b/);
+    expect(classOf(wrap)).toMatch(/\bitems-center\b/);
+    expect(classOf(wrap)).not.toMatch(/\bleft-/);
+    expect(classOf(input)).toMatch(/\bps-9\b/);
+    expect(classOf(input)).toMatch(/\bpe-3\b/);
+    document.documentElement.dir = 'ltr';
+  });
+
+  it('matches search and All subjects control height, border, and radius', async () => {
+    renderHistory();
+    const trigger = await screen.findByRole('button', { name: /all subjects/i });
+    const { input, field } = getSearchField();
+    const row = field.parentElement as HTMLElement;
+    const dropdown = trigger.parentElement as HTMLElement;
+
+    expect(input.className).toMatch(/\bh-13\b/);
+    expect(trigger.className).toMatch(/\bh-13\b/);
+    expect(input.className).toMatch(/\bborder-2\b/);
+    expect(trigger.className).toMatch(/\bborder-2\b/);
+    expect(input.className).toMatch(/\brounded-xl\b/);
+    expect(trigger.className).toMatch(/\brounded-xl\b/);
+    expect(input.className).not.toMatch(/\bpy-2\b/);
+    expect(input.className).not.toMatch(/\bmd:text-sm\b/);
+
+    expect(field.className).toMatch(/\bw-full\b/);
+    expect(field.className).toMatch(/\bflex-1\b/);
+    expect(dropdown.className).toMatch(/\bw-full\b/);
+    expect(dropdown.className).toMatch(/\bsm:w-auto\b/);
+    expect(dropdown.className).toMatch(/sm:min-w-\[10rem\]/);
+    expect(row.className).toMatch(/\bflex-col\b/);
+    expect(row.className).toMatch(/\bsm:flex-row\b/);
+    expect(row.className).toMatch(/\bsm:items-center\b/);
+  });
+
+  it('keeps the search and subject row sticky below the nav without covering cards', async () => {
+    const { user } = renderHistory();
+    const fractions = await screen.findByText('Fractions');
+
+    const { input } = getSearchField();
+    const toolbar = input.closest('[class*="sticky"]');
+    expect(toolbar).toBeInstanceOf(HTMLElement);
+    expect(toolbar).toHaveClass('sticky');
+    expect(toolbar).toHaveClass('top-14');
+    expect(toolbar).toHaveClass('z-30');
+    expect(toolbar).toHaveClass('bg-background/90');
+    expect(toolbar).toHaveClass('backdrop-blur-md');
+    expect(toolbar?.className).not.toMatch(/\bfixed\b/);
+    expect(toolbar?.className).not.toMatch(/\bz-40\b/);
+    expect(toolbar?.className).not.toMatch(/\bz-50\b/);
+
+    expect(toolbar!.contains(fractions)).toBe(false);
+    expect(toolbar!.contains(input)).toBe(true);
+    expect(toolbar!.contains(screen.getByRole('button', { name: /all subjects/i }))).toBe(true);
+
+    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    const listbox = screen.getByRole('listbox');
+    expect(document.body.contains(listbox)).toBe(true);
+    expect(toolbar!.contains(listbox)).toBe(false);
+  });
+
+  it('keeps the Arabic filter row sticky below the nav with a readable backdrop', async () => {
+    document.documentElement.dir = 'rtl';
+    renderHistory(<HistoryClient />, 'ar');
+
+    const input = await screen.findByRole('textbox', { name: 'البحث في الدروس حسب العنوان' });
+    const toolbar = input.closest('[class*="sticky"]');
+    expect(toolbar).toHaveClass('sticky', 'top-14', 'z-30', 'bg-background/90', 'backdrop-blur-md');
+    expect(toolbar!.contains(await screen.findByText('Fractions'))).toBe(false);
+    document.documentElement.dir = 'ltr';
   });
 });
