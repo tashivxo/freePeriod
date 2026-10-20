@@ -1,6 +1,6 @@
 # Arham — FreePeriod defect onboarding
 
-Welcome. This folder is your working area for **three assigned defects** plus a log for anything else you find while shipping fixes.
+Welcome. This folder is your working area for **four assigned defects** plus a log for anything else you find while shipping fixes.
 
 **Product context:** [FreePeriod](https://freeperiod.co.za) is a Next.js 16 (App Router) AI lesson planner for teachers. Auth and data live in Supabase; billing uses Lemon Squeezy. Local dev: see root [`AGENTS.md`](../AGENTS.md) and `npm run dev` (port 3000).
 
@@ -13,8 +13,9 @@ Welcome. This folder is your working area for **three assigned defects** plus a 
 | 1 | Auth / logout buttons missing clear loading feedback | [`defect-01-auth-button-loading.md`](./defect-01-auth-button-loading.md) | `fix/auth-button-loading` |
 | 2 | Delete account too close to log out in Settings | [`defect-02-settings-danger-zone.md`](./defect-02-settings-danger-zone.md) | `fix/settings-danger-zone` |
 | 3 | No in-app support / feedback path to support@freeperiod.co.za | [`defect-03-support-feedback.md`](./defect-03-support-feedback.md) | `feat/support-feedback` |
+| 4 | Settings dropdowns misbehave / page scrolls on open | [`defect-04-settings-dropdown-scroll.md`](./defect-04-settings-dropdown-scroll.md) | `fix/settings-dropdown-scroll` |
 
-**Anything else you notice** (typos, broken flows, a11y issues) → add a row in [`noticed-defects.md`](./noticed-defects.md). Do **not** fold unrelated fixes into the three PRs above unless Tashiv agrees.
+**Anything else you notice** (typos, broken flows, a11y issues) → add a row in [`noticed-defects.md`](./noticed-defects.md). Do **not** fold unrelated fixes into the assigned PRs above unless Tashiv agrees.
 
 ---
 
@@ -80,6 +81,7 @@ EOF
 | Google OAuth button | `components/auth/GoogleContinueButton.tsx` |
 | Shared button + spinner | `components/ui/Button.tsx` (`isLoading`, `Loader2`) |
 | Settings (logout + delete) | `app/(app)/settings/SettingsClient.tsx`, server page `app/(app)/settings/page.tsx` |
+| Settings dropdowns | `AnimatedDropdown` via `components/ui/animated-dropdown.tsx` (used in SettingsClient) |
 | Account deletion API | `app/api/user/delete/route.ts`, `lib/account/delete-user.ts` |
 | Support email config | `lib/legal/config.ts` (`contactEmail`, default `support@freeperiod.co.za`) |
 | Marketing contact link | `components/legal/MarketingFooter.tsx` (`mailto:`) |
