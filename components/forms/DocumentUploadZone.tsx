@@ -7,13 +7,11 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { FieldError } from '@/components/ui/FieldError';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import {
-  UPLOAD_ACTION_COLOR_DARK,
-  UPLOAD_ACTION_COLOR_LIGHT,
+  UPLOAD_ACTION_COLOR_CLASS,
+  UPLOAD_DRAG_ACTIVE_BORDER_CLASS,
   UPLOAD_DRAG_BACKGROUND,
-  UPLOAD_DRAG_BORDER_DARK,
-  UPLOAD_DRAG_BORDER_LIGHT,
-  UPLOAD_ERROR_COLOR_DARK,
-  UPLOAD_ERROR_COLOR_LIGHT,
+  UPLOAD_DRAG_FOCUS_CLASS,
+  UPLOAD_ERROR_TEXT_CLASS,
 } from '@/lib/upload/colors';
 import { formatUploadError } from '@/lib/upload/errors';
 import {
@@ -33,9 +31,6 @@ interface DocumentUploadZoneProps {
   onBusyChange?: (busy: boolean) => void;
   maxSizeBytes?: number;
 }
-
-const ACTION_COLOR_CLASS = `text-[${UPLOAD_ACTION_COLOR_LIGHT}] dark:text-[${UPLOAD_ACTION_COLOR_DARK}]`;
-const ERROR_TEXT_CLASS = `text-[${UPLOAD_ERROR_COLOR_LIGHT}] dark:text-[${UPLOAD_ERROR_COLOR_DARK}]`;
 
 export function DocumentUploadZone({
   accept,
@@ -175,10 +170,8 @@ export function DocumentUploadZone({
           'flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4',
           'transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2',
-          `focus-visible:outline-[${UPLOAD_DRAG_BORDER_LIGHT}] dark:focus-visible:outline-[${UPLOAD_DRAG_BORDER_DARK}]`,
-          isDragging
-            ? `border-solid border-[${UPLOAD_DRAG_BORDER_LIGHT}] dark:border-[${UPLOAD_DRAG_BORDER_DARK}]`
-            : 'border-dashed',
+          UPLOAD_DRAG_FOCUS_CLASS,
+          isDragging ? UPLOAD_DRAG_ACTIVE_BORDER_CLASS : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
         )}
         style={{
@@ -201,7 +194,7 @@ export function DocumentUploadZone({
             ) : (
               <>
                 {t('generate.upload.dragDropPrompt')}{' '}
-                <span className={`font-medium underline ${ACTION_COLOR_CLASS}`}>
+                <span className={`font-medium underline ${UPLOAD_ACTION_COLOR_CLASS}`}>
                   {t('generate.upload.browse')}
                 </span>
               </>
@@ -295,7 +288,7 @@ export function DocumentUploadZone({
                 onClick={() => {
                   void handleFile(file);
                 }}
-                className={`shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2 ${ACTION_COLOR_CLASS}`}
+                className={`shrink-0 text-sm font-medium underline-offset-2 hover:underline focus:outline focus:outline-2 focus:outline-offset-2 ${UPLOAD_ACTION_COLOR_CLASS}`}
                 style={{ outlineColor: 'var(--color-primary)' }}
               >
                 {t('generate.upload.retry')}
@@ -339,7 +332,7 @@ export function DocumentUploadZone({
       )}
 
       {friendlyError && (
-        <FieldError variant="banner" message={friendlyError} className={ERROR_TEXT_CLASS} />
+        <FieldError variant="banner" message={friendlyError} className={UPLOAD_ERROR_TEXT_CLASS} />
       )}
     </div>
   );
