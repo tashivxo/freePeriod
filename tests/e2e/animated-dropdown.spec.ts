@@ -35,7 +35,7 @@ test.describe('AnimatedDropdown — generate page', () => {
     await dropdowns.nth(1).click();
     const listbox = page.getByRole('listbox');
     await expect(listbox).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Grade 1' })).toBeVisible();
+    await expect(page.getByRole('option', { name: /Grade\s*\u2068?1\u2069?/ })).toBeVisible();
   });
 
   test('curriculum dropdown contains UAE MOE', async ({ page }) => {
@@ -92,9 +92,9 @@ test.describe('AnimatedDropdown — settings page', () => {
     const gradeDropdown = page.locator('#default-grade');
     await gradeDropdown.click();
     await expect(page.getByRole('listbox')).toBeVisible();
-    await page.getByRole('option', { name: 'Grade 10' }).click();
+    await page.getByRole('option', { name: /Grade\s*\u2068?10\u2069?/ }).click();
     await expect(page.getByRole('listbox')).not.toBeVisible();
-    await expect(gradeDropdown).toContainText('Grade 10');
+    await expect(gradeDropdown).toContainText('10');
   });
 
   test('curriculum dropdown opens and contains UAE MOE', async ({ page }) => {

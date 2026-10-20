@@ -90,7 +90,13 @@ jest.mock('@/providers/locale', () => {
     return resolved.replace(/\{(\w+)\}/g, (_, name: string) => vars[name] ?? `{${name}}`);
   };
   return {
-    useLocale: () => ({ locale: 'en', setLocale: jest.fn(), dir: 'ltr', messages, t }),
+    useLocale: () => ({
+      locale: 'en',
+      setLocale: jest.fn().mockResolvedValue(undefined),
+      dir: 'ltr',
+      messages,
+      t,
+    }),
     useT: () => t,
   };
 });
@@ -128,7 +134,7 @@ function expectNoNativeSelects() {
 describe('AnimatedDropdown consumers', () => {
   it('SettingsClient uses listbox triggers instead of native selects', () => {
     render(
-      <SettingsClient user={baseUser} email="teacher@example.com" planLabel="Free" />,
+      <SettingsClient user={baseUser} email="teacher@example.com" usagePlan="free" generationCount={0} generationLimit={3} />,
     );
 
     expectNoNativeSelects();
@@ -174,7 +180,11 @@ describe('AnimatedDropdown consumers', () => {
     await user.click(screen.getByRole('radio', { name: /mathematics/i }));
     await user.click(screen.getByRole('button', { name: /next/i }));
     await user.click(screen.getByLabelText(/grade level/i));
-    await user.click(screen.getByRole('option', { name: 'Grade 9' }));
+    await user.click(
+      screen.getByRole('option', {
+        name: (accessibleName) => accessibleName.replace(/[\u2068\u2069]/g, '') === 'Grade 9',
+      }),
+    );
     await user.click(screen.getByRole('button', { name: /next/i }));
 
     expectNoNativeSelects();

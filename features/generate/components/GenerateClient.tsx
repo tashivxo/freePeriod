@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GenerateForm, type GenerateFormData } from './GenerateForm';
 import { GenerationScreen } from '@/components/animations/GenerationScreen';
 import { UpgradePrompt } from '@/features/billing/components/UpgradePrompt';
 import { drainSseEvents } from '@/lib/generation/sse';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useLocale, useT } from '@/providers/locale';
 import type { GenerateStreamEvent, Plan } from '@/types';
-import { hasStoredLocale, type Locale } from '@/lib/i18n';
 
 type GenerationPhase = 'idle' | 'generating' | 'error';
 
@@ -19,18 +19,16 @@ type GenerateClientProps = {
     curriculum: string;
   };
   plan?: Plan;
-  preferredLocale?: Locale;
 };
 
 export function GenerateClient({
   defaults,
   plan = 'free',
-  preferredLocale,
 }: GenerateClientProps) {
   const router = useRouter();
-  const { locale, setLocale } = useLocale();
+  const { locale } = useLocale();
   const t = useT();
-  const generationLocale = locale ?? 'en';
+  const generationLocale = locale;
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [events, setEvents] = useState<GenerateStreamEvent[]>([]);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -40,16 +38,7 @@ export function GenerateClient({
   const isGenerating = phase === 'generating';
   const showOverlay = phase === 'generating' || phase === 'error';
 
-  useEffect(() => {
-    document.title = t('generate.documentTitle');
-  }, [t]);
-
-  useEffect(() => {
-    if (hasStoredLocale()) return;
-    if (preferredLocale && preferredLocale !== locale) {
-      setLocale(preferredLocale);
-    }
-  }, [locale, preferredLocale, setLocale]);
+  useDocumentTitle(t('generate.documentTitle'));
 
   const returnToForm = useCallback(() => {
     abortRef.current?.abort();
@@ -90,14 +79,14 @@ export function GenerateClient({
           abortRef.current = null;
           return;
         }
-        const errorBody = await response.json().catch(() => ({ error: 'Request failed' }));
-        surfaceError(errorBody.error ?? 'Request failed');
+        const errorBody = await response.json().catch(() => ({ error: t('generate.errorRequestFailed') }));
+        surfaceError(errorBody.error ?? t('generate.errorRequestFailed'));
         return;
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        surfaceError('No response stream');
+        surfaceError(t('generate.errorNoStream'));
         return;
       }
 
@@ -139,9 +128,7 @@ export function GenerateClient({
       }
 
       if (!terminalError && !sawComplete && abortRef.current === controller) {
-        surfaceError(
-          'Generation stopped before the lesson was saved. Please try again.',
-        );
+        surfaceError(t('generate.errorIncomplete'));
         return;
       }
 
@@ -152,9 +139,9 @@ export function GenerateClient({
       if (err instanceof DOMException && err.name === 'AbortError') {
         return;
       }
-      surfaceError('Connection lost. Please try again.');
+      surfaceError(t('generate.errorConnectionLost'));
     }
-  }, [generationLocale, plan]);
+  }, [generationLocale, plan, t]);
 
   const handleRetry = useCallback(() => {
     const data = lastFormDataRef.current;

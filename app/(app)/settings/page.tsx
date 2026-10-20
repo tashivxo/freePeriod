@@ -1,33 +1,19 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSubscription, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@/lib/supabase/server';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
-import { formatGenerationUsage } from '@/lib/generation/quota';
-import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
+import { getMessages } from '@/lib/i18n';
+import { readLocaleCookie } from '@/lib/i18n/server';
 import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
 import { SettingsClient } from './SettingsClient';
-import type { Plan, Subscription, User } from '@/types';
+import type { Subscription, User } from '@/types';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const raw = (await cookies()).get('fp-locale')?.value;
-  let locale: Locale = DEFAULT_LOCALE;
-  try {
-    const decoded = raw ? decodeURIComponent(raw) : '';
-    if (isLocale(decoded)) locale = decoded;
-  } catch {
-    locale = DEFAULT_LOCALE;
-  }
+  const locale = await readLocaleCookie();
   return { title: getMessages(locale).settings.documentTitle };
 }
-
-const PLAN_LABELS: Record<Plan, string> = {
-  free: 'Free',
-  pro: 'Pro',
-  pro_plus: 'Pro+',
-};
 
 function SettingsSkeleton() {
   return (
@@ -38,13 +24,6 @@ function SettingsSkeleton() {
       <div className="h-24 bg-surface border border-border rounded-xl" />
     </div>
   );
-}
-
-function formatPlanLabel(plan: Plan, subscription: Subscription | null): string {
-  const base = PLAN_LABELS[plan] ?? 'Free';
-  if (!subscription || !isTrialActive(subscription.trial_end)) return base;
-  const days = getTrialDaysRemaining(subscription.trial_end);
-  return `${base} · Trial (${days} day${days === 1 ? '' : 's'} left)`;
 }
 
 async function resolveCustomerPortalUrl(
@@ -113,25 +92,22 @@ async function SettingsContent() {
   const subscription = (subscriptionRow as Subscription | null) ?? null;
   const email = user.email || authUser.email || '';
   const generationAccess = await resolveGenerationAccess(supabase, authUser.id);
-  const planLabel = formatPlanLabel(generationAccess.userPlan, subscription);
+  const trialDays =
+    subscription && isTrialActive(subscription.trial_end)
+      ? getTrialDaysRemaining(subscription.trial_end)
+      : null;
   const manageSubscriptionUrl = await resolveCustomerPortalUrl(
     subscription?.ls_subscription_id ?? null,
   );
-  const usageLabel = formatGenerationUsage({
-    plan: generationAccess.userPlan,
-    generationCount: generationAccess.generationCount,
-    generationLimit: generationAccess.generationLimit,
-  });
 
   return (
     <SettingsClient
       user={user}
       email={email}
-      planLabel={planLabel}
-      usageLabel={usageLabel}
       usagePlan={generationAccess.userPlan}
       generationCount={generationAccess.generationCount}
       generationLimit={generationAccess.generationLimit}
+      trialDays={trialDays}
       manageSubscriptionUrl={manageSubscriptionUrl}
     />
   );

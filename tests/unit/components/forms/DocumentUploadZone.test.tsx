@@ -1,14 +1,13 @@
 import type { ComponentProps, ReactElement } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import {
-  DocumentUploadZone,
   UPLOAD_ACTION_COLOR_DARK,
   UPLOAD_ACTION_COLOR_LIGHT,
   UPLOAD_DRAG_BACKGROUND,
-  UPLOAD_DRAG_BORDER,
-  classifyUploadError,
-} from '@/components/forms/DocumentUploadZone';
+  UPLOAD_DRAG_BORDER_LIGHT,
+} from '@/lib/upload/colors';
 import { contrastRatio } from '@/tests/helpers/contrast';
 import { getMessages, LOCALES } from '@/lib/i18n';
 import { LocaleProvider } from '@/providers/locale';
@@ -46,74 +45,6 @@ jest.mock('@/providers/zen-mode', () => ({
 function renderWithLocale(ui: ReactElement, locale: 'en' | 'ar' | 'es' | 'fr' | 'zh-Hans' = 'en') {
   return render(<LocaleProvider initialLocale={locale}>{ui}</LocaleProvider>);
 }
-
-describe('classifyUploadError', () => {
-  it('maps auth failures, never treating them as generic copy', () => {
-    expect(classifyUploadError('Not authenticated')).toBe('auth');
-    expect(classifyUploadError('JWT expired')).toBe('auth');
-    expect(classifyUploadError('Auth session missing')).toBe('auth');
-  });
-
-  it('does not treat a network getUser failure as auth', () => {
-    expect(classifyUploadError('Failed to fetch')).toBe('network');
-    expect(classifyUploadError('AuthRetryableFetchError')).toBe('network');
-  });
-
-  it('maps oversized and wrong-type files', () => {
-    expect(classifyUploadError('huge.pdf exceeds the maximum size of 10 MB')).toBe('tooLarge');
-    expect(classifyUploadError('Payload too large')).toBe('tooLarge');
-    expect(classifyUploadError('Only .pdf files are accepted. You uploaded a .txt file.')).toBe(
-      'wrongType',
-    );
-    expect(
-      classifyUploadError(
-        'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
-      ),
-    ).toBe('wrongType');
-  });
-
-  it('maps empty files and network failures', () => {
-    expect(classifyUploadError('empty.pdf is empty. Please choose a file with content.')).toBe(
-      'empty',
-    );
-    expect(classifyUploadError('Failed to fetch')).toBe('network');
-    expect(classifyUploadError('NetworkError when attempting to fetch resource.')).toBe('network');
-    expect(classifyUploadError('Upload failed')).toBe('network');
-  });
-
-  it('maps missing text, timeouts, and parse failures distinctly', () => {
-    expect(
-      classifyUploadError(
-        'No readable text was found in this document. Please upload a clearer curriculum file.',
-      ),
-    ).toBe('noText');
-    expect(
-      classifyUploadError(
-        'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
-      ),
-    ).toBe('noText');
-    expect(
-      classifyUploadError(
-        'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
-      ),
-    ).toBe('timeout');
-    expect(classifyUploadError('The document could not be processed.')).toBe('parse');
-  });
-
-  it('maps known parse 500 server strings to parse, never generic', () => {
-    expect(classifyUploadError('Failed to parse document')).toBe('parse');
-    expect(
-      classifyUploadError(
-        'Failed to read this PDF on the server. Please try again, or upload a DOCX or XLSX copy.',
-      ),
-    ).toBe('parse');
-    expect(classifyUploadError('DOCX document.xml is missing')).toBe('parse');
-  });
-
-  it('falls back to generic for unknown raw messages', () => {
-    expect(classifyUploadError('duplicate key value violates unique constraint')).toBe('generic');
-  });
-});
 
 describe('DocumentUploadZone action contrast', () => {
   // 32% brand coral on white / #171717, and 10% error on cream / #171717.
@@ -177,7 +108,6 @@ describe('DocumentUploadZone template intake', () => {
   it('accepts a PDF template and uploads it', async () => {
     renderWithLocale(
       <DocumentUploadZone
-        label="Upload lesson plan template"
         accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
@@ -204,7 +134,6 @@ describe('DocumentUploadZone template intake', () => {
   it('still rejects a plain-text file before reading, uploading, or marking the parent busy', async () => {
     renderWithLocale(
       <DocumentUploadZone
-        label="Upload lesson plan template"
         accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
@@ -232,7 +161,6 @@ describe('DocumentUploadZone template intake', () => {
   it('still accepts a DOCX template', async () => {
     renderWithLocale(
       <DocumentUploadZone
-        label="Upload lesson plan template"
         accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
@@ -282,7 +210,6 @@ describe('DocumentUploadZone file input UX', () => {
   ) {
     return renderWithLocale(
       <DocumentUploadZone
-        label="Upload lesson plan template"
         accept=".pdf,.docx,.xlsx,.xls"
         uploadType="template"
         onUploadComplete={onUploadComplete}
@@ -347,7 +274,7 @@ describe('DocumentUploadZone file input UX', () => {
 
     const dropzone = screen.getByText(/drag and drop a file here/i).closest('[data-dragging]');
     expect(dropzone).toHaveAttribute('data-dragging', 'false');
-    expect((dropzone as HTMLElement).style.borderColor).not.toBe(UPLOAD_DRAG_BORDER);
+    expect((dropzone as HTMLElement).style.borderColor).not.toBe(UPLOAD_DRAG_BORDER_LIGHT);
 
     fireEvent.dragEnter(dropzone!, { dataTransfer: { types: ['Files'] } });
     expect(dropzone).toHaveAttribute('data-dragging', 'true');
@@ -500,7 +427,7 @@ describe('DocumentUploadZone file input UX', () => {
     expect(contrastRatio('#FF8BB0', '#171717')).toBeGreaterThanOrEqual(3);
 
     const clickSpy = jest.spyOn(input, 'click');
-    input.focus();
+    (dropzone as HTMLElement).focus();
     await user.keyboard('{Enter}');
     expect(clickSpy).toHaveBeenCalled();
     clickSpy.mockClear();
@@ -625,7 +552,7 @@ describe('DocumentUploadZone file input UX', () => {
     expect(screen.getByLabelText(ar.inputAriaTemplate)).toBeInTheDocument();
     const help = screen.getByText((content) => content.includes(ar.helpMax.split('{size}')[0].trim()));
     expect(help.textContent).not.toMatch(/MB\s*10/);
-    expect(help.textContent).toMatch(/\u2066/);
+    expect(help.textContent).toMatch(/\u2068/);
   });
 
   it('maps a scanned curriculum PDF to a text-based file suggestion', async () => {
@@ -636,7 +563,6 @@ describe('DocumentUploadZone file input UX', () => {
     const user = userEvent.setup();
     renderWithLocale(
       <DocumentUploadZone
-        label="Upload curriculum document"
         accept=".pdf,.docx,.xlsx,.jpg,.png"
         uploadType="curriculum_doc"
         onUploadComplete={onUploadComplete}
@@ -665,7 +591,6 @@ describe('DocumentUploadZone file input UX', () => {
     const user = userEvent.setup();
     renderWithLocale(
       <DocumentUploadZone
-        label="Upload curriculum document"
         accept=".pdf,.docx,.xlsx,.jpg,.png"
         uploadType="curriculum_doc"
         onUploadComplete={onUploadComplete}

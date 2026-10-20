@@ -14,7 +14,9 @@ import { Button } from '@/components/ui/Button';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { FILLABLE_TEMPLATE_ACCEPT, getTemplateFileRejection } from '@/lib/lesson/template-path';
+import { formatUploadError } from '@/lib/upload/errors';
 import { cn } from '@/lib/utils';
+import { useT } from '@/providers/locale';
 import { useZenMode } from '@/providers/zen-mode';
 import {
   BTN_UPLOAD_ONE_NOW,
@@ -59,6 +61,7 @@ export function FilledTemplateChoiceDialog({
   sharedTemplateLoading,
   dialogActionError = null,
 }: FilledTemplateChoiceDialogProps) {
+  const t = useT();
   const inputId = useId();
   const { zenMode } = useZenMode();
   const [prefersReduced, setPrefersReduced] = useState(getPrefersReducedMotion);
@@ -96,7 +99,8 @@ export function FilledTemplateChoiceDialog({
     noticeIconRef.current?.startAnimation();
   }, [noticeIconMotionDisabled, noticeIconRef, open, variant]);
 
-  const activeActionError = dialogActionError ?? uploadError ?? attachError;
+  const formattedUploadError = uploadError ? formatUploadError(t, uploadError) : null;
+  const activeActionError = dialogActionError ?? formattedUploadError ?? attachError;
   useEffect(() => {
     if (!activeActionError || actionErrorIconMotionDisabled) return;
     actionErrorIconRef.current?.startAnimation();

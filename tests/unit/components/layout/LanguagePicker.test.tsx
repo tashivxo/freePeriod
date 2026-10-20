@@ -47,7 +47,8 @@ async function openPicker(user: { click: (el: HTMLElement) => Promise<void> }, n
 
 describe('LanguagePicker', () => {
   beforeEach(() => {
-    setLocale.mockClear();
+    setLocale.mockReset();
+    setLocale.mockResolvedValue(undefined);
     mockLocale = 'en';
   });
 

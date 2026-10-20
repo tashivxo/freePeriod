@@ -54,10 +54,20 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.saving': 'Saving...',
   'settings.saved': 'Settings saved!',
   'settings.saveFailed': 'Failed to save settings',
+  'settings.documentTitle': 'Settings | FreePeriod',
+  'settings.planFree': 'Free',
+  'settings.planPro': 'Pro',
+  'settings.planProPlus': 'Pro+',
+  'settings.planWithTrial': '{plan} · Trial ({days} days left)',
+  'settings.planWithTrialOne': '{plan} · Trial ({days} day left)',
   'settings.account': 'Account',
   'settings.email': 'Email',
   'settings.plan': 'Plan',
   'settings.usage': 'Usage',
+  'settings.usageThisPeriod': '{used} of {limit} used this period',
+  'settings.usageUnlimited': '{used} generated this period (Unlimited)',
+  'settings.deleteFailed': 'Failed to delete account',
+  'settings.somethingWentWrong': 'Something went wrong. Please try again.',
   'settings.manageSubscription': 'Manage subscription',
   'settings.logOut': 'Log out',
   'settings.deleteAccount': 'Delete account',
@@ -133,8 +143,9 @@ const baseUser: User = {
 const defaultProps = {
   user: baseUser,
   email: baseUser.email,
-  planLabel: 'Free',
-  usageLabel: '2 of 3 used this period',
+  usagePlan: 'free' as const,
+  generationCount: 2,
+  generationLimit: 3,
   manageSubscriptionUrl: null as string | null,
 };
 
@@ -154,14 +165,17 @@ describe('SettingsClient — account context', () => {
     render(
       <SettingsClient
         {...defaultProps}
-        planLabel="Pro"
-        usageLabel="5 of 20 used this period"
+        usagePlan="pro"
+        generationCount={5}
+        generationLimit={20}
       />,
     );
 
     expect(screen.getByText('teacher@example.com')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
-    expect(screen.getByText('5 of 20 used this period')).toBeInTheDocument();
+    expect(document.body.textContent?.replace(/[\u2068\u2069]/g, '')).toContain(
+      '5 of 20 used this period',
+    );
   });
 
   it('does not show manage subscription when portal URL is missing', () => {
@@ -174,7 +188,7 @@ describe('SettingsClient — account context', () => {
     render(
       <SettingsClient
         {...defaultProps}
-        planLabel="Pro"
+        usagePlan="pro"
         manageSubscriptionUrl="https://example.lemonsqueezy.com/billing"
       />,
     );
@@ -436,39 +450,6 @@ describe('SettingsClient — language', () => {
     expect(
       screen.getByText(/website and new lesson plans use this language/i),
     ).toBeInTheDocument();
-  });
-
-  it('applies user.preferred_locale on mount only when no client locale is stored', () => {
-    render(
-      <SettingsClient
-        {...defaultProps}
-        user={{ ...baseUser, preferred_locale: 'fr' }}
-      />,
-    );
-
-    expect(mockSetLocale).toHaveBeenCalledWith('fr');
-  });
-
-  it('does not override an existing client locale with user.preferred_locale', () => {
-    localStorage.setItem('fp-locale', 'ar');
-    document.cookie = 'fp-locale=ar; path=/';
-    (useLocale as jest.Mock).mockReturnValue({
-      locale: 'ar',
-      setLocale: mockSetLocale,
-      dir: 'rtl',
-      messages: {},
-      t: jest.fn(),
-    });
-
-    render(
-      <SettingsClient
-        {...defaultProps}
-        user={{ ...baseUser, preferred_locale: 'en' }}
-      />,
-    );
-
-    expect(mockSetLocale).not.toHaveBeenCalled();
-    expect(screen.getByLabelText(/language/i)).toHaveTextContent('العربية');
   });
 
   it('changing language calls setLocale once and does not write preferred_locale again', async () => {

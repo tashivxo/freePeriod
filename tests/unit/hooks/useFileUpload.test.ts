@@ -79,7 +79,7 @@ describe('useFileUpload', () => {
       await result.current.handleFile(file);
     });
 
-    expect(result.current.error).toMatch(/could not be processed/i);
+    expect(result.current.error).toEqual({ kind: 'parse' });
     expect(result.current.storagePath).toBeNull();
     expect(result.current.file?.name).toBe('unit.pdf');
     expect(mockInsertSingle).toHaveBeenCalledTimes(1);
@@ -180,9 +180,7 @@ describe('useFileUpload', () => {
     });
 
     expect(result.current.phase).toBe('error');
-    expect(result.current.error).toBe(
-      'Lesson plan templates need to be .pdf, .docx, .xlsx, or .xls so we can fill them in. You uploaded a .txt.',
-    );
+    expect(result.current.error).toEqual({ kind: 'wrongType' });
     expect(result.current.file).toBeNull();
     expect(result.current.isUploading).toBe(false);
     expect(mockUpload).not.toHaveBeenCalled();
@@ -206,7 +204,7 @@ describe('useFileUpload', () => {
     expect(result.current.file?.name).toBe('unit.pdf');
     expect(result.current.phase).toBe('error');
     expect(result.current.storagePath).toBeNull();
-    expect(result.current.error).toMatch(/no extractable text/i);
+    expect(result.current.error).toEqual({ kind: 'noText' });
   });
 
   it('slugifies filename stems so new storage keys have no spaces', async () => {
@@ -239,7 +237,7 @@ describe('useFileUpload', () => {
     });
 
     expect(result.current.phase).toBe('error');
-    expect(result.current.error).toBe('unit.pdf exceeds the maximum size of 10 B');
+    expect(result.current.error).toEqual({ kind: 'tooLarge', vars: { name: 'unit.pdf' } });
     expect(result.current.file).toBeNull();
     expect(result.current.isUploading).toBe(false);
     expect(mockUpload).not.toHaveBeenCalled();
@@ -256,9 +254,7 @@ describe('useFileUpload', () => {
     });
 
     expect(result.current.phase).toBe('error');
-    expect(result.current.error).toBe(
-      'empty.pdf is empty. Please choose a file with content.',
-    );
+    expect(result.current.error).toEqual({ kind: 'empty', vars: { name: 'empty.pdf' } });
     expect(result.current.file).toBeNull();
     expect(mockUpload).not.toHaveBeenCalled();
   });
@@ -273,7 +269,7 @@ describe('useFileUpload', () => {
       await result.current.handleFile(pdfFile());
     });
 
-    expect(result.current.error).toBe('Not authenticated');
+    expect(result.current.error).toEqual({ kind: 'auth' });
   });
 
   it('treats an offline getUser failure as a network error, not auth', async () => {
@@ -289,8 +285,7 @@ describe('useFileUpload', () => {
       await result.current.handleFile(pdfFile());
     });
 
-    expect(result.current.error).toBe('Failed to fetch');
-    expect(result.current.error).not.toBe('Not authenticated');
+    expect(result.current.error).toEqual({ kind: 'network' });
   });
 });
 

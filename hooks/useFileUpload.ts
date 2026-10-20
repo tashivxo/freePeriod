@@ -2,9 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isNetworkError } from '@/lib/errors/network';
 import { requiresExtractedText } from '@/lib/parse/types';
 import { getTemplateFileRejection, isPdfTemplateMime } from '@/lib/lesson/template-path';
-import { DEFAULT_MAX_UPLOAD_BYTES, formatFileSize } from '@/lib/utils/file-input';
+import { UploadError, type UploadFailure } from '@/lib/upload/errors';
+import { DEFAULT_MAX_UPLOAD_BYTES } from '@/lib/utils/file-input';
 import type { UploadType } from '@/types';
 
 export const PARSE_DOCUMENT_TIMEOUT_MS = 90_000;
@@ -26,9 +28,9 @@ interface UseFileUploadReturn {
   parsedText: string | null;
   isUploading: boolean;
   phase: UploadPhase;
-  error: string | null;
+  error: UploadFailure | null;
   handleFile: (file: File) => Promise<void>;
-  rejectFile: (message: string) => void;
+  rejectFile: (failure: UploadFailure) => void;
   removeFile: () => Promise<void>;
 }
 
@@ -50,25 +52,11 @@ export function slugifyFileStem(stem: string): string {
   return slug || 'file';
 }
 
-function parseTimeoutError(): Error {
-  return new Error(
-    'This document is taking too long to read. Try a smaller file, or wait a moment and try again.',
-  );
-}
-
-function isNetworkAuthError(error: { message?: string; name?: string; status?: number } | null): boolean {
-  if (!error) return false;
-  const message = (error.message ?? '').toLowerCase();
-  const name = (error.name ?? '').toLowerCase();
-  return (
-    name.includes('retryable') ||
-    name.includes('fetch') ||
-    message.includes('failed to fetch') ||
-    message.includes('network') ||
-    message.includes('offline') ||
-    message.includes('load failed') ||
-    error.status === 0
-  );
+function failureFromParseStatus(status: number): UploadFailure {
+  if (status === 401) return { kind: 'auth' };
+  if (status === 422) return { kind: 'noText' };
+  if (status === 400) return { kind: 'wrongType' };
+  return { kind: 'parse' };
 }
 
 async function fetchParseDocument(
@@ -86,7 +74,7 @@ async function fetchParseDocument(
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw parseTimeoutError();
+      throw new UploadError({ kind: 'timeout' });
     }
     throw err;
   } finally {
@@ -107,18 +95,18 @@ export function useFileUpload({
   const [parsedText, setParsedText] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UploadFailure | null>(null);
   const inFlightRef = useRef(false);
   const storedAttemptRef = useRef<StoredAttempt | null>(null);
 
-  const rejectFile = (message: string) => {
+  const rejectFile = (failure: UploadFailure) => {
     inFlightRef.current = false;
     setIsUploading(false);
     setFile(null);
     setStoragePath(null);
     setParsedText(null);
     setPhase('error');
-    setError(message);
+    setError(failure);
   };
 
   const handleFile = async (incoming: File) => {
@@ -127,7 +115,7 @@ export function useFileUpload({
     if (uploadType === 'template') {
       const rejection = getTemplateFileRejection(incoming);
       if (rejection) {
-        rejectFile(rejection);
+        rejectFile({ kind: 'wrongType' });
         return;
       }
     }
@@ -139,23 +127,18 @@ export function useFileUpload({
       const matchesAccept =
         accepted.includes(ext) || (accepted.includes('.pdf') && isPdfTemplateMime(incoming.type));
       if (!matchesAccept) {
-        setPhase('error');
-        setError(
-          `Only ${accepted.join(', ')} files are accepted. You uploaded a ${ext || 'unknown'} file.`,
-        );
+        rejectFile({ kind: 'wrongType' });
         return;
       }
     }
 
     if (incoming.size === 0) {
-      rejectFile(`${incoming.name} is empty. Please choose a file with content.`);
+      rejectFile({ kind: 'empty', vars: { name: incoming.name } });
       return;
     }
 
     if (incoming.size > maxSizeBytes) {
-      rejectFile(
-        `${incoming.name} exceeds the maximum size of ${formatFileSize(maxSizeBytes)}`,
-      );
+      rejectFile({ kind: 'tooLarge', vars: { name: incoming.name } });
       return;
     }
 
@@ -181,11 +164,11 @@ export function useFileUpload({
         const supabase = createClient();
 
         const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (isNetworkAuthError(userError)) {
-          throw new Error('Failed to fetch');
+        if (isNetworkError(userError)) {
+          throw new UploadError({ kind: 'network' });
         }
         if (userError || !userData.user) {
-          throw new Error('Not authenticated');
+          throw new UploadError({ kind: 'auth' });
         }
         const userId = userData.user.id;
 
@@ -222,7 +205,7 @@ export function useFileUpload({
       }
 
       if (!path || !newUploadId) {
-        throw new Error('Upload failed');
+        throw new UploadError({ kind: 'generic' });
       }
 
       setPhase('parsing');
@@ -231,21 +214,12 @@ export function useFileUpload({
         PARSE_DOCUMENT_TIMEOUT_MS,
       );
       if (!parseResponse.ok) {
-        let message = 'The document could not be processed. Please try a different file.';
-        try {
-          const data = (await parseResponse.json()) as { error?: string };
-          if (data.error) message = data.error;
-        } catch {
-          // Keep the generic processing error when the response is not JSON.
-        }
-        throw new Error(message);
+        throw new UploadError(failureFromParseStatus(parseResponse.status));
       }
       const parsedData = (await parseResponse.json()) as { text?: string };
       const extracted = parsedData.text ?? '';
       if (requiresExtractedText(uploadType) && !extracted.trim()) {
-        throw new Error(
-          'No extractable text was found. If this is a scanned PDF, upload a text-based file instead.',
-        );
+        throw new UploadError({ kind: 'noText' });
       }
 
       setUploadId(newUploadId);
@@ -257,7 +231,13 @@ export function useFileUpload({
       setStoragePath(null);
       setUploadId(storedAttemptRef.current?.uploadId ?? null);
       setPhase('error');
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      if (err instanceof UploadError) {
+        setError(err.failure);
+      } else if (isNetworkError(err)) {
+        setError({ kind: 'network' });
+      } else {
+        setError({ kind: 'generic' });
+      }
     } finally {
       inFlightRef.current = false;
       setIsUploading(false);

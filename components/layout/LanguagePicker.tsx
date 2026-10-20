@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from 'react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
-import { LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
+import { isLocale, LOCALE_LABELS, LOCALES } from '@/lib/i18n';
 import { useLocale, useT } from '@/providers/locale';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { cn } from '@/lib/utils';
@@ -61,9 +61,9 @@ export function LanguagePicker({
       )}
       onSelect={(item) => {
         const nextLocale = item.value ?? item.name;
-        if (LOCALES.includes(nextLocale as Locale)) {
+        if (isLocale(nextLocale)) {
           setPersistError(null);
-          void Promise.resolve(setLocale(nextLocale as Locale)).catch(() => {
+          void setLocale(nextLocale).catch(() => {
             setPersistError(t('settings.saveFailed'));
           });
         }

@@ -1,18 +1,11 @@
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { HistoryClient } from '@/features/history/components/HistoryClient';
-import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from '@/lib/i18n';
+import { getMessages } from '@/lib/i18n';
+import { readLocaleCookie } from '@/lib/i18n/server';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const raw = (await cookies()).get('fp-locale')?.value;
-  let locale: Locale = DEFAULT_LOCALE;
-  try {
-    const decoded = raw ? decodeURIComponent(raw) : '';
-    if (isLocale(decoded)) locale = decoded;
-  } catch {
-    locale = DEFAULT_LOCALE;
-  }
+  const locale = await readLocaleCookie();
   return { title: getMessages(locale).history.documentTitle };
 }
 
