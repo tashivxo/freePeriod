@@ -3,6 +3,7 @@ import { AppFloatingButton } from '@/components/layout/AppFloatingButton';
 import { ColorBendsBackground } from '@/components/ui/backgrounds/ColorBendsWrapper';
 import { LessonEditingProvider } from '@/providers/lesson-editing';
 import { ColorBendsAtmosphereProvider } from '@/providers/color-bends-atmosphere';
+import { SeedPreferredLocale } from '@/components/layout/SeedPreferredLocale';
 import { createClient } from '@/lib/supabase/server';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -11,12 +12,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
 
-  let profile: { country: string | null; default_curriculum: string | null } | null = null;
+  let profile: {
+    country: string | null;
+    default_curriculum: string | null;
+    preferred_locale: string | null;
+  } | null = null;
 
   if (user) {
     const { data } = await supabase
       .from('users')
-      .select('country, default_curriculum')
+      .select('country, default_curriculum, preferred_locale')
       .eq('id', user.id)
       .single();
     profile = data;
@@ -24,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="relative min-h-screen bg-background">
+      <SeedPreferredLocale locale={profile?.preferred_locale} />
       <ColorBendsAtmosphereProvider
         initialCountry={profile?.country ?? null}
         initialCurriculum={profile?.default_curriculum ?? null}

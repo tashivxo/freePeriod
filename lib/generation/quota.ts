@@ -1,7 +1,7 @@
 import type { Plan } from '@/types';
-import { getMessages, isLocale, type Locale } from '@/lib/i18n';
-import { interpolate, isolateBidi } from '@/lib/i18n/format';
 import { isTrialActive } from '@/lib/utils/trial';
+
+export { formatGenerationUsage } from '@/lib/i18n/format';
 
 export type GenerationMode = 'fast' | 'quality';
 
@@ -84,27 +84,3 @@ export function periodEndForReset(input: {
   return nextUtcMonthStart(input.now).toISOString();
 }
 
-export function formatGenerationUsage(input: {
-  plan: Plan;
-  generationCount: number;
-  generationLimit: number | null;
-  locale?: Locale;
-}): string {
-  const locale = input.locale && isLocale(input.locale) ? input.locale : undefined;
-  if (!locale) {
-    if (input.generationLimit === null) {
-      return `${input.generationCount} generated this period (Unlimited)`;
-    }
-    return `${input.generationCount} of ${input.generationLimit} used this period`;
-  }
-
-  const used = isolateBidi(String(input.generationCount));
-  const settings = getMessages(locale).settings;
-  if (input.generationLimit === null) {
-    return interpolate(settings.usageUnlimited, { used });
-  }
-  return interpolate(settings.usageThisPeriod, {
-    used,
-    limit: isolateBidi(String(input.generationLimit)),
-  });
-}

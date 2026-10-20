@@ -14,14 +14,14 @@ export type GenerationMode = 'fast' | 'quality';
 export const GENERATION_MODE_OPTIONS = [
   {
     value: 'fast' as const,
-    label: 'Fast',
-    description: 'Quicker plans for everyday lessons.',
+    labelKey: 'generate.modeFast',
+    descriptionKey: 'generate.modeFastDescription',
     Icon: Zap,
   },
   {
     value: 'quality' as const,
-    label: 'Quality',
-    description: 'More thorough plans. Takes a bit longer.',
+    labelKey: 'generate.modeQuality',
+    descriptionKey: 'generate.modeQualityDescription',
     Icon: Sparkles,
   },
 ] as const;
@@ -46,32 +46,24 @@ export function GenerationModePicker({
     GENERATION_MODE_OPTIONS.find((option) => option.value === value) ??
     GENERATION_MODE_OPTIONS[0];
 
-  const selectedLabel = selected.value === 'fast' ? t('generate.modeFast') : t('generate.modeQuality');
-  const selectedDescription =
-    selected.value === 'fast' ? t('generate.modeFastDescription') : t('generate.modeQualityDescription');
+  const selectedLabel = t(selected.labelKey);
+  const selectedDescription = t(selected.descriptionKey);
 
   const items = useMemo<DropdownItem[]>(
     () =>
-      GENERATION_MODE_OPTIONS.map((option) => {
-        const label = option.value === 'fast' ? t('generate.modeFast') : t('generate.modeQuality');
-        const description =
-          option.value === 'fast'
-            ? t('generate.modeFastDescription')
-            : t('generate.modeQualityDescription');
-        return {
-          name: label,
-          value: option.value,
-          description,
-          disabled: option.value === 'quality' && !qualityUnlocked,
-          icon:
-            option.value === 'quality' && !qualityUnlocked ? (
-              <span data-testid="quality-lock-icon" className="inline-flex items-center gap-1 text-coral">
-                <MotionSafeIcon icon={LockIcon} size={15} />
-                <span className="sr-only">{t('generate.qualityProOnly')}</span>
-              </span>
-            ) : undefined,
-        };
-      }),
+      GENERATION_MODE_OPTIONS.map((option) => ({
+        name: t(option.labelKey),
+        value: option.value,
+        description: t(option.descriptionKey),
+        disabled: option.value === 'quality' && !qualityUnlocked,
+        icon:
+          option.value === 'quality' && !qualityUnlocked ? (
+            <span data-testid="quality-lock-icon" className="inline-flex items-center gap-1 text-coral">
+              <MotionSafeIcon icon={LockIcon} size={15} />
+              <span className="sr-only">{t('generate.qualityProOnly')}</span>
+            </span>
+          ) : undefined,
+      })),
     [qualityUnlocked, t],
   );
 

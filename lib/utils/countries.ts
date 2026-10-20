@@ -299,11 +299,6 @@ export function getCountryDropdownItems(labels: { common: string; all: string })
   ];
 }
 
-export const COUNTRY_DROPDOWN_ITEMS = getCountryDropdownItems({
-  common: 'Common',
-  all: 'All countries',
-});
-
 /** §10.1. Maghreb, IL, TR, and CY stay out until that list is amended. */
 export const MIDDLE_EAST_COUNTRY_CODES = [
   'AE',

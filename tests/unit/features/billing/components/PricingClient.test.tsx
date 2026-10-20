@@ -40,6 +40,7 @@ jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
     auth: {
       getSession: mockGetSession,
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     },
   })),
 }));

@@ -16,7 +16,7 @@ describe('formatFileSize', () => {
 
   it('keeps Arabic sizes from rendering as MB 10', () => {
     const ar = formatFileSize(DEFAULT_MAX_UPLOAD_BYTES, 'ar');
-    expect(ar).toMatch(/\u2066/);
+    expect(ar).toMatch(/\u2068/);
     expect(ar).toMatch(/\u2069/);
     expect(ar.indexOf('10')).toBeGreaterThan(-1);
     expect(ar.indexOf('10')).toBeLessThan(ar.indexOf('MB'));

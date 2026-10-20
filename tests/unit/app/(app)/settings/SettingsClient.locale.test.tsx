@@ -80,8 +80,9 @@ describe('SettingsClient leftover English in Arabic', () => {
         <SettingsClient
           user={baseUser}
           email={baseUser.email}
-          planLabel="Free"
           usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
         />
       </LocaleProvider>,
     );
@@ -96,8 +97,9 @@ describe('SettingsClient leftover English in Arabic', () => {
         <SettingsClient
           user={baseUser}
           email={baseUser.email}
-          planLabel="Free"
           usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
         />
       </LocaleProvider>,
     );
@@ -112,8 +114,9 @@ describe('SettingsClient leftover English in Arabic', () => {
         <SettingsClient
           user={baseUser}
           email={baseUser.email}
-          planLabel="Free"
           usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
         />
       </LocaleProvider>,
     );

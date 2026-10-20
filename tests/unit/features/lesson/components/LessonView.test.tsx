@@ -156,7 +156,9 @@ describe('LessonView', () => {
   it('shows formatted grade in the header', () => {
     render(<LessonView lesson={lesson} />);
 
-    expect(screen.getByText('Science · Grade 9')).toBeInTheDocument();
+    expect(
+      screen.getByText((content) => content.replace(/[\u2068\u2069]/g, '') === 'Science · Grade 9'),
+    ).toBeInTheDocument();
   });
 
   it('shows a save error as an alert with the animated X icon and text-error', () => {

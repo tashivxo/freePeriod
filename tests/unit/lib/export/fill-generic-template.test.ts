@@ -278,8 +278,8 @@ describe('fill-generic-template field mapping', () => {
     expect(map.get(normalizeLabel('Development'))).toContain('Model particle diagrams');
     expect(map.get(normalizeLabel('Conclusion'))).toContain('Summarize');
     expect(map.get(normalizeLabel('Subject'))).toBe('Science');
-    expect(map.get(normalizeLabel('Grade'))).toBe('Grade 6');
-    expect(map.get(normalizeLabel('Grade/Class'))).toBe('Grade 6');
+    expect(map.get(normalizeLabel('Grade'))?.replace(/[\u2068\u2069]/g, '')).toBe('Grade 6');
+    expect(map.get(normalizeLabel('Grade/Class'))?.replace(/[\u2068\u2069]/g, '')).toBe('Grade 6');
     expect(map.get(normalizeLabel('New Vocabulary (if any)'))).toContain('Phase —');
     expect(map.get(normalizeLabel('Demonstration of Learning'))).toContain('Model particle diagrams');
   });

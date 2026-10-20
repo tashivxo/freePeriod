@@ -15,7 +15,7 @@ import { formatDurationMinutes } from '@/lib/i18n/format';
 import { LOCALE_LABELS } from '@/lib/i18n';
 import { useLocale, useT } from '@/providers/locale';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
-import { GRADE_ITEMS, formatGradeLabel } from '@/lib/utils/grades';
+import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCurriculumPack } from '@/lib/curriculum/packs';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
@@ -112,14 +112,7 @@ export function GenerateForm({
     [t],
   );
 
-  const gradeItems = useMemo(
-    () =>
-      GRADE_ITEMS.map((item) => ({
-        ...item,
-        name: formatGradeLabel(item.value ?? item.name, t),
-      })),
-    [t],
-  );
+  const gradeItems = useMemo(() => getGradeItems(t), [t]);
 
   useEffect(() => {
     if (!qualityUnlocked) {
@@ -373,7 +366,6 @@ export function GenerateForm({
 
         {/* Upload Zones */}
         <DocumentUploadZone
-          label="Upload curriculum document"
           accept={CURRICULUM_DOC_ACCEPT}
           uploadType="curriculum_doc"
           onUploadComplete={handleCurriculumComplete}
@@ -381,7 +373,6 @@ export function GenerateForm({
           onBusyChange={setCurriculumUploading}
         />
         <DocumentUploadZone
-          label="Upload lesson plan template"
           accept={TEMPLATE_ACCEPT}
           uploadType="template"
           onUploadComplete={handleTemplateComplete}

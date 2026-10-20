@@ -108,8 +108,8 @@ describe('GenerationModePicker', () => {
   it('exports mode options with labels and descriptions', () => {
     expect(GENERATION_MODE_OPTIONS).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ value: 'fast', label: 'Fast' }),
-        expect.objectContaining({ value: 'quality', label: 'Quality' }),
+        expect.objectContaining({ value: 'fast', labelKey: 'generate.modeFast' }),
+        expect.objectContaining({ value: 'quality', labelKey: 'generate.modeQuality' }),
       ]),
     );
   });

@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           'peer w-full h-13 px-4 pt-5 pb-1 text-base font-body rounded-xl border-2 bg-background text-text-primary',
           'outline-none',
           'placeholder-transparent',
-          endAdornment ? 'pr-11' : '',
+          endAdornment ? 'pe-11' : '',
           error
             ? 'border-error focus:border-error focus:ring-2 focus:ring-error/20'
             : 'border-coral/50 focus:border-coral focus:ring-2 focus:ring-coral/20',
@@ -48,7 +48,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <label
         htmlFor={inputId}
         className={[
-          'absolute left-4 transition-[top,transform,font-size] duration-150 pointer-events-none font-body',
+          'absolute start-4 transition-[top,transform,font-size] duration-150 pointer-events-none font-body',
           focused || hasValue
             ? 'top-1.5 text-xs'
             : 'top-1/2 -translate-y-1/2 text-base',
@@ -58,7 +58,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {label}
       </label>
       {endAdornment && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center z-10">
+        <div className="absolute end-3 top-1/2 -translate-y-1/2 flex items-center z-10">
           {endAdornment}
         </div>
       )}

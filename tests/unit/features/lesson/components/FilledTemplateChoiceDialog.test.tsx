@@ -82,4 +82,20 @@ describe('FilledTemplateChoiceDialog', () => {
       FILLABLE_TEMPLATE_ACCEPT,
     );
   });
+
+  it('renders typed upload failures as localized copy', () => {
+    (useFileUpload as jest.Mock).mockReturnValueOnce({
+      file: null,
+      storagePath: null,
+      uploadId: null,
+      isUploading: false,
+      error: { kind: 'auth' },
+      handleFile: jest.fn(),
+      removeFile: jest.fn(),
+    });
+
+    renderDialog('no-template');
+
+    expect(screen.getByText('Please sign in again to upload.')).toBeInTheDocument();
+  });
 });

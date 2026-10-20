@@ -19,6 +19,7 @@ import {
   type Locale,
   type Messages,
 } from '@/lib/i18n';
+import { createT } from '@/lib/i18n/format';
 import { createClient } from '@/lib/supabase/client';
 
 const STORAGE_KEY = LOCALE_STORAGE_KEY;
@@ -28,7 +29,7 @@ type TranslateVars = Record<string, string>;
 
 interface LocaleContextValue {
   locale: Locale;
-  setLocale: (locale: Locale) => void | Promise<void>;
+  setLocale: (locale: Locale) => Promise<void>;
   messages: Messages;
   dir: 'ltr' | 'rtl';
   t: (key: string, vars?: TranslateVars) => string;
@@ -36,49 +37,15 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue>({
   locale: DEFAULT_LOCALE,
-  setLocale: () => {},
+  setLocale: async () => {},
   messages: getMessages(DEFAULT_LOCALE),
   dir: 'ltr',
   t: (key) => key,
 });
 
-function resolveMessage(messages: Messages, key: string): string {
-  const parts = key.split('.');
-  let current: unknown = messages;
-
-  for (const part of parts) {
-    if (current && typeof current === 'object' && part in current) {
-      current = (current as Record<string, unknown>)[part];
-    } else {
-      return key;
-    }
-  }
-
-  return typeof current === 'string' ? current : key;
-}
-
-function interpolate(template: string, vars?: TranslateVars): string {
-  if (!vars) return template;
-  return template.replace(/\{(\w+)\}/g, (_, name: string) => vars[name] ?? `{${name}}`);
-}
-
 function applyDocumentLocale(locale: Locale) {
   document.documentElement.lang = locale;
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr';
-}
-
-function isNetworkFailure(err: unknown): boolean {
-  if (!(err instanceof Error)) return false;
-  const message = err.message.toLowerCase();
-  const name = err.name.toLowerCase();
-  return (
-    message.includes('failed to fetch') ||
-    message.includes('networkerror') ||
-    message.includes('network error') ||
-    message.includes('load failed') ||
-    message.includes('offline') ||
-    name.includes('fetch')
-  );
 }
 
 export function LocaleProvider({
@@ -107,33 +74,22 @@ export function LocaleProvider({
     document.cookie = `${STORAGE_KEY}=${encodeURIComponent(nextLocale)}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
     applyDocumentLocale(nextLocale);
 
-    try {
-      const supabase = createClient();
-      if (typeof supabase.auth?.getUser !== 'function') return;
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      if (typeof supabase.from !== 'function') return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
 
-      const { error } = await supabase
-        .from('users')
-        .update({ preferred_locale: nextLocale })
-        .eq('id', user.id);
-      if (error) throw error;
-    } catch (err) {
-      if (err instanceof TypeError && !isNetworkFailure(err)) return;
-      throw err;
-    }
+    const { error } = await supabase
+      .from('users')
+      .update({ preferred_locale: nextLocale })
+      .eq('id', user.id);
+    if (error) throw error;
   }, []);
 
   const messages = useMemo(() => getMessages(locale), [locale]);
   const dir: 'ltr' | 'rtl' = isRtl(locale) ? 'rtl' : 'ltr';
-
-  const t = useCallback(
-    (key: string, vars?: TranslateVars) => interpolate(resolveMessage(messages, key), vars),
-    [messages],
-  );
+  const t = useMemo(() => createT(locale), [locale]);
 
   const value = useMemo(
     () => ({ locale, setLocale, messages, dir, t }),
