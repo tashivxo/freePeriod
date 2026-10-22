@@ -49,6 +49,7 @@ export const zhHans: Messages = {
     usageUnlimited: '本周期已生成 {used}（不限量）',
     manageSubscription: '管理订阅',
     logOut: '退出登录',
+    logOutFailed: '无法退出登录。请检查网络连接后重试。',
     deleteAccount: '删除账户',
     deleteConfirmDescription:
       '账户将立即停用。个人数据会在 30 天宽限期后永久删除。请先导出需要保留的教案。',

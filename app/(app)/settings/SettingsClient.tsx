@@ -117,6 +117,8 @@ export function SettingsClient({
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logOutError, setLogOutError] = useState('');
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
@@ -198,6 +200,23 @@ export function SettingsClient({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogOut = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogOutError('');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // The spinner stays on until /sign-in replaces this page.
+      router.push('/sign-in');
+    } catch (err) {
+      console.error(err);
+      setLogOutError(t('settings.logOutFailed'));
+      setLoggingOut(false);
     }
   };
 
@@ -433,15 +452,13 @@ export function SettingsClient({
           <Button
             variant="outline"
             className="w-full"
-            onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signOut();
-              router.push('/sign-in');
-            }}
+            isLoading={loggingOut}
+            onClick={handleLogOut}
           >
-            <LogOut className="mr-2 h-4 w-4" />
+            {!loggingOut && <LogOut className="mr-2 h-4 w-4" />}
             {t('settings.logOut')}
           </Button>
+          {logOutError && <FieldError variant="banner" message={logOutError} />}
 
           {!deleteOpen ? (
             <Button

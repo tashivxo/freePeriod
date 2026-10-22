@@ -70,6 +70,7 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.somethingWentWrong': 'Something went wrong. Please try again.',
   'settings.manageSubscription': 'Manage subscription',
   'settings.logOut': 'Log out',
+  'settings.logOutFailed': 'Could not log out. Check your connection and try again.',
   'settings.deleteAccount': 'Delete account',
   'settings.deleteConfirmDescription':
     'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
@@ -159,6 +160,34 @@ async function changeSubjectToScience(user: Awaited<ReturnType<typeof render>>['
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('SettingsClient — log out', () => {
+  async function mockSignOut(signOut: jest.Mock) {
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
+  }
+
+  it('shows a busy, disabled Log out button while signing out', async () => {
+    await mockSignOut(jest.fn(() => new Promise(() => {})));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toBeDisabled();
+  });
+
+  it('shows an error and re-enables Log out when sign-out fails', async () => {
+    await mockSignOut(jest.fn().mockResolvedValue({ error: { message: 'Network error' } }));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    expect(await screen.findByText(/could not log out/i)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute('aria-busy');
+  });
+});
 
 describe('SettingsClient — account context', () => {
   it('shows read-only email, plan, and usage', () => {

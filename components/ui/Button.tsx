@@ -103,11 +103,13 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
-      disabled={isLoading || props.disabled}
       style={{ '--sp-x': '50%', '--sp-y': '50%', '--sp-o': '0' } as React.CSSProperties}
       onMouseMove={hasSpotlight ? (handleMouseMove as React.MouseEventHandler<HTMLButtonElement>) : undefined}
       onMouseLeave={hasSpotlight ? handleMouseLeave : undefined}
       {...props}
+      // After the spread so a caller's disabled={false} can never re-enable a loading button.
+      disabled={isLoading || props.disabled}
+      aria-busy={isLoading || undefined}
     >
       {asChild ? (
         children
