@@ -22,6 +22,8 @@ import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
+import { HelpFeedback } from '@/features/settings/components/HelpFeedback';
+import { legalConfig } from '@/lib/legal/config';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
@@ -88,6 +90,8 @@ export type SettingsClientProps = {
   generationLimit?: number | null;
   trialDays?: number | null;
   manageSubscriptionUrl?: string | null;
+  /** Passed from the server so LEGAL_CONTACT_EMAIL overrides apply. */
+  supportEmail?: string;
 };
 
 export function SettingsClient({
@@ -98,6 +102,7 @@ export function SettingsClient({
   generationLimit,
   trialDays = null,
   manageSubscriptionUrl = null,
+  supportEmail = legalConfig.contactEmail,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
@@ -487,6 +492,17 @@ export function SettingsClient({
           )}
         </div>
       </div>
+
+      <HelpFeedback
+        supportEmail={supportEmail}
+        accountEmail={email}
+        userId={user.id}
+        plan={
+          trialDays == null
+            ? (usagePlan ?? user.plan)
+            : `${usagePlan ?? user.plan} (trial, ${trialDays} days left)`
+        }
+      />
 
       {/* Legal */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
