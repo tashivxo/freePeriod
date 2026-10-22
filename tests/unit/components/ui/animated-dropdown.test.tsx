@@ -1,4 +1,4 @@
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
@@ -195,6 +195,40 @@ describe('AnimatedDropdown placement', () => {
     expect(scrollIntoViewSpy).not.toHaveBeenCalled();
     expect(windowScroll).not.toHaveBeenCalled();
     windowScroll.mockRestore();
+  });
+
+  it('switches sides instead of collapsing when the page scrolls with the menu open', async () => {
+    const { trigger, listbox } = await openAt(rectAt(540), 'scroll-flip');
+    expect(listbox).toHaveAttribute('data-placement', 'above');
+
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(20));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+
+    const moved = screen.getByRole('listbox');
+    expect(moved).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(moved.style.maxHeight)).toBeGreaterThanOrEqual(120);
+    expect(parseFloat(moved.style.top)).toBe(60 + 4);
+  });
+
+  it('keeps the chosen side while it still has usable room', async () => {
+    const { trigger } = await openAt(rectAt(540), 'scroll-keep');
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(400));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(screen.getByRole('listbox')).toHaveAttribute('data-placement', 'above');
+  });
+
+  it('closes when the trigger scrolls out of the viewport', async () => {
+    const { trigger } = await openAt(rectAt(300), 'scroll-away');
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(-80));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('keeps the menu inside the viewport horizontally for end-aligned wide menus', async () => {

@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 const LIST_MAX_HEIGHT_PX = 240;
 const TRIGGER_GAP_PX = 4;
 const VIEWPORT_PADDING_PX = 8;
+/** Below this, a locked side is too cramped to use, so the menu switches sides. */
+const MIN_USABLE_LIST_HEIGHT_PX = 120;
 /** Row heights from the option classes below, used to guess the list height before it renders. */
 const OPTION_ROW_PX = 40;
 const DESCRIPTION_ROW_PX = 64;
@@ -173,8 +175,18 @@ function computeListboxPosition(
   const spaceAbove = Math.max(rect.top - TRIGGER_GAP_PX - VIEWPORT_PADDING_PX, 0);
   const wantedHeight = Math.min(LIST_MAX_HEIGHT_PX, estimatedHeight);
 
-  const placement: ListboxPlacement =
-    lockedPlacement ?? (spaceBelow < wantedHeight && spaceAbove > spaceBelow ? 'above' : 'below');
+  const lockedSpace = lockedPlacement === 'above' ? spaceAbove : spaceBelow;
+  const otherSpace = lockedPlacement === 'above' ? spaceBelow : spaceAbove;
+  // Keep the side chosen on open unless page scroll or a shrinking viewport (mobile
+  // keyboard) has squeezed it below a usable height and the other side has more room.
+  const keepLocked =
+    lockedPlacement !== undefined &&
+    (lockedSpace >= Math.min(wantedHeight, MIN_USABLE_LIST_HEIGHT_PX) || lockedSpace >= otherSpace);
+  const placement: ListboxPlacement = keepLocked
+    ? lockedPlacement
+    : spaceBelow < wantedHeight && spaceAbove > spaceBelow
+      ? 'above'
+      : 'below';
   const maxHeight = Math.min(LIST_MAX_HEIGHT_PX, placement === 'above' ? spaceAbove : spaceBelow);
 
   const width = Math.min(Math.max(rect.width, menuMinWidth), viewportWidth - VIEWPORT_PADDING_PX * 2);
@@ -239,6 +251,12 @@ export function AnimatedDropdown({
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
     if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    // A menu whose trigger has scrolled out of view has nothing to hang from: close it.
+    if (open && (rect.bottom < 0 || rect.top > window.innerHeight)) {
+      setOpen(false);
+      return;
+    }
     const next = computeListboxPosition(
       trigger,
       menuAlign,
@@ -248,7 +266,7 @@ export function AnimatedDropdown({
     );
     placementRef.current = next.placement;
     setListboxPosition(next);
-  }, [items, menuAlign, menuMinWidth, searchable]);
+  }, [items, menuAlign, menuMinWidth, open, searchable]);
 
   const closeMenu = useCallback((restoreFocus = false) => {
     setOpen(false);
@@ -280,7 +298,7 @@ export function AnimatedDropdown({
   }, []);
 
   const scrollOptionIntoView = useCallback(
-    (index: number) => {
+    (index: number, waitForRender = false) => {
       if (index < 0) return;
       const optionId = optionDomId(index);
       // Move only the listbox's own scrollTop. Element.scrollIntoView also scrolls every
@@ -303,7 +321,7 @@ export function AnimatedDropdown({
         cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
       }
-      if (listboxRef.current && document.getElementById(optionId)) {
+      if (!waitForRender && listboxRef.current && document.getElementById(optionId)) {
         scroll();
         return;
       }
@@ -445,7 +463,8 @@ export function AnimatedDropdown({
       const nextVisible = filterDropdownItems(items, nextQuery);
       const nextActive = highlightIndexOnOpen(nextVisible, selectedValue);
       setActiveIndex(nextActive);
-      scrollOptionIntoView(nextActive);
+      // The filtered rows are not in the DOM yet; the old row at this index is a different option.
+      scrollOptionIntoView(nextActive, true);
     },
     [items, scrollOptionIntoView, selectedValue],
   );
