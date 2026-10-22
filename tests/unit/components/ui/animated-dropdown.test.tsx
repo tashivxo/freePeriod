@@ -156,6 +156,28 @@ describe('AnimatedDropdown placement', () => {
     expect(parseFloat(listbox.style.maxHeight)).toBe(240);
   });
 
+  it('opens below with a shorter, scrollable list instead of flipping when ~4 rows fit below', async () => {
+    // 12 options want 240px; only 200px below, more above. Below still wins.
+    const { listbox } = await openAt(rectAt(348), 'below-first');
+
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.top)).toBe(388 + 4);
+    expect(parseFloat(listbox.style.maxHeight)).toBe(200);
+  });
+
+  it('still opens below at exactly 160px of room', async () => {
+    const { listbox } = await openAt(rectAt(388), 'below-160');
+
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.maxHeight)).toBe(160);
+  });
+
+  it('flips above only when less than 160px is left below and there is more room above', async () => {
+    const { listbox } = await openAt(rectAt(389), 'flip-159');
+
+    expect(listbox).toHaveAttribute('data-placement', 'above');
+  });
+
   it('stays below when a short list fits even though more room is above', async () => {
     // 2 options need about 90px; 120px of room below is enough.
     const { listbox } = await openAt(rectAt(432), 'short-dd', 2);
