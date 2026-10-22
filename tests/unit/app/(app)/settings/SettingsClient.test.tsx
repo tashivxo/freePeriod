@@ -117,8 +117,9 @@ jest.mock('@/lib/supabase/client', () => ({
   })),
 }));
 
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -160,34 +161,6 @@ async function changeSubjectToScience(user: Awaited<ReturnType<typeof render>>['
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('SettingsClient — log out', () => {
-  async function mockSignOut(signOut: jest.Mock) {
-    const { createClient } = await import('@/lib/supabase/client');
-    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
-  }
-
-  it('shows a busy, disabled Log out button while signing out', async () => {
-    await mockSignOut(jest.fn(() => new Promise(() => {})));
-    const { user } = render(<SettingsClient {...defaultProps} />);
-    await user.click(screen.getByRole('button', { name: /log out/i }));
-
-    const button = screen.getByRole('button', { name: /log out/i });
-    expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).toBeDisabled();
-  });
-
-  it('shows an error and re-enables Log out when sign-out fails', async () => {
-    await mockSignOut(jest.fn().mockResolvedValue({ error: { message: 'Network error' } }));
-    const { user } = render(<SettingsClient {...defaultProps} />);
-    await user.click(screen.getByRole('button', { name: /log out/i }));
-
-    expect(await screen.findByText(/could not log out/i)).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: /log out/i });
-    expect(button).toBeEnabled();
-    expect(button).not.toHaveAttribute('aria-busy');
-  });
-});
 
 describe('SettingsClient — account context', () => {
   it('shows read-only email, plan, and usage', () => {
@@ -772,5 +745,43 @@ describe('SettingsClient — save feedback', () => {
     expect(mockSetProfileSignals).not.toHaveBeenCalled();
 
     env.NODE_ENV = previousNodeEnv;
+  });
+});
+
+describe('SettingsClient — log out', () => {
+  afterEach(() => mockPush.mockClear());
+
+  async function mockSignOut(signOut: jest.Mock) {
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
+  }
+
+  it('shows a busy, disabled Log out button while signing out', async () => {
+    await mockSignOut(jest.fn(() => new Promise(() => {})));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toBeDisabled();
+  });
+
+  it('redirects to sign-in after a successful sign-out', async () => {
+    await mockSignOut(jest.fn().mockResolvedValue({ error: null }));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sign-in'));
+  });
+
+  it('shows an error and re-enables Log out when sign-out fails', async () => {
+    await mockSignOut(jest.fn().mockResolvedValue({ error: { message: 'Network error' } }));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    expect(await screen.findByText(/could not log out/i)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute('aria-busy');
   });
 });
