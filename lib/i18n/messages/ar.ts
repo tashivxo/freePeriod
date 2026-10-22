@@ -50,6 +50,9 @@ export const ar: Messages = {
     manageSubscription: 'إدارة الاشتراك',
     logOut: 'تسجيل الخروج',
     deleteAccount: 'حذف الحساب',
+    dangerZone: 'منطقة الخطر',
+    dangerZoneDescription:
+      'يحذف حسابك وخطط دروسك وملفاتك، ويلغي أي اشتراك. بعد انتهاء فترة السماح البالغة 30 يومًا، لا يمكن التراجع عن ذلك.',
     deleteConfirmDescription:
       'سيتم إلغاء تفعيل حسابك فورًا. تُحذف البيانات الشخصية نهائيًا بعد فترة سماح مدتها 30 يومًا. صدّر أي خطط دروس تريد الاحتفاظ بها أولًا.',
     deleteConfirmLabel: 'اكتب "DELETE" للتأكيد',
