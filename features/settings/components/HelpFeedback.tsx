@@ -38,6 +38,7 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
   const [error, setError] = useState('');
   const [opened, setOpened] = useState(false);
+  const [shortened, setShortened] = useState(false);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   const messageId = `${id}-message`;
@@ -56,7 +57,6 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
             userId,
             plan,
             locale,
-            page: window.location.pathname,
             browser: navigator.userAgent,
             sentAt: new Date().toISOString(),
           }
@@ -67,12 +67,16 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
   function handleOpenEmail(event: MouseEvent<HTMLAnchorElement>) {
     if (!message.trim()) {
       event.preventDefault();
+      // Drop a draft left on the link by an earlier click.
+      event.currentTarget.href = `mailto:${supportEmail}`;
       setError(t('settings.helpMessageRequired'));
       document.getElementById(messageId)?.focus();
       return;
     }
     // The link's default action reads href after this handler, so the email app gets the full draft.
-    event.currentTarget.href = compose().href;
+    const draft = compose();
+    event.currentTarget.href = draft.href;
+    setShortened(draft.shortened);
     setOpened(true);
     setCopyState('idle');
   }
@@ -170,6 +174,7 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
         {opened && (
           <div role="status" className="space-y-3 rounded-xl bg-success/10 p-4 font-body text-sm text-text-primary">
             <p>{t('settings.helpOpened')}</p>
+            {shortened && <p>{t('settings.helpShortened')}</p>}
             <p className="text-text-secondary">
               {t('settings.helpFallback', { email: supportEmail })}
             </p>

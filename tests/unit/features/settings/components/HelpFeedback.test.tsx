@@ -63,8 +63,33 @@ describe('HelpFeedback', () => {
     expect(body).toContain('Account: teacher@example.com');
     expect(body).toContain('User ID: user-123');
     expect(body).toContain('Language: en');
-    expect(body).toContain('Page: /');
+    expect(body).not.toContain('Page:');
     expect(screen.getByRole('status')).toHaveTextContent(/support@freeperiod\.co\.za/);
+  });
+
+  it('tells the teacher when a long message had to be shortened in the email', async () => {
+    const { user } = renderHelp();
+    const textarea = screen.getByLabelText('Message');
+    await user.click(textarea);
+    await user.paste('ق'.repeat(900));
+    const link = emailLink();
+    blockNavigation(link);
+    await user.click(link);
+
+    expect(screen.getByRole('status')).toHaveTextContent(/shortened copy/i);
+  });
+
+  it('resets a stale draft on the link when a later click is blocked', async () => {
+    const { user } = renderHelp();
+    await user.type(screen.getByLabelText('Message'), 'First');
+    const link = emailLink();
+    blockNavigation(link);
+    await user.click(link);
+    expect(link.getAttribute('href')).toContain('body=');
+
+    await user.clear(screen.getByLabelText('Message'));
+    await user.click(link);
+    expect(link).toHaveAttribute('href', 'mailto:support@freeperiod.co.za');
   });
 
   it('leaves account details out when the diagnostics switch is off', async () => {

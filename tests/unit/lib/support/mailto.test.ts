@@ -1,11 +1,14 @@
-import { buildSupportEmail, SUPPORT_MESSAGE_MAX_LENGTH } from '@/lib/support/mailto';
+import {
+  buildSupportEmail,
+  SUPPORT_MAILTO_MAX_LENGTH,
+  SUPPORT_MESSAGE_MAX_LENGTH,
+} from '@/lib/support/mailto';
 
 const diagnostics = {
   email: 'teacher@example.com',
   userId: 'user-123',
   plan: 'pro',
   locale: 'fr',
-  page: '/settings',
   browser: 'TestBrowser/1.0',
   sentAt: '2026-10-22T10:00:00.000Z',
 };
@@ -59,7 +62,6 @@ describe('buildSupportEmail', () => {
         'User ID: user-123',
         'Plan: pro',
         'Language: fr',
-        'Page: /settings',
         'Browser: TestBrowser/1.0',
         'Sent: 2026-10-22T10:00:00.000Z',
       ].join('\r\n'),
@@ -99,5 +101,55 @@ describe('buildSupportEmail', () => {
       plan: 'free',
     });
     expect(body.length).toBe(SUPPORT_MESSAGE_MAX_LENGTH);
+  });
+
+  it('does not crash on emoji at the subject or length cut points', () => {
+    const message = `${'a'.repeat(56)}😀😀 and ${'😀'.repeat(SUPPORT_MESSAGE_MAX_LENGTH)}`;
+    expect(() =>
+      buildSupportEmail({ to: 'support@freeperiod.co.za', category: 'bug', message, plan: 'free' }),
+    ).not.toThrow();
+  });
+
+  it('keeps short drafts whole', () => {
+    const email = buildSupportEmail({
+      to: 'support@freeperiod.co.za',
+      category: 'bug',
+      message: 'Short note',
+      plan: 'pro',
+      diagnostics,
+    });
+    expect(email.shortened).toBe(false);
+    expect(parse(email.href).body).toBe(email.body);
+  });
+
+  it('shortens the link, not the copyable body, when encoding makes it too long', () => {
+    // 1000 Arabic characters encode to about 6,000 URL characters.
+    const message = 'خ'.repeat(SUPPORT_MESSAGE_MAX_LENGTH);
+    const email = buildSupportEmail({
+      to: 'support@freeperiod.co.za',
+      category: 'bug',
+      message,
+      plan: 'pro',
+      diagnostics,
+    });
+
+    expect(email.shortened).toBe(true);
+    expect(email.href.length).toBeLessThanOrEqual(SUPPORT_MAILTO_MAX_LENGTH);
+    expect(email.body.startsWith(message)).toBe(true);
+    const linked = parse(email.href).body!;
+    expect(linked).toContain('[Message shortened to fit an email link.');
+    expect(linked).toContain('User ID: user-123');
+  });
+
+  it('never splits an emoji when shortening', () => {
+    const email = buildSupportEmail({
+      to: 'support@freeperiod.co.za',
+      category: 'idea',
+      message: '😀'.repeat(SUPPORT_MESSAGE_MAX_LENGTH / 2),
+      plan: 'free',
+    });
+    expect(email.shortened).toBe(true);
+    // decodeURIComponent throws on a lone surrogate half.
+    expect(() => parse(email.href)).not.toThrow();
   });
 });
