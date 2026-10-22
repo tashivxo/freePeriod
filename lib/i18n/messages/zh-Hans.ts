@@ -52,7 +52,7 @@ export const zhHans: Messages = {
     deleteAccount: '删除账户',
     dangerZone: '危险操作',
     dangerZoneDescription:
-      '删除你的账户、教案和上传的文件，并取消所有订阅。30 天宽限期结束后将无法恢复。',
+      '立即停用你的账户，并在 30 天后将其连同教案和上传的文件永久删除。所有订阅都会被取消。',
     deleteConfirmDescription:
       '账户将立即停用。个人数据会在 30 天宽限期后永久删除。请先导出需要保留的教案。',
     deleteConfirmLabel: '请输入 "DELETE" 以确认',

@@ -446,32 +446,10 @@ export function SettingsClient({
         </div>
       </div>
 
-      {/* Legal */}
-      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
-        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">{t('settings.legal')}</h2>
-        <p className="mb-4 text-sm font-body text-text-secondary">
-          {t('settings.legalDescription')}
-        </p>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
-          <Link
-            href="/privacy"
-            className="text-coral font-medium hover:underline"
-          >
-            {t('settings.privacyPolicy')}
-          </Link>
-          <Link
-            href="/terms"
-            className="text-coral font-medium hover:underline"
-          >
-            {t('settings.termsOfService')}
-          </Link>
-        </nav>
-      </div>
-
       {/* Danger zone: kept apart from Log out so an irreversible action is never one slip away */}
       <section
         aria-labelledby="danger-zone-heading"
-        className="mt-8 rounded-2xl border border-destructive/40 bg-surface p-6 md:p-8"
+        className="mt-8 mb-8 rounded-2xl border border-destructive/40 bg-surface p-6 md:p-8"
       >
         <h2
           id="danger-zone-heading"
@@ -544,6 +522,29 @@ export function SettingsClient({
           )}
         </div>
       </section>
+
+      {/* Legal */}
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
+        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">{t('settings.legal')}</h2>
+        <p className="mb-4 text-sm font-body text-text-secondary">
+          {t('settings.legalDescription')}
+        </p>
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+          <Link
+            href="/privacy"
+            className="text-coral font-medium hover:underline"
+          >
+            {t('settings.privacyPolicy')}
+          </Link>
+          <Link
+            href="/terms"
+            className="text-coral font-medium hover:underline"
+          >
+            {t('settings.termsOfService')}
+          </Link>
+        </nav>
+      </div>
+
     </div>
   );
 }

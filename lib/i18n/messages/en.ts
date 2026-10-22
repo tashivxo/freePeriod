@@ -50,7 +50,7 @@ export const en = {
     deleteAccount: 'Delete account',
     dangerZone: 'Danger zone',
     dangerZoneDescription:
-      'Deletes your account, lesson plans and uploads, and cancels any subscription. Once the 30-day grace period ends, this cannot be undone.',
+      'Deactivates your account immediately and permanently deletes it, with your lesson plans and uploads, after 30 days. Any subscription is cancelled.',
     deleteConfirmDescription:
       'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
     deleteConfirmLabel: 'Type "DELETE" to confirm',

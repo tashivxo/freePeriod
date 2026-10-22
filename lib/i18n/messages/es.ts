@@ -52,7 +52,7 @@ export const es: Messages = {
     deleteAccount: 'Eliminar cuenta',
     dangerZone: 'Zona de peligro',
     dangerZoneDescription:
-      'Elimina tu cuenta, tus planes de lección y tus archivos, y cancela cualquier suscripción. Cuando termine el período de gracia de 30 días, no se podrá deshacer.',
+      'Desactiva tu cuenta de inmediato y la elimina de forma permanente, junto con tus planes de lección y archivos, pasados 30 días. Se cancela cualquier suscripción.',
     deleteConfirmDescription:
       'Tu cuenta se desactivará de inmediato. Los datos personales se eliminan permanentemente tras un período de gracia de 30 días. Exporta antes las lecciones que quieras conservar.',
     deleteConfirmLabel: 'Escribe "DELETE" para confirmar',

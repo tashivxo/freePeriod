@@ -52,7 +52,7 @@ export const fr: Messages = {
     deleteAccount: 'Supprimer le compte',
     dangerZone: 'Zone de danger',
     dangerZoneDescription:
-      'Supprime votre compte, vos plans de leçon et vos fichiers, et résilie tout abonnement. Une fois le délai de grâce de 30 jours écoulé, cette action est irréversible.',
+      'Désactive votre compte immédiatement et le supprime définitivement, avec vos plans de leçon et vos fichiers, au bout de 30 jours. Tout abonnement est résilié.',
     deleteConfirmDescription:
       'Votre compte sera désactivé immédiatement. Les données personnelles sont supprimées définitivement après un délai de grâce de 30 jours. Exportez d’abord les leçons que vous souhaitez conserver.',
     deleteConfirmLabel: 'Tapez "DELETE" pour confirmer',
