@@ -21,8 +21,8 @@ import { cn } from '@/lib/utils';
 const LIST_MAX_HEIGHT_PX = 240;
 const TRIGGER_GAP_PX = 4;
 const VIEWPORT_PADDING_PX = 8;
-/** Below this, a locked side is too cramped to use, so the menu switches sides. */
-const MIN_USABLE_LIST_HEIGHT_PX = 120;
+/** About 4 rows. Menus open below whenever this much fits; less than this, they may flip up. */
+const MIN_USABLE_LIST_HEIGHT_PX = 160;
 /** Row heights from the option classes below, used to guess the list height before it renders. */
 const OPTION_ROW_PX = 40;
 const DESCRIPTION_ROW_PX = 64;
@@ -156,9 +156,9 @@ function estimateListHeight(items: DropdownItem[], searchable: boolean): number 
 }
 
 /**
- * Fit the menu inside the viewport without ever scrolling the page: open below when the
- * list fits, flip above when it does not and there is more room there, otherwise clamp
- * the height so the list scrolls inside itself. `lockedPlacement` keeps the side chosen
+ * Fit the menu inside the viewport without ever scrolling the page: open below whenever
+ * about 4 rows fit, shortening the list so it scrolls inside itself; flip above only when
+ * less than that is left below and there is more room above. `lockedPlacement` keeps the side chosen
  * on open, so page scroll or resize never makes the open menu jump to the other side.
  */
 function computeListboxPosition(
@@ -175,16 +175,18 @@ function computeListboxPosition(
   const spaceAbove = Math.max(rect.top - TRIGGER_GAP_PX - VIEWPORT_PADDING_PX, 0);
   const wantedHeight = Math.min(LIST_MAX_HEIGHT_PX, estimatedHeight);
 
+  const usableHeight = Math.min(wantedHeight, MIN_USABLE_LIST_HEIGHT_PX);
   const lockedSpace = lockedPlacement === 'above' ? spaceAbove : spaceBelow;
   const otherSpace = lockedPlacement === 'above' ? spaceBelow : spaceAbove;
   // Keep the side chosen on open unless page scroll or a shrinking viewport (mobile
   // keyboard) has squeezed it below a usable height and the other side has more room.
   const keepLocked =
     lockedPlacement !== undefined &&
-    (lockedSpace >= Math.min(wantedHeight, MIN_USABLE_LIST_HEIGHT_PX) || lockedSpace >= otherSpace);
+    (lockedSpace >= usableHeight || lockedSpace >= otherSpace);
   const placement: ListboxPlacement = keepLocked
     ? lockedPlacement
-    : spaceBelow < wantedHeight && spaceAbove > spaceBelow
+    : // Below first: a shorter list that scrolls inside itself beats a menu that opens upward.
+      spaceBelow < usableHeight && spaceAbove > spaceBelow
       ? 'above'
       : 'below';
   const maxHeight = Math.min(LIST_MAX_HEIGHT_PX, placement === 'above' ? spaceAbove : spaceBelow);
