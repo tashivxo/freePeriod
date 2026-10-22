@@ -230,8 +230,20 @@ describe('AnimatedDropdown placement', () => {
 
     const moved = screen.getByRole('listbox');
     expect(moved).toHaveAttribute('data-placement', 'below');
-    expect(parseFloat(moved.style.maxHeight)).toBeGreaterThanOrEqual(120);
+    expect(parseFloat(moved.style.maxHeight)).toBeGreaterThanOrEqual(160);
     expect(parseFloat(moved.style.top)).toBe(60 + 4);
+  });
+
+  it('flips an open menu up only once less than ~4 rows remain below', async () => {
+    const { trigger, listbox } = await openAt(rectAt(348), 'scroll-shrink');
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+
+    // 148px left below, 388px above: under the 160px floor, so it switches sides.
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(400));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(screen.getByRole('listbox')).toHaveAttribute('data-placement', 'above');
   });
 
   it('keeps the chosen side while it still has usable room', async () => {
