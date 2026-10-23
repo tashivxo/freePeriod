@@ -1,4 +1,16 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
+
+/** The menu opens below or flips above (never over the trigger) and stays on screen. */
+async function expectBesideTriggerInViewport(page: Page, trigger: Locator, listbox: Locator) {
+  const triggerBox = (await trigger.boundingBox())!;
+  const listboxBox = (await listbox.boundingBox())!;
+  const viewportHeight = await page.evaluate(() => window.innerHeight);
+  const below = listboxBox.y >= triggerBox.y + triggerBox.height - 1;
+  const above = listboxBox.y + listboxBox.height <= triggerBox.y + 1;
+  expect(below || above).toBe(true);
+  expect(listboxBox.y).toBeGreaterThanOrEqual(0);
+  expect(listboxBox.y + listboxBox.height).toBeLessThanOrEqual(viewportHeight + 1);
+}
 
 async function signIn(page: Page) {
   await page.context().clearCookies();
@@ -119,7 +131,7 @@ test.describe('AnimatedDropdown — settings page', () => {
     await expect(page.getByLabel('Enter curriculum')).toBeVisible();
   });
 
-  test('country dropdown opens below, filters, saves, and persists after reload', async ({
+  test('country dropdown opens beside the trigger, filters, saves, and persists after reload', async ({
     page,
   }) => {
     const countryDropdown = page.locator('#default-country');
@@ -127,10 +139,7 @@ test.describe('AnimatedDropdown — settings page', () => {
     await countryDropdown.click();
     const listbox = page.getByRole('listbox');
     await expect(listbox).toBeVisible();
-
-    const triggerBox = await countryDropdown.boundingBox();
-    const listboxBox = await listbox.boundingBox();
-    expect(listboxBox!.y).toBeGreaterThan(triggerBox!.y + triggerBox!.height - 1);
+    await expectBesideTriggerInViewport(page, countryDropdown, listbox);
 
     await page.getByRole('searchbox').fill('Germany');
     await page.getByRole('option', { name: 'Germany' }).click();
@@ -146,18 +155,19 @@ test.describe('AnimatedDropdown — settings page', () => {
     await expect(countryDropdown).toContainText('Germany');
   });
 
-  test('country dropdown stays below the trigger near the viewport bottom', async ({ page }) => {
+  test('opening the country dropdown near the viewport bottom never scrolls the page', async ({
+    page,
+  }) => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const countryDropdown = page.locator('#default-country');
     await countryDropdown.scrollIntoViewIfNeeded();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await countryDropdown.click();
 
     const listbox = page.getByRole('listbox');
     await expect(listbox).toBeVisible();
-
-    const triggerBox = await countryDropdown.boundingBox();
-    const listboxBox = await listbox.boundingBox();
-    expect(listboxBox!.y).toBeGreaterThan(triggerBox!.y + triggerBox!.height - 1);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    await expectBesideTriggerInViewport(page, countryDropdown, listbox);
 
     const maxHeight = await listbox.evaluate((el) => parseFloat(getComputedStyle(el).maxHeight));
     expect(maxHeight).toBeGreaterThan(0);

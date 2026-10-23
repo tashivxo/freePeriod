@@ -1,4 +1,4 @@
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
@@ -117,107 +117,177 @@ describe('AnimatedDropdown placement', () => {
     toJSON: () => ({}),
   } as DOMRect;
 
+  const scrollIntoViewSpy = jest.fn();
+  const originalScrollIntoView = Element.prototype.scrollIntoView;
+
   beforeEach(() => {
     Object.defineProperty(window, 'innerHeight', {
       configurable: true,
       value: 600,
     });
+    scrollIntoViewSpy.mockClear();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
   });
 
-  it('always opens below the trigger and caps max-height to space below', async () => {
-    const { user } = render(
-      <AnimatedDropdown id="below-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
-    );
+  afterEach(() => {
+    Element.prototype.scrollIntoView = originalScrollIntoView;
+  });
 
+  function rectAt(top: number, overrides: Partial<DOMRect> = {}): DOMRect {
+    return { ...triggerRect, top, bottom: top + 40, y: top, ...overrides } as DOMRect;
+  }
+
+  async function openAt(rect: DOMRect, id = 'place-dd', count = 12) {
+    const items = Array.from({ length: count }, (_, i) => ({ name: `Item ${i}`, value: String(i) }));
+    const view = render(<AnimatedDropdown id={id} text="Pick" items={items} />);
     const trigger = screen.getByRole('button', { name: /pick/i });
-    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(triggerRect);
+    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(rect);
+    await view.user.click(trigger);
+    return { trigger, listbox: screen.getByRole('listbox'), unmount: view.unmount };
+  }
 
-    await user.click(trigger);
+  it('opens below the trigger when there is room and caps max-height to 240', async () => {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 900 });
+    const { listbox } = await openAt(rectAt(40));
 
-    const listbox = screen.getByRole('listbox');
-    const listTop = parseFloat(listbox.style.top);
-    expect(listTop).toBeGreaterThanOrEqual(triggerRect.bottom + 4 - 0.5);
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.top)).toBe(80 + 4);
+    expect(listbox.style.bottom).toBe('');
+    expect(parseFloat(listbox.style.maxHeight)).toBe(240);
+  });
 
+  it('opens below with a shorter, scrollable list instead of flipping when ~4 rows fit below', async () => {
+    // 12 options want 240px; only 200px below, more above. Below still wins.
+    const { listbox } = await openAt(rectAt(348), 'below-first');
+
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.top)).toBe(388 + 4);
+    expect(parseFloat(listbox.style.maxHeight)).toBe(200);
+  });
+
+  it('still opens below at exactly 160px of room', async () => {
+    const { listbox } = await openAt(rectAt(388), 'below-160');
+
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.maxHeight)).toBe(160);
+  });
+
+  it('flips above only when less than 160px is left below and there is more room above', async () => {
+    const { listbox } = await openAt(rectAt(389), 'flip-159');
+
+    expect(listbox).toHaveAttribute('data-placement', 'above');
+  });
+
+  it('stays below when a short list fits even though more room is above', async () => {
+    // 2 options need about 90px; 120px of room below is enough.
+    const { listbox } = await openAt(rectAt(432), 'short-dd', 2);
+
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(listbox.style.top)).toBe(472 + 4);
+  });
+
+  it('flips above the trigger when space below is tight and there is more room above', async () => {
+    const rect = rectAt(540);
+    const { listbox } = await openAt(rect);
+
+    expect(listbox).toHaveAttribute('data-placement', 'above');
+    // Pinned by its bottom edge 4px above the trigger, so it never covers the trigger.
+    expect(listbox.style.top).toBe('');
+    expect(parseFloat(listbox.style.bottom)).toBe(600 - rect.top + 4);
+    expect(parseFloat(listbox.style.maxHeight)).toBe(240);
+  });
+
+  it('clamps height to the viewport instead of overflowing when neither side has room', async () => {
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 200 });
+    const { listbox } = await openAt(rectAt(70));
+
+    const top = parseFloat(listbox.style.top);
     const maxHeight = parseFloat(listbox.style.maxHeight);
-    const spaceBelow = window.innerHeight - triggerRect.bottom - 4 - 8;
-    expect(maxHeight).toBeLessThanOrEqual(240);
-    if (spaceBelow >= 120) {
-      expect(maxHeight).toBeLessThanOrEqual(spaceBelow + 0.5);
-    } else {
-      expect(maxHeight).toBe(120);
-    }
-    expect(maxHeight).toBeGreaterThan(0);
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+    expect(top + maxHeight).toBeLessThanOrEqual(200 - 8 + 0.5);
   });
 
-  it('never flips above the trigger when space below is tight', async () => {
-    const tightRect = {
-      ...triggerRect,
-      top: 540,
-      bottom: 580,
-      y: 540,
-    } as DOMRect;
+  it('never scrolls the page or the trigger when opening, at any position', async () => {
+    const windowScroll = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    for (const [index, top] of [40, 300, 540].entries()) {
+      const { unmount } = await openAt(rectAt(top), `no-scroll-${index}`);
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+      unmount();
+    }
+    expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+    expect(windowScroll).not.toHaveBeenCalled();
+    windowScroll.mockRestore();
+  });
 
+  it('switches sides instead of collapsing when the page scrolls with the menu open', async () => {
+    const { trigger, listbox } = await openAt(rectAt(540), 'scroll-flip');
+    expect(listbox).toHaveAttribute('data-placement', 'above');
+
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(20));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+
+    const moved = screen.getByRole('listbox');
+    expect(moved).toHaveAttribute('data-placement', 'below');
+    expect(parseFloat(moved.style.maxHeight)).toBeGreaterThanOrEqual(160);
+    expect(parseFloat(moved.style.top)).toBe(60 + 4);
+  });
+
+  it('flips an open menu up only once less than ~4 rows remain below', async () => {
+    const { trigger, listbox } = await openAt(rectAt(348), 'scroll-shrink');
+    expect(listbox).toHaveAttribute('data-placement', 'below');
+
+    // 148px left below, 388px above: under the 160px floor, so it switches sides.
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(400));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(screen.getByRole('listbox')).toHaveAttribute('data-placement', 'above');
+  });
+
+  it('keeps the chosen side while it still has usable room', async () => {
+    const { trigger } = await openAt(rectAt(540), 'scroll-keep');
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(400));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    expect(screen.getByRole('listbox')).toHaveAttribute('data-placement', 'above');
+  });
+
+  it('closes when the trigger scrolls out of the viewport', async () => {
+    const { trigger } = await openAt(rectAt(300), 'scroll-away');
+    (trigger.getBoundingClientRect as jest.Mock).mockReturnValue(rectAt(-80));
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps the menu inside the viewport horizontally for end-aligned wide menus', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 360 });
     const { user } = render(
-      <AnimatedDropdown id="tight-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
+      <AnimatedDropdown
+        id="end-dd"
+        text="Pick"
+        menuAlign="end"
+        menuMinWidth={320}
+        items={[{ name: 'One', value: '1' }]}
+      />,
     );
-
     const trigger = screen.getByRole('button', { name: /pick/i });
-    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(tightRect);
-
+    jest
+      .spyOn(trigger, 'getBoundingClientRect')
+      .mockReturnValue(rectAt(40, { left: 8, right: 48, width: 40 }));
     await user.click(trigger);
 
     const listbox = screen.getByRole('listbox');
-    const listTop = parseFloat(listbox.style.top);
-    expect(listTop).toBeGreaterThanOrEqual(tightRect.bottom + 4 - 0.5);
-    expect(listTop).toBeGreaterThan(tightRect.top);
-  });
-
-  it('scrolls the trigger into view when less than 280px remains below', async () => {
-    const { user } = render(
-      <AnimatedDropdown id="scroll-open-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
-    );
-
-    const trigger = screen.getByRole('button', { name: /pick/i });
-    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(triggerRect);
-    const scrollIntoView = jest.fn();
-    trigger.scrollIntoView = scrollIntoView;
-
-    await user.click(trigger);
-
-    expect(scrollIntoView).toHaveBeenCalled();
-    expect(scrollIntoView.mock.calls[0]?.[0]).toEqual(
-      expect.objectContaining({ block: 'center' }),
-    );
-    expect(parseFloat(screen.getByRole('listbox').style.top)).toBeGreaterThanOrEqual(
-      triggerRect.bottom + 4 - 0.5,
-    );
-  });
-
-  it('does not scroll when at least 280px remains below the trigger', async () => {
-    Object.defineProperty(window, 'innerHeight', {
-      configurable: true,
-      value: 900,
-    });
-    const roomyRect = {
-      ...triggerRect,
-      top: 40,
-      bottom: 80,
-      y: 40,
-    } as DOMRect;
-
-    const { user } = render(
-      <AnimatedDropdown id="roomy-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
-    );
-
-    const trigger = screen.getByRole('button', { name: /pick/i });
-    jest.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(roomyRect);
-    const scrollIntoView = jest.fn();
-    trigger.scrollIntoView = scrollIntoView;
-
-    await user.click(trigger);
-
-    expect(scrollIntoView).not.toHaveBeenCalled();
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    const left = parseFloat(listbox.style.left);
+    const width = parseFloat(listbox.style.width);
+    expect(left).toBeGreaterThanOrEqual(8);
+    expect(left + width).toBeLessThanOrEqual(360 - 8 + 0.5);
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
   });
 });
 
@@ -315,7 +385,11 @@ describe('AnimatedDropdown keyboard', () => {
     );
   });
 
-  it('moves the active option with ArrowDown, ArrowUp, Home, and End and scrolls it into view', async () => {
+  it('moves the active option with ArrowDown, ArrowUp, Home, and End and scrolls only the listbox', async () => {
+    const pageScroll = jest.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = pageScroll;
+
     const { user } = render(
       <AnimatedDropdown id="kb-move" text="Pick" items={keyboardItems} />,
     );
@@ -324,32 +398,37 @@ describe('AnimatedDropdown keyboard', () => {
     trigger.focus();
     await user.keyboard('{ArrowDown}');
 
+    const listbox = screen.getByRole('listbox');
     const alpha = screen.getByRole('option', { name: 'Alpha' });
     const beta = screen.getByRole('option', { name: 'Beta' });
     const gamma = screen.getByRole('option', { name: 'Gamma' });
-    const betaScroll = jest.fn();
-    const gammaScroll = jest.fn();
-    const alphaScroll = jest.fn();
-    beta.scrollIntoView = betaScroll;
-    gamma.scrollIntoView = gammaScroll;
-    alpha.scrollIntoView = alphaScroll;
+    // 40px rows: Alpha at 40, Beta at 120, Gamma at 160, in an 80px tall list.
+    for (const [el, top] of [[alpha, 40], [beta, 120], [gamma, 160]] as const) {
+      Object.defineProperty(el, 'offsetTop', { configurable: true, value: top });
+      Object.defineProperty(el, 'offsetHeight', { configurable: true, value: 40 });
+    }
+    Object.defineProperty(listbox, 'clientHeight', { configurable: true, value: 80 });
+    listbox.scrollTop = 0;
 
     expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
 
     await user.keyboard('{ArrowDown}');
     expect(trigger).toHaveAttribute('aria-activedescendant', beta.id);
-    expect(betaScroll).toHaveBeenCalled();
+    expect(listbox.scrollTop).toBe(160 - 80);
 
     await user.keyboard('{End}');
     expect(trigger).toHaveAttribute('aria-activedescendant', gamma.id);
-    expect(gammaScroll).toHaveBeenCalled();
+    expect(listbox.scrollTop).toBe(200 - 80);
 
     await user.keyboard('{Home}');
     expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
-    expect(alphaScroll).toHaveBeenCalled();
+    expect(listbox.scrollTop).toBe(40);
 
     await user.keyboard('{ArrowUp}');
     expect(trigger).toHaveAttribute('aria-activedescendant', alpha.id);
+
+    expect(pageScroll).not.toHaveBeenCalled();
+    Element.prototype.scrollIntoView = originalScrollIntoView;
   });
 
   it('selects the active option on Enter', async () => {
