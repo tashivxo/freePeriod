@@ -7,6 +7,7 @@ import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { getMessages } from '@/lib/i18n';
 import { readLocaleCookie } from '@/lib/i18n/server';
 import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
+import { legalConfig } from '@/lib/legal/config';
 import { SettingsClient } from './SettingsClient';
 import type { Subscription, User } from '@/types';
 
@@ -109,6 +110,7 @@ async function SettingsContent() {
       generationLimit={generationAccess.generationLimit}
       trialDays={trialDays}
       manageSubscriptionUrl={manageSubscriptionUrl}
+      supportEmail={legalConfig.contactEmail}
     />
   );
 }
