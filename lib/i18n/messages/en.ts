@@ -49,6 +49,9 @@ export const en = {
     logOut: 'Log out',
     logOutFailed: 'Could not log out. Check your connection and try again.',
     deleteAccount: 'Delete account',
+    dangerZone: 'Danger zone',
+    dangerZoneDescription:
+      'Deactivates your account immediately and permanently deletes it, with your lesson plans and uploads, after 30 days. Any subscription is cancelled.',
     deleteConfirmDescription:
       'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
     deleteConfirmLabel: 'Type "DELETE" to confirm',

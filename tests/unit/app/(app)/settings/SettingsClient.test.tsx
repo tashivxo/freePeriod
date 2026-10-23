@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent } from '@testing-library/react';
-import { render, screen, waitFor } from '@/tests/helpers';
+import { render, screen, waitFor, within } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
 import { COLOR_BENDS_GOLD, COLOR_BENDS_PEACH, COLOR_BENDS_ROSE } from '@/lib/utils/brand-colors';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
@@ -72,6 +72,9 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.logOut': 'Log out',
   'settings.logOutFailed': 'Could not log out. Check your connection and try again.',
   'settings.deleteAccount': 'Delete account',
+  'settings.dangerZone': 'Danger zone',
+  'settings.dangerZoneDescription':
+    'Deactivates your account immediately and permanently deletes it, with your lesson plans and uploads, after 30 days. Any subscription is cancelled.',
   'settings.deleteConfirmDescription':
     'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
   'settings.deleteConfirmLabel': 'Type "DELETE" to confirm',
@@ -783,5 +786,95 @@ describe('SettingsClient — save feedback', () => {
     expect(mockSetProfileSignals).not.toHaveBeenCalled();
 
     env.NODE_ENV = previousNodeEnv;
+  });
+});
+
+describe('SettingsClient — danger zone', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    mockPush.mockClear();
+  });
+
+  function dangerZone() {
+    return screen.getByRole('region', { name: /danger zone/i });
+  }
+
+  it('keeps Delete account in its own Danger zone, apart from Log out', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const zone = dangerZone();
+    const deleteButton = screen.getByRole('button', { name: /delete account/i });
+    const logOut = screen.getByRole('button', { name: /log out/i });
+
+    expect(zone).toContainElement(deleteButton);
+    expect(zone).not.toContainElement(logOut);
+    expect(within(zone).getByText(/permanently deletes it/i)).toBeInTheDocument();
+    expect(deleteButton.parentElement).not.toBe(logOut.parentElement);
+  });
+
+  it('sits below Account and above Legal, which stays last', () => {
+    render(<SettingsClient {...defaultProps} />);
+    const account = screen.getByRole('heading', { name: 'Account' });
+    const legal = screen.getByRole('heading', { name: 'Legal' });
+    expect(account.compareDocumentPosition(dangerZone()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dangerZone().compareDocumentPosition(legal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('requires typing DELETE, then schedules deletion, signs out and redirects', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ graceDays: 30 }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const signOut = jest.fn().mockResolvedValue({ error: null });
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
+
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+
+    const input = screen.getByLabelText(/type "delete" to confirm/i);
+    expect(input).toHaveFocus();
+    const confirm = screen.getByRole('button', { name: /confirm deletion/i });
+    expect(confirm).toBeDisabled();
+
+    await user.type(input, 'delete');
+    expect(confirm).toBeDisabled();
+    await user.clear(input);
+    await user.type(input, 'DELETE');
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sign-in?deleted=1'));
+    expect(fetchMock).toHaveBeenCalledWith('/api/user/delete', { method: 'POST' });
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  it('shows the API error inside the Danger zone and does not redirect', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Deletion already scheduled' }),
+    }) as unknown as typeof fetch;
+
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+    await user.type(screen.getByLabelText(/type "delete" to confirm/i), 'DELETE');
+    await user.click(screen.getByRole('button', { name: /confirm deletion/i }));
+
+    expect(await within(dangerZone()).findByText('Deletion already scheduled')).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('cancel closes the confirmation and returns focus to Delete account', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.queryByLabelText(/type "delete" to confirm/i)).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /delete account/i })).toHaveFocus(),
+    );
   });
 });

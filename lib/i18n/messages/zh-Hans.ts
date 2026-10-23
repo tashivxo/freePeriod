@@ -51,6 +51,9 @@ export const zhHans: Messages = {
     logOut: '退出登录',
     logOutFailed: '无法退出登录。请检查网络连接后重试。',
     deleteAccount: '删除账户',
+    dangerZone: '危险操作',
+    dangerZoneDescription:
+      '立即停用你的账户，并在 30 天后将其连同教案和上传的文件永久删除。所有订阅都会被取消。',
     deleteConfirmDescription:
       '账户将立即停用。个人数据会在 30 天宽限期后永久删除。请先导出需要保留的教案。',
     deleteConfirmLabel: '请输入 "DELETE" 以确认',
