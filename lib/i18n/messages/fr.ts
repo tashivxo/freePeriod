@@ -49,6 +49,7 @@ export const fr: Messages = {
     usageUnlimited: '{used} générées pendant cette période (Illimité)',
     manageSubscription: "Gérer l'abonnement",
     logOut: 'Se déconnecter',
+    logOutFailed: 'Impossible de se déconnecter. Vérifiez votre connexion et réessayez.',
     deleteAccount: 'Supprimer le compte',
     deleteConfirmDescription:
       'Votre compte sera désactivé immédiatement. Les données personnelles sont supprimées définitivement après un délai de grâce de 30 jours. Exportez d’abord les leçons que vous souhaitez conserver.',

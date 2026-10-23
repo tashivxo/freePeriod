@@ -49,6 +49,7 @@ export const es: Messages = {
     usageUnlimited: '{used} generadas en este periodo (Ilimitado)',
     manageSubscription: 'Gestionar suscripción',
     logOut: 'Cerrar sesión',
+    logOutFailed: 'No se pudo cerrar sesión. Revisa tu conexión e inténtalo de nuevo.',
     deleteAccount: 'Eliminar cuenta',
     deleteConfirmDescription:
       'Tu cuenta se desactivará de inmediato. Los datos personales se eliminan permanentemente tras un período de gracia de 30 días. Exporta antes las lecciones que quieras conservar.',

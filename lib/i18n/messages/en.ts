@@ -47,6 +47,7 @@ export const en = {
     usageUnlimited: '{used} generated this period (Unlimited)',
     manageSubscription: 'Manage subscription',
     logOut: 'Log out',
+    logOutFailed: 'Could not log out. Check your connection and try again.',
     deleteAccount: 'Delete account',
     deleteConfirmDescription:
       'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',

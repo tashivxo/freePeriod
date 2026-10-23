@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/auth/email';
-import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { TERMS_REQUIRED_MESSAGE } from '@/lib/auth/terms';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
@@ -40,7 +40,9 @@ export function SignUpPage() {
   }>({});
   const [serverError, setServerError] = useState('');
   const [termsError, setTermsError] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
+  // Which auth action is in flight, so only the clicked button shows the spinner.
+  const [pendingAction, setPendingAction] = useState<'password' | 'google' | null>(null);
+  const authBusy = pendingAction !== null;
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
   const [emailTaken, setEmailTaken] = useState(false);
@@ -52,6 +54,15 @@ export function SignUpPage() {
     if (!serverError || serverErrorIconMotionDisabled) return;
     serverErrorIconRef.current?.startAnimation();
   }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
+
+  // Back from the Google page restores this one from the back/forward cache, spinner and all.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setPendingAction(null);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
 
   useEffect(() => {
     const normalized = normalizeEmail(email);
@@ -116,65 +127,70 @@ export function SignUpPage() {
 
     const normalizedEmail = normalizeEmail(email);
 
-    setAuthBusy(true);
-    const availability = await checkEmailAvailability(normalizedEmail);
-    if (availability === 'taken') {
-      setEmailTaken(true);
-      setErrors((prev) => ({ ...prev, email: EMAIL_ALREADY_EXISTS }));
-      setServerError(EMAIL_ALREADY_EXISTS);
-      setAuthBusy(false);
-      return;
-    }
-    if (availability === 'error') {
-      setServerError('Unable to verify email. Please try again.');
-      setAuthBusy(false);
-      return;
-    }
+    setPendingAction('password');
+    try {
+      const availability = await checkEmailAvailability(normalizedEmail);
+      if (availability === 'taken') {
+        setEmailTaken(true);
+        setErrors((prev) => ({ ...prev, email: EMAIL_ALREADY_EXISTS }));
+        setServerError(EMAIL_ALREADY_EXISTS);
+        setPendingAction(null);
+        return;
+      }
+      if (availability === 'error') {
+        setServerError('Unable to verify email. Please try again.');
+        setPendingAction(null);
+        return;
+      }
 
-    const supabase = createClient();
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: normalizedEmail,
-      password,
-      options: {
-        data: { name },
-      },
-    });
-
-    if (error) {
-      setServerError(mapAuthError(error.message));
-      setAuthBusy(false);
-      return;
-    }
-
-    // Email confirmation required — stay on page with in-card success
-    if (!authData.session) {
-      setCheckEmail(true);
-      setAuthBusy(false);
-      return;
-    }
-
-    // Create profile row immediately if session is available
-    if (authData.user) {
-      await supabase.from('users').insert({
-        id: authData.user.id,
+      const supabase = createClient();
+      const { data: authData, error } = await supabase.auth.signUp({
         email: normalizedEmail,
-        name,
-        default_subject: null,
-        default_grade: null,
-        default_curriculum: null,
+        password,
+        options: {
+          data: { name },
+        },
       });
 
-      const { data: profile } = await supabase
-        .from('users')
-        .select('onboarding_complete')
-        .eq('id', authData.user.id)
-        .maybeSingle();
+      if (error) {
+        setServerError(mapAuthError(error.message));
+        setPendingAction(null);
+        return;
+      }
 
-      router.push(profile?.onboarding_complete ? '/dashboard' : '/onboarding');
-      return;
+      // Email confirmation required — stay on page with in-card success
+      if (!authData.session) {
+        setCheckEmail(true);
+        setPendingAction(null);
+        return;
+      }
+
+      // Create profile row immediately if session is available
+      if (authData.user) {
+        await supabase.from('users').insert({
+          id: authData.user.id,
+          email: normalizedEmail,
+          name,
+          default_subject: null,
+          default_grade: null,
+          default_curriculum: null,
+        });
+
+        const { data: profile } = await supabase
+          .from('users')
+          .select('onboarding_complete')
+          .eq('id', authData.user.id)
+          .maybeSingle();
+
+        router.push(profile?.onboarding_complete ? '/dashboard' : '/onboarding');
+        return;
+      }
+
+      router.push('/onboarding');
+    } catch {
+      setServerError(AUTH_UNEXPECTED_ERROR);
+      setPendingAction(null);
     }
-
-    router.push('/onboarding');
   }
 
   function handleEmailChange(value: string) {
@@ -191,12 +207,12 @@ export function SignUpPage() {
       setTermsError(TERMS_REQUIRED_MESSAGE);
       return;
     }
-    setAuthBusy(true);
+    setPendingAction('google');
     setServerError('');
     const { errorMessage } = await signInWithGoogle();
     if (errorMessage) {
       setServerError(errorMessage);
-      setAuthBusy(false);
+      setPendingAction(null);
     }
   }
 
@@ -344,7 +360,12 @@ export function SignUpPage() {
             {termsError && <FieldError message={termsError} className="px-1" />}
           </div>
 
-          <Button type="submit" className="w-full" isLoading={authBusy} disabled={submitDisabled}>
+          <Button
+            type="submit"
+            className="w-full"
+            isLoading={pendingAction === 'password'}
+            disabled={submitDisabled}
+          >
             Create account
           </Button>
         </form>
@@ -355,7 +376,11 @@ export function SignUpPage() {
           <div className="flex-1 h-px bg-text-secondary/20" />
         </div>
 
-        <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
+        <GoogleContinueButton
+          onClick={handleGoogleLogin}
+          disabled={authBusy}
+          isLoading={pendingAction === 'google'}
+        />
 
         <p className="text-center text-xs font-body text-text-secondary">
           By continuing with Google, you agree to our{' '}

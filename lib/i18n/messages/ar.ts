@@ -49,6 +49,7 @@ export const ar: Messages = {
     usageUnlimited: 'تم إنشاء {used} في هذه الفترة (غير محدود)',
     manageSubscription: 'إدارة الاشتراك',
     logOut: 'تسجيل الخروج',
+    logOutFailed: 'تعذّر تسجيل الخروج. تحقّق من اتصالك وحاول مرة أخرى.',
     deleteAccount: 'حذف الحساب',
     deleteConfirmDescription:
       'سيتم إلغاء تفعيل حسابك فورًا. تُحذف البيانات الشخصية نهائيًا بعد فترة سماح مدتها 30 يومًا. صدّر أي خطط دروس تريد الاحتفاظ بها أولًا.',

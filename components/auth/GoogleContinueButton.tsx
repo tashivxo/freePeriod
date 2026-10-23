@@ -9,25 +9,30 @@ const GOOGLE_CONTINUE_CLASS =
 type GoogleContinueButtonProps = {
   onClick: () => void;
   disabled?: boolean;
+  /** Shows the shared Button spinner in place of the Google mark while OAuth starts. */
+  isLoading?: boolean;
 };
 
-export function GoogleContinueButton({ onClick, disabled }: GoogleContinueButtonProps) {
+export function GoogleContinueButton({ onClick, disabled, isLoading = false }: GoogleContinueButtonProps) {
   return (
     <Button
       type="button"
       variant="outline"
       disabled={disabled}
+      isLoading={isLoading}
       onClick={onClick}
       className={GOOGLE_CONTINUE_CLASS}
     >
-      <Image
-        src="/brand/google-g.png"
-        alt=""
-        aria-hidden
-        width={18}
-        height={18}
-        className="size-[18px]"
-      />
+      {!isLoading && (
+        <Image
+          src="/brand/google-g.png"
+          alt=""
+          aria-hidden
+          width={18}
+          height={18}
+          className="size-[18px]"
+        />
+      )}
       Continue with Google
     </Button>
   );

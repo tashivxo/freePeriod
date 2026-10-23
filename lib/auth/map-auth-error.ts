@@ -1,5 +1,8 @@
 import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
 
+/** Shown when an auth call throws instead of returning an error (offline, blocked request). */
+export const AUTH_UNEXPECTED_ERROR = 'Something went wrong. Check your connection and try again.';
+
 /**
  * Map raw Supabase auth error messages to short, actionable copy.
  * Unknown messages pass through unchanged.
