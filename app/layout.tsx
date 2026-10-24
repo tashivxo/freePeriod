@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
-import { Manrope, Noto_Sans_Arabic } from 'next/font/google';
 import localFont from 'next/font/local';
 import { isRtl } from '@/lib/i18n';
 import { readLocaleCookie } from '@/lib/i18n/server';
@@ -11,18 +10,17 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const manrope = Manrope({
-  subsets: ['latin'],
+// Self-hosted (OFL) so production builds never depend on a Google Fonts download.
+const manrope = localFont({
+  src: [{ path: './fonts/manrope-latin-variable.woff2', weight: '400 800', style: 'normal' }],
   display: 'swap',
   variable: '--font-manrope',
-  weight: ['400', '500', '600', '700', '800'],
 });
 
-const notoSansArabic = Noto_Sans_Arabic({
-  subsets: ['arabic'],
+const notoSansArabic = localFont({
+  src: [{ path: './fonts/noto-sans-arabic-arabic-variable.woff2', weight: '400 700', style: 'normal' }],
   display: 'swap',
   variable: '--font-noto-sans-arabic',
-  weight: ['400', '500', '600', '700'],
 });
 
 const notoSansSC = localFont({
