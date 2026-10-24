@@ -268,13 +268,13 @@ describe('SettingsClient — help link', () => {
     expect(screen.queryByRole('link', { name: /write email to support/i })).not.toBeInTheDocument();
   });
 
-  it('sits between Danger zone and Legal', () => {
+  it('sits between Account and Legal', () => {
     render(<SettingsClient {...defaultProps} />);
+    const account = screen.getByRole('heading', { name: 'Account' });
     const helpHeading = screen.getByRole('heading', { name: 'Help & feedback' });
     const legal = screen.getByRole('heading', { name: 'Legal' });
-    const danger = screen.getByRole('region', { name: /danger zone/i });
 
-    expect(danger.compareDocumentPosition(helpHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(account.compareDocumentPosition(helpHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(helpHeading.compareDocumentPosition(legal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
@@ -842,12 +842,10 @@ describe('SettingsClient — danger zone', () => {
     expect(deleteButton.parentElement).not.toBe(logOut.parentElement);
   });
 
-  it('sits below Account and above Legal, which stays last', () => {
+  it('sits below Legal and is the last section on the page', () => {
     render(<SettingsClient {...defaultProps} />);
-    const account = screen.getByRole('heading', { name: 'Account' });
     const legal = screen.getByRole('heading', { name: 'Legal' });
-    expect(account.compareDocumentPosition(dangerZone()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(dangerZone().compareDocumentPosition(legal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(legal.compareDocumentPosition(dangerZone()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('requires typing DELETE, then schedules deletion, signs out and redirects', async () => {
