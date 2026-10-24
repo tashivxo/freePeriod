@@ -63,6 +63,14 @@ describe('updateSession password recovery routes', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('allows unauthenticated access to /help', async () => {
+    const response = await updateSession(requestFor('/help'));
+
+    expect(response.status).not.toBe(307);
+    expect(response.status).not.toBe(308);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('forwards recovery params from landing page to auth callback', async () => {
     const response = await updateSession(
       requestFor('/?token_hash=recovery-hash&type=recovery'),

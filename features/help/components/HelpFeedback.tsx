@@ -9,30 +9,38 @@ import { useLocale, useT } from '@/providers/locale';
 import { cn } from '@/lib/utils';
 import {
   buildSupportEmail,
+  SIGNED_OUT_PLAN,
   SUPPORT_CATEGORIES,
   SUPPORT_MESSAGE_MAX_LENGTH,
   type SupportCategory,
 } from '@/lib/support/mailto';
 
 const CATEGORY_LABEL_KEYS: Record<SupportCategory, string> = {
-  bug: 'settings.helpCategoryBug',
-  idea: 'settings.helpCategoryIdea',
-  billing: 'settings.helpCategoryBilling',
-  account: 'settings.helpCategoryAccount',
+  bug: 'help.categoryBug',
+  idea: 'help.categoryIdea',
+  billing: 'help.categoryBilling',
+  account: 'help.categoryAccount',
 };
 
 type HelpFeedbackProps = {
   supportEmail: string;
-  accountEmail: string;
-  userId: string;
-  /** Plan code plus trial state, e.g. "pro (trial, 5 days left)". */
-  plan: string;
+  labelledBy: string;
+  accountEmail?: string;
+  userId?: string;
+  plan?: string;
 };
 
-export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpFeedbackProps) {
+export function HelpFeedback({
+  supportEmail,
+  labelledBy,
+  accountEmail,
+  userId,
+  plan,
+}: HelpFeedbackProps) {
   const t = useT();
   const { locale } = useLocale();
   const id = useId();
+  const isSignedIn = Boolean(accountEmail && userId);
   const [category, setCategory] = useState<SupportCategory>('bug');
   const [message, setMessage] = useState('');
   const [includeDiagnostics, setIncludeDiagnostics] = useState(true);
@@ -46,11 +54,12 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
 
   // Built at click time so the page, browser and timestamp are current.
   function compose() {
+    const planTag = plan ?? SIGNED_OUT_PLAN;
     return buildSupportEmail({
       to: supportEmail,
       category,
       message,
-      plan,
+      plan: planTag,
       diagnostics: includeDiagnostics
         ? {
             email: accountEmail,
@@ -69,7 +78,7 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
       event.preventDefault();
       // Drop a draft left on the link by an earlier click.
       event.currentTarget.href = `mailto:${supportEmail}`;
-      setError(t('settings.helpMessageRequired'));
+      setError(t('help.messageRequired'));
       document.getElementById(messageId)?.focus();
       return;
     }
@@ -93,21 +102,19 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
     }
   }
 
+  const diagnosticsLabelKey = isSignedIn ? 'help.includeDiagnostics' : 'help.includeDiagnosticsGuest';
+  const diagnosticsHintKey = isSignedIn ? 'help.includeDiagnosticsHint' : 'help.includeDiagnosticsGuestHint';
+
   return (
     <section
       id="help"
-      aria-labelledby={`${id}-heading`}
-      className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8"
+      aria-labelledby={labelledBy}
+      className="rounded-2xl border border-border bg-surface p-6 md:p-8"
     >
-      <h2 id={`${id}-heading`} className="mb-2 font-display text-lg font-semibold text-text-primary">
-        {t('settings.helpTitle')}
-      </h2>
-      <p className="mb-4 font-body text-sm text-text-secondary">{t('settings.helpDescription')}</p>
-
       <div className="space-y-4">
         <div>
           <p id={`${id}-category`} className="mb-2 font-body text-sm font-medium text-text-secondary">
-            {t('settings.helpCategory')}
+            {t('help.category')}
           </p>
           <div role="radiogroup" aria-labelledby={`${id}-category`} className="flex flex-wrap gap-2">
             {SUPPORT_CATEGORIES.map((value) => (
@@ -120,7 +127,7 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
 
         <div>
           <label htmlFor={messageId} className="mb-2 block font-body text-sm font-medium text-text-secondary">
-            {t('settings.helpMessage')}
+            {t('help.message')}
           </label>
           <textarea
             id={messageId}
@@ -130,7 +137,7 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
               setMessage(e.target.value);
               if (error) setError('');
             }}
-            placeholder={t('settings.helpMessagePlaceholder')}
+            placeholder={t('help.messagePlaceholder')}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
             rows={5}
@@ -147,10 +154,10 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
         <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-background p-4">
           <div className="min-w-0">
             <label htmlFor={`${id}-diagnostics`} className="block font-body text-sm font-medium text-text-primary">
-              {t('settings.helpIncludeDiagnostics')}
+              {t(diagnosticsLabelKey)}
             </label>
             <p id={`${id}-diagnostics-hint`} className="mt-1 font-body text-sm text-text-secondary">
-              {t('settings.helpIncludeDiagnosticsHint')}
+              {t(diagnosticsHintKey)}
             </p>
           </div>
           <Switch
@@ -168,22 +175,22 @@ export function HelpFeedback({ supportEmail, accountEmail, userId, plan }: HelpF
           onClick={handleOpenEmail}
           className={cn(buttonVariants(), 'min-h-11 w-full sm:min-h-11')}
         >
-          {t('settings.helpOpenEmail')}
+          {t('help.openEmail')}
         </a>
 
         {opened && (
           <div role="status" className="space-y-3 rounded-xl bg-success/10 p-4 font-body text-sm text-text-primary">
-            <p>{t('settings.helpOpened')}</p>
-            {shortened && <p>{t('settings.helpShortened')}</p>}
+            <p>{t('help.opened')}</p>
+            {shortened && <p>{t('help.shortened')}</p>}
             <p className="text-text-secondary">
-              {t('settings.helpFallback', { email: supportEmail })}
+              {t('help.fallback', { email: supportEmail })}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" variant="outline" className="min-h-11 sm:min-h-11" onClick={handleCopy}>
-                {t('settings.helpCopy')}
+                {t('help.copy')}
               </Button>
-              {copyState === 'copied' && <span>{t('settings.helpCopied')}</span>}
-              {copyState === 'failed' && <FieldError message={t('settings.helpCopyFailed')} />}
+              {copyState === 'copied' && <span>{t('help.copied')}</span>}
+              {copyState === 'failed' && <FieldError message={t('help.copyFailed')} />}
             </div>
           </div>
         )}

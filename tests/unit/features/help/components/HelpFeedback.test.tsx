@@ -1,14 +1,20 @@
+import type { ComponentProps } from 'react';
 import { render, screen } from '@/tests/helpers';
-import { HelpFeedback } from '@/features/settings/components/HelpFeedback';
+import { HelpFeedback } from '@/features/help/components/HelpFeedback';
 
-function renderHelp() {
+function renderHelp(props?: Partial<ComponentProps<typeof HelpFeedback>>) {
   return render(
-    <HelpFeedback
-      supportEmail="support@freeperiod.co.za"
-      accountEmail="teacher@example.com"
-      userId="user-123"
-      plan="pro"
-    />,
+    <>
+      <h1 id="help-heading">Help & feedback</h1>
+      <HelpFeedback
+        supportEmail="support@freeperiod.co.za"
+        labelledBy="help-heading"
+        accountEmail="teacher@example.com"
+        userId="user-123"
+        plan="pro"
+        {...props}
+      />
+    </>,
   );
 }
 
@@ -16,7 +22,6 @@ function emailLink() {
   return screen.getByRole('link', { name: /write email to support/i });
 }
 
-/** Stops jsdom from trying to navigate to mailto: while React still handles the click. */
 function blockNavigation(link: HTMLElement) {
   link.addEventListener('click', (event) => event.preventDefault());
 }
@@ -26,15 +31,21 @@ function bodyOf(link: HTMLElement) {
 }
 
 describe('HelpFeedback', () => {
-  it('renders as a labelled Help & feedback section with category, message and diagnostics', () => {
+  it('renders as a labelled Help & feedback region with category, message and diagnostics', () => {
     renderHelp();
     expect(screen.getByRole('region', { name: /help & feedback/i })).toHaveAttribute('id', 'help');
     expect(screen.getByRole('radiogroup', { name: /what is it about/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Bug' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByLabelText('Message')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: /include account and browser details/i })).toBeChecked();
-    // Works as a plain link before hydration or with JS off.
     expect(emailLink()).toHaveAttribute('href', 'mailto:support@freeperiod.co.za');
+  });
+
+  it('uses guest diagnostics copy when no account is present', () => {
+    renderHelp({ accountEmail: undefined, userId: undefined, plan: undefined });
+    expect(screen.getByRole('switch', { name: /include browser details/i })).toBeChecked();
+    expect(screen.getByText(/adds your browser and language/i)).toBeInTheDocument();
+    expect(screen.queryByText(/your email, plan/i)).not.toBeInTheDocument();
   });
 
   it('blocks an empty message with an inline error and keeps the plain link', async () => {
@@ -65,6 +76,22 @@ describe('HelpFeedback', () => {
     expect(body).toContain('Language: en');
     expect(body).not.toContain('Page:');
     expect(screen.getByRole('status')).toHaveTextContent(/support@freeperiod\.co\.za/);
+  });
+
+  it('leaves account fields out of a guest diagnostics payload', async () => {
+    const { user } = renderHelp({ accountEmail: undefined, userId: undefined, plan: undefined });
+    await user.type(screen.getByLabelText('Message'), 'Cannot sign in');
+    const link = emailLink();
+    blockNavigation(link);
+    await user.click(link);
+
+    const url = new URL(link.getAttribute('href')!);
+    expect(url.searchParams.get('subject')).toBe('[FreePeriod][Bug][signed-out] Cannot sign in');
+    const body = bodyOf(link);
+    expect(body).toMatch(/^Cannot sign in/);
+    expect(body).toContain('Language: en');
+    expect(body).toContain('Browser:');
+    expect(body).not.toMatch(/Account:|User ID:|Plan:/);
   });
 
   it('tells the teacher when a long message had to be shortened in the email', async () => {
@@ -113,7 +140,9 @@ describe('HelpFeedback', () => {
 
     expect(await screen.findByText('Copied')).toBeInTheDocument();
     const copied = await navigator.clipboard.readText();
-    expect(copied).toMatch(/^To: support@freeperiod\.co\.za\nSubject: \[FreePeriod\]\[Bug\]\[pro\] Export is blank\n\nExport is blank/);
+    expect(copied).toMatch(
+      /^To: support@freeperiod\.co\.za\nSubject: \[FreePeriod\]\[Bug\]\[pro\] Export is blank\n\nExport is blank/,
+    );
   });
 
   it('explains how to copy by hand when the clipboard is unavailable', async () => {

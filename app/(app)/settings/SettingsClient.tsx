@@ -22,7 +22,7 @@ import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
-import { HelpFeedback } from '@/features/settings/components/HelpFeedback';
+import { HelpFeedback } from '@/features/help/components/HelpFeedback';
 import { legalConfig } from '@/lib/legal/config';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
@@ -545,7 +545,9 @@ export function SettingsClient({
         </div>
       </section>
 
+      <h2 id="settings-help-heading" className="sr-only">{t('help.title')}</h2>
       <HelpFeedback
+        labelledBy="settings-help-heading"
         supportEmail={supportEmail}
         accountEmail={email}
         userId={user.id}
