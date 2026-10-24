@@ -64,7 +64,7 @@ wrapperClassName?: string
 ```
 
 - **Settings:** `<ThemeToggle />` — icon-only button
-- **Homepage / Pricing:** `<ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 right-6 z-50" />` — includes "Try light/dark mode" label
+- **Homepage:** `<ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 right-6 z-50" />` — includes "Try light/dark mode" label
 
 ## Shared types
 

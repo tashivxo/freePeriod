@@ -49,7 +49,11 @@ export const fr: Messages = {
     usageUnlimited: '{used} générées pendant cette période (Illimité)',
     manageSubscription: "Gérer l'abonnement",
     logOut: 'Se déconnecter',
+    logOutFailed: 'Impossible de se déconnecter. Vérifiez votre connexion et réessayez.',
     deleteAccount: 'Supprimer le compte',
+    dangerZone: 'Zone de danger',
+    dangerZoneDescription:
+      'Désactive votre compte immédiatement et le supprime définitivement, avec vos plans de leçon et vos fichiers, au bout de 30 jours. Tout abonnement est résilié.',
     deleteConfirmDescription:
       'Votre compte sera désactivé immédiatement. Les données personnelles sont supprimées définitivement après un délai de grâce de 30 jours. Exportez d’abord les leçons que vous souhaitez conserver.',
     deleteConfirmLabel: 'Tapez "DELETE" pour confirmer',
@@ -60,6 +64,37 @@ export const fr: Messages = {
     legalDescription: 'Comment nous traitons vos données et les règles d’utilisation de FreePeriod.',
     privacyPolicy: 'Politique de confidentialité',
     termsOfService: "Conditions d'utilisation",
+  },
+  help: {
+    documentTitle: 'Aide et commentaires | FreePeriod',
+    title: 'Aide et commentaires',
+    description:
+      'Vous avez trouvé un bug, une idée, ou besoin d’aide pour la facturation ou votre compte ? Écrivez-nous et nous vous répondrons par e-mail.',
+    backToDashboard: 'Retour au tableau de bord',
+    settingsDescription:
+      'Signalez un bug, partagez une idée, ou demandez de l’aide pour la facturation ou votre compte.',
+    category: 'De quoi s’agit-il ?',
+    categoryBug: 'Bug',
+    categoryIdea: 'Idée',
+    categoryBilling: 'Facturation',
+    categoryAccount: 'Compte',
+    message: 'Message',
+    messagePlaceholder: 'Que s’est-il passé, et à quoi vous attendiez-vous ?',
+    messageRequired: 'Écrivez d’abord un court message.',
+    includeDiagnostics: 'Inclure les détails du compte et du navigateur',
+    includeDiagnosticsHint:
+      'Ajoute votre e-mail, votre forfait, votre langue et votre navigateur pour vous aider plus vite. Vos plans de leçon ne sont jamais inclus.',
+    includeDiagnosticsGuest: 'Inclure les détails du navigateur',
+    includeDiagnosticsGuestHint: 'Ajoute votre navigateur et votre langue pour vous aider plus vite.',
+    openEmail: 'Écrire un e-mail au support',
+    opened:
+      'Votre application de messagerie devrait s’ouvrir avec votre message prêt. Appuyez sur envoyer pour nous joindre.',
+    shortened:
+      'Votre message était long, l’e-mail en contient donc une version raccourcie. Utilisez Copier le message et collez le texte complet dans l’e-mail.',
+    fallback: 'Rien ne s’est ouvert ? Copiez votre message et envoyez-le à {email}.',
+    copy: 'Copier le message',
+    copied: 'Copié',
+    copyFailed: 'Copie impossible. Sélectionnez votre message ci-dessus et copiez-le.',
   },
   landing: {
     headerHome: 'Accueil',
@@ -94,7 +129,6 @@ export const fr: Messages = {
     conversionPoint3: 'Gratuit pour commencer. Aucune carte requise.',
     ctaButton: 'Commencer gratuitement',
     footerNavAriaLabel: 'Mentions légales et assistance',
-    footerContact: 'Contact',
     footerTagline: 'Conçu pour les enseignants, par des enseignants.',
     tryLightMode: 'Essayer le mode clair',
     tryDarkMode: 'Essayer le mode sombre',

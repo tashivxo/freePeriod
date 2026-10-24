@@ -157,6 +157,91 @@ describe('SignInPage', () => {
     ).toBeInTheDocument();
   });
 
+  describe('loading feedback', () => {
+    async function mockClient(overrides: Record<string, unknown>) {
+      const { createClient } = await import('@/lib/supabase/client');
+      (createClient as jest.Mock).mockReturnValue({
+        auth: {
+          signInWithPassword: jest.fn(),
+          signInWithOAuth: jest.fn(),
+          getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+          ...overrides,
+        },
+      });
+    }
+
+    async function fillAndSubmit(user: ReturnType<typeof render>['user']) {
+      await user.type(screen.getByLabelText(/email/i), 'test@test.com');
+      await user.type(screen.getByLabelText('Password'), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
+    }
+
+    it('shows the spinner only on Sign in and blocks both buttons while signing in', async () => {
+      await mockClient({ signInWithPassword: jest.fn(() => new Promise(() => {})) });
+      const { user } = render(<SignInPage />);
+      await fillAndSubmit(user);
+
+      const submit = screen.getByRole('button', { name: /sign in/i });
+      const google = screen.getByRole('button', { name: /continue with google/i });
+      expect(submit).toHaveAttribute('aria-busy', 'true');
+      expect(submit).toBeDisabled();
+      expect(google).toBeDisabled();
+      expect(google).not.toHaveAttribute('aria-busy');
+    });
+
+    it('shows the spinner only on Continue with Google while OAuth starts', async () => {
+      await mockClient({ signInWithOAuth: jest.fn(() => new Promise(() => {})) });
+      const { user } = render(<SignInPage />);
+      await user.click(screen.getByRole('button', { name: /continue with google/i }));
+
+      const google = screen.getByRole('button', { name: /continue with google/i });
+      const submit = screen.getByRole('button', { name: /sign in/i });
+      expect(google).toHaveAttribute('aria-busy', 'true');
+      expect(google).toBeDisabled();
+      expect(google.querySelector('img')).toBeNull();
+      expect(submit).toBeDisabled();
+      expect(submit).not.toHaveAttribute('aria-busy');
+    });
+
+    it('recovers with an error when sign-in throws instead of spinning forever', async () => {
+      await mockClient({
+        signInWithPassword: jest.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+      });
+      const { user } = render(<SignInPage />);
+      await fillAndSubmit(user);
+
+      expect(await screen.findByText(/check your connection/i)).toBeInTheDocument();
+      const submit = screen.getByRole('button', { name: /sign in/i });
+      expect(submit).toBeEnabled();
+      expect(submit).not.toHaveAttribute('aria-busy');
+      expect(screen.getByRole('button', { name: /continue with google/i })).toBeEnabled();
+    });
+
+    it('recovers with an error when Google OAuth throws', async () => {
+      await mockClient({ signInWithOAuth: jest.fn().mockRejectedValue(new Error('boom')) });
+      const { user } = render(<SignInPage />);
+      await user.click(screen.getByRole('button', { name: /continue with google/i }));
+
+      expect(await screen.findByText(/check your connection/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /continue with google/i })).toBeEnabled();
+    });
+
+    it('clears a stale spinner when the page is restored from the back/forward cache', async () => {
+      await mockClient({ signInWithOAuth: jest.fn(() => new Promise(() => {})) });
+      const { user } = render(<SignInPage />);
+      await user.click(screen.getByRole('button', { name: /continue with google/i }));
+      expect(screen.getByRole('button', { name: /continue with google/i })).toBeDisabled();
+
+      const restored = new Event('pageshow') as PageTransitionEvent;
+      Object.defineProperty(restored, 'persisted', { value: true });
+      window.dispatchEvent(restored);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /continue with google/i })).toBeEnabled();
+      });
+    });
+  });
+
   it('renders Google button with logo and non-primary styling', () => {
     render(<SignInPage />);
     const googleBtn = screen.getByRole('button', { name: /continue with google/i });

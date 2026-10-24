@@ -444,6 +444,33 @@ describe('SignUpPage', () => {
     });
   });
 
+  it('keeps the Google spinner off the Create account button and recovers when sign-up throws', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: jest.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+        signInWithOAuth: jest.fn(() => new Promise(() => {})),
+      },
+    });
+
+    const { user } = renderSignUpPage();
+    await user.type(screen.getByLabelText(/name/i), 'Ada');
+    await user.type(screen.getByLabelText(/email/i), 'ada@example.com');
+    await fillMatchingPasswords(user);
+    await user.click(screen.getByRole('radio'));
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(await screen.findByText(/check your connection/i)).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: /create account/i });
+    expect(submit).not.toHaveAttribute('aria-busy');
+
+    await user.click(screen.getByRole('button', { name: /continue with google/i }));
+    const google = screen.getByRole('button', { name: /continue with google/i });
+    expect(google).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: /create account/i })).not.toHaveAttribute('aria-busy');
+    expect(screen.getByRole('button', { name: /create account/i })).toBeDisabled();
+  });
+
   it('renders two distinct eye toggle buttons', () => {
     renderSignUpPage();
     expect(

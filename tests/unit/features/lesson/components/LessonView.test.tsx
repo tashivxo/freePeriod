@@ -316,7 +316,7 @@ describe('LessonView', () => {
     expect(fillButton).not.toHaveAttribute('aria-describedby');
     expect(screen.queryByText('Uses your uploaded template')).not.toBeInTheDocument();
     expect(row).toBe(downloadButton.parentElement);
-    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-3');
     expect(fillButton).toHaveClass('w-full', 'min-h-11');
     expect(downloadButton).toHaveClass('w-full', 'min-h-11');
 
@@ -341,7 +341,7 @@ describe('LessonView', () => {
     expect(downloadButton).toHaveAttribute('data-variant', 'secondary');
     expect(row).toBe(downloadButton.parentElement);
     expect(row).not.toContainElement(helper);
-    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-2');
+    expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-3');
     expect(row?.nextElementSibling).toBe(helper);
     expect(helper).toHaveClass('text-xs');
     expect(helper.id).toBeTruthy();

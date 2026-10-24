@@ -1,5 +1,4 @@
 import { Navbar } from '@/components/layout/Navbar';
-import { AppFloatingButton } from '@/components/layout/AppFloatingButton';
 import { ColorBendsBackground } from '@/components/ui/backgrounds/ColorBendsWrapper';
 import { LessonEditingProvider } from '@/providers/lesson-editing';
 import { ColorBendsAtmosphereProvider } from '@/providers/color-bends-atmosphere';
@@ -40,7 +39,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Navbar />
             <main className="flex-1">{children}</main>
           </div>
-          <AppFloatingButton />
         </LessonEditingProvider>
       </ColorBendsAtmosphereProvider>
     </div>
