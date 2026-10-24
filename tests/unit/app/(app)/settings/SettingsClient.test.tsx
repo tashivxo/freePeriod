@@ -87,6 +87,9 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.termsOfService': 'Terms of Service',
   'help.title': 'Help & feedback',
   'help.settingsDescription': 'Report a bug, share an idea, or get help with billing or your account.',
+  'help.settingsLink': 'Open Help & feedback',
+  'help.settingsNavAriaLabel': 'Help & feedback',
+  'settings.legalNavAriaLabel': 'Legal',
   'countries.common': 'Common',
   'countries.all': 'All countries',
   'grades.numbered': 'Grade {n}',
@@ -255,17 +258,33 @@ describe('SettingsClient — legal links', () => {
     expect(privacy).not.toHaveAttribute('target');
     expect(terms).not.toHaveAttribute('target');
   });
+
+  it('names the Legal navigation landmark', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const legalNav = screen.getByRole('navigation', { name: 'Legal' });
+    expect(legalNav).toContainElement(screen.getByRole('link', { name: /privacy policy/i }));
+    expect(legalNav).toContainElement(screen.getByRole('link', { name: /terms of service/i }));
+  });
 });
 
 describe('SettingsClient — help link', () => {
   it('links to /help instead of rendering the feedback form', () => {
     render(<SettingsClient {...defaultProps} />);
 
-    const help = screen.getByRole('link', { name: /help & feedback/i });
+    const help = screen.getByRole('link', { name: 'Open Help & feedback' });
     expect(help).toHaveAttribute('href', '/help');
     expect(help).not.toHaveAttribute('target');
     expect(screen.queryByRole('radiogroup', { name: /what is it about/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /write email to support/i })).not.toBeInTheDocument();
+  });
+
+  it('names the Help navigation landmark and keeps the heading distinct from the link', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    expect(screen.getByRole('heading', { name: 'Help & feedback' })).toBeInTheDocument();
+    const helpNav = screen.getByRole('navigation', { name: 'Help & feedback' });
+    expect(helpNav).toContainElement(screen.getByRole('link', { name: 'Open Help & feedback' }));
   });
 
   it('sits between Account and Legal', () => {

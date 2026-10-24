@@ -1,6 +1,10 @@
 import { render, screen } from '@/tests/helpers';
 import { HelpPageClient } from '@/features/help/components/HelpPageClient';
 
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/help',
+}));
+
 describe('HelpPageClient', () => {
   it('uses the marketing home link when signed out and does not send account props into the form', () => {
     render(

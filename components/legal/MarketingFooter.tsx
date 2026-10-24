@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { legalConfig } from '@/lib/legal/config';
 import { useLocale } from '@/providers/locale';
 
 export function MarketingFooter() {
   const { t } = useLocale();
+  const pathname = usePathname();
   const year = new Date().getFullYear();
 
   const links: { href: string; label: string }[] = [
@@ -26,6 +28,7 @@ export function MarketingFooter() {
             <Link
               key={link.href}
               href={link.href}
+              aria-current={pathname === link.href ? 'page' : undefined}
               className="inline-flex min-h-11 items-center text-text-secondary transition-colors hover:text-text-primary"
             >
               {link.label}
