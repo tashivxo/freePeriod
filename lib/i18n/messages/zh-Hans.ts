@@ -64,6 +64,7 @@ export const zhHans: Messages = {
     legalDescription: '我们如何处理你的数据，以及使用 FreePeriod 的规则。',
     privacyPolicy: '隐私政策',
     termsOfService: '服务条款',
+    legalNavAriaLabel: '法律信息',
   },
   help: {
     documentTitle: '帮助与反馈 | FreePeriod',
@@ -71,6 +72,8 @@ export const zhHans: Messages = {
     description: '发现问题、有新想法，或需要账单和账户方面的帮助？给我们留言，我们会通过邮件回复你。',
     backToDashboard: '返回控制台',
     settingsDescription: '报告问题、分享想法，或获取账单和账户方面的帮助。',
+    settingsLink: '打开帮助与反馈',
+    settingsNavAriaLabel: '帮助与反馈',
     category: '是关于什么的？',
     categoryBug: '问题',
     categoryIdea: '建议',

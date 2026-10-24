@@ -104,6 +104,7 @@ export function HelpFeedback({
 
   const diagnosticsLabelKey = isSignedIn ? 'help.includeDiagnostics' : 'help.includeDiagnosticsGuest';
   const diagnosticsHintKey = isSignedIn ? 'help.includeDiagnosticsHint' : 'help.includeDiagnosticsGuestHint';
+  const [fallbackBefore, fallbackAfter = ''] = t('help.fallback').split('{email}');
 
   return (
     <section
@@ -183,7 +184,9 @@ export function HelpFeedback({
             <p>{t('help.opened')}</p>
             {shortened && <p>{t('help.shortened')}</p>}
             <p className="text-text-secondary">
-              {t('help.fallback', { email: supportEmail })}
+              {fallbackBefore}
+              <bdi dir="ltr">{supportEmail}</bdi>
+              {fallbackAfter}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button type="button" variant="outline" className="min-h-11 sm:min-h-11" onClick={handleCopy}>
