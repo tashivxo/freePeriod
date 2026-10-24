@@ -247,8 +247,12 @@ describe('OnboardingPage', () => {
     expect(screen.getByText(/you can change this in settings/i)).toBeInTheDocument();
 
     await user.click(trigger);
-    expect(screen.getByText('Common')).toBeInTheDocument();
-    expect(screen.getByText('All countries')).toBeInTheDocument();
+    const commonHeader = screen.getByText('Common');
+    const allHeader = screen.getByText('All countries');
+    expect(commonHeader.className).toMatch(/italic/);
+    expect(commonHeader.className).toMatch(/text-coral/);
+    expect(allHeader.className).toMatch(/italic/);
+    expect(allHeader.className).toMatch(/text-coral/);
     expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(
       0,
     );

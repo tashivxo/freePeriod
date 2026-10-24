@@ -89,4 +89,31 @@ describe('Button', () => {
       expect(link).toHaveClass('btn-shine');
     });
   });
+
+  describe('loading state', () => {
+    it('marks the button busy and disabled while loading', () => {
+      render(<Button isLoading>Save</Button>);
+      const button = screen.getByRole('button', { name: /save/i });
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).toBeDisabled();
+      expect(button.querySelector('svg.animate-spin')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('stays disabled while loading even when the caller passes disabled={false}', () => {
+      render(
+        <Button isLoading disabled={false}>
+          Send
+        </Button>,
+      );
+      expect(screen.getByRole('button', { name: /send/i })).toBeDisabled();
+    });
+
+    it('has no busy state or spinner when not loading', () => {
+      render(<Button>Idle</Button>);
+      const button = screen.getByRole('button', { name: /idle/i });
+      expect(button).not.toHaveAttribute('aria-busy');
+      expect(button).toBeEnabled();
+      expect(button.querySelector('svg.animate-spin')).toBeNull();
+    });
+  });
 });

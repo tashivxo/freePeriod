@@ -86,6 +86,7 @@ export async function updateSession(request: NextRequest) {
     pathname === '/pricing' ||
     pathname === '/privacy' ||
     pathname === '/terms' ||
+    pathname === '/help' ||
     pathname.startsWith('/api/');
   if (!user && !isAuthPage && !isPasswordRecoveryPage && !isAuthCallbackPage && !isPublicPage) {
     const url = request.nextUrl.clone();

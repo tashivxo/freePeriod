@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { createClient } from '@/lib/supabase/client';
-import { mapAuthError } from '@/lib/auth/map-auth-error';
+import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
 import { Button } from '@/components/ui/Button';
@@ -25,7 +25,9 @@ export function SignInPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [serverError, setServerError] = useState('');
-  const [authBusy, setAuthBusy] = useState(false);
+  // Which auth action is in flight, so only the clicked button shows the spinner.
+  const [pendingAction, setPendingAction] = useState<'password' | 'google' | null>(null);
+  const authBusy = pendingAction !== null;
   const callbackFailed = searchParams.get('error') === 'auth_callback_failed';
   const { ref: callbackErrorIconRef, animationDisabled: callbackErrorIconMotionDisabled } =
     useMotionSafeIconRef();
@@ -42,6 +44,15 @@ export function SignInPage() {
     serverErrorIconRef.current?.startAnimation();
   }, [serverError, serverErrorIconMotionDisabled, serverErrorIconRef]);
 
+  // Back from the Google page restores this one from the back/forward cache, spinner and all.
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setPendingAction(null);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   function validate(): boolean {
     const newErrors: typeof errors = {};
     if (!email.trim()) newErrors.email = 'Email is required';
@@ -55,51 +66,57 @@ export function SignInPage() {
     setServerError('');
     if (!validate() || authBusy) return;
 
-    setAuthBusy(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    setPendingAction('password');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      setServerError(mapAuthError(error.message));
-      setAuthBusy(false);
-      return;
-    }
-
-    // Ensure profile row exists for users who signed up before row-creation was implemented
-    const { data: { user: signedInUser } } = await supabase.auth.getUser();
-    if (signedInUser) {
-      const { data: existing } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', signedInUser.id)
-        .maybeSingle();
-      if (!existing) {
-        await supabase.from('users').insert({
-          id: signedInUser.id,
-          email,
-          name: signedInUser.user_metadata?.name ?? email.split('@')[0],
-          default_subject: null,
-          default_grade: null,
-          default_curriculum: null,
-        });
+      if (error) {
+        setServerError(mapAuthError(error.message));
+        setPendingAction(null);
+        return;
       }
-    }
 
-    router.refresh();
-    router.push(searchParams.get('next') ?? '/dashboard');
+      // Ensure profile row exists for users who signed up before row-creation was implemented
+      const { data: { user: signedInUser } } = await supabase.auth.getUser();
+      if (signedInUser) {
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', signedInUser.id)
+          .maybeSingle();
+        if (!existing) {
+          await supabase.from('users').insert({
+            id: signedInUser.id,
+            email,
+            name: signedInUser.user_metadata?.name ?? email.split('@')[0],
+            default_subject: null,
+            default_grade: null,
+            default_curriculum: null,
+          });
+        }
+      }
+
+      // The spinner stays on until the next page replaces this one.
+      router.refresh();
+      router.push(searchParams.get('next') ?? '/dashboard');
+    } catch {
+      setServerError(AUTH_UNEXPECTED_ERROR);
+      setPendingAction(null);
+    }
   }
 
   async function handleGoogleLogin() {
     if (authBusy) return;
-    setAuthBusy(true);
+    setPendingAction('google');
     setServerError('');
     const { errorMessage } = await signInWithGoogle();
     if (errorMessage) {
       setServerError(errorMessage);
-      setAuthBusy(false);
+      setPendingAction(null);
     }
   }
 
@@ -221,7 +238,8 @@ export function SignInPage() {
           <Button
             type="submit"
             className="mt-6 w-full min-h-11 sm:min-h-11"
-            isLoading={authBusy}
+            isLoading={pendingAction === 'password'}
+            disabled={authBusy}
           >
             Sign in
           </Button>
@@ -233,7 +251,11 @@ export function SignInPage() {
           <div className="h-px flex-1 bg-text-secondary/20" />
         </div>
 
-        <GoogleContinueButton onClick={handleGoogleLogin} disabled={authBusy} />
+        <GoogleContinueButton
+          onClick={handleGoogleLogin}
+          disabled={authBusy}
+          isLoading={pendingAction === 'google'}
+        />
 
         <p className="mt-6 text-center text-sm font-body text-text-secondary">
           Don&apos;t have an account?{' '}

@@ -117,6 +117,8 @@ export function SettingsClient({
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logOutError, setLogOutError] = useState('');
   const router = useRouter();
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
@@ -198,6 +200,23 @@ export function SettingsClient({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogOut = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogOutError('');
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // The spinner stays on until /sign-in replaces this page.
+      router.push('/sign-in');
+    } catch (err) {
+      console.error(err);
+      setLogOutError(t('settings.logOutFailed'));
+      setLoggingOut(false);
     }
   };
 
@@ -433,59 +452,29 @@ export function SettingsClient({
           <Button
             variant="outline"
             className="w-full"
-            onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signOut();
-              router.push('/sign-in');
-            }}
+            isLoading={loggingOut}
+            onClick={handleLogOut}
           >
-            <LogOut className="mr-2 h-4 w-4" />
+            {!loggingOut && <LogOut className="mr-2 h-4 w-4" />}
             {t('settings.logOut')}
           </Button>
+          {logOutError && <FieldError variant="banner" message={logOutError} />}
 
-          {!deleteOpen ? (
-            <Button
-              variant="outline"
-              className="w-full border-error/30 text-error hover:bg-error/5"
-              onClick={() => setDeleteOpen(true)}
-            >
-              {t('settings.deleteAccount')}
-            </Button>
-          ) : (
-            <div className="rounded-xl border border-error/30 bg-error/5 p-4 space-y-3">
-              <p className="text-sm font-body text-text-secondary">
-                {t('settings.deleteConfirmDescription')}
-              </p>
-              <Input
-                label={t('settings.deleteConfirmLabel')}
-                value={deleteConfirm}
-                onChange={(e) => setDeleteConfirm(e.target.value)}
-              />
-              {deleteError && <FieldError variant="banner" message={deleteError} />}
-              <div className="flex gap-2">
-                <Button
-                  className="flex-1 bg-error hover:bg-error/90 text-white"
-                  disabled={deleteConfirm !== 'DELETE' || deleting}
-                  onClick={handleDeleteAccount}
-                >
-                  {deleting ? t('settings.deleting') : t('settings.confirmDeletion')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={deleting}
-                  onClick={() => {
-                    setDeleteOpen(false);
-                    setDeleteConfirm('');
-                    setDeleteError('');
-                  }}
-                >
-                  {t('settings.cancel')}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
+        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">
+          {t('help.title')}
+        </h2>
+        <p className="mb-4 text-sm font-body text-text-secondary">
+          {t('help.settingsDescription')}
+        </p>
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+          <Link href="/help" className="text-coral font-medium hover:underline">
+            {t('help.title')}
+          </Link>
+        </nav>
       </div>
 
       {/* Legal */}
@@ -509,6 +498,84 @@ export function SettingsClient({
           </Link>
         </nav>
       </div>
+
+      {/* Danger zone: kept apart from Log out so an irreversible action is never one slip away */}
+      <section
+        aria-labelledby="danger-zone-heading"
+        className="mt-8 mb-8 rounded-2xl border border-destructive/40 bg-surface p-6 md:p-8"
+      >
+        <h2
+          id="danger-zone-heading"
+          className="mb-4 font-display text-lg font-semibold text-destructive"
+        >
+          {t('settings.dangerZone')}
+        </h2>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h3 className="font-body text-sm font-semibold text-text-primary">
+                {t('settings.deleteAccount')}
+              </h3>
+              <p className="mt-1 font-body text-sm text-text-secondary">
+                {t('settings.dangerZoneDescription')}
+              </p>
+            </div>
+            {!deleteOpen && (
+              <Button
+                id="delete-account-trigger"
+                variant="outline"
+                className="min-h-11 shrink-0 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive sm:min-h-11"
+                onClick={() => setDeleteOpen(true)}
+              >
+                {t('settings.deleteAccount')}
+              </Button>
+            )}
+          </div>
+
+          {deleteOpen && (
+            <div className="mt-4 space-y-3 border-t border-destructive/20 pt-4">
+              <p className="text-sm font-body text-text-secondary">
+                {t('settings.deleteConfirmDescription')}
+              </p>
+              <Input
+                label={t('settings.deleteConfirmLabel')}
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                autoComplete="off"
+                autoFocus
+              />
+              {deleteError && <FieldError variant="banner" message={deleteError} />}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  className="min-h-11 flex-1 bg-error text-white hover:bg-error/90 sm:min-h-11"
+                  disabled={deleteConfirm !== 'DELETE' || deleting}
+                  isLoading={deleting}
+                  onClick={handleDeleteAccount}
+                >
+                  {deleting ? t('settings.deleting') : t('settings.confirmDeletion')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="min-h-11 flex-1 sm:min-h-11"
+                  disabled={deleting}
+                  onClick={() => {
+                    setDeleteOpen(false);
+                    setDeleteConfirm('');
+                    setDeleteError('');
+                    // Return focus to the trigger that just re-rendered in place of the panel.
+                    requestAnimationFrame(() =>
+                      document.getElementById('delete-account-trigger')?.focus(),
+                    );
+                  }}
+                >
+                  {t('settings.cancel')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
     </div>
   );
 }

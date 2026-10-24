@@ -81,7 +81,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     ? 'has-template'
     : 'no-template';
   const fillHelperId = useId();
-  const toolbarButtonClassName = 'h-auto min-h-11 w-full sm:h-7 sm:min-h-0 sm:w-auto';
+  const toolbarButtonClassName =
+    'min-h-11 h-11 px-5 text-base w-full sm:min-h-11 sm:h-11 sm:w-auto';
 
   const {
     save: debouncedSave,
@@ -369,9 +370,8 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         </div>
 
         <div className="mt-4 flex flex-col gap-1.5">
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
             <Button
-              size="sm"
               className={toolbarButtonClassName}
               variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
               aria-describedby={
@@ -379,17 +379,16 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
               }
               onClick={() => handleFilledTemplateDialogOpenChange(true)}
             >
-              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
+              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
               {FILL_MY_TEMPLATE_LABEL}
             </Button>
             <Button
-              size="sm"
               className={toolbarButtonClassName}
               variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
               onClick={() => void handleExport()}
               isLoading={exportLoading}
             >
-              <MotionSafeIcon icon={DownloadIcon} size={16} className="mr-1" />
+              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
               {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
             </Button>
           </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent } from '@testing-library/react';
-import { render, screen, waitFor } from '@/tests/helpers';
+import { render, screen, waitFor, within } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
 import { COLOR_BENDS_GOLD, COLOR_BENDS_PEACH, COLOR_BENDS_ROSE } from '@/lib/utils/brand-colors';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
@@ -70,7 +70,11 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.somethingWentWrong': 'Something went wrong. Please try again.',
   'settings.manageSubscription': 'Manage subscription',
   'settings.logOut': 'Log out',
+  'settings.logOutFailed': 'Could not log out. Check your connection and try again.',
   'settings.deleteAccount': 'Delete account',
+  'settings.dangerZone': 'Danger zone',
+  'settings.dangerZoneDescription':
+    'Deactivates your account immediately and permanently deletes it, with your lesson plans and uploads, after 30 days. Any subscription is cancelled.',
   'settings.deleteConfirmDescription':
     'Your account will be deactivated immediately. Personal data is permanently deleted after a 30-day grace period. Export any lesson plans you want to keep first.',
   'settings.deleteConfirmLabel': 'Type "DELETE" to confirm',
@@ -81,6 +85,8 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.legalDescription': 'How we handle your data and the rules for using FreePeriod.',
   'settings.privacyPolicy': 'Privacy Policy',
   'settings.termsOfService': 'Terms of Service',
+  'help.title': 'Help & feedback',
+  'help.settingsDescription': 'Report a bug, share an idea, or get help with billing or your account.',
   'countries.common': 'Common',
   'countries.all': 'All countries',
   'grades.numbered': 'Grade {n}',
@@ -116,8 +122,9 @@ jest.mock('@/lib/supabase/client', () => ({
   })),
 }));
 
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -159,6 +166,44 @@ async function changeSubjectToScience(user: Awaited<ReturnType<typeof render>>['
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('SettingsClient — log out', () => {
+  afterEach(() => mockPush.mockClear());
+
+  async function mockSignOut(signOut: jest.Mock) {
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
+  }
+
+  it('shows a busy, disabled Log out button while signing out', async () => {
+    await mockSignOut(jest.fn(() => new Promise(() => {})));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toBeDisabled();
+  });
+
+  it('redirects to sign-in after a successful sign-out', async () => {
+    await mockSignOut(jest.fn().mockResolvedValue({ error: null }));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sign-in'));
+  });
+
+  it('shows an error and re-enables Log out when sign-out fails', async () => {
+    await mockSignOut(jest.fn().mockResolvedValue({ error: { message: 'Network error' } }));
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /log out/i }));
+
+    expect(await screen.findByText(/could not log out/i)).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /log out/i });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute('aria-busy');
+  });
+});
 
 describe('SettingsClient — account context', () => {
   it('shows read-only email, plan, and usage', () => {
@@ -209,6 +254,28 @@ describe('SettingsClient — legal links', () => {
     expect(terms).toHaveAttribute('href', '/terms');
     expect(privacy).not.toHaveAttribute('target');
     expect(terms).not.toHaveAttribute('target');
+  });
+});
+
+describe('SettingsClient — help link', () => {
+  it('links to /help instead of rendering the feedback form', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const help = screen.getByRole('link', { name: /help & feedback/i });
+    expect(help).toHaveAttribute('href', '/help');
+    expect(help).not.toHaveAttribute('target');
+    expect(screen.queryByRole('radiogroup', { name: /what is it about/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /write email to support/i })).not.toBeInTheDocument();
+  });
+
+  it('sits between Account and Legal', () => {
+    render(<SettingsClient {...defaultProps} />);
+    const account = screen.getByRole('heading', { name: 'Account' });
+    const helpHeading = screen.getByRole('heading', { name: 'Help & feedback' });
+    const legal = screen.getByRole('heading', { name: 'Legal' });
+
+    expect(account.compareDocumentPosition(helpHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(helpHeading.compareDocumentPosition(legal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -524,8 +591,12 @@ describe('SettingsClient — dirty save', () => {
 
     await user.click(country);
     expect(screen.getByRole('listbox')).toBeInTheDocument();
-    expect(screen.getByText('Common')).toBeInTheDocument();
-    expect(screen.getByText('All countries')).toBeInTheDocument();
+    const commonHeader = screen.getByText('Common');
+    const allHeader = screen.getByText('All countries');
+    expect(commonHeader.className).toMatch(/italic/);
+    expect(commonHeader.className).toMatch(/text-coral/);
+    expect(allHeader.className).toMatch(/italic/);
+    expect(allHeader.className).toMatch(/text-coral/);
     expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
@@ -743,5 +814,93 @@ describe('SettingsClient — save feedback', () => {
     expect(mockSetProfileSignals).not.toHaveBeenCalled();
 
     env.NODE_ENV = previousNodeEnv;
+  });
+});
+
+describe('SettingsClient — danger zone', () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    mockPush.mockClear();
+  });
+
+  function dangerZone() {
+    return screen.getByRole('region', { name: /danger zone/i });
+  }
+
+  it('keeps Delete account in its own Danger zone, apart from Log out', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const zone = dangerZone();
+    const deleteButton = screen.getByRole('button', { name: /delete account/i });
+    const logOut = screen.getByRole('button', { name: /log out/i });
+
+    expect(zone).toContainElement(deleteButton);
+    expect(zone).not.toContainElement(logOut);
+    expect(within(zone).getByText(/permanently deletes it/i)).toBeInTheDocument();
+    expect(deleteButton.parentElement).not.toBe(logOut.parentElement);
+  });
+
+  it('sits below Legal and is the last section on the page', () => {
+    render(<SettingsClient {...defaultProps} />);
+    const legal = screen.getByRole('heading', { name: 'Legal' });
+    expect(legal.compareDocumentPosition(dangerZone()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('requires typing DELETE, then schedules deletion, signs out and redirects', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ graceDays: 30 }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const signOut = jest.fn().mockResolvedValue({ error: null });
+    const { createClient } = await import('@/lib/supabase/client');
+    (createClient as jest.Mock).mockReturnValueOnce({ auth: { signOut } });
+
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+
+    const input = screen.getByLabelText(/type "delete" to confirm/i);
+    expect(input).toHaveFocus();
+    const confirm = screen.getByRole('button', { name: /confirm deletion/i });
+    expect(confirm).toBeDisabled();
+
+    await user.type(input, 'delete');
+    expect(confirm).toBeDisabled();
+    await user.clear(input);
+    await user.type(input, 'DELETE');
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/sign-in?deleted=1'));
+    expect(fetchMock).toHaveBeenCalledWith('/api/user/delete', { method: 'POST' });
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  it('shows the API error inside the Danger zone and does not redirect', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Deletion already scheduled' }),
+    }) as unknown as typeof fetch;
+
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+    await user.type(screen.getByLabelText(/type "delete" to confirm/i), 'DELETE');
+    await user.click(screen.getByRole('button', { name: /confirm deletion/i }));
+
+    expect(await within(dangerZone()).findByText('Deletion already scheduled')).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('cancel closes the confirmation and returns focus to Delete account', async () => {
+    const { user } = render(<SettingsClient {...defaultProps} />);
+    await user.click(screen.getByRole('button', { name: /delete account/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.queryByLabelText(/type "delete" to confirm/i)).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /delete account/i })).toHaveFocus(),
+    );
   });
 });

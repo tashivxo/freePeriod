@@ -264,20 +264,10 @@ describe('PricingClient', () => {
     expect(screen.getByText(ar.pricing.subtitle)).toBeVisible();
   });
 
-  it('renders an interruptible theme toggle that switches to dark', async () => {
-    const mockSetTheme = jest.fn();
-    mockedUseTheme.mockReturnValue({
-      theme: 'light',
-      setTheme: mockSetTheme,
-      resolvedTheme: 'light',
-    });
-
-    const { user, container } = renderPricing();
-    const toggle = screen.getByRole('button', { name: /switch to dark mode/i });
-    expect(toggle).toBeVisible();
-    expect(container.querySelector('.t-icon-swap')).toHaveAttribute('data-state', 'a');
-
-    await user.click(toggle);
-    expect(mockSetTheme).toHaveBeenCalledWith('dark');
+  it('does not render a floating theme toggle (theme lives in Settings and on the landing page)', () => {
+    renderPricing();
+    expect(
+      screen.queryByRole('button', { name: /switch to (dark|light) mode/i }),
+    ).not.toBeInTheDocument();
   });
 });
