@@ -152,4 +152,32 @@ describe('buildSupportEmail', () => {
     // decodeURIComponent throws on a lone surrogate half.
     expect(() => parse(email.href)).not.toThrow();
   });
+
+  it('omits Account, User ID and Plan lines when those diagnostics fields are absent', () => {
+    const { body, subject } = buildSupportEmail({
+      to: 'support@freeperiod.co.za',
+      category: 'bug',
+      message: 'Cannot sign in',
+      plan: 'signed-out',
+      diagnostics: {
+        locale: 'en',
+        browser: 'TestBrowser/1.0',
+        sentAt: '2026-10-24T12:00:00.000Z',
+      },
+    });
+
+    expect(subject).toBe('[FreePeriod][Bug][signed-out] Cannot sign in');
+    expect(body).toBe(
+      [
+        'Cannot sign in',
+        '',
+        '---',
+        'Category: Bug',
+        'Language: en',
+        'Browser: TestBrowser/1.0',
+        'Sent: 2026-10-24T12:00:00.000Z',
+      ].join('\r\n'),
+    );
+    expect(body).not.toMatch(/Account:|User ID:|Plan:/);
+  });
 });

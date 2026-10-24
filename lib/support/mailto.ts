@@ -1,5 +1,5 @@
 /**
- * Builds the pre-filled support email behind Settings → Help & feedback.
+ * Builds the pre-filled support email behind the Help & feedback page.
  *
  * v1 hands the message to the teacher's own email app (mailto:), so nothing is sent
  * from our servers and no email provider key is needed. Diagnostics are labelled in
@@ -8,6 +8,8 @@
 
 export const SUPPORT_CATEGORIES = ['bug', 'idea', 'billing', 'account'] as const;
 export type SupportCategory = (typeof SUPPORT_CATEGORIES)[number];
+
+export const SIGNED_OUT_PLAN = 'signed-out';
 
 /** Subject tags support filters on, kept in English whatever the UI language. */
 const CATEGORY_TAGS: Record<SupportCategory, string> = {
@@ -29,9 +31,9 @@ const SHORTENED_NOTE = '[Message shortened to fit an email link. The sender can 
 const SUBJECT_SNIPPET_LENGTH = 60;
 
 export type SupportDiagnostics = {
-  email: string;
-  userId: string;
-  plan: string;
+  email?: string;
+  userId?: string;
+  plan?: string;
   locale: string;
   browser: string;
   sentAt: string;
@@ -54,16 +56,13 @@ function subjectSnippet(message: string): string {
 }
 
 function composeBody(message: string, category: SupportCategory, diagnostics?: SupportDiagnostics) {
-  // RFC 6068: line breaks in a mailto body are CRLF, including the teacher's own.
   const lines = [message.replace(/\r?\n/g, '\r\n')];
   if (diagnostics) {
+    lines.push('', '---', `Category: ${CATEGORY_TAGS[category]}`);
+    if (diagnostics.email) lines.push(`Account: ${diagnostics.email}`);
+    if (diagnostics.userId) lines.push(`User ID: ${diagnostics.userId}`);
+    if (diagnostics.plan) lines.push(`Plan: ${diagnostics.plan}`);
     lines.push(
-      '',
-      '---',
-      `Category: ${CATEGORY_TAGS[category]}`,
-      `Account: ${diagnostics.email}`,
-      `User ID: ${diagnostics.userId}`,
-      `Plan: ${diagnostics.plan}`,
       `Language: ${diagnostics.locale}`,
       `Browser: ${diagnostics.browser}`,
       `Sent: ${diagnostics.sentAt}`,
