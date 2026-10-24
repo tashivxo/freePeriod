@@ -32,6 +32,34 @@ function ChipRadioGroupHarness({
   );
 }
 
+function ParentControlledHarness({ initial = '' }: { initial?: (typeof OPTIONS)[number] | '' }) {
+  const [value, setValue] = useState<(typeof OPTIONS)[number] | ''>(initial);
+  return (
+    <>
+      <button type="button" onClick={() => setValue('')}>
+        Clear selection
+      </button>
+      <button type="button" onClick={() => setValue('Idea')}>
+        Select Idea
+      </button>
+      <button type="button" onClick={() => setValue('Billing')}>
+        Select Billing
+      </button>
+      <div role="radiogroup" aria-label="Category">
+        {OPTIONS.map((option) => (
+          <ChipRadio key={option} checked={value === option} onSelect={() => setValue(option)}>
+            {option}
+          </ChipRadio>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function tabbableRadios() {
+  return screen.getAllByRole('radio').filter((radio) => radio.tabIndex === 0);
+}
+
 describe('ChipRadio', () => {
   it('exposes radio semantics and a high-contrast selected state', async () => {
     const onSelect = jest.fn();
@@ -146,5 +174,59 @@ describe('ChipRadio', () => {
     expect(screen.getByRole('button', { name: 'Before' })).toHaveFocus();
     await user.tab();
     expect(bug).toHaveFocus();
+  });
+
+  it('keeps exactly one chip as the tab stop after click, arrows, and parent updates', async () => {
+    const { user, unmount } = render(<ChipRadioGroupHarness initial="" />);
+
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Bug');
+
+    await user.click(screen.getByRole('radio', { name: 'Billing' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Billing');
+
+    await user.click(screen.getByRole('radio', { name: 'Idea' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Idea');
+
+    screen.getByRole('radio', { name: 'Idea' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Billing');
+
+    unmount();
+    const rtl = render(<ChipRadioGroupHarness dir="rtl" initial="" />);
+    expect(tabbableRadios()).toHaveLength(1);
+
+    await rtl.user.click(screen.getByRole('radio', { name: 'Idea' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Idea');
+
+    screen.getByRole('radio', { name: 'Idea' }).focus();
+    await rtl.user.keyboard('{ArrowLeft}');
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Billing');
+
+    await rtl.user.keyboard('{ArrowRight}');
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Idea');
+
+    rtl.unmount();
+    const { user: parentUser } = render(<ParentControlledHarness initial="" />);
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Bug');
+
+    await parentUser.click(screen.getByRole('button', { name: 'Select Idea' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Idea');
+
+    await parentUser.click(screen.getByRole('button', { name: 'Select Billing' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Billing');
+
+    await parentUser.click(screen.getByRole('button', { name: 'Clear selection' }));
+    expect(tabbableRadios()).toHaveLength(1);
+    expect(tabbableRadios()[0]).toHaveAccessibleName('Bug');
   });
 });
