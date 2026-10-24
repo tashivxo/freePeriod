@@ -45,10 +45,10 @@ export function ChipRadio({
     const node = ref.current;
     if (!node) return;
     const radios = radiosInGroup(node);
-    const anyChecked = radios.some((item) => item.getAttribute('aria-checked') === 'true');
-    if (!anyChecked && radios[0] === node) {
-      node.tabIndex = 0;
-    }
+    const checkedRadio = radios.find((item) => item.getAttribute('aria-checked') === 'true');
+    radios.forEach((radio, index) => {
+      radio.tabIndex = radio === checkedRadio || (!checkedRadio && index === 0) ? 0 : -1;
+    });
   }, [checked]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
