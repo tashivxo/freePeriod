@@ -10,9 +10,9 @@ describe('root layout fonts', () => {
     expect(layoutSource).not.toMatch(/Noto_Sans_SC/);
   });
 
-  it('still loads Manrope and Noto Sans Arabic from next/font/google', () => {
-    expect(layoutSource).toMatch(/from 'next\/font\/google'/);
-    expect(layoutSource).toMatch(/\bManrope\b/);
-    expect(layoutSource).toMatch(/\bNoto_Sans_Arabic\b/);
+  it('self-hosts Manrope and Noto Sans Arabic too, never from next/font/google', () => {
+    expect(layoutSource).not.toMatch(/from 'next\/font\/google'/);
+    expect(layoutSource).toMatch(/variable:\s*'--font-manrope'/);
+    expect(layoutSource).toMatch(/variable:\s*'--font-noto-sans-arabic'/);
   });
 });

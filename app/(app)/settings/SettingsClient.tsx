@@ -470,9 +470,12 @@ export function SettingsClient({
         <p className="mb-4 text-sm font-body text-text-secondary">
           {t('help.settingsDescription')}
         </p>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+        <nav
+          aria-label={t('help.settingsNavAriaLabel')}
+          className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body"
+        >
           <Link href="/help" className="text-coral font-medium hover:underline">
-            {t('help.title')}
+            {t('help.settingsLink')}
           </Link>
         </nav>
       </div>
@@ -483,7 +486,10 @@ export function SettingsClient({
         <p className="mb-4 text-sm font-body text-text-secondary">
           {t('settings.legalDescription')}
         </p>
-        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+        <nav
+          aria-label={t('settings.legalNavAriaLabel')}
+          className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body"
+        >
           <Link
             href="/privacy"
             className="text-coral font-medium hover:underline"

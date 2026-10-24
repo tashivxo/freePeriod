@@ -62,6 +62,7 @@ export const en = {
     legalDescription: 'How we handle your data and the rules for using FreePeriod.',
     privacyPolicy: 'Privacy Policy',
     termsOfService: 'Terms of Service',
+    legalNavAriaLabel: 'Legal',
   },
   help: {
     documentTitle: 'Help & feedback | FreePeriod',
@@ -70,6 +71,8 @@ export const en = {
       'Found a bug, have an idea, or need help with billing or your account? Send us a message and we will reply by email.',
     backToDashboard: 'Back to dashboard',
     settingsDescription: 'Report a bug, share an idea, or get help with billing or your account.',
+    settingsLink: 'Open Help & feedback',
+    settingsNavAriaLabel: 'Help & feedback',
     category: 'What is it about?',
     categoryBug: 'Bug',
     categoryIdea: 'Idea',

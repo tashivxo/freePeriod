@@ -76,6 +76,9 @@ describe('HelpFeedback', () => {
     expect(body).toContain('Language: en');
     expect(body).not.toContain('Page:');
     expect(screen.getByRole('status')).toHaveTextContent(/support@freeperiod\.co\.za/);
+    const email = screen.getByText('support@freeperiod.co.za');
+    expect(email.tagName).toBe('BDI');
+    expect(email).toHaveAttribute('dir', 'ltr');
   });
 
   it('leaves account fields out of a guest diagnostics payload', async () => {

@@ -64,6 +64,7 @@ export const fr: Messages = {
     legalDescription: 'Comment nous traitons vos données et les règles d’utilisation de FreePeriod.',
     privacyPolicy: 'Politique de confidentialité',
     termsOfService: "Conditions d'utilisation",
+    legalNavAriaLabel: 'Mentions légales',
   },
   help: {
     documentTitle: 'Aide et commentaires | FreePeriod',
@@ -73,6 +74,8 @@ export const fr: Messages = {
     backToDashboard: 'Retour au tableau de bord',
     settingsDescription:
       'Signalez un bug, partagez une idée, ou demandez de l’aide pour la facturation ou votre compte.',
+    settingsLink: 'Ouvrir Aide et commentaires',
+    settingsNavAriaLabel: 'Aide et commentaires',
     category: 'De quoi s’agit-il ?',
     categoryBug: 'Bug',
     categoryIdea: 'Idée',

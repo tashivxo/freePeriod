@@ -6,6 +6,9 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    // Same files the Next config loads the react-hooks plugin for; without this, .cjs
+    // files get these rules but not the plugin and `eslint .` crashes.
+    files: ['**/*.{js,jsx,mjs,ts,tsx,mts,cts}'],
     rules: {
       // Next.js 16 enables React Compiler rules that predate this migration.
       'react-hooks/set-state-in-effect': 'warn',

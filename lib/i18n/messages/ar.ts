@@ -64,6 +64,7 @@ export const ar: Messages = {
     legalDescription: 'كيف نتعامل مع بياناتك وقواعد استخدام FreePeriod.',
     privacyPolicy: 'سياسة الخصوصية',
     termsOfService: 'شروط الخدمة',
+    legalNavAriaLabel: 'قانوني',
   },
   help: {
     documentTitle: 'المساعدة والملاحظات | FreePeriod',
@@ -72,6 +73,8 @@ export const ar: Messages = {
       'هل وجدت خطأً أو لديك فكرة أو تحتاج إلى مساعدة في الفوترة أو حسابك؟ راسلنا وسنرد عليك عبر البريد الإلكتروني.',
     backToDashboard: 'العودة إلى لوحة التحكم',
     settingsDescription: 'أبلغ عن خطأ، أو شارك فكرة، أو اطلب مساعدة في الفوترة أو حسابك.',
+    settingsLink: 'فتح المساعدة والملاحظات',
+    settingsNavAriaLabel: 'المساعدة والملاحظات',
     category: 'ما موضوع رسالتك؟',
     categoryBug: 'خطأ',
     categoryIdea: 'فكرة',
