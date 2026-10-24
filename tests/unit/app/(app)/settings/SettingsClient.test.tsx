@@ -567,8 +567,12 @@ describe('SettingsClient — dirty save', () => {
 
     await user.click(country);
     expect(screen.getByRole('listbox')).toBeInTheDocument();
-    expect(screen.getByText('Common')).toBeInTheDocument();
-    expect(screen.getByText('All countries')).toBeInTheDocument();
+    const commonHeader = screen.getByText('Common');
+    const allHeader = screen.getByText('All countries');
+    expect(commonHeader.className).toMatch(/italic/);
+    expect(commonHeader.className).toMatch(/text-coral/);
+    expect(allHeader.className).toMatch(/italic/);
+    expect(allHeader.className).toMatch(/text-coral/);
     expect(screen.getAllByRole('option', { name: 'United Arab Emirates' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });

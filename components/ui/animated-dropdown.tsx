@@ -630,7 +630,7 @@ export function AnimatedDropdown({
                       <li
                         key={`header-${index}-${item.name}`}
                         role="presentation"
-                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]"
+                        className="px-4 py-2 text-xs italic font-medium text-coral"
                       >
                         {item.name}
                       </li>

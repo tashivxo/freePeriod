@@ -60,7 +60,10 @@ describe('AnimatedDropdown portal and listbox', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /pick/i }));
-    expect(screen.getByText('Common')).toBeInTheDocument();
+    const header = screen.getByText('Common');
+    expect(header).toBeInTheDocument();
+    expect(header.className).toMatch(/italic/);
+    expect(header.className).toMatch(/text-coral/);
     expect(screen.queryByRole('option', { name: 'Common' })).not.toBeInTheDocument();
 
     await user.click(screen.getByText('Common'));
