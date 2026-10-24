@@ -85,6 +85,8 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.legalDescription': 'How we handle your data and the rules for using FreePeriod.',
   'settings.privacyPolicy': 'Privacy Policy',
   'settings.termsOfService': 'Terms of Service',
+  'help.title': 'Help & feedback',
+  'help.settingsDescription': 'Report a bug, share an idea, or get help with billing or your account.',
   'countries.common': 'Common',
   'countries.all': 'All countries',
   'grades.numbered': 'Grade {n}',
@@ -252,6 +254,28 @@ describe('SettingsClient — legal links', () => {
     expect(terms).toHaveAttribute('href', '/terms');
     expect(privacy).not.toHaveAttribute('target');
     expect(terms).not.toHaveAttribute('target');
+  });
+});
+
+describe('SettingsClient — help link', () => {
+  it('links to /help instead of rendering the feedback form', () => {
+    render(<SettingsClient {...defaultProps} />);
+
+    const help = screen.getByRole('link', { name: /help & feedback/i });
+    expect(help).toHaveAttribute('href', '/help');
+    expect(help).not.toHaveAttribute('target');
+    expect(screen.queryByRole('radiogroup', { name: /what is it about/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /write email to support/i })).not.toBeInTheDocument();
+  });
+
+  it('sits between Danger zone and Legal', () => {
+    render(<SettingsClient {...defaultProps} />);
+    const helpHeading = screen.getByRole('heading', { name: 'Help & feedback' });
+    const legal = screen.getByRole('heading', { name: 'Legal' });
+    const danger = screen.getByRole('region', { name: /danger zone/i });
+
+    expect(danger.compareDocumentPosition(helpHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(helpHeading.compareDocumentPosition(legal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 

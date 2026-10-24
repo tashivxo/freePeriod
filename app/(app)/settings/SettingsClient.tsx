@@ -22,8 +22,6 @@ import { useLocale, useT } from '@/providers/locale';
 import { useColorBendsAtmosphere } from '@/providers/color-bends-atmosphere';
 import { isLocale, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { AtmospherePicker } from '@/features/settings/components/AtmospherePicker';
-import { HelpFeedback } from '@/features/help/components/HelpFeedback';
-import { legalConfig } from '@/lib/legal/config';
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
@@ -90,8 +88,6 @@ export type SettingsClientProps = {
   generationLimit?: number | null;
   trialDays?: number | null;
   manageSubscriptionUrl?: string | null;
-  /** Passed from the server so LEGAL_CONTACT_EMAIL overrides apply. */
-  supportEmail?: string;
 };
 
 export function SettingsClient({
@@ -102,7 +98,6 @@ export function SettingsClient({
   generationLimit,
   trialDays = null,
   manageSubscriptionUrl = null,
-  supportEmail = legalConfig.contactEmail,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
@@ -545,18 +540,19 @@ export function SettingsClient({
         </div>
       </section>
 
-      <h2 id="settings-help-heading" className="sr-only">{t('help.title')}</h2>
-      <HelpFeedback
-        labelledBy="settings-help-heading"
-        supportEmail={supportEmail}
-        accountEmail={email}
-        userId={user.id}
-        plan={
-          trialDays == null
-            ? (usagePlan ?? user.plan)
-            : `${usagePlan ?? user.plan} (trial, ${trialDays} days left)`
-        }
-      />
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
+        <h2 className="mb-2 font-display text-lg font-semibold text-text-primary">
+          {t('help.title')}
+        </h2>
+        <p className="mb-4 text-sm font-body text-text-secondary">
+          {t('help.settingsDescription')}
+        </p>
+        <nav className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-body">
+          <Link href="/help" className="text-coral font-medium hover:underline">
+            {t('help.title')}
+          </Link>
+        </nav>
+      </div>
 
       {/* Legal */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
