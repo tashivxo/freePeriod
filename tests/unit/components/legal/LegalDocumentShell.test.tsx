@@ -2,6 +2,10 @@ import { render, screen } from '@/tests/helpers';
 import { LegalDocumentShell } from '@/components/legal/LegalDocumentShell';
 import { legalConfig } from '@/lib/legal/config';
 
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/privacy',
+}));
+
 describe('LegalDocumentShell', () => {
   it('shows a single effective date line', () => {
     render(

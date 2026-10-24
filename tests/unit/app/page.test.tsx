@@ -33,6 +33,9 @@ jest.mock('@/providers/locale', () => ({
   }),
 }));
 jest.mock('@/providers/theme');
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}));
 jest.mock('@/components/ui/backgrounds/CtaIridescenceBackground', () => ({
   CtaIridescenceBackground: ({ prefersReduced }: { prefersReduced: boolean }) =>
     prefersReduced ? null : <div data-testid="cta-iridescence" aria-hidden="true" />,

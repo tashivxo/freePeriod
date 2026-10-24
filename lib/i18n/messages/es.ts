@@ -64,6 +64,7 @@ export const es: Messages = {
     legalDescription: 'Cómo tratamos tus datos y las reglas de uso de FreePeriod.',
     privacyPolicy: 'Política de privacidad',
     termsOfService: 'Términos del servicio',
+    legalNavAriaLabel: 'Legal',
   },
   help: {
     documentTitle: 'Ayuda y comentarios | FreePeriod',
@@ -72,6 +73,8 @@ export const es: Messages = {
       '¿Encontraste un error, tienes una idea o necesitas ayuda con la facturación o tu cuenta? Escríbenos y te responderemos por correo electrónico.',
     backToDashboard: 'Volver al panel',
     settingsDescription: 'Informa un error, comparte una idea, o pide ayuda con facturación o tu cuenta.',
+    settingsLink: 'Abrir Ayuda y comentarios',
+    settingsNavAriaLabel: 'Ayuda y comentarios',
     category: '¿De qué se trata?',
     categoryBug: 'Error',
     categoryIdea: 'Idea',
