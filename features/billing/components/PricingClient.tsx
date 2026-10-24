@@ -9,7 +9,6 @@ import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { SparklesIcon } from '@/components/ui/icons/sparkles';
 import { ZapIcon } from '@/components/ui/icons/zap';
 import { CORAL, MUSTARD } from '@/lib/utils/brand-colors';
-import { ThemeToggle } from '@/components/ui/branding/ThemeToggle';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import type { AnimatedIconComponent } from '@/components/ui/icons/types';
 import { MagicCard } from '@/components/ui/effects/magic-card';
@@ -442,8 +441,6 @@ export function PricingClient() {
       </main>
 
       <MarketingFooter />
-
-      <ThemeToggle variant="floating-label" wrapperClassName="fixed bottom-6 end-4 z-50" />
     </div>
   );
 }
