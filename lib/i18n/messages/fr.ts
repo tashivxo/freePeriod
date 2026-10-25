@@ -276,6 +276,12 @@ export const fr: Messages = {
     hidePassword: 'Masquer le mot de passe',
     showConfirmPassword: 'Afficher la confirmation du mot de passe',
     hideConfirmPassword: 'Masquer la confirmation du mot de passe',
+    termsAgreement: 'Acceptation des conditions',
+    iAgree: "J'accepte",
+    iAgreeAria: "J'accepte les Conditions d'utilisation et la Politique de confidentialité",
+    agreeToLegalBefore: 'les ',
+    agreeToLegalBetween: ' et la ',
+    termsRequired: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité.",
   },
   lesson: {
     edited: 'Modifié',

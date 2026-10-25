@@ -271,6 +271,12 @@ export const en = {
     hidePassword: 'Hide password',
     showConfirmPassword: 'Show confirm password',
     hideConfirmPassword: 'Hide confirm password',
+    termsAgreement: 'Terms agreement',
+    iAgree: 'I agree',
+    iAgreeAria: 'I agree to the Terms of Service and Privacy Policy',
+    agreeToLegalBefore: 'to the ',
+    agreeToLegalBetween: ' and ',
+    termsRequired: 'You must agree to the Terms of Service and Privacy Policy.',
   },
   lesson: {
     edited: 'Edited',
