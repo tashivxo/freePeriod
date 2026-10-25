@@ -7,10 +7,10 @@ import { COLOR_BENDS_INTENSITY, COLOR_BENDS_PALETTE } from '@/lib/utils/brand-co
 import type { ColorBendsAtmosphere } from '@/lib/utils/brand-colors';
 
 jest.mock('next/dynamic', () => {
-  const React = require('react') as typeof import('react');
+  const { createElement } = jest.requireActual<typeof import('react')>('react');
   return () =>
     function MockColorBends(props: { colors?: string[]; intensity?: number }) {
-      return React.createElement('div', {
+      return createElement('div', {
         'data-testid': 'color-bends',
         'data-colors': JSON.stringify(props.colors ?? []),
         'data-intensity': String(props.intensity ?? ''),

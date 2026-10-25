@@ -1598,7 +1598,7 @@ export async function fillGenericDocxTemplate(
       const cellMatches = topLevelWordTags(rowMatch, 'w:tc');
       if (cellMatches.length < 1) return rowMatch;
 
-      let cellsXml = cellMatches.map((m) => m.xml);
+      const cellsXml = cellMatches.map((m) => m.xml);
 
       if (isActivityTableRow(cellsXml)) {
         return rowMatch;
