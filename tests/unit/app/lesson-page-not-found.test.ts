@@ -1,6 +1,8 @@
 /**
  * @jest-environment node
  */
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 
 const mockGetUser = jest.fn();
 const mockSingle = jest.fn();
@@ -70,4 +72,17 @@ describe('lesson page notFound status', () => {
     expect(notFound).not.toHaveBeenCalled();
     expect(result).toBeTruthy();
   });
+
+  it('does not ship a route loading.tsx that would stream HTTP 200 before notFound', () => {
+    const loadingFile = path.join(
+      process.cwd(),
+      'app',
+      '(app)',
+      'lesson',
+      '[id]',
+      'loading.tsx',
+    );
+    expect(existsSync(loadingFile)).toBe(false);
+  });
 });
+
