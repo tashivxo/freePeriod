@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@/tests/helpers';
 import { LocaleProvider } from '@/providers/locale';
+import { getMessages, LOCALES, type Locale } from '@/lib/i18n';
 
 jest.mock('@/lib/auth/check-email-availability', () => ({
   checkEmailAvailability: jest.fn().mockResolvedValue('available'),
@@ -26,12 +27,16 @@ import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS } from '@/lib/auth/email';
 import { expectErrorXIcon } from '@/tests/helpers/error-icon';
 
-function renderSignUpPage() {
+function renderSignUpPage(locale: Locale = 'en') {
   return render(
-    <LocaleProvider initialLocale="en">
+    <LocaleProvider initialLocale={locale}>
       <SignUpPage />
     </LocaleProvider>,
   );
+}
+
+function getTermsCheckbox(name = /i agree to the terms of service and privacy policy/i) {
+  return screen.getByRole('checkbox', { name });
 }
 
 async function fillMatchingPasswords(
@@ -157,7 +162,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.type(screen.getByLabelText(/^confirm password$/i), 'differentpass');
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
@@ -181,7 +186,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).toHaveBeenCalledWith({
@@ -217,7 +222,7 @@ describe('SignUpPage', () => {
 
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(mockSignUp).not.toHaveBeenCalled();
@@ -241,7 +246,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(checkEmailAvailability).toHaveBeenCalled();
@@ -265,7 +270,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(
@@ -306,7 +311,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     await screen.findByRole('button', { name: /create account/i });
@@ -344,7 +349,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     await screen.findByRole('button', { name: /create account/i });
@@ -368,7 +373,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
     await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(
@@ -385,12 +390,14 @@ describe('SignUpPage', () => {
     );
   });
 
-  it('renders the onboarding-style terms radio unchecked', () => {
+  it('renders the terms checkbox unchecked with a localized group label', () => {
     renderSignUpPage();
-    const termsRadio = screen.getByRole('radio', {
-      name: /i agree to the terms of service and privacy policy/i,
-    });
-    expect(termsRadio).toHaveAttribute('aria-checked', 'false');
+    const termsCheckbox = getTermsCheckbox();
+    expect(termsCheckbox).not.toBeChecked();
+    expect(termsCheckbox).toHaveAttribute('type', 'checkbox');
+    expect(screen.getByRole('group', { name: 'Terms agreement' })).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /terms of service/i })).toHaveAttribute(
       'href',
       '/terms',
@@ -420,7 +427,7 @@ describe('SignUpPage', () => {
     expect(mockOAuth).not.toHaveBeenCalled();
   });
 
-  it('starts Google OAuth after the terms radio is selected', async () => {
+  it('starts Google OAuth after the terms checkbox is selected', async () => {
     const { createClient } = await import('@/lib/supabase/client');
     const mockOAuth = jest.fn().mockResolvedValue({ data: {}, error: null });
     (createClient as jest.Mock).mockReturnValue({
@@ -431,8 +438,8 @@ describe('SignUpPage', () => {
     });
 
     const { user } = renderSignUpPage();
-    await user.click(screen.getByRole('radio'));
-    expect(screen.getByRole('radio')).toHaveAttribute('aria-checked', 'true');
+    await user.click(getTermsCheckbox());
+    expect(getTermsCheckbox()).toBeChecked();
     await user.click(screen.getByRole('button', { name: /continue with google/i }));
 
     expect(mockOAuth).toHaveBeenCalledWith({
@@ -457,7 +464,7 @@ describe('SignUpPage', () => {
     await user.type(screen.getByLabelText(/name/i), 'Ada');
     await user.type(screen.getByLabelText(/email/i), 'ada@example.com');
     await fillMatchingPasswords(user);
-    await user.click(screen.getByRole('radio'));
+    await user.click(getTermsCheckbox());
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(await screen.findByText(/check your connection/i)).toBeInTheDocument();
@@ -495,5 +502,131 @@ describe('SignUpPage', () => {
     expect(confirmInput).toHaveAttribute('type', 'password');
     await user.click(screen.getByRole('button', { name: /show confirm password/i }));
     expect(confirmInput).toHaveAttribute('type', 'text');
+  });
+
+  it('toggles the terms checkbox off on a second click and blocks sign-up again', async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const mockSignUp = jest.fn();
+    (createClient as jest.Mock).mockReturnValue({
+      auth: {
+        signUp: mockSignUp,
+        signInWithOAuth: jest.fn(),
+      },
+    });
+
+    const { user } = renderSignUpPage();
+    const checkbox = getTermsCheckbox();
+
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+
+    await user.type(screen.getByLabelText(/full name/i), 'Jane Doe');
+    await user.type(screen.getByLabelText(/email/i), 'jane@test.com');
+    await fillMatchingPasswords(user);
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(
+      screen.getByText(/you must agree to the terms of service and privacy policy/i),
+    ).toBeInTheDocument();
+    expect(mockSignUp).not.toHaveBeenCalled();
+  });
+
+  it('toggles the terms checkbox with Space', async () => {
+    const { user } = renderSignUpPage();
+    const checkbox = getTermsCheckbox();
+
+    checkbox.focus();
+    await user.keyboard(' ');
+    expect(checkbox).toBeChecked();
+
+    await user.keyboard(' ');
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('toggles the terms checkbox when the adjacent agreement text is clicked', async () => {
+    const { user } = renderSignUpPage();
+    const checkbox = getTermsCheckbox();
+
+    await user.click(screen.getByText('to the'));
+    expect(checkbox).toBeChecked();
+
+    await user.click(screen.getByText('to the'));
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('does not toggle the terms checkbox when a legal link is clicked', async () => {
+    const { user } = renderSignUpPage();
+    const checkbox = getTermsCheckbox();
+
+    await user.click(screen.getByRole('link', { name: /terms of service/i }));
+    expect(checkbox).not.toBeChecked();
+
+    await user.click(screen.getAllByRole('link', { name: /privacy policy/i })[0]);
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('shows the ChipRadio selected style when the terms checkbox is checked', async () => {
+    const { user } = renderSignUpPage();
+    const group = screen.getByRole('group', { name: 'Terms agreement' });
+
+    expect(group.querySelector('svg')).toBeNull();
+    expect(group.querySelector('.bg-coral')).toBeNull();
+
+    await user.click(getTermsCheckbox());
+
+    expect(group.querySelector('svg')).not.toBeNull();
+    const selected = group.querySelector('.bg-coral');
+    expect(selected).not.toBeNull();
+    expect(selected?.className).toContain('text-primary-foreground');
+    expect(selected?.className).not.toContain('text-white');
+  });
+
+  it.each(LOCALES)('localizes the terms agreement control in %s', (locale) => {
+    const auth = getMessages(locale).auth as unknown as Record<string, string>;
+    const settings = getMessages(locale).settings;
+
+    renderSignUpPage(locale);
+
+    expect(screen.getByRole('group', { name: auth.termsAgreement })).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: auth.iAgreeAria }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(auth.iAgree)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: settings.termsOfService })).toHaveAttribute(
+      'href',
+      '/terms',
+    );
+    expect(screen.getAllByRole('link', { name: settings.privacyPolicy })[0]).toHaveAttribute(
+      'href',
+      '/privacy',
+    );
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+  });
+
+  it('keeps the terms checkbox toggling in Arabic RTL', async () => {
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
+
+    const { user } = renderSignUpPage('ar');
+    const messages = getMessages('ar').auth as unknown as Record<string, string>;
+    const checkbox = getTermsCheckbox(messages.iAgreeAria);
+    const group = screen.getByRole('group', { name: messages.termsAgreement });
+
+    expect(document.documentElement.dir).toBe('rtl');
+    expect(group).toBeInTheDocument();
+
+    await user.click(checkbox);
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+
+    checkbox.focus();
+    await user.keyboard(' ');
+    expect(checkbox).toBeChecked();
+
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
   });
 });

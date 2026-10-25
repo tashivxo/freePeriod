@@ -607,3 +607,85 @@ describe('settings usage copy', () => {
   });
 });
 
+const TERMS_AGREEMENT_COPY: Record<
+  Locale,
+  {
+    termsAgreement: string;
+    iAgree: string;
+    iAgreeAria: string;
+    agreeToLegalBefore: string;
+    agreeToLegalBetween: string;
+  }
+> = {
+  en: {
+    termsAgreement: 'Terms agreement',
+    iAgree: 'I agree',
+    iAgreeAria: 'I agree to the Terms of Service and Privacy Policy',
+    agreeToLegalBefore: 'to the',
+    agreeToLegalBetween: 'and',
+  },
+  ar: {
+    termsAgreement: 'الاتفاق على الشروط',
+    iAgree: 'أوافق',
+    iAgreeAria: 'أوافق على شروط الخدمة وسياسة الخصوصية',
+    agreeToLegalBefore: 'على',
+    agreeToLegalBetween: 'و',
+  },
+  es: {
+    termsAgreement: 'Acuerdo de términos',
+    iAgree: 'Acepto',
+    iAgreeAria: 'Acepto los Términos del servicio y la Política de privacidad',
+    agreeToLegalBefore: 'los',
+    agreeToLegalBetween: 'y la',
+  },
+  fr: {
+    termsAgreement: 'Acceptation des conditions',
+    iAgree: "J'accepte",
+    iAgreeAria: "J'accepte les Conditions d'utilisation et la Politique de confidentialité",
+    agreeToLegalBefore: 'les',
+    agreeToLegalBetween: 'et la',
+  },
+  'zh-Hans': {
+    termsAgreement: '条款协议',
+    iAgree: '我同意',
+    iAgreeAria: '我同意服务条款和隐私政策',
+    agreeToLegalBefore: '',
+    agreeToLegalBetween: '和',
+  },
+};
+
+describe('sign-up terms agreement copy', () => {
+  it.each(LOCALES)('ships localized terms agreement strings for %s', (locale) => {
+    const auth = getMessages(locale).auth as unknown as Record<string, string>;
+    const expected = TERMS_AGREEMENT_COPY[locale];
+
+    expect(auth.termsAgreement).toBe(expected.termsAgreement);
+    expect(auth.iAgree).toBe(expected.iAgree);
+    expect(auth.iAgreeAria).toBe(expected.iAgreeAria);
+    expect(auth.agreeToLegalBefore).toBe(expected.agreeToLegalBefore);
+    expect(auth.agreeToLegalBetween).toBe(expected.agreeToLegalBetween);
+
+    for (const value of Object.values(expected)) {
+      expect(value).not.toContain('\u2014');
+    }
+  });
+
+  it('keeps Arabic and Chinese terms agreement copy as real translations', () => {
+    const en = TERMS_AGREEMENT_COPY.en;
+    const ar = getMessages('ar').auth as unknown as Record<string, string>;
+    const zh = getMessages('zh-Hans').auth as unknown as Record<string, string>;
+
+    expect(ar.termsAgreement).not.toBe(en.termsAgreement);
+    expect(ar.iAgree).not.toBe(en.iAgree);
+    expect(ar.iAgreeAria).not.toBe(en.iAgreeAria);
+    expect(zh.termsAgreement).not.toBe(en.termsAgreement);
+    expect(zh.iAgree).not.toBe(en.iAgree);
+    expect(zh.iAgreeAria).not.toBe(en.iAgreeAria);
+    expect(ar.termsAgreement).toMatch(/[\u0600-\u06FF]/);
+    expect(ar.iAgree).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.termsAgreement).toMatch(/[\u4e00-\u9fff]/);
+    expect(zh.iAgree).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
+
