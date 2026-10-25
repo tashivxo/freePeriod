@@ -268,6 +268,7 @@ export const fr: Messages = {
     },
   },
   auth: {
+    continueWithGoogle: 'Continuer avec Google',
     confirmPassword: 'Confirmer le mot de passe',
     confirmPasswordRequired: 'Veuillez confirmer votre mot de passe',
     passwordsDoNotMatch: 'Les mots de passe ne correspondent pas',
@@ -346,6 +347,7 @@ export const fr: Messages = {
   status: {
     notFoundTitle: "Cette page fait une pause",
     notFoundBody: "Nous n'avons pas trouvé cette page. Le lien est peut-être ancien ou mal saisi.",
+    notFoundDocumentTitle: 'Page introuvable | FreePeriod',
     errorTitle: "Une erreur s'est produite",
     errorBody: "Cette page a rencontré un problème. Réessayez ou revenez à l'accueil.",
     tryAgain: "Réessayer",

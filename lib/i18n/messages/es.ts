@@ -266,6 +266,7 @@ export const es: Messages = {
     },
   },
   auth: {
+    continueWithGoogle: 'Continuar con Google',
     confirmPassword: 'Confirmar contraseña',
     confirmPasswordRequired: 'Confirma tu contraseña',
     passwordsDoNotMatch: 'Las contraseñas no coinciden',
@@ -343,6 +344,7 @@ export const es: Messages = {
   status: {
     notFoundTitle: "Esta página se tomó un descanso",
     notFoundBody: "No encontramos esa página. Puede que el enlace sea antiguo o esté mal escrito.",
+    notFoundDocumentTitle: 'Página no encontrada | FreePeriod',
     errorTitle: "Algo salió mal",
     errorBody: "Esta página tuvo un problema. Inténtalo de nuevo o vuelve al inicio.",
     tryAgain: "Intentar de nuevo",
