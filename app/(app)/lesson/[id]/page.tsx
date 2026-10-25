@@ -1,9 +1,8 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { LessonView } from '@/features/lesson/components/LessonView';
-import { lessonDocumentTitleFromPlan } from '@/lib/lesson/page-title';
+import { DEFAULT_LOCALE } from '@/lib/i18n';
+import { resolveOwnedLessonPage } from '@/lib/lesson/resolve-lesson-page';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -11,62 +10,14 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { title: lessonDocumentTitleFromPlan(null) };
-  }
-
-  const { data: lesson } = await supabase
-    .from('lesson_plans')
-    .select('title, content')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-
-  return { title: lessonDocumentTitleFromPlan(lesson) };
+  const resolved = await resolveOwnedLessonPage(id, DEFAULT_LOCALE);
+  if (resolved.status === 404) notFound();
+  return { title: resolved.title };
 }
 
-async function LessonContent({ params }: Props) {
+export default async function LessonPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) notFound();
-
-  const { data: lesson } = await supabase
-    .from('lesson_plans')
-    .select('*')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-
-  if (!lesson) notFound();
-
-  return <LessonView lesson={lesson} />;
-}
-
-function LessonSkeleton() {
-  return (
-    <div className="mx-auto max-w-3xl px-4 py-8 animate-pulse">
-      <div className="h-4 w-32 bg-surface rounded mb-4" />
-      <div className="h-8 w-2/3 bg-surface rounded mb-2" />
-      <div className="h-4 w-1/3 bg-surface rounded mb-8" />
-      <div className="space-y-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-24 bg-surface rounded-xl" />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function LessonPage(props: Props) {
-  return (
-    <Suspense fallback={<LessonSkeleton />}>
-      <LessonContent {...props} />
-    </Suspense>
-  );
+  const resolved = await resolveOwnedLessonPage(id, DEFAULT_LOCALE);
+  if (resolved.status === 404) notFound();
+  return <LessonView lesson={resolved.lesson} />;
 }

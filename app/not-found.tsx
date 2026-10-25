@@ -1,17 +1,13 @@
-'use client';
+import type { Metadata } from 'next';
+import { NotFoundView } from '@/components/layout/NotFoundView';
+import { getMessages } from '@/lib/i18n';
+import { readLocaleCookie } from '@/lib/i18n/server';
 
-import Link from 'next/link';
-import { StatusScreen } from '@/components/layout/StatusScreen';
-import { Button } from '@/components/ui/Button';
-import { useT } from '@/providers/locale';
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await readLocaleCookie();
+  return { title: getMessages(locale).status.notFoundDocumentTitle };
+}
 
 export default function NotFound() {
-  const t = useT();
-  return (
-    <StatusScreen code="404" title={t('status.notFoundTitle')} body={t('status.notFoundBody')}>
-      <Button asChild>
-        <Link href="/">{t('status.backHome')}</Link>
-      </Button>
-    </StatusScreen>
-  );
+  return <NotFoundView />;
 }

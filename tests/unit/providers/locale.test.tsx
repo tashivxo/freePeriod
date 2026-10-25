@@ -229,6 +229,58 @@ describe('LocaleProvider', () => {
     expect(caught).toMatchObject({ message: 'permission denied' });
   });
 
+  it('keeps the local locale and surfaces when getUser reports an expired session', async () => {
+    const sessionError = { message: 'Auth session missing!' };
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: sessionError,
+    });
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    let caught: unknown;
+    await act(async () => {
+      try {
+        await result.current.setLocale('ar');
+      } catch (err) {
+        caught = err;
+      }
+    });
+
+    expect(result.current.locale).toBe('ar');
+    expect(result.current.dir).toBe('rtl');
+    expect(localStorage.getItem('fp-locale')).toBe('ar');
+    expect(document.cookie).toContain('fp-locale=ar');
+    expect(document.documentElement.lang).toBe('ar');
+    expect(caught).toMatchObject(sessionError);
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('does not treat logged-out locale switching as a session failure', async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useLocale(), {
+      wrapper: LocaleProvider,
+    });
+
+    await act(async () => {
+      await result.current.setLocale('es');
+    });
+
+    expect(result.current.locale).toBe('es');
+    expect(localStorage.getItem('fp-locale')).toBe('es');
+    expect(document.cookie).toContain('fp-locale=es');
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
   it('applies locale locally then rejects a network TypeError so callers can surface it', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-123' } },
