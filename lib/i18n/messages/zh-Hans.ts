@@ -259,6 +259,7 @@ export const zhHans: Messages = {
     },
   },
   auth: {
+    continueWithGoogle: '使用 Google 继续',
     confirmPassword: '确认密码',
     confirmPasswordRequired: '请确认您的密码',
     passwordsDoNotMatch: '两次输入的密码不一致',
@@ -342,6 +343,7 @@ export const zhHans: Messages = {
   status: {
     notFoundTitle: "这个页面正在休息",
     notFoundBody: "找不到这个页面。链接可能已过期或输入有误。",
+    notFoundDocumentTitle: '未找到页面 | FreePeriod',
     errorTitle: "出了点问题",
     errorBody: "这个页面遇到了问题。请重试，或返回首页。",
     tryAgain: "重试",

@@ -266,6 +266,7 @@ export const ar: Messages = {
     },
   },
   auth: {
+    continueWithGoogle: 'المتابعة باستخدام Google',
     confirmPassword: 'تأكيد كلمة المرور',
     confirmPasswordRequired: 'يرجى تأكيد كلمة المرور',
     passwordsDoNotMatch: 'كلمتا المرور غير متطابقتين',
@@ -349,6 +350,7 @@ export const ar: Messages = {
   status: {
     notFoundTitle: "هذه الصفحة في استراحة",
     notFoundBody: "لم نتمكن من العثور على هذه الصفحة. قد يكون الرابط قديمًا أو مكتوبًا بشكل خاطئ.",
+    notFoundDocumentTitle: 'الصفحة غير موجودة | FreePeriod',
     errorTitle: "حدث خطأ ما",
     errorBody: "واجهت هذه الصفحة مشكلة. حاول مرة أخرى، أو عُد إلى الصفحة الرئيسية.",
     tryAgain: "حاول مرة أخرى",

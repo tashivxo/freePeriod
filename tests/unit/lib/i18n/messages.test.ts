@@ -585,6 +585,47 @@ describe('dashboard leftover English copy', () => {
   });
 });
 
+const CONTINUE_WITH_GOOGLE: Record<Locale, string> = {
+  en: 'Continue with Google',
+  ar: 'المتابعة باستخدام Google',
+  es: 'Continuar con Google',
+  fr: 'Continuer avec Google',
+  'zh-Hans': '使用 Google 继续',
+};
+
+const NOT_FOUND_DOCUMENT_TITLE: Record<Locale, string> = {
+  en: 'Page not found | FreePeriod',
+  ar: 'الصفحة غير موجودة | FreePeriod',
+  es: 'Página no encontrada | FreePeriod',
+  fr: 'Page introuvable | FreePeriod',
+  'zh-Hans': '未找到页面 | FreePeriod',
+};
+
+describe('auth continue with Google copy', () => {
+  it.each(LOCALES)('ships continueWithGoogle for %s', (locale) => {
+    const auth = getMessages(locale).auth as unknown as Record<string, string>;
+    expect(auth.continueWithGoogle).toBe(CONTINUE_WITH_GOOGLE[locale]);
+    expect(auth.continueWithGoogle).not.toContain('\u2014');
+  });
+
+  it('keeps Arabic and Chinese Google labels as real translations', () => {
+    expect(CONTINUE_WITH_GOOGLE.ar).not.toBe(CONTINUE_WITH_GOOGLE.en);
+    expect(CONTINUE_WITH_GOOGLE['zh-Hans']).not.toBe(CONTINUE_WITH_GOOGLE.en);
+    expect(CONTINUE_WITH_GOOGLE.ar).toMatch(/[\u0600-\u06FF]/);
+    expect(CONTINUE_WITH_GOOGLE['zh-Hans']).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
+
+describe('404 document title copy', () => {
+  it.each(LOCALES)('ships status.notFoundDocumentTitle for %s', (locale) => {
+    const status = getMessages(locale).status as unknown as Record<string, string>;
+    expect(status.notFoundDocumentTitle).toBe(NOT_FOUND_DOCUMENT_TITLE[locale]);
+    expect(status.notFoundDocumentTitle).toContain('FreePeriod');
+    expect(status.notFoundDocumentTitle).toContain(' | ');
+    expect(status.notFoundDocumentTitle).not.toContain('\u2014');
+  });
+});
+
 describe('settings usage copy', () => {
   it.each(LOCALES)('ships one interpolated usage string for %s', (locale) => {
     const settings = getMessages(locale).settings as unknown as Record<string, string>;

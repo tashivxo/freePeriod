@@ -77,7 +77,12 @@ export function LocaleProvider({
     const supabase = createClient();
     const {
       data: { user },
+      error: sessionError,
     } = await supabase.auth.getUser();
+    if (sessionError) {
+      console.error('[locale] Could not save preferred locale, session is unavailable', sessionError);
+      throw sessionError;
+    }
     if (!user) return;
 
     const { error } = await supabase

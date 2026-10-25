@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { GrainOverlayClient } from '@/components/animations/GrainOverlayClient';
 import localFont from 'next/font/local';
 import { isRtl } from '@/lib/i18n';
@@ -100,6 +101,7 @@ export default async function RootLayout({
           </ThemeProvider>
         </LocaleProvider>
         <GrainOverlayClient />
+        <Analytics />
       </body>
     </html>
   );
