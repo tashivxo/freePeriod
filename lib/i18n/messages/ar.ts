@@ -276,8 +276,9 @@ export const ar: Messages = {
     termsAgreement: 'الاتفاق على الشروط',
     iAgree: 'أوافق',
     iAgreeAria: 'أوافق على شروط الخدمة وسياسة الخصوصية',
-    agreeToLegalBefore: 'على',
-    agreeToLegalBetween: 'و',
+    agreeToLegalBefore: 'على ',
+    agreeToLegalBetween: ' و',
+    termsRequired: 'يجب الموافقة على شروط الخدمة وسياسة الخصوصية.',
   },
   lesson: {
     edited: 'تم التعديل',

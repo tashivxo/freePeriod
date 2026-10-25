@@ -9,7 +9,6 @@ import { checkEmailAvailability } from '@/lib/auth/check-email-availability';
 import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/auth/email';
 import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
-import { TERMS_REQUIRED_MESSAGE } from '@/lib/auth/terms';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
 import { ChipCheckbox } from '@/components/forms/ChipCheckbox';
 import { Button } from '@/components/ui/Button';
@@ -115,7 +114,7 @@ export function SignUpPage() {
     if (emailTaken) {
       newErrors.email = EMAIL_ALREADY_EXISTS;
     }
-    setTermsError(acceptedTerms ? '' : TERMS_REQUIRED_MESSAGE);
+    setTermsError(acceptedTerms ? '' : t('auth.termsRequired'));
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0 && acceptedTerms;
   }
@@ -204,7 +203,7 @@ export function SignUpPage() {
   async function handleGoogleLogin() {
     if (authBusy) return;
     if (!acceptedTerms) {
-      setTermsError(TERMS_REQUIRED_MESSAGE);
+      setTermsError(t('auth.termsRequired'));
       return;
     }
     setPendingAction('google');
@@ -341,38 +340,36 @@ export function SignUpPage() {
                 >
                   {t('auth.iAgree')}
                 </ChipCheckbox>
-                <label
-                  htmlFor="terms-agreement"
-                  className="cursor-pointer text-sm font-body text-text-secondary"
-                  onClick={(event) => {
-                    if ((event.target as HTMLElement).closest('a')) {
-                      event.preventDefault();
-                    }
-                  }}
-                >
-                  {agreeToLegalBefore ? <span>{agreeToLegalBefore}</span> : null}
-                  {agreeToLegalBefore ? ' ' : null}
-                  <Link
-                    href="/terms"
-                    className="text-coral font-semibold hover:underline"
-                    target="_blank"
-                  >
-                    {t('settings.termsOfService')}
-                  </Link>
-                  {agreeToLegalBetween ? (
-                    <>
-                      {' '}
-                      <span>{agreeToLegalBetween}</span>{' '}
-                    </>
-                  ) : null}
-                  <Link
-                    href="/privacy"
-                    className="text-coral font-semibold hover:underline"
-                    target="_blank"
-                  >
-                    {t('settings.privacyPolicy')}
-                  </Link>
-                </label>
+                <span className="text-sm font-body text-text-secondary">
+                  {[
+                    agreeToLegalBefore ? (
+                      <label key="before" htmlFor="terms-agreement" className="cursor-pointer">
+                        {agreeToLegalBefore}
+                      </label>
+                    ) : null,
+                    <Link
+                      key="terms"
+                      href="/terms"
+                      className="text-coral font-semibold hover:underline"
+                      target="_blank"
+                    >
+                      {t('settings.termsOfService')}
+                    </Link>,
+                    agreeToLegalBetween ? (
+                      <label key="between" htmlFor="terms-agreement" className="cursor-pointer">
+                        {agreeToLegalBetween}
+                      </label>
+                    ) : null,
+                    <Link
+                      key="privacy"
+                      href="/privacy"
+                      className="text-coral font-semibold hover:underline"
+                      target="_blank"
+                    >
+                      {t('settings.privacyPolicy')}
+                    </Link>,
+                  ]}
+                </span>
               </div>
             </fieldset>
             {termsError && <FieldError message={termsError} className="px-1" />}

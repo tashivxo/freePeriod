@@ -271,6 +271,7 @@ export const zhHans: Messages = {
     iAgreeAria: '我同意服务条款和隐私政策',
     agreeToLegalBefore: '',
     agreeToLegalBetween: '和',
+    termsRequired: '必须同意服务条款和隐私政策。',
   },
   lesson: {
     edited: '已编辑',

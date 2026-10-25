@@ -278,8 +278,9 @@ export const fr: Messages = {
     termsAgreement: 'Acceptation des conditions',
     iAgree: "J'accepte",
     iAgreeAria: "J'accepte les Conditions d'utilisation et la Politique de confidentialité",
-    agreeToLegalBefore: 'les',
-    agreeToLegalBetween: 'et la',
+    agreeToLegalBefore: 'les ',
+    agreeToLegalBetween: ' et la ',
+    termsRequired: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité.",
   },
   lesson: {
     edited: 'Modifié',

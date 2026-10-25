@@ -273,8 +273,9 @@ export const en = {
     termsAgreement: 'Terms agreement',
     iAgree: 'I agree',
     iAgreeAria: 'I agree to the Terms of Service and Privacy Policy',
-    agreeToLegalBefore: 'to the',
-    agreeToLegalBetween: 'and',
+    agreeToLegalBefore: 'to the ',
+    agreeToLegalBetween: ' and ',
+    termsRequired: 'You must agree to the Terms of Service and Privacy Policy.',
   },
   lesson: {
     edited: 'Edited',

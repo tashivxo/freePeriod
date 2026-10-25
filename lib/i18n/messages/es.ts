@@ -276,8 +276,9 @@ export const es: Messages = {
     termsAgreement: 'Acuerdo de términos',
     iAgree: 'Acepto',
     iAgreeAria: 'Acepto los Términos del servicio y la Política de privacidad',
-    agreeToLegalBefore: 'los',
-    agreeToLegalBetween: 'y la',
+    agreeToLegalBefore: 'los ',
+    agreeToLegalBetween: ' y la ',
+    termsRequired: 'Debes aceptar los Términos del servicio y la Política de privacidad.',
   },
   lesson: {
     edited: 'Editado',
