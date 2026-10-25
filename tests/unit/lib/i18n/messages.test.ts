@@ -615,35 +615,40 @@ const TERMS_AGREEMENT_COPY: Record<
     iAgreeAria: string;
     agreeToLegalBefore: string;
     agreeToLegalBetween: string;
+    termsRequired: string;
   }
 > = {
   en: {
     termsAgreement: 'Terms agreement',
     iAgree: 'I agree',
     iAgreeAria: 'I agree to the Terms of Service and Privacy Policy',
-    agreeToLegalBefore: 'to the',
-    agreeToLegalBetween: 'and',
+    agreeToLegalBefore: 'to the ',
+    agreeToLegalBetween: ' and ',
+    termsRequired: 'You must agree to the Terms of Service and Privacy Policy.',
   },
   ar: {
     termsAgreement: 'الاتفاق على الشروط',
     iAgree: 'أوافق',
     iAgreeAria: 'أوافق على شروط الخدمة وسياسة الخصوصية',
-    agreeToLegalBefore: 'على',
-    agreeToLegalBetween: 'و',
+    agreeToLegalBefore: 'على ',
+    agreeToLegalBetween: ' و',
+    termsRequired: 'يجب الموافقة على شروط الخدمة وسياسة الخصوصية.',
   },
   es: {
     termsAgreement: 'Acuerdo de términos',
     iAgree: 'Acepto',
     iAgreeAria: 'Acepto los Términos del servicio y la Política de privacidad',
-    agreeToLegalBefore: 'los',
-    agreeToLegalBetween: 'y la',
+    agreeToLegalBefore: 'los ',
+    agreeToLegalBetween: ' y la ',
+    termsRequired: 'Debes aceptar los Términos del servicio y la Política de privacidad.',
   },
   fr: {
     termsAgreement: 'Acceptation des conditions',
     iAgree: "J'accepte",
     iAgreeAria: "J'accepte les Conditions d'utilisation et la Politique de confidentialité",
-    agreeToLegalBefore: 'les',
-    agreeToLegalBetween: 'et la',
+    agreeToLegalBefore: 'les ',
+    agreeToLegalBetween: ' et la ',
+    termsRequired: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité.",
   },
   'zh-Hans': {
     termsAgreement: '条款协议',
@@ -651,6 +656,7 @@ const TERMS_AGREEMENT_COPY: Record<
     iAgreeAria: '我同意服务条款和隐私政策',
     agreeToLegalBefore: '',
     agreeToLegalBetween: '和',
+    termsRequired: '必须同意服务条款和隐私政策。',
   },
 };
 
@@ -664,10 +670,30 @@ describe('sign-up terms agreement copy', () => {
     expect(auth.iAgreeAria).toBe(expected.iAgreeAria);
     expect(auth.agreeToLegalBefore).toBe(expected.agreeToLegalBefore);
     expect(auth.agreeToLegalBetween).toBe(expected.agreeToLegalBetween);
+    expect(auth.termsRequired).toBe(expected.termsRequired);
 
     for (const value of Object.values(expected)) {
       expect(value).not.toContain('\u2014');
     }
+  });
+
+  it('joins Arabic و to the following word and keeps Chinese connectors tight', () => {
+    const ar = TERMS_AGREEMENT_COPY.ar;
+    const zh = TERMS_AGREEMENT_COPY['zh-Hans'];
+
+    expect(ar.agreeToLegalBetween).toBe(' و');
+    expect(ar.agreeToLegalBetween.endsWith('و')).toBe(true);
+    expect(ar.agreeToLegalBetween).not.toMatch(/و\s/);
+    expect(ar.iAgreeAria).toContain('وسياسة');
+    expect(ar.iAgreeAria).not.toContain('و سياسة');
+    expect(ar.termsRequired).toContain('وسياسة');
+    expect(ar.termsRequired).not.toContain('و سياسة');
+
+    expect(zh.agreeToLegalBefore).toBe('');
+    expect(zh.agreeToLegalBetween).toBe('和');
+    expect(zh.agreeToLegalBetween).not.toMatch(/\s/);
+    expect(zh.iAgreeAria).toBe('我同意服务条款和隐私政策');
+    expect(zh.termsRequired).not.toMatch(/\s/);
   });
 
   it('keeps Arabic and Chinese terms agreement copy as real translations', () => {

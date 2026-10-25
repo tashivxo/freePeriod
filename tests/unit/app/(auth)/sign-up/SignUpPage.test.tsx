@@ -567,6 +567,87 @@ describe('SignUpPage', () => {
     expect(checkbox).not.toBeChecked();
   });
 
+  it('keeps legal links as real anchors whose click is not default-prevented', () => {
+    renderSignUpPage();
+    const checkbox = getTermsCheckbox();
+    const termsLink = screen.getByRole('link', { name: /terms of service/i });
+    const privacyLink = screen.getAllByRole('link', { name: /privacy policy/i })[0];
+
+    expect(termsLink.tagName).toBe('A');
+    expect(termsLink).toHaveAttribute('href', '/terms');
+    expect(termsLink).toHaveAttribute('target', '_blank');
+    expect(privacyLink.tagName).toBe('A');
+    expect(privacyLink).toHaveAttribute('href', '/privacy');
+    expect(privacyLink).toHaveAttribute('target', '_blank');
+    expect(termsLink.closest('label[for="terms-agreement"]')).toBeNull();
+    expect(privacyLink.closest('label[for="terms-agreement"]')).toBeNull();
+
+    const termsClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+    termsLink.dispatchEvent(termsClick);
+    expect(termsClick.defaultPrevented).toBe(false);
+    expect(checkbox).not.toBeChecked();
+
+    const privacyClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+    privacyLink.dispatchEvent(privacyClick);
+    expect(privacyClick.defaultPrevented).toBe(false);
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('shows the localized terms required error for each locale', async () => {
+    for (const locale of LOCALES) {
+      const { user, unmount } = renderSignUpPage(locale);
+      const auth = getMessages(locale).auth as unknown as Record<string, string>;
+
+      await user.click(screen.getByRole('button', { name: /create account/i }));
+      expect(screen.getByText(auth.termsRequired)).toBeInTheDocument();
+      expect(screen.getByText(auth.termsRequired).textContent).not.toContain('\u2014');
+      unmount();
+    }
+  });
+
+  it('joins Arabic و to the privacy policy link with no following space', () => {
+    renderSignUpPage('ar');
+    const settings = getMessages('ar').settings;
+    const group = screen.getByRole('group', {
+      name: getMessages('ar').auth.termsAgreement,
+    });
+
+    expect(group.textContent).toContain(`و${settings.privacyPolicy}`);
+    expect(group.textContent).not.toContain(`و ${settings.privacyPolicy}`);
+    expect(group.textContent).not.toContain('و سياسة');
+  });
+
+  it('renders the Chinese agreement line without spaces around the legal links', () => {
+    renderSignUpPage('zh-Hans');
+    const settings = getMessages('zh-Hans').settings;
+    const group = screen.getByRole('group', {
+      name: getMessages('zh-Hans').auth.termsAgreement,
+    });
+
+    expect(group.textContent).toContain(`${settings.termsOfService}和${settings.privacyPolicy}`);
+    expect(group.textContent).not.toMatch(/服务条款\s+和/);
+    expect(group.textContent).not.toMatch(/和\s+隐私政策/);
+  });
+
+  it('keeps spaces in the English, Spanish, and French agreement lines', () => {
+    const en = renderSignUpPage('en');
+    expect(
+      screen.getByRole('group', { name: 'Terms agreement' }).textContent,
+    ).toMatch(/to the Terms of Service and Privacy Policy/);
+    en.unmount();
+
+    const es = renderSignUpPage('es');
+    expect(
+      screen.getByRole('group', { name: 'Acuerdo de términos' }).textContent,
+    ).toMatch(/los Términos del servicio y la Política de privacidad/);
+    es.unmount();
+
+    renderSignUpPage('fr');
+    expect(
+      screen.getByRole('group', { name: 'Acceptation des conditions' }).textContent,
+    ).toMatch(/les Conditions d'utilisation et la Politique de confidentialité/);
+  });
+
   it('shows the ChipRadio selected style when the terms checkbox is checked', async () => {
     const { user } = renderSignUpPage();
     const group = screen.getByRole('group', { name: 'Terms agreement' });
