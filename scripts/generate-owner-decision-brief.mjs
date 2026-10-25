@@ -1,4 +1,4 @@
-const {
+import {
   Document,
   Packer,
   Paragraph,
@@ -15,9 +15,12 @@ const {
   ShadingType,
   PageNumber,
   LevelFormat,
-} = require('docx');
-const fs = require('fs');
-const path = require('path');
+} from 'docx';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const thin = { style: BorderStyle.SINGLE, size: 8, color: 'CCCCCC' };
 const borders = { top: thin, bottom: thin, left: thin, right: thin };

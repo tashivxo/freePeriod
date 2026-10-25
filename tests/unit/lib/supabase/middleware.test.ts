@@ -142,6 +142,27 @@ describe('updateSession password recovery routes', () => {
     expect(response.headers.get('location')).toBe('http://localhost:3000/sign-in');
   });
 
+  it.each(['/dashboard', '/generate', '/history', '/settings', '/onboarding', '/lesson/abc'])(
+    'still redirects unauthenticated users away from %s',
+    async (pathname) => {
+      const response = await updateSession(requestFor(pathname));
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('location')).toBe('http://localhost:3000/sign-in');
+    },
+  );
+
+  it.each(['/this-route-does-not-exist', '/not-a-page/nested', '/totally-unknown'])(
+    'lets unknown logged-out route %s fall through so Next.js can 404',
+    async (pathname) => {
+      const response = await updateSession(requestFor(pathname));
+
+      expect(response.status).not.toBe(307);
+      expect(response.status).not.toBe(308);
+      expect(response.headers.get('location')).toBeNull();
+    },
+  );
+
   it('does not redirect authenticated users away from /update-password', async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 't@example.com', user_metadata: {} } },
@@ -155,6 +176,45 @@ describe('updateSession password recovery routes', () => {
 
     const response = await updateSession(requestFor('/update-password'));
 
+    expect(response.headers.get('location')).toBeNull();
+  });
+});
+
+function mockAuthenticatedUser(onboardingComplete: boolean) {
+  mockGetUser.mockResolvedValue({
+    data: { user: { id: 'user-1', email: 't@example.com', user_metadata: {} } },
+  });
+  mockFrom.mockReturnValue({
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn().mockResolvedValue({ data: { deletion_scheduled_at: null } }),
+    single: jest.fn().mockResolvedValue({ data: { onboarding_complete: onboardingComplete } }),
+  });
+}
+
+describe('updateSession onboarding gate', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+  });
+
+  it('redirects users who already finished onboarding from /onboarding to /dashboard', async () => {
+    mockAuthenticatedUser(true);
+
+    const response = await updateSession(requestFor('/onboarding'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard');
+  });
+
+  it('lets new users who have not finished onboarding reach /onboarding', async () => {
+    mockAuthenticatedUser(false);
+
+    const response = await updateSession(requestFor('/onboarding'));
+
+    expect(response.status).not.toBe(307);
+    expect(response.status).not.toBe(308);
     expect(response.headers.get('location')).toBeNull();
   });
 });
