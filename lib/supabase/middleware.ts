@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { isProtectedAppPath } from '@/lib/auth/protected-paths';
 import { isSafeInternalPath } from '@/lib/auth/safe-redirect';
 
 export async function updateSession(request: NextRequest) {
@@ -80,7 +81,8 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Unauthenticated users can only access auth pages, marketing pages, and API routes
+  // Unauthenticated users can only access auth pages, marketing pages, and API routes.
+  // Unknown paths are left alone so Next.js can render the 404 page.
   const isPublicPage =
     pathname === '/' ||
     pathname === '/pricing' ||
@@ -88,7 +90,14 @@ export async function updateSession(request: NextRequest) {
     pathname === '/terms' ||
     pathname === '/help' ||
     pathname.startsWith('/api/');
-  if (!user && !isAuthPage && !isPasswordRecoveryPage && !isAuthCallbackPage && !isPublicPage) {
+  if (
+    !user &&
+    isProtectedAppPath(pathname) &&
+    !isAuthPage &&
+    !isPasswordRecoveryPage &&
+    !isAuthCallbackPage &&
+    !isPublicPage
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = '/sign-in';
     const redirectResponse = NextResponse.redirect(url);
@@ -111,6 +120,25 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = '/sign-in';
       url.searchParams.set('deleted', '1');
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
+    }
+  }
+
+  // Users who already finished onboarding should not linger on the setup flow.
+  if (user && isOnboardingPage) {
+    const { data: onboardingProfile } = await supabase
+      .from('users')
+      .select('onboarding_complete')
+      .eq('id', user.id)
+      .single();
+
+    if (onboardingProfile?.onboarding_complete) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
       const redirectResponse = NextResponse.redirect(url);
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirectResponse.cookies.set(cookie.name, cookie.value);

@@ -122,7 +122,7 @@ async function runPaidGenerationTest(): Promise<Response> {
   const xml = (await zip.file('word/document.xml')?.async('string')) ?? '';
   const fixedLayout = docxUsesFixedTableLayout(xml);
 
-  let templateComparison: {
+  const templateComparison: {
     templatePath: string;
     templateFound: boolean;
     gridIssues: string[];
@@ -145,7 +145,7 @@ async function runPaidGenerationTest(): Promise<Response> {
       templateStructure.tables.slice(0, 5),
     );
   } catch {
-    templateComparison.gridIssues = ['Observation template file not found — skipped grid comparison'];
+    templateComparison.gridIssues = ['Observation template file not found, skipped grid comparison'];
   }
 
   const structureChecksPassed =
@@ -206,8 +206,8 @@ async function runPaidGenerationTest(): Promise<Response> {
 <body>
   <h1>Paid lesson plan generation test</h1>
   <p class="${comparisonPassed ? 'ok' : 'warn'}">
-    <strong>${comparisonPassed ? 'Comparison passed' : 'Comparison has issues'}</strong>
-    — ${structure.tableCount} tables, fixed layout: ${fixedLayout ? 'yes' : 'no'}
+    <strong>${comparisonPassed ? 'Comparison passed' : 'Comparison has issues'}</strong>,
+    ${structure.tableCount} tables, fixed layout: ${fixedLayout ? 'yes' : 'no'}
   </p>
   <p><a class="button" href="${downloadUrl}">Download DOCX</a></p>
   <h2>Claude usage</h2>

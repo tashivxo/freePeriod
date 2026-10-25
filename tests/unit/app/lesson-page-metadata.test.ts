@@ -5,6 +5,14 @@
 const mockGetUser = jest.fn();
 const mockSingle = jest.fn();
 
+jest.mock('next/navigation', () => ({
+  notFound: jest.fn(() => {
+    const error = new Error('NEXT_HTTP_ERROR_FALLBACK;404');
+    (error as Error & { digest?: string }).digest = 'NEXT_HTTP_ERROR_FALLBACK;404';
+    throw error;
+  }),
+}));
+
 jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(async () => ({
     auth: { getUser: mockGetUser },
@@ -22,7 +30,9 @@ jest.mock('@/features/lesson/components/LessonView', () => ({
   LessonView: () => null,
 }));
 
+import { notFound } from 'next/navigation';
 import { generateMetadata } from '@/app/(app)/lesson/[id]/page';
+import { getMessages } from '@/lib/i18n';
 
 const EM_DASH = '\u2014';
 
@@ -76,13 +86,23 @@ describe('lesson page document title', () => {
     ).resolves.toEqual(expect.objectContaining({ title: 'Lesson | FreePeriod' }));
   });
 
-  it('falls back to "Lesson | FreePeriod" when the lesson is missing', async () => {
-    mockSingle.mockResolvedValue({ data: null, error: { message: 'not found' } });
+  it.each(['not-a-real-id', '00000000-0000-4000-8000-000000000000'])(
+    'signals HTTP 404 instead of the Lesson fallback title when id is %s',
+    async (id) => {
+      mockSingle.mockResolvedValue({ data: null, error: { message: 'not found' } });
 
-    await expect(
-      generateMetadata({ params: Promise.resolve({ id: 'missing' }) }),
-    ).resolves.toEqual(expect.objectContaining({ title: 'Lesson | FreePeriod' }));
-  });
+      await expect(generateMetadata({ params: Promise.resolve({ id }) })).rejects.toMatchObject({
+        digest: 'NEXT_HTTP_ERROR_FALLBACK;404',
+        message: 'NEXT_HTTP_ERROR_FALLBACK;404',
+      });
+
+      expect(notFound).toHaveBeenCalled();
+      await expect(generateMetadata({ params: Promise.resolve({ id }) })).rejects.not.toEqual(
+        expect.objectContaining({ title: 'Lesson | FreePeriod' }),
+      );
+      expect(getMessages('en').status.notFoundDocumentTitle).not.toBe('Lesson | FreePeriod');
+    },
+  );
 
   it('keeps an em dash in a user-typed lesson title', async () => {
     const title = `States of Matter ${EM_DASH} Solids and Liquids`;

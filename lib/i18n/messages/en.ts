@@ -263,6 +263,7 @@ export const en = {
     },
   },
   auth: {
+    continueWithGoogle: 'Continue with Google',
     confirmPassword: 'Confirm password',
     confirmPasswordRequired: 'Please confirm your password',
     passwordsDoNotMatch: 'Passwords do not match',
@@ -340,6 +341,7 @@ export const en = {
   status: {
     notFoundTitle: "This page is on a free period",
     notFoundBody: "We couldn't find that page. The link may be old or mistyped.",
+    notFoundDocumentTitle: 'Page not found | FreePeriod',
     errorTitle: "Something went wrong",
     errorBody: "This page ran into a problem. Try again, or head back home.",
     tryAgain: "Try again",

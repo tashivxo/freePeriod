@@ -3,17 +3,18 @@
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { ensurePdfJsDomPolyfill } from '@/lib/parse/ensure-pdfjs-dom-polyfill';
 
 const helpersDir = path.join(process.cwd(), 'tests/unit/lib/parse/helpers');
-const blockCanvas = path.join(helpersDir, 'block-canvas.cjs');
+const blockCanvas = path.join(helpersDir, 'block-canvas.mjs');
 const importPdfjs = path.join(helpersDir, 'import-pdfjs.mts');
 const runParsePdf = path.join(helpersDir, 'run-parse-pdf.mts');
 
 function runNode(script: string, args: string[] = []) {
   return spawnSync(
     process.execPath,
-    ['--experimental-strip-types', '--require', blockCanvas, script, ...args],
+    ['--experimental-strip-types', '--import', pathToFileURL(blockCanvas).href, script, ...args],
     {
       encoding: 'utf8',
       cwd: process.cwd(),
