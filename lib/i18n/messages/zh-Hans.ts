@@ -266,6 +266,11 @@ export const zhHans: Messages = {
     hidePassword: '隐藏密码',
     showConfirmPassword: '显示确认密码',
     hideConfirmPassword: '隐藏确认密码',
+    termsAgreement: '条款协议',
+    iAgree: '我同意',
+    iAgreeAria: '我同意服务条款和隐私政策',
+    agreeToLegalBefore: '',
+    agreeToLegalBetween: '和',
   },
   lesson: {
     edited: '已编辑',

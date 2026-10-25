@@ -11,7 +11,7 @@ import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { TERMS_REQUIRED_MESSAGE } from '@/lib/auth/terms';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
-import { ChipRadio } from '@/components/forms/ChipRadio';
+import { ChipCheckbox } from '@/components/forms/ChipCheckbox';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -217,6 +217,8 @@ export function SignUpPage() {
   }
 
   const submitDisabled = authBusy || emailTaken || emailChecking;
+  const agreeToLegalBefore = t('auth.agreeToLegalBefore');
+  const agreeToLegalBetween = t('auth.agreeToLegalBetween');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background/80 px-4 py-12">
@@ -324,39 +326,55 @@ export function SignUpPage() {
           />
 
           <div className="space-y-1.5">
-            <div
-              className="flex min-h-11 items-center gap-3"
-              role="radiogroup"
-              aria-label="Terms agreement"
-            >
-              <ChipRadio
-                checked={acceptedTerms}
-                aria-label="I agree to the Terms of Service and Privacy Policy"
-                aria-invalid={Boolean(termsError)}
-                onSelect={() => {
-                  setAcceptedTerms(true);
-                  setTermsError('');
-                }}
-              >
-                I agree
-              </ChipRadio>
-              <span
-                className="cursor-pointer text-sm font-body text-text-secondary"
-                onClick={() => {
-                  setAcceptedTerms(true);
-                  setTermsError('');
-                }}
-              >
-                to the{' '}
-                <Link href="/terms" className="text-coral font-semibold hover:underline" target="_blank">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-coral font-semibold hover:underline" target="_blank">
-                  Privacy Policy
-                </Link>
-              </span>
-            </div>
+            <fieldset className="min-w-0 border-0 p-0">
+              <legend className="sr-only">{t('auth.termsAgreement')}</legend>
+              <div className="flex min-h-11 items-center gap-3">
+                <ChipCheckbox
+                  id="terms-agreement"
+                  checked={acceptedTerms}
+                  aria-label={t('auth.iAgreeAria')}
+                  aria-invalid={Boolean(termsError)}
+                  onCheckedChange={(next) => {
+                    setAcceptedTerms(next);
+                    if (next) setTermsError('');
+                  }}
+                >
+                  {t('auth.iAgree')}
+                </ChipCheckbox>
+                <label
+                  htmlFor="terms-agreement"
+                  className="cursor-pointer text-sm font-body text-text-secondary"
+                  onClick={(event) => {
+                    if ((event.target as HTMLElement).closest('a')) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
+                  {agreeToLegalBefore ? <span>{agreeToLegalBefore}</span> : null}
+                  {agreeToLegalBefore ? ' ' : null}
+                  <Link
+                    href="/terms"
+                    className="text-coral font-semibold hover:underline"
+                    target="_blank"
+                  >
+                    {t('settings.termsOfService')}
+                  </Link>
+                  {agreeToLegalBetween ? (
+                    <>
+                      {' '}
+                      <span>{agreeToLegalBetween}</span>{' '}
+                    </>
+                  ) : null}
+                  <Link
+                    href="/privacy"
+                    className="text-coral font-semibold hover:underline"
+                    target="_blank"
+                  >
+                    {t('settings.privacyPolicy')}
+                  </Link>
+                </label>
+              </div>
+            </fieldset>
             {termsError && <FieldError message={termsError} className="px-1" />}
           </div>
 

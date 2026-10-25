@@ -273,6 +273,11 @@ export const ar: Messages = {
     hidePassword: 'إخفاء كلمة المرور',
     showConfirmPassword: 'إظهار تأكيد كلمة المرور',
     hideConfirmPassword: 'إخفاء تأكيد كلمة المرور',
+    termsAgreement: 'الاتفاق على الشروط',
+    iAgree: 'أوافق',
+    iAgreeAria: 'أوافق على شروط الخدمة وسياسة الخصوصية',
+    agreeToLegalBefore: 'على',
+    agreeToLegalBetween: 'و',
   },
   lesson: {
     edited: 'تم التعديل',
