@@ -85,7 +85,7 @@ test.describe('Sign-up page', () => {
     await page.getByLabel('Email').fill('jane@example.com');
     await page.locator('input#password').fill('password123');
     await page.locator('#confirm-password').fill('differentpass');
-    await page.getByRole('radio').click();
+    await page.getByRole('checkbox').click();
     await page.getByRole('button', { name: /create account/i }).click();
     await expect(page.getByText(/passwords do not match/i)).toBeVisible();
     await expect(page).toHaveURL('/sign-up');

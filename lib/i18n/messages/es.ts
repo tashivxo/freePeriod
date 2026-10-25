@@ -274,6 +274,12 @@ export const es: Messages = {
     hidePassword: 'Ocultar contraseña',
     showConfirmPassword: 'Mostrar confirmación de contraseña',
     hideConfirmPassword: 'Ocultar confirmación de contraseña',
+    termsAgreement: 'Acuerdo de términos',
+    iAgree: 'Acepto',
+    iAgreeAria: 'Acepto los Términos del servicio y la Política de privacidad',
+    agreeToLegalBefore: 'los ',
+    agreeToLegalBetween: ' y la ',
+    termsRequired: 'Debes aceptar los Términos del servicio y la Política de privacidad.',
   },
   lesson: {
     edited: 'Editado',
