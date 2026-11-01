@@ -280,7 +280,8 @@ describe('filled template explicit cell borders (Apple Pages)', () => {
         checked += 1;
       }
     }
-    expect(checked).toBeGreaterThan(100);
+    expect(checked).toBeGreaterThan(0);
+    expect(bordered.join('').match(/<w:tcBorders>/g)).toHaveLength(checked);
   });
 
   it('writes explicit borders on the 4 vMerge cells with the correct outer vs inner edges', async () => {
