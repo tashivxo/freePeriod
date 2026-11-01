@@ -54,6 +54,15 @@ jest.mock('@/lib/download-blob', () => ({
 }));
 
 import { LessonView } from '@/features/lesson/components/LessonView';
+import {
+  REAL_EXTENSION,
+  REAL_SUCCESS_AT,
+  REAL_SUPPORT,
+  SELF_POINTER_AT,
+  SELF_POINTER_DEPTH,
+  SELF_POINTER_TOWARDS,
+  selfReferentialLesson,
+} from '@/tests/helpers/adaptive-self-reference';
 
 const EMPTY_DIFFERENTIATION_MESSAGE = 'No differentiation suggestions for this lesson.';
 
@@ -180,5 +189,54 @@ describe('LessonView section empty lists', () => {
     expect(within(card).queryByRole('heading', { name: 'Support' })).not.toBeInTheDocument();
     expect(within(card).queryByRole('heading', { name: 'Extension' })).not.toBeInTheDocument();
     expectNoRawJson(card);
+  });
+});
+
+describe('LessonView adaptive self references', () => {
+  it('does not show a Working At Mastery line that points at itself', () => {
+    render(<LessonView lesson={selfReferentialLesson} />);
+
+    const success = sectionCard('Success Criteria');
+    expect(within(success).getByText(REAL_SUCCESS_AT)).toBeInTheDocument();
+    expect(success.textContent).not.toContain(SELF_POINTER_AT);
+
+    const differentiation = sectionCard('Differentiation');
+    expect(within(differentiation).getByText(REAL_SUPPORT)).toBeInTheDocument();
+    expect(within(differentiation).getByText(REAL_EXTENSION)).toBeInTheDocument();
+    expect(differentiation.textContent).not.toContain(SELF_POINTER_TOWARDS);
+    expect(differentiation.textContent).not.toContain(SELF_POINTER_DEPTH);
+    expect(document.body.textContent).not.toContain(SELF_POINTER_AT);
+    expect(document.body.textContent).not.toContain('\u2014');
+  });
+
+  it('hides a sub-part whose only item was a self pointer', () => {
+    render(
+      <LessonView
+        lesson={lessonWithDifferentiation({
+          support: [SELF_POINTER_TOWARDS],
+          extension: [REAL_EXTENSION],
+        })}
+      />,
+    );
+
+    const card = sectionCard('Differentiation');
+    expect(within(card).queryByRole('heading', { name: 'Support' })).not.toBeInTheDocument();
+    expect(within(card).getByText(REAL_EXTENSION)).toBeInTheDocument();
+    expect(card.textContent).not.toContain(SELF_POINTER_TOWARDS);
+  });
+
+  it('keeps a pointer that sends the reader to a different section', () => {
+    render(
+      <LessonView
+        lesson={lessonWithDifferentiation({
+          support: [REAL_SUPPORT, SELF_POINTER_AT],
+          extension: [REAL_EXTENSION],
+        })}
+      />,
+    );
+
+    const card = sectionCard('Differentiation');
+    expect(within(card).getByText(SELF_POINTER_AT)).toBeInTheDocument();
+    expect(within(card).getByText(REAL_SUPPORT)).toBeInTheDocument();
   });
 });

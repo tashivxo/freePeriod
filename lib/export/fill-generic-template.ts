@@ -4,6 +4,11 @@ import { inferTeachingStrategies, parseActivityBlock } from '@/lib/export/docx';
 import { formatICanStatements } from '@/lib/export/lesson-document';
 import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
+import {
+  stripAdaptiveSelfPointers,
+  withoutAdaptiveSelfPointers,
+  type AdaptiveBand,
+} from '@/lib/lesson/adaptive-self-reference';
 import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
@@ -131,6 +136,166 @@ function rebuildRow(rowMatch: string, cellMatches: XmlSegment[], cellsXml: strin
     lastEnd = m.index + m.xml.length;
   });
   return result + rowMatch.slice(lastEnd);
+}
+
+type TableBorderEdge = 'top' | 'left' | 'bottom' | 'right' | 'insideH' | 'insideV';
+const TABLE_BORDER_EDGES: readonly TableBorderEdge[] = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'];
+const BORDER_ATTRS = ['val', 'sz', 'space', 'color'] as const;
+type TableBorders = Partial<Record<TableBorderEdge, string>>;
+
+/** Edge attributes (`w:val`, `w:sz`, `w:space`, `w:color`) of the table's own `w:tblBorders`, or null if it has none. */
+function readTableBorders(tblXml: string): TableBorders | null {
+  const tblPr = tblXml.match(/^<w:tbl\b[^>]*>\s*<w:tblPr>([\s\S]*?)<\/w:tblPr>/)?.[1];
+  const bordersXml = tblPr?.match(/<w:tblBorders>([\s\S]*?)<\/w:tblBorders>/)?.[1];
+  if (!bordersXml) return null;
+  const borders: TableBorders = {};
+  for (const edge of TABLE_BORDER_EDGES) {
+    const tag = bordersXml.match(new RegExp(`<w:${edge}\\b[^>]*>`))?.[0];
+    if (!tag) continue;
+    const attrs = BORDER_ATTRS.flatMap((name) => {
+      const value = tag.match(new RegExp(`\\bw:${name}="([^"]*)"`))?.[1];
+      return value === undefined ? [] : [`w:${name}="${value}"`];
+    });
+    if (attrs.length > 0) borders[edge] = attrs.join(' ');
+  }
+  return borders;
+}
+
+function hasVisibleBorder(borders: TableBorders | null): borders is TableBorders {
+  if (!borders) return false;
+  return Object.values(borders).some((attrs) => {
+    const val = attrs.match(/w:val="([^"]*)"/)?.[1];
+    return val !== undefined && val !== 'none' && val !== 'nil';
+  });
+}
+
+type CellPlacement = {
+  startCol: number;
+  endCol: number;
+  row: number;
+  vMerge: 'restart' | 'continue' | null;
+  existingBorders: boolean;
+};
+
+function ownTcPr(cellXml: string): string {
+  return (
+    cellXml.match(/^<w:tc\b[^>]*>\s*(<w:tcPr\b[^>]*\/>|<w:tcPr\b[^>]*>[\s\S]*?<\/w:tcPr>)/)?.[1] ?? ''
+  );
+}
+
+function rowGridOffsets(rowXml: string, firstCellIndex: number): { before: number; after: number } {
+  const trPr = rowXml.slice(0, firstCellIndex).match(/<w:trPr>[\s\S]*?<\/w:trPr>/)?.[0] ?? '';
+  return {
+    before: parseInt(trPr.match(/<w:gridBefore\b[^>]*\bw:val="(\d+)"/)?.[1] ?? '0', 10),
+    after: parseInt(trPr.match(/<w:gridAfter\b[^>]*\bw:val="(\d+)"/)?.[1] ?? '0', 10),
+  };
+}
+
+function tcBordersXml(borders: TableBorders, edges: Record<'top' | 'left' | 'bottom' | 'right', TableBorderEdge>): string {
+  const parts = (['top', 'left', 'bottom', 'right'] as const).flatMap((side) => {
+    const attrs = borders[edges[side]];
+    return attrs ? [`<w:${side} ${attrs}/>`] : [];
+  });
+  return `<w:tcBorders>${parts.join('')}</w:tcBorders>`;
+}
+
+/** Inserts `w:tcBorders` into the cell's own `w:tcPr` (creating it) in CT_TcPr schema order. */
+function insertTcBorders(cellXml: string, bordersXml: string): string {
+  const openTag = cellXml.match(/^<w:tc\b[^>]*>/)![0];
+  const afterOpen = cellXml.slice(openTag.length);
+  const tcPr = ownTcPr(cellXml);
+  if (!tcPr) return `${openTag}<w:tcPr>${bordersXml}</w:tcPr>${afterOpen}`;
+
+  const tcPrStart = openTag.length + afterOpen.indexOf(tcPr);
+  const tcPrEnd = tcPrStart + tcPr.length;
+  if (/\/>$/.test(tcPr) && !/<\/w:tcPr>$/.test(tcPr)) {
+    const open = tcPr.replace(/\s*\/>$/, '>');
+    return cellXml.slice(0, tcPrStart) + `${open}${bordersXml}</w:tcPr>` + cellXml.slice(tcPrEnd);
+  }
+
+  let insertAt = tcPr.indexOf('>') + 1;
+  const leading = /<w:(?:cnfStyle|tcW|gridSpan|hMerge|vMerge)\b[^>]*\/>/g;
+  let m: RegExpExecArray | null;
+  while ((m = leading.exec(tcPr))) insertAt = Math.max(insertAt, m.index + m[0].length);
+  return cellXml.slice(0, tcPrStart + insertAt) + bordersXml + cellXml.slice(tcPrStart + insertAt);
+}
+
+/**
+ * Apple Pages ignores table-level `insideH` / `insideV` (and the outer edges for merged
+ * cells), so a template that only defines `w:tblBorders` loses lines there. Write the same
+ * borders explicitly onto every cell of each table that has visible borders. Nested tables
+ * are handled innermost first, borderless tables and cells that already carry `w:tcBorders`
+ * are left untouched.
+ */
+function addExplicitCellBorders(xml: string): string {
+  return replaceTopLevelWordTags(xml, 'w:tbl', addCellBordersToTable);
+}
+
+function addCellBordersToTable(tblXml: string): string {
+  const rowMatches = topLevelWordTags(tblXml, 'w:tr');
+  if (rowMatches.length === 0) return tblXml;
+
+  const rowCells = rowMatches.map((row) => topLevelWordTags(row.xml, 'w:tc'));
+  const rowCellsXml = rowCells.map((cells) =>
+    cells.map((cell) => replaceTopLevelWordTags(cell.xml, 'w:tbl', addCellBordersToTable)),
+  );
+
+  const borders = readTableBorders(tblXml);
+  if (hasVisibleBorder(borders)) {
+    const offsets = rowMatches.map((row, r) => rowGridOffsets(row.xml, rowCells[r][0]?.index ?? 0));
+    const placements: CellPlacement[][] = rowCellsXml.map((cells, r) => {
+      let col = offsets[r].before;
+      return cells.map((cellXml) => {
+        const tcPr = ownTcPr(cellXml);
+        const span = Math.max(1, parseInt(tcPr.match(/<w:gridSpan\b[^>]*\bw:val="(\d+)"/)?.[1] ?? '1', 10));
+        const vMergeTag = tcPr.match(/<w:vMerge\b[^>]*>/)?.[0];
+        const placement: CellPlacement = {
+          startCol: col,
+          endCol: col + span - 1,
+          row: r,
+          vMerge: vMergeTag ? (/\bw:val="restart"/.test(vMergeTag) ? 'restart' : 'continue') : null,
+          existingBorders: /<w:tcBorders\b/.test(tcPr),
+        };
+        col += span;
+        return placement;
+      });
+    });
+
+    const declaredCols = (tblXml.match(/<w:tblGrid>([\s\S]*?)<\/w:tblGrid>/)?.[1].match(/<w:gridCol\b/g) ?? []).length;
+    const gridCols =
+      declaredCols ||
+      Math.max(...placements.map((cells, r) => (cells.length ? cells[cells.length - 1].endCol + 1 : 0) + offsets[r].after));
+    const lastRow = placements.length - 1;
+
+    const mergeEndRow = (cell: CellPlacement): number => {
+      if (!cell.vMerge) return cell.row;
+      let end = cell.row;
+      while (end < lastRow) {
+        const below = placements[end + 1].find((c) => c.startCol === cell.startCol);
+        if (!below || below.vMerge !== 'continue') break;
+        end += 1;
+      }
+      return end;
+    };
+
+    placements.forEach((cells, r) => {
+      cells.forEach((cell, c) => {
+        if (cell.existingBorders) return;
+        // A row cut short by gridAfter has nothing to its right, so its last cell sits on the outer edge.
+        const reachesRightEdge = cell.endCol + 1 + offsets[r].after >= gridCols;
+        const edges = {
+          top: cell.row === 0 ? 'top' : 'insideH',
+          left: cell.startCol === 0 ? 'left' : 'insideV',
+          bottom: mergeEndRow(cell) === lastRow ? 'bottom' : 'insideH',
+          right: reachesRightEdge ? 'right' : 'insideV',
+        } as const;
+        rowCellsXml[r][c] = insertTcBorders(rowCellsXml[r][c], tcBordersXml(borders, edges));
+      });
+    });
+  }
+
+  const newRows = rowMatches.map((row, r) => rebuildRow(row.xml, rowCells[r], rowCellsXml[r]));
+  return rebuildRow(tblXml, rowMatches, newRows);
 }
 
 type ParsedActivityFields = ReturnType<typeof parseActivityBlock>;
@@ -706,7 +871,10 @@ function isNearDuplicate(item: string, existing: string[]): boolean {
   });
 }
 
-function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
+function practiceCellWrittenTexts(
+  content: LessonPlan['content'],
+  options: { includeExpectedLine: boolean } = { includeExpectedLine: true },
+): string[] {
   const source = activitySourceForPhase('demonstration', content);
   const parsed = source ? mergeParsedActivities(source.items, source.fallbackTime) : null;
   const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
@@ -719,7 +887,7 @@ function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
     parsed?.teacher ?? '',
     parsed?.learner ? withoutICanColonPrefix(parsed.learner) : '',
     activityLevelLine(1, content),
-    activityLevelLine(2, content),
+    options.includeExpectedLine ? activityLevelLine(2, content) : '',
     activityLevelLine(3, content),
     scaledICan('support', content),
     iCan,
@@ -727,17 +895,22 @@ function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
   ].flatMap(splitWrittenLines);
 }
 
-function adaptivePointerForHeading(heading: string): string {
+type AdaptiveHeadingBand = AdaptiveBand | 'other';
+
+function adaptiveBandForHeading(heading: string): AdaptiveHeadingBand {
   const text = normalizeLabel(heading);
-  if (text.includes('working towards mastery')) return 'See Adaptive Teaching: Working Towards Mastery.';
-  if (text.includes('working at mastery')) return 'See Adaptive Teaching: Working At Mastery.';
-  if (text.includes('greater depth')) return 'See Adaptive Teaching: Mastery with Greater Depth.';
-  return 'See Adaptive Teaching.';
+  if (text.includes('working towards mastery')) return 'towards';
+  if (text.includes('working at mastery')) return 'at';
+  if (text.includes('greater depth')) return 'depth';
+  return 'other';
 }
 
-function dedupeAdaptiveItems(items: string[], practiceTexts: string[], pointer: string): string[] {
-  const unique = items.filter((item) => !isNearDuplicate(item, practiceTexts));
-  return unique.length > 0 ? unique : [pointer];
+/**
+ * Drops items that repeat Practice cell text. A band never falls back to a pointer
+ * naming itself, so an empty result leaves the heading with no points.
+ */
+function dedupeAdaptiveItems(items: string[], practiceTexts: string[]): string[] {
+  return items.filter((item) => !isNearDuplicate(item, practiceTexts));
 }
 
 function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): string[] {
@@ -749,8 +922,7 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
   if (text.includes('working towards mastery')) return content.differentiation?.support ?? [];
   if (text.includes('working at mastery')) {
     const strategy = content.templateSlots?.activityExpected?.trim();
-    if (strategy) return [asCompleteSentence(strategy)];
-    return ['See Adaptive Teaching: Working At Mastery.'];
+    return strategy ? [asCompleteSentence(strategy)] : [];
   }
   if (text.includes('greater depth')) return content.differentiation?.extension ?? [];
   if (text.includes('other adaptive')) return inferTeachingStrategies(content);
@@ -767,15 +939,17 @@ function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) return cellXml;
   const practiceTexts = practiceCellWrittenTexts(content);
+  const practiceTextsWithoutExpectedLine = practiceCellWrittenTexts(content, { includeExpectedLine: false });
 
   const insertions: Array<{ afterIndex: number; xml: string }> = [];
   paras.forEach((para, index) => {
     const heading = cellPlainText(para.xml);
     if (!heading) return;
+    const band = adaptiveBandForHeading(heading);
+    const headingItems = adaptiveHeadingItems(heading, content);
     const items = dedupeAdaptiveItems(
-      adaptiveHeadingItems(heading, content),
-      practiceTexts,
-      adaptivePointerForHeading(heading),
+      band === 'other' ? headingItems : withoutAdaptiveSelfPointers(headingItems, band),
+      band === 'at' ? practiceTextsWithoutExpectedLine : practiceTexts,
     );
     if (items.length === 0) return;
     const bullets = items.map((item) => `• ${item}`).join('\n');
@@ -1530,7 +1704,7 @@ const ALWAYS_APPEND_LABELS = new Set([
 
 /** Maps normalized label text (as found in a template's table cells) to lesson content. */
 function buildFieldMap(lesson: LessonPlan): Map<string, string> {
-  const c = lesson.content;
+  const c = stripAdaptiveSelfPointers(lesson.content);
   const map = new Map<string, string>();
 
   const set = (labels: string[], value: string | undefined) => {
@@ -1689,8 +1863,12 @@ export type FillGenericTemplateResult = {
  */
 export async function fillGenericDocxTemplate(
   templateBuffer: Buffer,
-  lesson: LessonPlan,
+  sourceLesson: LessonPlan,
 ): Promise<FillGenericTemplateResult> {
+  const lesson: LessonPlan = {
+    ...sourceLesson,
+    content: stripAdaptiveSelfPointers(sourceLesson.content),
+  };
   const zip = await JSZip.loadAsync(templateBuffer);
   const file = zip.file(DOCUMENT_XML_PATH);
   if (!file) return { buffer: templateBuffer, filledCount: 0, matchedLabels: [] };
@@ -1701,7 +1879,7 @@ export async function fillGenericDocxTemplate(
   let filledCount = 0;
   const matchedLabels: string[] = [];
 
-  const newXml = replaceTopLevelWordTags(xml, 'w:tbl', (tblMatch) => {
+  const filledXml = replaceTopLevelWordTags(xml, 'w:tbl', (tblMatch) => {
     const withLabels = replaceTopLevelWordTags(tblMatch, 'w:tr', (rowMatch) => {
       const cellMatches = topLevelWordTags(rowMatch, 'w:tc');
       if (cellMatches.length < 1) return rowMatch;
@@ -1779,6 +1957,7 @@ export async function fillGenericDocxTemplate(
     return phases.xml;
   });
 
+  const newXml = addExplicitCellBorders(filledXml);
   zip.file(DOCUMENT_XML_PATH, newXml);
   const buffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
   return { buffer, filledCount, matchedLabels };

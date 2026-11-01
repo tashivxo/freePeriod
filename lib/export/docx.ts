@@ -16,6 +16,7 @@ import {
 import type { LessonPlan, LessonSection } from '@/types';
 import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
 import { EMPTY_DIFFERENTIATION_MESSAGE, nonEmptyListItems } from '@/lib/lesson/content';
+import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
 import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
@@ -632,8 +633,9 @@ function textOrBlank(value: string | undefined): string {
   return value?.trim() ? prepareCellText(value) : '';
 }
 
-export async function generateDocx(lesson: LessonPlan): Promise<Buffer> {
-  const { content } = lesson;
+export async function generateDocx(sourceLesson: LessonPlan): Promise<Buffer> {
+  const content = stripAdaptiveSelfPointers(sourceLesson.content);
+  const lesson: LessonPlan = { ...sourceLesson, content };
 
   const doc = new Document({
     numbering: DOCUMENT_NUMBERING,
