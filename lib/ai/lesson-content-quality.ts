@@ -1,4 +1,5 @@
 import type { LessonSection, LessonTemplateSlots } from '@/types';
+import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
 import { stripGeneratedEmDashes } from './claude';
 
 export const MIN_PLANNING_ARRAY_ITEMS = 2;
@@ -393,12 +394,12 @@ export async function finalizeLessonContent(
       });
     }
     return stripGeneratedEmDashes(
-      sanitizeLessonCurriculumIdentifiers(enriched, options.curriculumText),
+      stripAdaptiveSelfPointers(sanitizeLessonCurriculumIdentifiers(enriched, options.curriculumText)),
     );
   }
 
   return stripGeneratedEmDashes(
-    sanitizeLessonCurriculumIdentifiers(current, options.curriculumText),
+    stripAdaptiveSelfPointers(sanitizeLessonCurriculumIdentifiers(current, options.curriculumText)),
   );
 }
 

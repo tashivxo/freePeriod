@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger, remove } from 'animejs';
 import { ArrowLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
+import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
 import { contentToEditorHtml, contentToString, isRecord, stripHtml } from '@/lib/lesson/content';
 import { LESSON_VIEW_SECTIONS } from '@/lib/lesson/sections';
 import { isFillableTemplatePath } from '@/lib/lesson/template-path';
@@ -310,7 +311,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
     setLesson((prev) => ({ ...prev, template_path: templatePath }));
   }, []);
 
-  const content = lesson.content;
+  const content = useMemo(() => stripAdaptiveSelfPointers(lesson.content), [lesson.content]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -464,7 +465,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
                 cancel();
                 if (
                   snap &&
-                  stripHtml(contentToString(lessonRef.current.content[snap.key])) !==
+                  stripHtml(contentToString(stripAdaptiveSelfPointers(lessonRef.current.content)[snap.key])) !==
                     stripHtml(snap.html)
                 ) {
                   const ok = await revert(snap.key, snapshotHtml, snap.wasEdited);

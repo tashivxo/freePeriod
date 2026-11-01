@@ -417,7 +417,7 @@ describe('synthetic daily English template fill', () => {
     expect(adaptive).toContain('Working At Mastery');
 
     const atMastery = sliceBetween(adaptive, 'Working At Mastery', 'Mastery with Greater Depth');
-    expect(atMastery).toContain('See Adaptive Teaching: Working At Mastery.');
+    expect(atMastery).not.toContain('See Adaptive Teaching');
     expect(atMastery).not.toContain('MASTERY_TASK_MARKER');
     expect(atMastery).not.toContain('DEMO_LEARNER_MARKER');
     expect(atMastery).not.toContain('SUCCESS_CRITERIA_MARKER');
@@ -651,7 +651,8 @@ describe('synthetic daily English template fill', () => {
 
     expect(practiceLearner).toContain('DEMO_LEARNER_MARKER');
     expect(practiceLearner).toContain('MASTERY_TASK_MARKER');
-    expect(atMastery).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(atMastery).toBe('');
+    expect(atMastery).not.toContain('See Adaptive Teaching');
     expect(atMastery).not.toContain(practiceLearner);
     expect(atMastery).not.toContain('DEMO_LEARNER_MARKER');
     expect(atMastery).not.toContain('MASTERY_TASK_MARKER');
@@ -671,12 +672,15 @@ describe('synthetic daily English template fill', () => {
       'Working At Mastery',
       'Mastery with Greater Depth',
     );
-    expect(slottedAtMastery).toBe('See Adaptive Teaching: Working At Mastery.');
+    expect(slottedAtMastery).toBe(
+      'Complete the on-level task independently with the core success criteria.',
+    );
+    expect(slottedAtMastery).not.toContain('See Adaptive Teaching');
     expect(slottedAtMastery).not.toContain('DEMO_LEARNER_MARKER');
     expect(slottedAtMastery).not.toContain('MASTERY_TASK_MARKER');
   });
 
-  it('does not repeat Practice [2] teacher text in Adaptive Working At Mastery', async () => {
+  it('puts the activityExpected strategy under Working At Mastery without repeating Practice learner text', async () => {
     const strategy =
       'Students independently draft a structured opinion paragraph about screen time.';
     const { outXml } = await fillSynthetic({
@@ -698,13 +702,14 @@ describe('synthetic daily English template fill', () => {
     const atMastery = slotBody(slots.adaptiveAtMastery, 'Working At Mastery', 'Mastery with Greater Depth');
 
     expect(practiceAct2).toBe(strategy);
-    expect(atMastery).toBe('See Adaptive Teaching: Working At Mastery.');
-    expect(atMastery).not.toContain('Students independently draft');
-    expect(normalizeCompareText(atMastery)).not.toBe(normalizeCompareText(practiceAct2));
+    expect(atMastery).toBe(strategy);
+    expect(atMastery).not.toContain('See Adaptive Teaching');
+    expect(atMastery).not.toContain('DEMO_LEARNER_MARKER');
+    expect(atMastery).not.toContain('MASTERY_TASK_MARKER');
     expect(normalizeCompareText(atMastery)).not.toBe(normalizeCompareText(practiceLearner));
   });
 
-  it('replaces other Adaptive items that nearly duplicate Practice cell text', async () => {
+  it('drops other Adaptive items that nearly duplicate Practice cell text instead of pointing at themselves', async () => {
     const { outXml } = await fillSynthetic({
       ...qaLesson,
       content: {
@@ -719,8 +724,10 @@ describe('synthetic daily English template fill', () => {
     const towards = slotBody(slots.adaptiveTowards, 'Working Towards Mastery', 'Working At Mastery');
     const depth = slotBody(slots.adaptiveDepth, 'Mastery with Greater Depth', 'Other adaptive');
 
-    expect(towards).toBe('See Adaptive Teaching: Working Towards Mastery.');
-    expect(depth).toBe('See Adaptive Teaching: Mastery with Greater Depth.');
+    expect(towards).toBe('');
+    expect(depth).toBe('');
+    expect(towards).not.toContain('See Adaptive Teaching');
+    expect(depth).not.toContain('See Adaptive Teaching');
     expect(towards).not.toContain('DEMO_LEARNER_MARKER');
     expect(depth).not.toContain('MASTERY_TASK_MARKER');
   });

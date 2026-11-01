@@ -1,4 +1,5 @@
 import type { LessonSection } from '@/types';
+import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
 
 function joinField(value: unknown): string {
   if (Array.isArray(value)) return value.join('\n');
@@ -6,7 +7,8 @@ function joinField(value: unknown): string {
   return '';
 }
 
-export function buildTemplateData(content: LessonSection): Record<string, string> {
+export function buildTemplateData(sourceContent: LessonSection): Record<string, string> {
+  const content = stripAdaptiveSelfPointers(sourceContent);
   const { differentiation } = content;
 
   return {
