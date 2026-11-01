@@ -94,6 +94,14 @@ ${JSON.stringify({
     expect(prompt).not.toContain('\u2014');
   });
 
+  it('tells the model not to write adaptive lines that only point at themselves', () => {
+    const prompt = buildSystemPrompt();
+
+    expect(prompt).toMatch(/only points back at its own band/i);
+    expect(prompt).toContain('See Adaptive Teaching: Working At Mastery.');
+    expect(prompt).not.toContain('\u2014');
+  });
+
   it('writes I can examples as sentences, not colon labels', () => {
     const prompt = buildSystemPrompt();
 

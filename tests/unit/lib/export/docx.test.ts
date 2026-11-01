@@ -2,6 +2,15 @@ import { TextEncoder, TextDecoder } from 'util';
 import JSZip from 'jszip';
 import { generateDocx, parseActivityBlock, formatCheckboxItems, inferTeachingStrategies } from '@/lib/export/docx';
 import type { LessonPlan } from '@/types';
+import {
+  REAL_EXTENSION,
+  REAL_SUCCESS_AT,
+  REAL_SUPPORT,
+  SELF_POINTER_AT,
+  SELF_POINTER_DEPTH,
+  SELF_POINTER_TOWARDS,
+  selfReferentialLesson,
+} from '@/tests/helpers/adaptive-self-reference';
 
 Object.assign(globalThis, { TextEncoder, TextDecoder });
 
@@ -224,3 +233,49 @@ function documentXmlPlainText(xml: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&apos;/g, "'");
 }
+
+async function docxText(lesson: LessonPlan): Promise<string> {
+  const zip = await JSZip.loadAsync(await generateDocx(lesson));
+  return documentXmlPlainText(await zip.file('word/document.xml')!.async('string'));
+}
+
+describe('generateDocx adaptive self references', () => {
+  it('never shows a section pointing at itself in the Adaptive Teaching cell', async () => {
+    const text = await docxText(selfReferentialLesson);
+
+    expect(text).toContain('[2] Working at Mastery:');
+    expect(text).toContain(REAL_SUCCESS_AT);
+    expect(text).toContain(REAL_SUPPORT);
+    expect(text).toContain(REAL_EXTENSION);
+    expect(text).not.toContain(SELF_POINTER_AT);
+    expect(text).not.toContain(SELF_POINTER_TOWARDS);
+    expect(text).not.toContain(SELF_POINTER_DEPTH);
+    expect(text).not.toContain('\u2014');
+  });
+
+  it('keeps a pointer that sends the reader to a different section', async () => {
+    const text = await docxText({
+      ...selfReferentialLesson,
+      content: {
+        ...selfReferentialLesson.content,
+        differentiation: {
+          support: [REAL_SUPPORT, SELF_POINTER_AT],
+          extension: [REAL_EXTENSION],
+        },
+      },
+    });
+
+    expect(text).toContain(SELF_POINTER_AT);
+    expect(text).toContain(REAL_SUPPORT);
+  });
+
+  it('does not invent filler when Working at Mastery only had a self pointer', async () => {
+    const text = await docxText({
+      ...selfReferentialLesson,
+      content: { ...selfReferentialLesson.content, successCriteria: [SELF_POINTER_AT] },
+    });
+
+    expect(text).not.toContain(SELF_POINTER_AT);
+    expect(text).not.toContain('[2] Working at Mastery:');
+  });
+});

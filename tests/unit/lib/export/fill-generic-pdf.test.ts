@@ -7,6 +7,15 @@ import { PDFDocument } from 'pdf-lib';
 import { fillGenericPdfTemplate, valueForPdfField } from '@/lib/export/fill-generic-pdf';
 import { isMeaningfulFill } from '@/lib/export/fill-template-result';
 import type { LessonPlan } from '@/types';
+import {
+  REAL_EXTENSION,
+  REAL_SUCCESS_AT,
+  REAL_SUPPORT,
+  SELF_POINTER_AT,
+  SELF_POINTER_DEPTH,
+  SELF_POINTER_TOWARDS,
+  selfReferentialLesson,
+} from '@/tests/helpers/adaptive-self-reference';
 
 const STATIC_FORMAL_FIXTURE = readFileSync(
   path.join(process.cwd(), 'tests/fixtures/static-formal-lesson-plan.pdf'),
@@ -223,5 +232,64 @@ describe('fillGenericPdfTemplate Unicode text', () => {
     expect(result.filledCount).toBe(1);
     const text = (await PDFDocument.load(result.buffer)).getForm().getTextField('objectives').getText();
     expect(text).toContain('• سيطور الطلاب نموذجا يصف حركة الجسيمات');
+  });
+});
+
+describe('PDF adaptive self references', () => {
+  it('keeps self-referential pointers out of every mapped field value', () => {
+    for (const field of [
+      'Success Criteria',
+      '{{successCriteria}}',
+      'Differentiation',
+      '{{differentiationSupport}}',
+      '{{differentiationExtension}}',
+      'SEN',
+      'G&T',
+    ]) {
+      const value = valueForPdfField(field, selfReferentialLesson) ?? '';
+      expect({ field, hasValue: value.length > 0 }).toEqual({ field, hasValue: true });
+      for (const pointer of [SELF_POINTER_AT, SELF_POINTER_TOWARDS, SELF_POINTER_DEPTH]) {
+        expect({ field, pointer: value.includes(pointer) }).toEqual({ field, pointer: false });
+      }
+    }
+    expect(valueForPdfField('Success Criteria', selfReferentialLesson)).toContain(REAL_SUCCESS_AT);
+    expect(valueForPdfField('{{differentiationSupport}}', selfReferentialLesson)).toBe(REAL_SUPPORT);
+    expect(valueForPdfField('{{differentiationExtension}}', selfReferentialLesson)).toBe(REAL_EXTENSION);
+  });
+
+  it('writes filled PDF fields without the self pointer', async () => {
+    const template = await makePdfWithFields([
+      { name: 'Success Criteria', multiline: true },
+      { name: 'Differentiation', multiline: true },
+      { name: '{{differentiationSupport}}', multiline: true },
+    ]);
+
+    const result = await fillGenericPdfTemplate(template, selfReferentialLesson);
+    expect(result.filledCount).toBe(3);
+
+    const form = (await PDFDocument.load(result.buffer)).getForm();
+    const texts = [
+      form.getTextField('Success Criteria').getText() ?? '',
+      form.getTextField('Differentiation').getText() ?? '',
+      form.getTextField('{{differentiationSupport}}').getText() ?? '',
+    ];
+    for (const text of texts) {
+      expect(text).not.toContain('See Adaptive Teaching');
+      expect(text).not.toContain('\u2014');
+    }
+    expect(texts[0]).toContain(REAL_SUCCESS_AT);
+    expect(texts[1]).toContain(REAL_SUPPORT);
+    expect(texts[1]).toContain(REAL_EXTENSION);
+  });
+
+  it('keeps a pointer that sends the reader to a different section', () => {
+    const lesson: LessonPlan = {
+      ...selfReferentialLesson,
+      content: {
+        ...selfReferentialLesson.content,
+        differentiation: { support: [REAL_SUPPORT, SELF_POINTER_AT], extension: [REAL_EXTENSION] },
+      },
+    };
+    expect(valueForPdfField('{{differentiationSupport}}', lesson)).toContain(SELF_POINTER_AT);
   });
 });
