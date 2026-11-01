@@ -4,6 +4,11 @@ import { inferTeachingStrategies, parseActivityBlock } from '@/lib/export/docx';
 import { formatICanStatements } from '@/lib/export/lesson-document';
 import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
+import {
+  stripAdaptiveSelfPointers,
+  withoutAdaptiveSelfPointers,
+  type AdaptiveBand,
+} from '@/lib/lesson/adaptive-self-reference';
 import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
@@ -706,7 +711,10 @@ function isNearDuplicate(item: string, existing: string[]): boolean {
   });
 }
 
-function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
+function practiceCellWrittenTexts(
+  content: LessonPlan['content'],
+  options: { includeExpectedLine: boolean } = { includeExpectedLine: true },
+): string[] {
   const source = activitySourceForPhase('demonstration', content);
   const parsed = source ? mergeParsedActivities(source.items, source.fallbackTime) : null;
   const successCriteriaItems = (content.successCriteria ?? []).map((item) => item.trim()).filter(Boolean);
@@ -719,7 +727,7 @@ function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
     parsed?.teacher ?? '',
     parsed?.learner ? withoutICanColonPrefix(parsed.learner) : '',
     activityLevelLine(1, content),
-    activityLevelLine(2, content),
+    options.includeExpectedLine ? activityLevelLine(2, content) : '',
     activityLevelLine(3, content),
     scaledICan('support', content),
     iCan,
@@ -727,17 +735,22 @@ function practiceCellWrittenTexts(content: LessonPlan['content']): string[] {
   ].flatMap(splitWrittenLines);
 }
 
-function adaptivePointerForHeading(heading: string): string {
+type AdaptiveHeadingBand = AdaptiveBand | 'other';
+
+function adaptiveBandForHeading(heading: string): AdaptiveHeadingBand {
   const text = normalizeLabel(heading);
-  if (text.includes('working towards mastery')) return 'See Adaptive Teaching: Working Towards Mastery.';
-  if (text.includes('working at mastery')) return 'See Adaptive Teaching: Working At Mastery.';
-  if (text.includes('greater depth')) return 'See Adaptive Teaching: Mastery with Greater Depth.';
-  return 'See Adaptive Teaching.';
+  if (text.includes('working towards mastery')) return 'towards';
+  if (text.includes('working at mastery')) return 'at';
+  if (text.includes('greater depth')) return 'depth';
+  return 'other';
 }
 
-function dedupeAdaptiveItems(items: string[], practiceTexts: string[], pointer: string): string[] {
-  const unique = items.filter((item) => !isNearDuplicate(item, practiceTexts));
-  return unique.length > 0 ? unique : [pointer];
+/**
+ * Drops items that repeat Practice cell text. A band never falls back to a pointer
+ * naming itself, so an empty result leaves the heading with no points.
+ */
+function dedupeAdaptiveItems(items: string[], practiceTexts: string[]): string[] {
+  return items.filter((item) => !isNearDuplicate(item, practiceTexts));
 }
 
 function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): string[] {
@@ -749,8 +762,7 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
   if (text.includes('working towards mastery')) return content.differentiation?.support ?? [];
   if (text.includes('working at mastery')) {
     const strategy = content.templateSlots?.activityExpected?.trim();
-    if (strategy) return [asCompleteSentence(strategy)];
-    return ['See Adaptive Teaching: Working At Mastery.'];
+    return strategy ? [asCompleteSentence(strategy)] : [];
   }
   if (text.includes('greater depth')) return content.differentiation?.extension ?? [];
   if (text.includes('other adaptive')) return inferTeachingStrategies(content);
@@ -767,15 +779,17 @@ function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) return cellXml;
   const practiceTexts = practiceCellWrittenTexts(content);
+  const practiceTextsWithoutExpectedLine = practiceCellWrittenTexts(content, { includeExpectedLine: false });
 
   const insertions: Array<{ afterIndex: number; xml: string }> = [];
   paras.forEach((para, index) => {
     const heading = cellPlainText(para.xml);
     if (!heading) return;
+    const band = adaptiveBandForHeading(heading);
+    const headingItems = adaptiveHeadingItems(heading, content);
     const items = dedupeAdaptiveItems(
-      adaptiveHeadingItems(heading, content),
-      practiceTexts,
-      adaptivePointerForHeading(heading),
+      band === 'other' ? headingItems : withoutAdaptiveSelfPointers(headingItems, band),
+      band === 'at' ? practiceTextsWithoutExpectedLine : practiceTexts,
     );
     if (items.length === 0) return;
     const bullets = items.map((item) => `• ${item}`).join('\n');
@@ -1530,7 +1544,7 @@ const ALWAYS_APPEND_LABELS = new Set([
 
 /** Maps normalized label text (as found in a template's table cells) to lesson content. */
 function buildFieldMap(lesson: LessonPlan): Map<string, string> {
-  const c = lesson.content;
+  const c = stripAdaptiveSelfPointers(lesson.content);
   const map = new Map<string, string>();
 
   const set = (labels: string[], value: string | undefined) => {
@@ -1689,8 +1703,12 @@ export type FillGenericTemplateResult = {
  */
 export async function fillGenericDocxTemplate(
   templateBuffer: Buffer,
-  lesson: LessonPlan,
+  sourceLesson: LessonPlan,
 ): Promise<FillGenericTemplateResult> {
+  const lesson: LessonPlan = {
+    ...sourceLesson,
+    content: stripAdaptiveSelfPointers(sourceLesson.content),
+  };
   const zip = await JSZip.loadAsync(templateBuffer);
   const file = zip.file(DOCUMENT_XML_PATH);
   if (!file) return { buffer: templateBuffer, filledCount: 0, matchedLabels: [] };
