@@ -16,6 +16,7 @@ import {
 import type { LessonPlan, LessonSection } from '@/types';
 import { formatICanStatements, prepareCellText } from '@/lib/export/lesson-document';
 import { EMPTY_DIFFERENTIATION_MESSAGE, nonEmptyListItems } from '@/lib/lesson/content';
+import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { DOCX_RUN_FONT } from './cjk';
@@ -98,7 +99,11 @@ function bulletParagraph(text: string): Paragraph {
 
 function bulletParagraphs(items: string[] | undefined): Paragraph[] {
   if (!items?.length) return [cellParagraph('')];
-  return items.map((item) => bulletParagraph(item));
+  return items.flatMap((item) => {
+    const heading = splitBoldLabelItem(item);
+    if (!heading) return [bulletParagraph(item)];
+    return [cellParagraph(heading.label, true), ...(heading.rest ? [bulletParagraph(heading.rest)] : [])];
+  });
 }
 
 function checkboxParagraphs(items: string[], perLine = 2): Paragraph[] {
