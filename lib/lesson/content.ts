@@ -3,6 +3,8 @@
  * (string | string[] | object) and the plain-text / HTML strings used by the editor.
  */
 
+import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
+
 export const EMPTY_DIFFERENTIATION_MESSAGE =
   'No differentiation suggestions for this lesson.';
 
@@ -66,6 +68,29 @@ export function contentToString(value: unknown): string {
   return JSON.stringify(value, null, 2) ?? '';
 }
 
+function itemsToListHtml(items: string[]): string {
+  const parts: string[] = [];
+  let open: string[] = [];
+  const flush = () => {
+    if (open.length > 0) {
+      parts.push(`<ul>${open.map((item) => `<li><p>${escapeHtml(item)}</p></li>`).join('')}</ul>`);
+      open = [];
+    }
+  };
+  for (const item of items) {
+    const heading = splitBoldLabelItem(item);
+    if (!heading) {
+      open.push(item);
+      continue;
+    }
+    flush();
+    parts.push(`<p><strong>${escapeHtml(heading.label)}</strong></p>`);
+    if (heading.rest) open.push(heading.rest);
+  }
+  flush();
+  return parts.join('');
+}
+
 function plainTextToHtml(text: string): string {
   if (!text) return '<p></p>';
   const lines = text.replace(/\r\n/g, '\n').split('\n');
@@ -82,9 +107,7 @@ function plainTextToHtml(text: string): string {
         items.push(lines[i].replace(UL_ITEM, '$1'));
         i += 1;
       }
-      parts.push(
-        `<ul>${items.map((item) => `<li><p>${escapeHtml(item)}</p></li>`).join('')}</ul>`,
-      );
+      parts.push(itemsToListHtml(items));
       continue;
     }
     if (OL_ITEM.test(lines[i])) {
@@ -122,7 +145,7 @@ export function contentToEditorHtml(value: unknown): string {
   if (Array.isArray(value)) {
     const items = value.map((item) => String(item)).filter((item) => item.trim().length > 0);
     if (items.length === 0) return '<p></p>';
-    return `<ul>${items.map((item) => `<li><p>${escapeHtml(item)}</p></li>`).join('')}</ul>`;
+    return itemsToListHtml(items);
   }
   if (isRecord(value)) {
     const text = contentToString(value);

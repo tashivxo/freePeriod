@@ -1,6 +1,7 @@
 import { ArabicShaper } from 'arabic-persian-reshaper';
 import bidiFactory from 'bidi-js';
 import { PDFHexString, type PDFFont } from 'pdf-lib';
+import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 
 const bidi = bidiFactory();
 
@@ -21,6 +22,13 @@ export function containsArabic(text: string): boolean {
  */
 export function normalizePdfPunctuation(text: string): string {
   return text
+    .split('\n')
+    .map((line) => {
+      const heading = splitBoldLabelItem(line);
+      if (!heading) return line;
+      return heading.rest ? `${heading.label}\n\u2022 ${heading.rest}` : heading.label;
+    })
+    .join('\n')
     .replace(/(^|\n)(?:[*\u2022\u2013\u2014-][ \t]+)+/g, '$1\u2022 ')
     .replace(/\u2014|\u2013/g, '-')
     .replace(/\u2018|\u2019/g, "'")
