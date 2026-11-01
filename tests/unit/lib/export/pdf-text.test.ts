@@ -58,3 +58,19 @@ describe('normalizePdfPunctuation', () => {
     expect(normalizePdfPunctuation('• * Students will learn')).toBe('• Students will learn');
   });
 });
+
+describe('normalizePdfPunctuation bold label lines', () => {
+  it('drops the bullet and asterisks from a bold label line and keeps points bulleted', () => {
+    expect(normalizePdfPunctuation('- **Prior knowledge:**\n- point one\n- point two')).toBe(
+      'Prior knowledge:\n\u2022 point one\n\u2022 point two',
+    );
+  });
+
+  it('splits a label with inline text into a heading line and a bullet', () => {
+    expect(normalizePdfPunctuation('**Extension:** Build a model')).toBe('Extension:\n\u2022 Build a model');
+  });
+
+  it('keeps ordinary bullets bulleted', () => {
+    expect(normalizePdfPunctuation('- one\n- two')).toBe('\u2022 one\n\u2022 two');
+  });
+});

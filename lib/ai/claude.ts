@@ -70,7 +70,7 @@ const WRITING_RULES = `${PLANNING_FIELD_RULES}
 ${ACTIVITY_PHASE_RULES}
 
 General rules:
-- Do not use markdown formatting of any kind. No asterisks, no bold markers (*word* or **word**), no hyphens used as bullet chars, no heading symbols (#). Plain text only inside JSON string values.`;
+- Do not use markdown formatting of any kind. No asterisks, no bold markers (*word* or **word**), no hyphens used as bullet chars, no heading symbols (#). Never put a label such as "Prior knowledge:" on its own bullet line or wrap it in asterisks. Plain text only inside JSON string values.`;
 
 const UNTRUSTED_DOCUMENT_FENCE_MARKERS = [
   '--- CURRICULUM DOCUMENT ---',
