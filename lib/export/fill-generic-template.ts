@@ -4,6 +4,7 @@ import { inferTeachingStrategies, parseActivityBlock } from '@/lib/export/docx';
 import { formatICanStatements } from '@/lib/export/lesson-document';
 import { createT } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
+import { splitBoldLabelItem } from '@/lib/lesson/heading-items';
 import { containsCjk, ensureEastAsiaRFonts } from './cjk';
 
 const DOCUMENT_XML_PATH = 'word/document.xml';
@@ -262,6 +263,10 @@ function isFallbackHomeLabel(text: string): boolean {
 }
 
 function fillStructuredCell(cellXml: string, fallbackBody: string, rules: LabelRule[]): string {
+  return normaliseMasteryLabelParas(fillStructuredCellRaw(cellXml, fallbackBody, rules));
+}
+
+function fillStructuredCellRaw(cellXml: string, fallbackBody: string, rules: LabelRule[]): string {
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) {
     return fallbackBody.trim() ? replaceCellParagraphs(cellXml, fallbackBody) : cellXml;
@@ -755,6 +760,9 @@ function adaptiveHeadingItems(heading: string, content: LessonPlan['content']): 
   return [];
 }
 
+const ADAPTIVE_HEADING_PARA =
+  /^(?:prior knowledge|working towards mastery|working at mastery|mastery with greater depth|other adaptive|special educational needs)/i;
+
 function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']): string {
   const paras = topLevelWordTags(cellXml, 'w:p');
   if (paras.length === 0) return cellXml;
@@ -783,7 +791,8 @@ function fillAdaptiveHeadingCell(cellXml: string, content: LessonPlan['content']
   let result = '';
   let lastEnd = 0;
   paras.forEach((para, index) => {
-    result += cellXml.slice(lastEnd, para.index) + para.xml;
+    const isHeading = ADAPTIVE_HEADING_PARA.test(cellPlainText(para.xml).trim());
+    result += cellXml.slice(lastEnd, para.index) + (isHeading ? toHeadingPara(para.xml) : para.xml);
     const extra = insertionByIndex.get(index);
     if (extra) result += extra;
     lastEnd = para.index + para.xml.length;
@@ -872,7 +881,13 @@ function stripLeadingListMarker(item: string): string {
 
 function joinBullets(items: string[] | undefined): string {
   if (!items?.length) return '';
-  return items.map((item) => `• ${stripLeadingListMarker(item)}`).join('\n');
+  return items
+    .flatMap((item) => {
+      const heading = splitBoldLabelItem(item);
+      if (!heading) return [`• ${stripLeadingListMarker(item)}`];
+      return [`${HEADING_LINE_MARK}${heading.label}`, ...(heading.rest ? [`• ${heading.rest}`] : [])];
+    })
+    .join('\n');
 }
 
 /**
@@ -888,6 +903,93 @@ function joinBlocks(items: string[] | undefined): string {
 /** Heuristic: a short line ending in ':' that isn't itself a bullet/dash item is a sub-header. */
 function isSubHeaderLine(line: string): boolean {
   return /:$/.test(line) && line.length < 60 && !line.startsWith('•') && !line.startsWith('-');
+}
+
+const HEADING_LINE_MARK = '\u0001';
+const DEFAULT_LIST_TEXT_INDENT = 360;
+let activeNumberingXml = '';
+
+function listTextIndent(paraXml: string): number {
+  const pPr = paraXml.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)?.[0] ?? '';
+  const pPrOwn = pPr.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, '');
+  const direct = pPrOwn.match(/<w:ind\b[^>]*\bw:left="(\d+)"/)?.[1];
+  if (direct) return parseInt(direct, 10);
+  const numId = pPrOwn.match(/<w:numId w:val="(\d+)"/)?.[1];
+  const ilvl = pPrOwn.match(/<w:ilvl w:val="(\d+)"/)?.[1] ?? '0';
+  if (numId && activeNumberingXml) {
+    const abstractId = activeNumberingXml.match(
+      new RegExp(`<w:num w:numId="${numId}"[^>]*>[\\s\\S]*?<w:abstractNumId w:val="(\\d+)"`),
+    )?.[1];
+    const abstract = abstractId
+      ? activeNumberingXml.match(
+          new RegExp(`<w:abstractNum w:abstractNumId="${abstractId}"[\\s\\S]*?</w:abstractNum>`),
+        )?.[0]
+      : undefined;
+    const level = abstract?.match(new RegExp(`<w:lvl w:ilvl="${ilvl}"[\\s\\S]*?</w:lvl>`))?.[0];
+    const left = level?.match(/<w:ind\b[^>]*\bw:left="(\d+)"/)?.[1];
+    if (left) return parseInt(left, 10);
+  }
+  return DEFAULT_LIST_TEXT_INDENT;
+}
+
+/** Paragraph properties for a heading: no list numbering, text kept where the list text sat. */
+function headingPPr(pPrXml: string, textIndent: number | null): string {
+  if (!/<w:numPr\b/.test(pPrXml)) return pPrXml;
+  let out = pPrXml.replace(/<w:numPr\b[\s\S]*?<\/w:numPr>/, '').replace(/<w:ind\b[^>]*\/>/, '');
+  if (textIndent == null) return out;
+  const ind = `<w:ind w:left="${textIndent}" w:hanging="0"/>`;
+  if (/<w:spacing\b[^>]*\/>/.test(out)) {
+    out = out.replace(/(<w:spacing\b[^>]*\/>)/, `$1${ind}`);
+  } else if (/<w:(?:contextualSpacing|jc|rPr)\b/.test(out)) {
+    out = out.replace(/<w:(contextualSpacing|jc|rPr)\b/, `${ind}<w:$1`);
+  } else {
+    out = out.replace('</w:pPr>', `${ind}</w:pPr>`);
+  }
+  return out;
+}
+
+function boldRuns(paraXml: string): string {
+  return paraXml.replace(/<w:r\b([^>]*)>([\s\S]*?)<\/w:r>/g, (_m, attrs: string, inner: string) => {
+    let body = inner;
+    if (/^<w:rPr>/.test(body)) {
+      if (/<w:b\s*\/>/.test(body)) return `<w:r${attrs}>${body}</w:r>`;
+      body = body.replace(/<w:b\s+w:val="(?:0|false)"\s*\/>/, '');
+      const bold = '<w:b/><w:bCs/>';
+      if (/<w:rFonts\b[^>]*\/>/.test(body)) body = body.replace(/(<w:rFonts\b[^>]*\/>)/, `$1${bold}`);
+      else if (/<w:rStyle\b[^>]*\/>/.test(body)) body = body.replace(/(<w:rStyle\b[^>]*\/>)/, `$1${bold}`);
+      else body = body.replace('<w:rPr>', `<w:rPr>${bold}`);
+    } else {
+      body = `<w:rPr><w:b/><w:bCs/></w:rPr>${body}`;
+    }
+    return `<w:r${attrs}>${body}</w:r>`;
+  });
+}
+
+/** Turns an existing template label paragraph into plain bold text with no bullet. */
+function toHeadingPara(paraXml: string): string {
+  const withoutList = paraXml.replace(/<w:pPr>[\s\S]*?<\/w:pPr>/, (pPr) =>
+    headingPPr(pPr, /<w:numPr\b/.test(pPr) ? listTextIndent(paraXml) : null),
+  );
+  return boldRuns(withoutList);
+}
+
+const MASTERY_LABEL_PARA = /^(?:working towards mastery|working at mastery|mastery with greater depth|extension)\b/i;
+
+function isMasteryLabelPara(text: string): boolean {
+  const trimmed = text.trim();
+  return /[:\uff1a]$/.test(trimmed) && trimmed.length < 80 && MASTERY_LABEL_PARA.test(trimmed);
+}
+
+function normaliseMasteryLabelParas(cellXml: string): string {
+  const paras = topLevelWordTags(cellXml, 'w:p');
+  let result = '';
+  let lastEnd = 0;
+  for (const para of paras) {
+    result += cellXml.slice(lastEnd, para.index);
+    result += isMasteryLabelPara(cellPlainText(para.xml)) ? toHeadingPara(para.xml) : para.xml;
+    lastEnd = para.index + para.xml.length;
+  }
+  return result + cellXml.slice(lastEnd);
 }
 
 /** Builds separate `<w:p>` paragraphs for each line of text, reusing a reference paragraph's
@@ -920,9 +1022,14 @@ function buildParagraphsXml(referencePara: string, text: string): string {
         // A blank line that keeps list numbering renders as an empty bullet.
         return inheritsNumPr ? '' : `<w:p>${pPrXml}</w:p>`;
       }
-      const isBoldLine = trimmed.startsWith('>>');
-      let content = isBoldLine ? trimmed.slice(2).trim() : trimmed;
-      if (inheritsNumPr) {
+      const isHeadingLine = trimmed.startsWith(HEADING_LINE_MARK);
+      const isBoldLine = isHeadingLine || trimmed.startsWith('>>');
+      let content = isHeadingLine
+        ? trimmed.slice(1).trim()
+        : isBoldLine
+          ? trimmed.slice(2).trim()
+          : trimmed;
+      if (inheritsNumPr && !isHeadingLine) {
         content = content.replace(/^[•\-*]\s*/, '');
       }
       if (!content) return inheritsNumPr ? '' : `<w:p>${pPrXml}</w:p>`;
@@ -930,7 +1037,8 @@ function buildParagraphsXml(referencePara: string, text: string): string {
       if (containsCjk(text)) {
         rPrToUse = ensureEastAsiaRFonts(rPrToUse);
       }
-      return `<w:p>${pPrXml}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(content)}</w:t></w:r></w:p>`;
+      const linePPr = isHeadingLine ? headingPPr(pPrXml, listTextIndent(referencePara)) : pPrXml;
+      return `<w:p>${linePPr}<w:r>${rPrToUse}<w:t xml:space="preserve">${escapeXml(content)}</w:t></w:r></w:p>`;
     })
     .join('');
 }
@@ -1589,6 +1697,7 @@ export async function fillGenericDocxTemplate(
   if (!file) return { buffer: templateBuffer, filledCount: 0, matchedLabels: [] };
 
   const xml = await file.async('string');
+  activeNumberingXml = (await zip.file('word/numbering.xml')?.async('string')) ?? '';
   const labelMap = buildFieldMap(lesson);
   let filledCount = 0;
   const matchedLabels: string[] = [];
