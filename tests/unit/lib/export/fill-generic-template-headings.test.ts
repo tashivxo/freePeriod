@@ -174,6 +174,8 @@ function pointsAfter(paras: Para[], index: number, headingRes: RegExp[]): Para[]
 }
 
 describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture) => {
+  const isReal = fixture === 'blank-daily-english-lesson-plan.docx';
+
   it('turns every adaptive teaching heading into plain bold text with no bullet', async () => {
     const { inXml, outXml, numberingXml } = await load(fixture);
     const cell = cellContaining(outXml, /working towards mastery/i, /prior knowledge/i);
@@ -199,7 +201,7 @@ describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture)
       const points = pointsAfter(paras, index, headingRes);
       expect({ label, count: points.length > 0 }).toEqual({ label, count: true });
       for (const point of points) {
-        expect(hasNumPr(point)).toBe(true);
+        if (isReal) expect(hasNumPr(point)).toBe(true);
         expect(isBold(point)).toBe(false);
         expect(point.text).not.toMatch(/^[•\-*]/);
         expect(point.text.endsWith(':') && point.text.length < 60).toBe(false);
@@ -221,8 +223,13 @@ describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture)
 
     const firstPoint = pointsAfter(paras, priorAt, headingRes)[0];
     const heading = paras[priorAt];
-    expect(hasNumPr(inCell.find((p) => ADAPTIVE_HEADINGS[0][1].test(p.text))!)).toBe(true);
-    expect(directIndent(heading).left).toBe(numberingLeft(numberingXml, firstPoint.xml));
+    if (isReal) {
+      expect(hasNumPr(inCell.find((p) => ADAPTIVE_HEADINGS[0][1].test(p.text))!)).toBe(true);
+      expect(directIndent(heading).left).toBe(numberingLeft(numberingXml, firstPoint.xml));
+    } else {
+      expect(Number.isNaN(directIndent(heading).left)).toBe(true);
+      expect(outXml).not.toContain('NaN');
+    }
   });
 
   it('turns the four Homework Differentiation labels into plain bold text with their points kept', async () => {
@@ -240,7 +247,7 @@ describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture)
       const points = pointsAfter(paras, index, headingRes);
       expect(points).toHaveLength(1);
       expect(points[0].text.startsWith(marker)).toBe(true);
-      expect(hasNumPr(points[0])).toBe(true);
+      if (isReal) expect(hasNumPr(points[0])).toBe(true);
       expect(isBold(points[0])).toBe(false);
     }
   });
@@ -252,12 +259,16 @@ describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture)
     const headingRes = HOMEWORK_HEADINGS.map(([, re]) => re);
     for (const [, re] of HOMEWORK_HEADINGS) {
       const index = paras.findIndex((p) => re.test(p.text));
-      if (!hasNumPr(inParas.find((p) => re.test(p.text))!)) continue;
+      const wasListParagraph = hasNumPr(inParas.find((p) => re.test(p.text))!);
+      expect(wasListParagraph).toBe(isReal);
+      if (!isReal) {
+        expect(Number.isNaN(directIndent(paras[index]).left)).toBe(true);
+        continue;
+      }
       const point = pointsAfter(paras, index, headingRes)[0];
       const left = directIndent(paras[index]).left;
       expect(left).toBe(numberingLeft(numberingXml, point.xml));
-      expect(left).toBeGreaterThan(0);
-      if (fixture === 'blank-daily-english-lesson-plan.docx') expect(left).toBe(360);
+      expect(left).toBe(360);
     }
   });
 
@@ -273,6 +284,20 @@ describe.each(FIXTURES)('heading bullets in template fill: %s', (_name, fixture)
       expect(/<w:numPr\b/.test(p)).toBe(false);
       expect(after).toContain(p);
     }
+  });
+
+  it('writes no w:ind at all when the template list level has no indent', async () => {
+    const { inXml, outXml } = await load(fixture);
+    expect(outXml).not.toContain('NaN');
+    expect(outXml).not.toMatch(/w:(?:left|hanging)="(?:NaN|undefined|null)?"/);
+    if (isReal) return;
+    const inCell = paragraphs(cellContaining(inXml, /working towards mastery/i, /prior knowledge/i));
+    const original = inCell.find((p) => ADAPTIVE_HEADINGS[0][1].test(p.text))!;
+    expect(hasNumPr(original)).toBe(true);
+    const heading = paragraphs(cellContaining(outXml, /working towards mastery/i, /prior knowledge/i)).find((p) =>
+      ADAPTIVE_HEADINGS[0][1].test(p.text),
+    )!;
+    expect(heading.xml.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/g, '')).not.toContain('<w:ind');
   });
 
   it('never alters the lesson title', async () => {

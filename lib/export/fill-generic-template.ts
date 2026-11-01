@@ -906,10 +906,9 @@ function isSubHeaderLine(line: string): boolean {
 }
 
 const HEADING_LINE_MARK = '\u0001';
-const DEFAULT_LIST_TEXT_INDENT = 360;
 let activeNumberingXml = '';
 
-function listTextIndent(paraXml: string): number {
+function listTextIndent(paraXml: string): number | null {
   const pPr = paraXml.match(/<w:pPr>[\s\S]*?<\/w:pPr>/)?.[0] ?? '';
   const pPrOwn = pPr.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, '');
   const direct = pPrOwn.match(/<w:ind\b[^>]*\bw:left="(\d+)"/)?.[1];
@@ -929,14 +928,14 @@ function listTextIndent(paraXml: string): number {
     const left = level?.match(/<w:ind\b[^>]*\bw:left="(\d+)"/)?.[1];
     if (left) return parseInt(left, 10);
   }
-  return DEFAULT_LIST_TEXT_INDENT;
+  return null;
 }
 
 /** Paragraph properties for a heading: no list numbering, text kept where the list text sat. */
 function headingPPr(pPrXml: string, textIndent: number | null): string {
   if (!/<w:numPr\b/.test(pPrXml)) return pPrXml;
   let out = pPrXml.replace(/<w:numPr\b[\s\S]*?<\/w:numPr>/, '').replace(/<w:ind\b[^>]*\/>/, '');
-  if (textIndent == null) return out;
+  if (textIndent == null || !Number.isFinite(textIndent)) return out;
   const ind = `<w:ind w:left="${textIndent}" w:hanging="0"/>`;
   if (/<w:spacing\b[^>]*\/>/.test(out)) {
     out = out.replace(/(<w:spacing\b[^>]*\/>)/, `$1${ind}`);
