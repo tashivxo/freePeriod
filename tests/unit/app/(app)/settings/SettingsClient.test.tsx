@@ -50,6 +50,18 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.enterCurriculum': 'Enter curriculum',
   'settings.country': 'Country',
   'settings.selectCountry': 'Select your country',
+  'settings.defaultTemplateHeading': 'Default lesson plan template',
+  'settings.defaultTemplateHelper': 'Automatically attached when you generate.',
+  'settings.defaultTemplateSaved': 'Saved as default.',
+  'settings.defaultTemplateChip': 'Default',
+  'settings.stopUsingAsDefault': 'Stop using as default',
+  'settings.defaultRemoved': 'Default removed.',
+  'settings.undo': 'Undo',
+  'settings.saveFailedDefault': 'Could not save your default. Try again.',
+  'settings.missingDefaultFile': 'That file is gone. Upload it again to keep using a default.',
+  'settings.attachedForEveryNew': 'Attached for every new lesson.',
+  'settings.savingDefault': 'Saving default…',
+  'settings.removingDefault': 'Removing default…',
   'settings.save': 'Save Settings',
   'settings.saving': 'Saving...',
   'settings.saved': 'Settings saved!',
@@ -912,6 +924,12 @@ describe('SettingsClient — danger zone', () => {
 
     expect(await within(dangerZone()).findByText('Deletion already scheduled')).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('shows the default lesson plan template heading in teaching defaults', () => {
+    render(<SettingsClient {...defaultProps} />);
+    expect(screen.getAllByText('Default lesson plan template').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Automatically attached when you generate.')).toBeInTheDocument();
   });
 
   it('cancel closes the confirmation and returns focus to Delete account', async () => {

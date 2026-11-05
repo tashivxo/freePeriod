@@ -620,4 +620,22 @@ describe('GenerateForm', () => {
     expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
     expect(mockUpload).not.toHaveBeenCalled();
   });
+
+  it('skips default for this lesson without deleting storage or updating users', async () => {
+    const { user } = render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /remove plan\.docx/i }));
+
+    expect(mockRemove).not.toHaveBeenCalled();
+    expect(mockUsersUpdateEq).not.toHaveBeenCalled();
+    expect(screen.getByText('Skipped for this lesson.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use default/i })).toBeInTheDocument();
+  });
 });
