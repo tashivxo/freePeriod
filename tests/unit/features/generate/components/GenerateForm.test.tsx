@@ -12,6 +12,7 @@ const mockSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-123' }, err
 const mockSelectChain = jest.fn(() => ({ single: mockSingle }));
 const mockDbInsert = jest.fn(() => ({ select: mockSelectChain }));
 const mockFromDb = jest.fn(() => ({ insert: mockDbInsert }));
+const mockUsersUpdateEq = jest.fn().mockResolvedValue({ error: null });
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
@@ -21,7 +22,16 @@ jest.mock('@/lib/supabase/client', () => ({
         error: null,
       }),
     },
-    from: mockFromDb,
+    from: jest.fn((table: string) => {
+      if (table === 'users') {
+        return {
+          update: () => ({
+            eq: mockUsersUpdateEq,
+          }),
+        };
+      }
+      return mockFromDb();
+    }),
     storage: {
       from: jest.fn(() => ({
         upload: mockUpload,
@@ -592,5 +602,22 @@ describe('GenerateForm', () => {
     );
 
     expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+  });
+
+  it('hydrates a default template without upload or ready copy', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
+    expect(mockUpload).not.toHaveBeenCalled();
   });
 });

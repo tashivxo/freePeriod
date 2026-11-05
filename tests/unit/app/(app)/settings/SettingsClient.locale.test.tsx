@@ -55,6 +55,8 @@ const baseUser: User = {
   onboarding_complete: true,
   deletion_scheduled_at: null,
   preferred_locale: 'ar',
+  default_template_path: null,
+  default_template_file_name: null,
   created_at: '2024-01-01T00:00:00Z',
 };
 

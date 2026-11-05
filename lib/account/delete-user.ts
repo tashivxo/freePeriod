@@ -30,7 +30,7 @@ async function cancelLemonSqueezySubscription(userId: string): Promise<void> {
   }
 }
 
-async function collectStoragePaths(userId: string): Promise<string[]> {
+export async function collectStoragePaths(userId: string): Promise<string[]> {
   const admin = createAdminClient();
   const paths = new Set<string>();
 
@@ -39,6 +39,15 @@ async function collectStoragePaths(userId: string): Promise<string[]> {
     .select('storage_path')
     .eq('user_id', userId);
   uploads?.forEach((row) => paths.add(row.storage_path));
+
+  const { data: userRow } = await admin
+    .from('users')
+    .select('default_template_path')
+    .eq('id', userId)
+    .maybeSingle();
+  if (userRow?.default_template_path) {
+    paths.add(userRow.default_template_path);
+  }
 
   const { data: lessons } = await admin
     .from('lesson_plans')

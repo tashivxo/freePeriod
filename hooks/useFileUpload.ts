@@ -19,6 +19,8 @@ interface UseFileUploadProps {
   onParsed?: (uploadId: string, text: string) => void;
   accept?: string;
   maxSizeBytes?: number;
+  initialAttachment?: { name: string; storagePath: string };
+  cleanupStorageOnRemove?: boolean;
 }
 
 interface UseFileUploadReturn {
@@ -88,13 +90,21 @@ export function useFileUpload({
   onParsed,
   accept = '',
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
+  initialAttachment,
+  cleanupStorageOnRemove = true,
 }: UseFileUploadProps): UseFileUploadReturn {
-  const [file, setFile] = useState<File | null>(null);
-  const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(() =>
+    initialAttachment ? new File([], initialAttachment.name) : null,
+  );
+  const [storagePath, setStoragePath] = useState<string | null>(
+    () => initialAttachment?.storagePath ?? null,
+  );
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [parsedText, setParsedText] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [phase, setPhase] = useState<UploadPhase>('idle');
+  const [phase, setPhase] = useState<UploadPhase>(() =>
+    initialAttachment ? 'ready' : 'idle',
+  );
   const [error, setError] = useState<UploadFailure | null>(null);
   const inFlightRef = useRef(false);
   const storedAttemptRef = useRef<StoredAttempt | null>(null);
@@ -249,7 +259,7 @@ export function useFileUpload({
     const idToRemove = uploadId ?? storedAttemptRef.current?.uploadId;
     storedAttemptRef.current = null;
 
-    if (!pathToRemove || !idToRemove) {
+    if (!cleanupStorageOnRemove || !pathToRemove || !idToRemove) {
       setFile(null);
       setStoragePath(null);
       setUploadId(null);

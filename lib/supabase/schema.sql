@@ -22,7 +22,20 @@ create table public.users (
   onboarding_complete boolean not null default false,
   deletion_scheduled_at timestamptz,
   preferred_locale text not null default 'en' check (preferred_locale in ('en', 'ar', 'es', 'fr', 'zh-Hans')),
-  created_at timestamptz not null default now()
+  default_template_path text,
+  default_template_file_name text,
+  created_at timestamptz not null default now(),
+  constraint users_default_template_pair_check check (
+    (default_template_path is null) = (default_template_file_name is null)
+    and (
+      default_template_path is null
+      or length(trim(default_template_path)) > 0
+    )
+    and (
+      default_template_file_name is null
+      or length(trim(default_template_file_name)) > 0
+    )
+  )
 );
 
 alter table public.users enable row level security;
@@ -75,6 +88,40 @@ create trigger protect_users_is_admin
   before insert or update on public.users
   for each row
   execute function public.protect_users_is_admin();
+
+create or replace function public.protect_users_default_template_path()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  path text;
+  prefix text;
+begin
+  path := new.default_template_path;
+  if path is null then
+    return new;
+  end if;
+
+  if path like '%..%' or path like '%\\%' or path like '/%' then
+    raise exception 'invalid default_template_path';
+  end if;
+
+  prefix := new.id::text || '/template/';
+  if left(path, length(prefix)) <> prefix then
+    raise exception 'invalid default_template_path prefix';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger protect_users_default_template_path
+  before update on public.users
+  for each row
+  when (new.default_template_path is distinct from old.default_template_path)
+  execute function public.protect_users_default_template_path();
 
 create unique index users_email_lower_uidx on public.users (lower(email));
 

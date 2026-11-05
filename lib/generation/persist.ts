@@ -35,11 +35,31 @@ export async function linkUploadsToLesson(
     templatePath: string | null;
   },
 ): Promise<PersistLessonResult> {
+  let userDefaultTemplatePath: string | null = null;
+  if (input.templatePath) {
+    const { data: userRow, error: userError } = await supabase
+      .from('users')
+      .select('default_template_path')
+      .eq('id', input.userId)
+      .maybeSingle();
+    if (userError) {
+      console.error('[generate] Failed to load user default template path', {
+        userId: input.userId,
+        error: userError.message,
+      });
+      return { ok: false, error: 'Failed to save lesson plan' };
+    }
+    userDefaultTemplatePath = userRow?.default_template_path ?? null;
+  }
+
   const targets: LinkTarget[] = [];
   if (input.curriculumDocPath) {
     targets.push({ path: input.curriculumDocPath, type: 'curriculum_doc' });
   }
-  if (input.templatePath) {
+  if (
+    input.templatePath &&
+    input.templatePath !== userDefaultTemplatePath
+  ) {
     targets.push({ path: input.templatePath, type: 'template' });
   }
 
