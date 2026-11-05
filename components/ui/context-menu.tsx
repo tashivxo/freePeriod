@@ -11,15 +11,15 @@ import { cn } from "@/lib/utils"
  * Motion is a short fade plus 0.97 scale from the pointer origin, off for reduced motion.
  */
 export const menuContentClass =
-  "z-[10000] min-w-[11rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 text-[var(--color-text-primary)] shadow-xl duration-150 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.97] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.97] motion-reduce:animate-none"
+  "z-[10000] min-w-[11rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] p-0 text-[var(--color-text-primary)] shadow-xl duration-150 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.97] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-[0.97] motion-reduce:animate-none"
 
 export const menuItemClass =
-  "relative flex min-h-11 cursor-pointer select-none items-center gap-2 px-3 py-2.5 font-body text-sm outline-none transition-colors duration-100 sm:min-h-0 data-[highlighted]:bg-[var(--color-primary-light)]/20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-coral/40 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
+  "relative flex min-h-11 cursor-pointer select-none items-center gap-2 rounded-none px-3 py-2.5 font-body text-sm outline-none transition-none sm:min-h-0 data-[highlighted]:bg-[color-mix(in_srgb,var(--color-primary-light)_22%,var(--color-background-elevated))] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0"
 
 export const menuItemDestructiveClass =
   "text-red-700 dark:text-red-400 data-[highlighted]:bg-destructive/10"
 
-export const menuSeparatorClass = "my-1 h-px bg-[var(--color-border)]"
+export const menuSeparatorClass = "mx-0 my-0 h-px bg-[var(--color-border)]"
 
 function ContextMenu(props: React.ComponentProps<typeof ContextMenuPrimitive.Root>) {
   return <ContextMenuPrimitive.Root data-slot="context-menu" {...props} />

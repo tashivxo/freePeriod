@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Ellipsis, PencilLine, Trash2 } from 'lucide-react';
+import { Ellipsis } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
+import { DeleteIcon } from '@/components/ui/icons/delete';
+import { SquarePenIcon } from '@/components/ui/icons/square-pen';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -84,14 +86,14 @@ function LessonMenuItems({
     <>
       {canRename && (
         <Item onSelect={onRename}>
-          <PencilLine aria-hidden />
+          <MotionSafeIcon icon={SquarePenIcon} size={16} parentHover parentFocus />
           {t('history.rename')}
         </Item>
       )}
       {canRename && canDelete && <Separator />}
       {canDelete && (
         <Item variant="destructive" onSelect={onDelete}>
-          <Trash2 aria-hidden />
+          <MotionSafeIcon icon={DeleteIcon} size={16} parentHover parentFocus />
           {t('history.delete')}
         </Item>
       )}
