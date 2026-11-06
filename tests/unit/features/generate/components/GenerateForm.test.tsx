@@ -320,6 +320,31 @@ describe('GenerateForm', () => {
     expect(global.fetch).toHaveBeenCalled();
   });
 
+  it('after failed opt-in default save, keeps template filename visible and opt-in enabled', async () => {
+    mockUsersUpdateEq.mockResolvedValueOnce({ error: { message: 'db error' } });
+
+    const { user } = render(<GenerateForm onSubmit={onSubmit} userId="user-123" />);
+    const file = new File(['%PDF-1.7'], 'my-default-candidate.pdf', { type: 'application/pdf' });
+
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    await waitFor(() => {
+      expect(screen.getByText('my-default-candidate.pdf')).toBeInTheDocument();
+    });
+
+    const optIn = await screen.findByRole('button', { name: /use as my default/i });
+    expect(optIn).toBeEnabled();
+
+    await user.click(optIn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/could not save your default/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('my-default-candidate.pdf')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use as my default/i })).toBeEnabled();
+  });
+
   it('still rejects a plain-text template immediately without reading or waiting for upload', async () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });

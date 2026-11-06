@@ -122,6 +122,9 @@ export function GenerateForm({
   const [defaultWriteBusy, setDefaultWriteBusy] = useState<'idle' | 'saving' | 'removing'>('idle');
   const [defaultStatus, setDefaultStatus] = useState<string | null>(null);
   const [defaultError, setDefaultError] = useState<string | null>(null);
+  const [defaultPersistSucceeded, setDefaultPersistSucceeded] = useState(
+    () => Boolean(defaultTemplate?.path),
+  );
   const undoSnapshotRef = useRef<{ path: string; fileName: string } | null>(null);
   const defaultWriteInFlightRef = useRef(false);
   const hadUserDefaultRef = useRef(Boolean(defaultTemplate?.path));
@@ -183,6 +186,7 @@ export function GenerateForm({
         setAttachedFileName(fileName);
       }
       setTemplateAttachSeed(null);
+      setDefaultPersistSucceeded(false);
       setDefaultError(null);
       if (
         userDefaultPath &&
@@ -205,6 +209,7 @@ export function GenerateForm({
     setTemplatePath(null);
     setAttachedFileName(null);
     setTemplateAttachSeed(null);
+    setDefaultPersistSucceeded(false);
   }, [templatePath, userDefaultPath]);
 
   const persistUserDefault = useCallback(
@@ -213,6 +218,7 @@ export function GenerateForm({
       defaultWriteInFlightRef.current = true;
       setDefaultWriteBusy(path ? 'saving' : 'removing');
       setDefaultError(null);
+      setDefaultPersistSucceeded(false);
       try {
         const supabase = createClient();
         const payload =
@@ -231,6 +237,7 @@ export function GenerateForm({
         setUserDefaultPath(path);
         setUserDefaultFileName(fileName);
         hadUserDefaultRef.current = Boolean(path);
+        setDefaultPersistSucceeded(true);
         return true;
       } finally {
         defaultWriteInFlightRef.current = false;
@@ -293,7 +300,10 @@ export function GenerateForm({
   }, [choicePendingName, choicePendingPath, persistUserDefault, t]);
 
   const isAccountDefaultAttached =
-    Boolean(userDefaultPath) && templatePath === userDefaultPath && !defaultSkipped;
+    Boolean(userDefaultPath) &&
+    templatePath === userDefaultPath &&
+    !defaultSkipped &&
+    defaultPersistSucceeded;
   const showOptIn =
     Boolean(templatePath) &&
     !userDefaultPath &&
@@ -301,12 +311,12 @@ export function GenerateForm({
   const templateInitialAttachment = templateAttachSeed
     ? { name: templateAttachSeed.fileName, storagePath: templateAttachSeed.path }
     : undefined;
-  const templateZoneKey = templateAttachSeed?.path ?? templatePath ?? 'empty';
 
   useEffect(() => {
     if (defaultTemplate?.path) {
       setTemplatePath(defaultTemplate.path);
       setAttachedFileName(defaultTemplate.fileName);
+      setDefaultPersistSucceeded(true);
     }
   }, [defaultTemplate?.fileName, defaultTemplate?.path]);
 
@@ -537,7 +547,7 @@ export function GenerateForm({
         <DocumentUploadZone
           accept={TEMPLATE_ACCEPT}
           uploadType="template"
-          key={templateZoneKey}
+          key="fp-generate-template-upload"
           initialAttachment={templateInitialAttachment}
           isDefaultAttachment={isAccountDefaultAttached}
           cleanupStorageOnRemove={!isAccountDefaultAttached}
