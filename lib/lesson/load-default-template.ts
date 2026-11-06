@@ -8,21 +8,24 @@ export type LoadedDefaultTemplate =
   | { status: 'present'; path: string; fileName: string }
   | { status: 'missing' };
 
-async function storageObjectExists(
+type StorageObjectStatus = 'present' | 'missing' | 'unknown';
+
+async function storageObjectStatus(
   supabase: SupabaseClient<Database>,
   storagePath: string,
-): Promise<boolean> {
+): Promise<StorageObjectStatus> {
   const segments = storagePath.split('/');
   const fileName = segments.pop();
   const folder = segments.join('/');
-  if (!fileName || !folder) return false;
+  if (!fileName || !folder) return 'missing';
 
   const { data, error } = await supabase.storage.from(UPLOADS_BUCKET).list(folder, {
     limit: 100,
     search: fileName,
   });
-  if (error || !data?.length) return false;
-  return data.some((item) => item.name === fileName);
+  if (error) return 'unknown';
+  if (data?.some((item) => item.name === fileName)) return 'present';
+  return 'missing';
 }
 
 export async function loadDefaultTemplateForUser(
@@ -42,8 +45,11 @@ export async function loadDefaultTemplateForUser(
   const path = userRow.default_template_path;
   const fileName = userRow.default_template_file_name ?? path.split('/').pop() ?? 'template';
 
-  const exists = await storageObjectExists(supabase, path);
-  if (!exists) {
+  const objectStatus = await storageObjectStatus(supabase, path);
+  if (objectStatus === 'unknown') {
+    return { status: 'present', path, fileName };
+  }
+  if (objectStatus === 'missing') {
     await supabase
       .from('users')
       .update({ default_template_path: null, default_template_file_name: null })

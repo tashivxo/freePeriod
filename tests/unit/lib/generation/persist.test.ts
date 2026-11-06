@@ -293,6 +293,32 @@ describe('persistLessonPlan', () => {
     expect(userEq).not.toHaveBeenCalled();
   });
 
+  it('refuses to persist a templatePath owned by another user', async () => {
+    const insert = jest.fn();
+    const supabase = mockFrom({
+      lesson_plans: { insert },
+    });
+
+    const result = await persistLessonPlan(supabase as never, {
+      userId: 'user-1',
+      title: 'Fractions',
+      subject: 'Mathematics',
+      grade: '8',
+      curriculum: 'CAPS (South Africa)',
+      durationMinutes: 60,
+      content,
+      modelUsed: 'gemini-2.5-flash',
+      tokenCount: 12,
+      curriculumDocPath: null,
+      templatePath: 'other-user/template/secret.docx',
+      generationCount: 0,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'Invalid template path' });
+    expect(insert).not.toHaveBeenCalled();
+    expect(mockCreateAdminClient).not.toHaveBeenCalled();
+  });
+
   it('snapshots original_content to the generated content on insert', async () => {
     const insert = jest.fn(() => ({
       select: () => ({

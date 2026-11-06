@@ -20,7 +20,7 @@ import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCurriculumPack } from '@/lib/curriculum/packs';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
-import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
+import { writeUserDefaultTemplate } from '@/lib/lesson/default-template';
 import { createClient } from '@/lib/supabase/client';
 import type { Plan } from '@/types';
 
@@ -227,17 +227,12 @@ export function GenerateForm({
       setDefaultError(null);
       setDefaultPersistSucceeded(false);
       try {
-        const supabase = createClient();
-        const payload =
-          path && fileName
-            ? { default_template_path: path, default_template_file_name: fileName }
-            : { default_template_path: null, default_template_file_name: null };
-        if (path && !isValidDefaultTemplatePath(userId, path)) {
-          setDefaultError(t('generate.upload.saveFailed'));
-          return false;
-        }
-        const { error } = await supabase.from('users').update(payload).eq('id', userId);
-        if (error) {
+        const result = await writeUserDefaultTemplate(
+          createClient(),
+          userId,
+          path && fileName ? { path, fileName } : null,
+        );
+        if (!result.ok) {
           setDefaultError(t('generate.upload.saveFailed'));
           return false;
         }

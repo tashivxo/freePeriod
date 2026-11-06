@@ -84,4 +84,54 @@ describe('collectStoragePaths', () => {
       ]),
     );
   });
+
+  it('ignores lesson template paths that belong to another user', async () => {
+    mockAdminFrom.mockImplementation((table: string) => {
+      if (table === 'uploads') {
+        return {
+          select: () => ({
+            eq: async () => ({
+              data: [
+                { storage_path: 'user-1/curriculum_doc/a.pdf' },
+                { storage_path: 'other-user/template/stolen.docx' },
+              ],
+            }),
+          }),
+        };
+      }
+      if (table === 'users') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: mockAdminMaybeSingle,
+            }),
+          }),
+        };
+      }
+      if (table === 'lesson_plans') {
+        return {
+          select: () => ({
+            eq: async () => ({
+              data: [{ id: 'lesson-1', template_path: 'other-user/template/secret.docx' }],
+            }),
+          }),
+        };
+      }
+      if (table === 'exports') {
+        return {
+          select: () => ({
+            in: async () => ({ data: [] }),
+          }),
+        };
+      }
+      throw new Error(`Unexpected table ${table}`);
+    });
+    mockAdminMaybeSingle.mockResolvedValue({ data: { default_template_path: null } });
+
+    const paths = await collectStoragePaths('user-1');
+
+    expect(paths).toEqual(['user-1/curriculum_doc/a.pdf']);
+    expect(paths).not.toContain('other-user/template/secret.docx');
+    expect(paths).not.toContain('other-user/template/stolen.docx');
+  });
 });

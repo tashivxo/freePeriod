@@ -78,4 +78,22 @@ describe('loadDefaultTemplateForUser', () => {
     expect(result).toEqual({ status: 'missing' });
     expect(mockUserUpdate).toHaveBeenCalled();
   });
+
+  it('keeps the stored default when storage listing fails', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: {
+        default_template_path: 'user-1/template/plan.docx',
+        default_template_file_name: 'Plan.docx',
+      },
+    });
+    mockList.mockResolvedValue({ data: null, error: { message: 'storage unavailable' } });
+
+    const result = await loadDefaultTemplateForUser(createSupabase() as never, 'user-1');
+    expect(result).toEqual({
+      status: 'present',
+      path: 'user-1/template/plan.docx',
+      fileName: 'Plan.docx',
+    });
+    expect(mockUserUpdate).not.toHaveBeenCalled();
+  });
 });

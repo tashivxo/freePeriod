@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { legalConfig } from '@/lib/legal/config';
+import { isOwnedStoragePath } from '@/lib/parse/storage-download';
 
 const UPLOADS_BUCKET = 'uploads';
 
@@ -30,6 +31,16 @@ async function cancelLemonSqueezySubscription(userId: string): Promise<void> {
   }
 }
 
+function addOwnedStoragePath(
+  paths: Set<string>,
+  userId: string,
+  storagePath: string | null | undefined,
+): void {
+  if (storagePath && isOwnedStoragePath(userId, storagePath)) {
+    paths.add(storagePath);
+  }
+}
+
 export async function collectStoragePaths(userId: string): Promise<string[]> {
   const admin = createAdminClient();
   const paths = new Set<string>();
@@ -38,16 +49,14 @@ export async function collectStoragePaths(userId: string): Promise<string[]> {
     .from('uploads')
     .select('storage_path')
     .eq('user_id', userId);
-  uploads?.forEach((row) => paths.add(row.storage_path));
+  uploads?.forEach((row) => addOwnedStoragePath(paths, userId, row.storage_path));
 
   const { data: userRow } = await admin
     .from('users')
     .select('default_template_path')
     .eq('id', userId)
     .maybeSingle();
-  if (userRow?.default_template_path) {
-    paths.add(userRow.default_template_path);
-  }
+  addOwnedStoragePath(paths, userId, userRow?.default_template_path);
 
   const { data: lessons } = await admin
     .from('lesson_plans')
@@ -55,7 +64,7 @@ export async function collectStoragePaths(userId: string): Promise<string[]> {
     .eq('user_id', userId);
 
   lessons?.forEach((lesson) => {
-    if (lesson.template_path) paths.add(lesson.template_path);
+    addOwnedStoragePath(paths, userId, lesson.template_path);
   });
 
   if (lessons?.length) {
@@ -64,7 +73,7 @@ export async function collectStoragePaths(userId: string): Promise<string[]> {
       .from('exports')
       .select('storage_path')
       .in('lesson_id', lessonIds);
-    exports?.forEach((row) => paths.add(row.storage_path));
+    exports?.forEach((row) => addOwnedStoragePath(paths, userId, row.storage_path));
   }
 
   return [...paths];

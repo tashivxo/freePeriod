@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, LessonSection } from '@/types';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
 
 export type PersistLessonInput = {
   userId: string;
@@ -103,6 +104,10 @@ export async function persistLessonPlan(
   supabase: SupabaseClient<Database>,
   input: PersistLessonInput,
 ): Promise<PersistLessonResult> {
+  if (input.templatePath && !isValidDefaultTemplatePath(input.userId, input.templatePath)) {
+    return { ok: false, error: 'Invalid template path' };
+  }
+
   const { data: lessonPlan, error: insertError } = await supabase
     .from('lesson_plans')
     .insert({

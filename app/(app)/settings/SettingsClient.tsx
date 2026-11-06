@@ -28,7 +28,7 @@ import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { cn } from '@/lib/utils';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
-import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
+import { writeUserDefaultTemplate } from '@/lib/lesson/default-template';
 import { ExternalLink, LogOut } from 'lucide-react';
 import { formatGenerationUsage } from '@/lib/generation/quota';
 import type { Plan, User } from '@/types';
@@ -182,17 +182,12 @@ export function SettingsClient({
     setTemplateWriteBusy(path ? 'saving' : 'removing');
     setTemplateError(null);
     try {
-      const payload =
-        path && fileName
-          ? { default_template_path: path, default_template_file_name: fileName }
-          : { default_template_path: null, default_template_file_name: null };
-      if (path && !isValidDefaultTemplatePath(user.id, path)) {
-        setTemplateError(t('settings.saveFailedDefault'));
-        return false;
-      }
-      const supabase = createClient();
-      const { error } = await supabase.from('users').update(payload).eq('id', user.id);
-      if (error) {
+      const result = await writeUserDefaultTemplate(
+        createClient(),
+        user.id,
+        path && fileName ? { path, fileName } : null,
+      );
+      if (!result.ok) {
         setTemplateError(t('settings.saveFailedDefault'));
         return false;
       }
