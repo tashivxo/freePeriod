@@ -687,4 +687,42 @@ describe('GenerateForm', () => {
       screen.getByRole('button', { name: /stop using as default/i }),
     ).toBeInTheDocument();
   });
+
+  it('opens default choice dialog when replacing an attached default via upload', async () => {
+    mockUpload.mockResolvedValue({
+      data: { path: 'user-123/template/replacement.docx' },
+      error: null,
+    });
+
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Default')).toBeInTheDocument();
+
+    const file = new File(['PK'], 'replacement.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    fireEvent.change(screen.getByLabelText(/upload lesson plan template/i), {
+      target: { files: [file] },
+    });
+
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Use this as your default template?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /this lesson only/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /this lesson and every new one/i }),
+    ).toBeInTheDocument();
+  });
 });

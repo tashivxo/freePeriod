@@ -192,18 +192,21 @@ export function GenerateForm({
         (fileName == null || fileName === userDefaultFileName);
       setDefaultPersistSucceeded(stillAccountDefaultHydrate);
       setDefaultError(null);
+      // Replacing an attached default briefly nulls storagePath in useFileUpload,
+      // which fires onRemove and sets defaultSkipped. Treat a new path as a
+      // replacement choice, not a one-lesson skip.
       if (
         userDefaultPath &&
-        !defaultSkipped &&
         path !== userDefaultPath &&
         hadUserDefaultRef.current
       ) {
+        setDefaultSkipped(false);
         setChoicePendingPath(path);
         setChoicePendingName(fileName ?? attachedFileName);
         setChoiceOpen(true);
       }
     },
-    [attachedFileName, defaultSkipped, userDefaultFileName, userDefaultPath],
+    [attachedFileName, userDefaultFileName, userDefaultPath],
   );
 
   const handleTemplateRemove = useCallback(() => {

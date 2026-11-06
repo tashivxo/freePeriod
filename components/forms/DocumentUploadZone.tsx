@@ -77,6 +77,7 @@ export function DocumentUploadZone({
     cleanupStorageOnRemove,
   });
   const hadPathRef = useRef(false);
+  const lastNotifiedPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     onBusyChange?.(isUploading);
@@ -84,13 +85,21 @@ export function DocumentUploadZone({
 
   useEffect(() => {
     if (storagePath) {
+      // Parent callbacks often change identity each render. Only notify once per path
+      // so hydrate/settings defaults do not re-enter a persist loop.
+      if (lastNotifiedPathRef.current === storagePath) {
+        hadPathRef.current = true;
+        return;
+      }
       hadPathRef.current = true;
+      lastNotifiedPathRef.current = storagePath;
       onUploadComplete(storagePath, file?.name);
     } else if (hadPathRef.current) {
       hadPathRef.current = false;
+      lastNotifiedPathRef.current = null;
       onRemove();
     }
-  }, [storagePath, onUploadComplete, onRemove]);
+  }, [storagePath, onUploadComplete, onRemove, file?.name]);
 
   const selectFile = (selected: File | undefined) => {
     if (!selected) return;

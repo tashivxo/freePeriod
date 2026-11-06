@@ -674,6 +674,32 @@ describe('DocumentUploadZone default template props', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it('notifies onUploadComplete once per storage path across parent re-renders', () => {
+    const { rerender } = renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(onUploadComplete).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        onUploadComplete={jest.fn()}
+        onRemove={jest.fn()}
+      />,
+    );
+
+    expect(onUploadComplete).toHaveBeenCalledTimes(1);
+  });
+
   it('omits file size when hydrated file size is zero', () => {
     renderWithLocale(
       <DocumentUploadZone

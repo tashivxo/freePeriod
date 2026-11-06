@@ -207,6 +207,11 @@ export function SettingsClient({
 
   const handleSettingsTemplateComplete = async (path: string, fileName?: string) => {
     const name = fileName ?? path.split('/').pop() ?? 'template';
+    // Hydrate from the existing account default must not re-write or lock the Stop button.
+    if (path === userDefaultPath && name === userDefaultFileName) {
+      setTemplateAttachSeed({ path, fileName: name });
+      return;
+    }
     const ok = await persistTemplateDefault(path, name);
     if (ok) {
       setTemplateAttachSeed({ path, fileName: name });

@@ -932,6 +932,24 @@ describe('SettingsClient — danger zone', () => {
     expect(screen.getByText('Automatically attached when you generate.')).toBeInTheDocument();
   });
 
+  it('keeps Stop using as default enabled when hydrating an existing default', async () => {
+    render(
+      <SettingsClient
+        {...defaultProps}
+        user={{
+          ...baseUser,
+          default_template_path: 'user-123/template/plan.docx',
+          default_template_file_name: 'Plan.docx',
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(screen.queryByText('Saved as default.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /stop using as default/i })).toBeEnabled();
+  });
+
   it('cancel closes the confirmation and returns focus to Delete account', async () => {
     const { user } = render(<SettingsClient {...defaultProps} />);
     await user.click(screen.getByRole('button', { name: /delete account/i }));
