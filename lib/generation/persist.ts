@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, LessonSection } from '@/types';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
 
 export type PersistLessonInput = {
   userId: string;
@@ -35,11 +36,31 @@ export async function linkUploadsToLesson(
     templatePath: string | null;
   },
 ): Promise<PersistLessonResult> {
+  let userDefaultTemplatePath: string | null = null;
+  if (input.templatePath) {
+    const { data: userRow, error: userError } = await supabase
+      .from('users')
+      .select('default_template_path')
+      .eq('id', input.userId)
+      .maybeSingle();
+    if (userError) {
+      console.error('[generate] Failed to load user default template path', {
+        userId: input.userId,
+        error: userError.message,
+      });
+      return { ok: false, error: 'Failed to save lesson plan' };
+    }
+    userDefaultTemplatePath = userRow?.default_template_path ?? null;
+  }
+
   const targets: LinkTarget[] = [];
   if (input.curriculumDocPath) {
     targets.push({ path: input.curriculumDocPath, type: 'curriculum_doc' });
   }
-  if (input.templatePath) {
+  if (
+    input.templatePath &&
+    input.templatePath !== userDefaultTemplatePath
+  ) {
     targets.push({ path: input.templatePath, type: 'template' });
   }
 
@@ -83,6 +104,10 @@ export async function persistLessonPlan(
   supabase: SupabaseClient<Database>,
   input: PersistLessonInput,
 ): Promise<PersistLessonResult> {
+  if (input.templatePath && !isValidDefaultTemplatePath(input.userId, input.templatePath)) {
+    return { ok: false, error: 'Invalid template path' };
+  }
+
   const { data: lessonPlan, error: insertError } = await supabase
     .from('lesson_plans')
     .insert({

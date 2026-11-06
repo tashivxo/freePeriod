@@ -9,6 +9,7 @@ import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
+import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useT } from '@/providers/locale';
 
@@ -68,12 +69,9 @@ export function HistoryClient() {
     fetchLessons();
   }, [fetchLessons]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    const supabase = createClient();
-    await supabase.from('lesson_plans').delete().eq('id', id);
-    setLessons((prev) => prev.filter((l) => l.id !== id));
-    await refreshSubjects();
-  }, [refreshSubjects]);
+  const { handleDelete, handleRename } = useLessonActions(setLessons, {
+    afterDelete: refreshSubjects,
+  });
 
   const hasActiveFilters = Boolean(debouncedSearch || subjectFilter);
 
@@ -144,7 +142,12 @@ export function HistoryClient() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {lessons.map((lesson) => (
-            <LessonPlanCard key={lesson.id} lesson={lesson} onDelete={handleDelete} />
+            <LessonPlanCard
+              key={lesson.id}
+              lesson={lesson}
+              onDelete={handleDelete}
+              onRename={handleRename}
+            />
           ))}
         </div>
       )}

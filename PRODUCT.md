@@ -1,9 +1,5 @@
 # FreePeriod — Product Context
 
-## Register
-
-Brand-led product. The public site should feel warm, teacher-friendly, and trustworthy — not like a generic AI SaaS landing page.
-
 ## Users
 
 Teachers planning lessons under time pressure. They need structured output quickly, with room to edit before exporting.

@@ -287,6 +287,84 @@ describe('useFileUpload', () => {
 
     expect(result.current.error).toEqual({ kind: 'network' });
   });
+
+  it('hydrates initialAttachment as ready without upload or parse', () => {
+    const { result } = renderHook(() =>
+      useFileUpload({
+        uploadType: 'template',
+        accept: '.docx',
+        initialAttachment: {
+          name: 'Plan.docx',
+          storagePath: 'user-123/template/plan-1.docx',
+        },
+      }),
+    );
+
+    expect(result.current.phase).toBe('ready');
+    expect(result.current.file?.name).toBe('Plan.docx');
+    expect(result.current.storagePath).toBe('user-123/template/plan-1.docx');
+    expect(result.current.file?.size).toBe(0);
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockInsertSingle).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not delete storage when cleanupStorageOnRemove is false', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({
+        uploadType: 'template',
+        accept: '.docx',
+        initialAttachment: {
+          name: 'Plan.docx',
+          storagePath: 'user-123/template/plan-1.docx',
+        },
+        cleanupStorageOnRemove: false,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.removeFile();
+    });
+
+    expect(mockRemove).not.toHaveBeenCalled();
+    expect(mockDeleteEq).not.toHaveBeenCalled();
+    expect(result.current.phase).toBe('idle');
+    expect(result.current.storagePath).toBeNull();
+  });
+
+  it('still deletes storage and uploads row by default on remove', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({ uploadType: 'template', accept: '.docx' }),
+    );
+
+    await act(async () => {
+      await result.current.handleFile(templateFile());
+    });
+
+    await act(async () => {
+      await result.current.removeFile();
+    });
+
+    expect(mockRemove).toHaveBeenCalled();
+    expect(mockDeleteEq).toHaveBeenCalled();
+  });
+
+  it('hydrated remove with cleanup false does not throw when uploadId is null', async () => {
+    const { result } = renderHook(() =>
+      useFileUpload({
+        uploadType: 'template',
+        accept: '.docx',
+        initialAttachment: { name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' },
+        cleanupStorageOnRemove: false,
+      }),
+    );
+
+    await expect(
+      act(async () => {
+        await result.current.removeFile();
+      }),
+    ).resolves.not.toThrow();
+  });
 });
 
 describe('slugifyFileStem', () => {

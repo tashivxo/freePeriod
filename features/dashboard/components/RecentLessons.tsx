@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
+import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import {
   LessonPlanCard,
   type LessonPlanCardData,
@@ -17,11 +17,7 @@ type RecentLessonsProps = {
 export function RecentLessons({ initialLessons }: RecentLessonsProps) {
   const [lessons, setLessons] = useState(initialLessons);
 
-  const handleDelete = useCallback(async (id: string) => {
-    const supabase = createClient();
-    await supabase.from('lesson_plans').delete().eq('id', id);
-    setLessons((prev) => prev.filter((l) => l.id !== id));
-  }, []);
+  const { handleDelete, handleRename } = useLessonActions(setLessons);
 
   if (lessons.length === 0) {
     return (
@@ -50,6 +46,7 @@ export function RecentLessons({ initialLessons }: RecentLessonsProps) {
             key={lesson.id}
             lesson={lesson}
             onDelete={handleDelete}
+            onRename={handleRename}
             showObjective
           />
         ))}

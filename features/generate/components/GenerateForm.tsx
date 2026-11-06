@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { AnimatedDropdown } from '@/components/ui/animated-dropdown';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { CurriculumAccuracyNotice } from '@/components/curriculum/CurriculumAccuracyNotice';
 import { GenerationModePicker } from '@/features/generate/components/GenerationModePicker';
+import { DefaultTemplateChoiceDialog } from '@/features/generate/components/DefaultTemplateChoiceDialog';
 import { usePresetField } from '@/lib/forms/usePresetField';
 import { formatDurationMinutes } from '@/lib/i18n/format';
 import { LOCALE_LABELS } from '@/lib/i18n';
@@ -19,6 +20,8 @@ import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULA, CURRICULUM_ITEMS } from '@/lib/utils/curricula';
 import { getCurriculumPack } from '@/lib/curriculum/packs';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
+import { writeUserDefaultTemplate } from '@/lib/lesson/default-template';
+import { createClient } from '@/lib/supabase/client';
 import type { Plan } from '@/types';
 
 const GENERATION_MODE_STORAGE_KEY = 'fp-generation-mode';
@@ -49,6 +52,9 @@ export interface GenerateFormProps {
     curriculum?: string;
   };
   userPlan?: Plan;
+  userId?: string;
+  defaultTemplate?: { path: string; fileName: string } | null;
+  defaultTemplateMissing?: boolean;
   onSubmit?: (data: GenerateFormData) => void | Promise<void>;
   /** Parent-owned busy flag (overlay lifecycle). Prefer over local submit flicker. */
   isGenerating?: boolean;
@@ -77,6 +83,9 @@ function parseCustomDuration(value: string): number | null {
 export function GenerateForm({
   defaults,
   userPlan = 'free',
+  userId,
+  defaultTemplate = null,
+  defaultTemplateMissing = false,
   onSubmit,
   isGenerating = false,
 }: GenerateFormProps) {
@@ -90,7 +99,35 @@ export function GenerateForm({
   const [customDuration, setCustomDuration] = useState('');
   const [teacherPrompt, setTeacherPrompt] = useState('');
   const [curriculumDocPath, setCurriculumDocPath] = useState<string | null>(null);
-  const [templatePath, setTemplatePath] = useState<string | null>(null);
+  const [templatePath, setTemplatePath] = useState<string | null>(
+    () => defaultTemplate?.path ?? null,
+  );
+  const [attachedFileName, setAttachedFileName] = useState<string | null>(
+    () => defaultTemplate?.fileName ?? null,
+  );
+  const [userDefaultPath, setUserDefaultPath] = useState<string | null>(
+    () => defaultTemplate?.path ?? null,
+  );
+  const [userDefaultFileName, setUserDefaultFileName] = useState<string | null>(
+    () => defaultTemplate?.fileName ?? null,
+  );
+  const [defaultSkipped, setDefaultSkipped] = useState(false);
+  const [templateAttachSeed, setTemplateAttachSeed] = useState<{
+    path: string;
+    fileName: string;
+  } | null>(() => (defaultTemplate ? defaultTemplate : null));
+  const [choiceOpen, setChoiceOpen] = useState(false);
+  const [choicePendingPath, setChoicePendingPath] = useState<string | null>(null);
+  const [choicePendingName, setChoicePendingName] = useState<string | null>(null);
+  const [defaultWriteBusy, setDefaultWriteBusy] = useState<'idle' | 'saving' | 'removing'>('idle');
+  const [defaultStatus, setDefaultStatus] = useState<string | null>(null);
+  const [defaultError, setDefaultError] = useState<string | null>(null);
+  const [defaultPersistSucceeded, setDefaultPersistSucceeded] = useState(
+    () => Boolean(defaultTemplate?.path),
+  );
+  const undoSnapshotRef = useRef<{ path: string; fileName: string } | null>(null);
+  const defaultWriteInFlightRef = useRef(false);
+  const hadUserDefaultRef = useRef(Boolean(defaultTemplate?.path));
   const [curriculumUploading, setCurriculumUploading] = useState(false);
   const [templateUploading, setTemplateUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -141,12 +178,150 @@ export function GenerateForm({
   const handleCurriculumRemove = useCallback(() => {
     setCurriculumDocPath(null);
   }, []);
-  const handleTemplateComplete = useCallback((path: string) => {
-    setTemplatePath(path);
-  }, []);
+
+  const handleTemplateComplete = useCallback(
+    (path: string, fileName?: string) => {
+      setTemplatePath(path);
+      if (fileName) {
+        setAttachedFileName(fileName);
+      }
+      setTemplateAttachSeed(null);
+      const stillAccountDefaultHydrate =
+        Boolean(userDefaultPath) &&
+        path === userDefaultPath &&
+        (fileName == null || fileName === userDefaultFileName);
+      setDefaultPersistSucceeded(stillAccountDefaultHydrate);
+      setDefaultError(null);
+      // Replacing an attached default briefly nulls storagePath in useFileUpload,
+      // which fires onRemove and sets defaultSkipped. Treat a new path as a
+      // replacement choice, not a one-lesson skip.
+      if (
+        userDefaultPath &&
+        path !== userDefaultPath &&
+        hadUserDefaultRef.current
+      ) {
+        setDefaultSkipped(false);
+        setChoicePendingPath(path);
+        setChoicePendingName(fileName ?? attachedFileName);
+        setChoiceOpen(true);
+      }
+    },
+    [attachedFileName, userDefaultFileName, userDefaultPath],
+  );
+
   const handleTemplateRemove = useCallback(() => {
+    if (userDefaultPath && templatePath === userDefaultPath) {
+      setDefaultSkipped(true);
+    }
     setTemplatePath(null);
+    setAttachedFileName(null);
+    setTemplateAttachSeed(null);
+    setDefaultPersistSucceeded(false);
+  }, [templatePath, userDefaultPath]);
+
+  const persistUserDefault = useCallback(
+    async (path: string | null, fileName: string | null) => {
+      if (!userId || defaultWriteInFlightRef.current) return false;
+      defaultWriteInFlightRef.current = true;
+      setDefaultWriteBusy(path ? 'saving' : 'removing');
+      setDefaultError(null);
+      setDefaultPersistSucceeded(false);
+      try {
+        const result = await writeUserDefaultTemplate(
+          createClient(),
+          userId,
+          path && fileName ? { path, fileName } : null,
+        );
+        if (!result.ok) {
+          setDefaultError(t('generate.upload.saveFailed'));
+          return false;
+        }
+        setUserDefaultPath(path);
+        setUserDefaultFileName(fileName);
+        hadUserDefaultRef.current = Boolean(path);
+        setDefaultPersistSucceeded(true);
+        return true;
+      } finally {
+        defaultWriteInFlightRef.current = false;
+        setDefaultWriteBusy('idle');
+      }
+    },
+    [t, userId],
+  );
+
+  const handleUseAsDefault = useCallback(async () => {
+    if (!templatePath || !attachedFileName) return;
+    const ok = await persistUserDefault(templatePath, attachedFileName);
+    if (ok) {
+      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+    }
+  }, [attachedFileName, persistUserDefault, t, templatePath]);
+
+  const handleStopUsingDefault = useCallback(async () => {
+    if (!userDefaultPath || !userDefaultFileName) return;
+    undoSnapshotRef.current = { path: userDefaultPath, fileName: userDefaultFileName };
+    const ok = await persistUserDefault(null, null);
+    if (ok) {
+      setDefaultStatus(t('generate.upload.defaultRemoved'));
+    }
+  }, [persistUserDefault, t, userDefaultFileName, userDefaultPath]);
+
+  const handleUndoDefault = useCallback(async () => {
+    const snap = undoSnapshotRef.current;
+    if (!snap) return;
+    const ok = await persistUserDefault(snap.path, snap.fileName);
+    if (ok) {
+      undoSnapshotRef.current = null;
+      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+    }
+  }, [persistUserDefault, t]);
+
+  const handleRestoreDefault = useCallback(() => {
+    if (!userDefaultPath || !userDefaultFileName) return;
+    setTemplatePath(userDefaultPath);
+    setAttachedFileName(userDefaultFileName);
+    setDefaultSkipped(false);
+    setDefaultPersistSucceeded(true);
+    setTemplateAttachSeed({ path: userDefaultPath, fileName: userDefaultFileName });
+  }, [userDefaultFileName, userDefaultPath]);
+
+  const handleChoiceThisLessonOnly = useCallback(() => {
+    setChoiceOpen(false);
+    setChoicePendingPath(null);
+    setChoicePendingName(null);
   }, []);
+
+  const handleChoiceEveryNew = useCallback(async () => {
+    if (!choicePendingPath || !choicePendingName) return;
+    const ok = await persistUserDefault(choicePendingPath, choicePendingName);
+    if (ok) {
+      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+      setChoiceOpen(false);
+      setChoicePendingPath(null);
+      setChoicePendingName(null);
+    }
+  }, [choicePendingName, choicePendingPath, persistUserDefault, t]);
+
+  const isAccountDefaultAttached =
+    Boolean(userDefaultPath) &&
+    templatePath === userDefaultPath &&
+    !defaultSkipped &&
+    defaultPersistSucceeded;
+  const showOptIn =
+    Boolean(templatePath) &&
+    !userDefaultPath &&
+    !defaultSkipped;
+  const templateInitialAttachment = templateAttachSeed
+    ? { name: templateAttachSeed.fileName, storagePath: templateAttachSeed.path }
+    : undefined;
+
+  useEffect(() => {
+    if (defaultTemplate?.path) {
+      setTemplatePath(defaultTemplate.path);
+      setAttachedFileName(defaultTemplate.fileName);
+      setDefaultPersistSucceeded(true);
+    }
+  }, [defaultTemplate?.fileName, defaultTemplate?.path]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,9 +550,96 @@ export function GenerateForm({
         <DocumentUploadZone
           accept={TEMPLATE_ACCEPT}
           uploadType="template"
+          key="fp-generate-template-upload"
+          initialAttachment={templateInitialAttachment}
+          isDefaultAttachment={isAccountDefaultAttached}
+          cleanupStorageOnRemove={!isAccountDefaultAttached}
+          hideDropZoneWhenReady={isAccountDefaultAttached}
+          skipFileCardMotion={Boolean(templateAttachSeed)}
           onUploadComplete={handleTemplateComplete}
           onRemove={handleTemplateRemove}
           onBusyChange={setTemplateUploading}
+        />
+        {defaultTemplateMissing ? (
+          <p role="status" className="text-sm text-text-secondary">
+            {t('generate.upload.missingFile')}
+          </p>
+        ) : null}
+        {defaultSkipped && userDefaultPath ? (
+          <div className="space-y-2">
+            <p role="status" className="text-sm text-text-secondary">
+              {t('generate.upload.skippedForThisLesson')}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 px-0 text-coral sm:min-h-10"
+              onClick={handleRestoreDefault}
+            >
+              {t('generate.upload.useDefault')}
+            </Button>
+          </div>
+        ) : null}
+        {isAccountDefaultAttached ? (
+          <p role="status" className="text-sm text-text-secondary">
+            {defaultStatus ?? t('generate.upload.attachedForEveryNew')}
+          </p>
+        ) : null}
+        {isAccountDefaultAttached ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 px-0 text-coral sm:min-h-10"
+            disabled={defaultWriteBusy !== 'idle'}
+            onClick={() => void handleStopUsingDefault()}
+          >
+            {defaultWriteBusy === 'removing'
+              ? t('generate.upload.removingDefault')
+              : t('generate.upload.stopUsingAsDefault')}
+          </Button>
+        ) : null}
+        {defaultStatus === t('generate.upload.defaultRemoved') && templatePath ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p role="status" className="text-sm text-text-secondary">
+              {t('generate.upload.defaultRemoved')}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 px-0 text-coral sm:min-h-10"
+              disabled={defaultWriteBusy !== 'idle'}
+              onClick={() => void handleUndoDefault()}
+            >
+              {defaultWriteBusy === 'saving'
+                ? t('generate.upload.savingDefault')
+                : t('generate.upload.undo')}
+            </Button>
+          </div>
+        ) : null}
+        {showOptIn ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11 px-0 text-coral sm:min-h-10"
+            disabled={defaultWriteBusy !== 'idle'}
+            onClick={() => void handleUseAsDefault()}
+          >
+            {defaultWriteBusy === 'saving'
+              ? t('generate.upload.savingDefault')
+              : t('generate.upload.useAsDefault')}
+          </Button>
+        ) : null}
+        {defaultError ? (
+          <p role="status" className="text-sm text-error">
+            {defaultError}
+          </p>
+        ) : null}
+        <DefaultTemplateChoiceDialog
+          open={choiceOpen}
+          onOpenChange={setChoiceOpen}
+          onThisLessonOnly={handleChoiceThisLessonOnly}
+          onEveryNewLesson={handleChoiceEveryNew}
+          everyNewLoading={defaultWriteBusy === 'saving'}
         />
 
         {/* Generation mode */}
