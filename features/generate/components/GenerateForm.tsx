@@ -186,7 +186,11 @@ export function GenerateForm({
         setAttachedFileName(fileName);
       }
       setTemplateAttachSeed(null);
-      setDefaultPersistSucceeded(false);
+      const stillAccountDefaultHydrate =
+        Boolean(userDefaultPath) &&
+        path === userDefaultPath &&
+        (fileName == null || fileName === userDefaultFileName);
+      setDefaultPersistSucceeded(stillAccountDefaultHydrate);
       setDefaultError(null);
       if (
         userDefaultPath &&
@@ -199,7 +203,7 @@ export function GenerateForm({
         setChoiceOpen(true);
       }
     },
-    [attachedFileName, defaultSkipped, userDefaultPath],
+    [attachedFileName, defaultSkipped, userDefaultFileName, userDefaultPath],
   );
 
   const handleTemplateRemove = useCallback(() => {
@@ -279,6 +283,7 @@ export function GenerateForm({
     setTemplatePath(userDefaultPath);
     setAttachedFileName(userDefaultFileName);
     setDefaultSkipped(false);
+    setDefaultPersistSucceeded(true);
     setTemplateAttachSeed({ path: userDefaultPath, fileName: userDefaultFileName });
   }, [userDefaultFileName, userDefaultPath]);
 

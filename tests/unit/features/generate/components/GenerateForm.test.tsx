@@ -663,4 +663,28 @@ describe('GenerateForm', () => {
     expect(screen.getByText('Skipped for this lesson.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /use default/i })).toBeInTheDocument();
   });
+
+  it('after skip then Use default restore, shows Default chip and Stop using as default', async () => {
+    const { user } = render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /remove plan\.docx/i }));
+    await user.click(screen.getByRole('button', { name: /use default/i }));
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /stop using as default/i }),
+    ).toBeInTheDocument();
+  });
 });
