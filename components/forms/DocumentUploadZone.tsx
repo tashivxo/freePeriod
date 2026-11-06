@@ -26,10 +26,18 @@ import type { UploadType } from '@/types';
 interface DocumentUploadZoneProps {
   accept: string;
   uploadType: UploadType;
-  onUploadComplete: (storagePath: string) => void;
+  onUploadComplete: (storagePath: string, fileName?: string) => void;
   onRemove: () => void;
   onBusyChange?: (busy: boolean) => void;
   maxSizeBytes?: number;
+  initialAttachment?: { name: string; storagePath: string };
+  cleanupStorageOnRemove?: boolean;
+  showRemoveButton?: boolean;
+  isDefaultAttachment?: boolean;
+  skipFileCardMotion?: boolean;
+  defaultChipLabel?: string;
+  sectionHeading?: string;
+  hideDropZoneWhenReady?: boolean;
 }
 
 export function DocumentUploadZone({
@@ -39,6 +47,14 @@ export function DocumentUploadZone({
   onRemove,
   onBusyChange,
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
+  initialAttachment,
+  cleanupStorageOnRemove = true,
+  showRemoveButton = true,
+  isDefaultAttachment = false,
+  skipFileCardMotion: _skipFileCardMotion = false,
+  defaultChipLabel,
+  sectionHeading: sectionHeadingOverride,
+  hideDropZoneWhenReady = false,
 }: DocumentUploadZoneProps) {
   const t = useT();
   const { locale } = useLocale();
@@ -46,9 +62,10 @@ export function DocumentUploadZone({
   const helpId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sectionHeading =
-    uploadType === 'curriculum_doc'
+    sectionHeadingOverride ??
+    (uploadType === 'curriculum_doc'
       ? t('generate.upload.curriculumHeading')
-      : t('generate.upload.templateHeading');
+      : t('generate.upload.templateHeading'));
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
 
@@ -56,8 +73,11 @@ export function DocumentUploadZone({
     uploadType,
     accept,
     maxSizeBytes,
+    initialAttachment,
+    cleanupStorageOnRemove,
   });
   const hadPathRef = useRef(false);
+  const lastNotifiedPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     onBusyChange?.(isUploading);
@@ -65,13 +85,21 @@ export function DocumentUploadZone({
 
   useEffect(() => {
     if (storagePath) {
+      // Parent callbacks often change identity each render. Only notify once per path
+      // so hydrate/settings defaults do not re-enter a persist loop.
+      if (lastNotifiedPathRef.current === storagePath) {
+        hadPathRef.current = true;
+        return;
+      }
       hadPathRef.current = true;
-      onUploadComplete(storagePath);
+      lastNotifiedPathRef.current = storagePath;
+      onUploadComplete(storagePath, file?.name);
     } else if (hadPathRef.current) {
       hadPathRef.current = false;
+      lastNotifiedPathRef.current = null;
       onRemove();
     }
-  }, [storagePath, onUploadComplete, onRemove]);
+  }, [storagePath, onUploadComplete, onRemove, file?.name]);
 
   const selectFile = (selected: File | undefined) => {
     if (!selected) return;
@@ -82,6 +110,9 @@ export function DocumentUploadZone({
     await removeFile();
     onRemove();
   };
+
+  const showDropZone = !(hideDropZoneWhenReady && file && phase === 'ready' && !error);
+  const showFileSize = file && file.size > 0;
 
   const handleDragEnter = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
@@ -173,6 +204,7 @@ export function DocumentUploadZone({
           UPLOAD_DRAG_FOCUS_CLASS,
           isDragging ? UPLOAD_DRAG_ACTIVE_BORDER_CLASS : 'border-dashed',
           isUploading && 'pointer-events-none opacity-60',
+          !showDropZone && 'hidden',
         )}
         style={{
           borderWidth: '2px',
@@ -253,19 +285,26 @@ export function DocumentUploadZone({
               {ext}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
+              <div className="flex flex-wrap items-baseline gap-2">
                 <span
                   className="truncate text-sm"
                   style={{ color: 'var(--color-text-primary)' }}
                 >
                   {file.name}
                 </span>
-                <span
-                  className="shrink-0 text-xs"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  {formatFileSize(file.size, locale)}
-                </span>
+                {isDefaultAttachment ? (
+                  <span className="rounded-md text-[11px] font-semibold uppercase tracking-[0.06em] text-coral">
+                    {defaultChipLabel ?? t('generate.upload.defaultChip')}
+                  </span>
+                ) : null}
+                {showFileSize ? (
+                  <span
+                    className="shrink-0 text-xs"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {formatFileSize(file.size, locale)}
+                  </span>
+                ) : null}
               </div>
               {showProgress ? (
                 <div
@@ -294,18 +333,20 @@ export function DocumentUploadZone({
                 {t('generate.upload.retry')}
               </button>
             ) : null}
-            <button
-              type="button"
-              aria-label={t('generate.upload.removeAria', { name: file.name })}
-              disabled={isUploading}
-              onClick={() => {
-                void handleRemove();
-              }}
-              className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-70 focus:outline focus:outline-2 focus:outline-offset-2 disabled:pointer-events-none disabled:opacity-50"
-              style={{ outlineColor: 'var(--color-primary)' }}
-            >
-              <X className="h-4 w-4" style={{ color: 'var(--color-text-secondary)' }} />
-            </button>
+            {showRemoveButton ? (
+              <button
+                type="button"
+                aria-label={t('generate.upload.removeAria', { name: file.name })}
+                disabled={isUploading}
+                onClick={() => {
+                  void handleRemove();
+                }}
+                className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-70 focus:outline focus:outline-2 focus:outline-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                style={{ outlineColor: 'var(--color-primary)' }}
+              >
+                <X className="h-4 w-4" style={{ color: 'var(--color-text-secondary)' }} />
+              </button>
+            ) : null}
           </li>
         </ul>
       )}
@@ -325,7 +366,7 @@ export function DocumentUploadZone({
         </div>
       )}
 
-      {phase === 'ready' && !error && (
+      {phase === 'ready' && !error && !isDefaultAttachment && (
         <p role="status" className="text-sm text-success">
           {t('generate.upload.ready')}
         </p>

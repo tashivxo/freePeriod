@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { isNetworkError } from '@/lib/errors/network';
 import { requiresExtractedText } from '@/lib/parse/types';
@@ -19,6 +19,8 @@ interface UseFileUploadProps {
   onParsed?: (uploadId: string, text: string) => void;
   accept?: string;
   maxSizeBytes?: number;
+  initialAttachment?: { name: string; storagePath: string };
+  cleanupStorageOnRemove?: boolean;
 }
 
 interface UseFileUploadReturn {
@@ -88,16 +90,45 @@ export function useFileUpload({
   onParsed,
   accept = '',
   maxSizeBytes = DEFAULT_MAX_UPLOAD_BYTES,
+  initialAttachment,
+  cleanupStorageOnRemove = true,
 }: UseFileUploadProps): UseFileUploadReturn {
-  const [file, setFile] = useState<File | null>(null);
-  const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(() =>
+    initialAttachment ? new File([], initialAttachment.name) : null,
+  );
+  const [storagePath, setStoragePath] = useState<string | null>(
+    () => initialAttachment?.storagePath ?? null,
+  );
   const [uploadId, setUploadId] = useState<string | null>(null);
   const [parsedText, setParsedText] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [phase, setPhase] = useState<UploadPhase>('idle');
+  const [phase, setPhase] = useState<UploadPhase>(() =>
+    initialAttachment ? 'ready' : 'idle',
+  );
   const [error, setError] = useState<UploadFailure | null>(null);
   const inFlightRef = useRef(false);
   const storedAttemptRef = useRef<StoredAttempt | null>(null);
+  const prevInitialAttachmentRef = useRef<typeof initialAttachment>(undefined);
+
+  useEffect(() => {
+    const prev = prevInitialAttachmentRef.current;
+    const next = initialAttachment;
+    const prevKey =
+      prev?.storagePath != null ? `${prev.storagePath}\0${prev.name}` : null;
+    const nextKey =
+      next?.storagePath != null ? `${next.storagePath}\0${next.name}` : null;
+    const unchanged = prevKey === nextKey;
+    prevInitialAttachmentRef.current = next;
+    if (unchanged) return;
+    if (!next || !next.storagePath) return;
+    if (inFlightRef.current) return;
+    setFile(new File([], next.name));
+    setStoragePath(next.storagePath);
+    setUploadId(null);
+    setParsedText(null);
+    setPhase('ready');
+    setError(null);
+  }, [initialAttachment]);
 
   const rejectFile = (failure: UploadFailure) => {
     inFlightRef.current = false;
@@ -249,7 +280,7 @@ export function useFileUpload({
     const idToRemove = uploadId ?? storedAttemptRef.current?.uploadId;
     storedAttemptRef.current = null;
 
-    if (!pathToRemove || !idToRemove) {
+    if (!cleanupStorageOnRemove || !pathToRemove || !idToRemove) {
       setFile(null);
       setStoragePath(null);
       setUploadId(null);

@@ -755,4 +755,53 @@ describe('sign-up terms agreement copy', () => {
   });
 });
 
+const DEFAULT_TEMPLATE_EN = {
+  useAsDefault: 'Use as my default',
+  attachedForEveryNew: 'Attached for every new lesson.',
+  defaultChip: 'Default',
+  stopUsingAsDefault: 'Stop using as default',
+  defaultRemoved: 'Default removed.',
+  undo: 'Undo',
+  saveFailed: 'Could not save your default. Try again.',
+  choiceTitle: 'Use this as your default template?',
+  choiceThisLesson: 'This lesson only',
+  choiceEveryNew: 'This lesson and every new one',
+  missingFile: 'That file is gone. Upload it again to keep using a default.',
+  skippedForThisLesson: 'Skipped for this lesson.',
+  useDefault: 'Use default',
+  savingDefault: 'Saving default…',
+  removingDefault: 'Removing default…',
+};
+
+describe('default lesson plan template copy', () => {
+  it.each(LOCALES)('includes generate.upload default-template keys for %s', (locale) => {
+    const upload = getMessages(locale).generate.upload as Record<string, string>;
+    for (const key of Object.keys(DEFAULT_TEMPLATE_EN)) {
+      expect(upload[key]?.length).toBeGreaterThan(0);
+    }
+    for (const value of Object.values(upload)) {
+      expect(value).not.toContain('\u2014');
+      expect(value).not.toContain('\u2013');
+      expect(value).not.toContain('...');
+    }
+  });
+
+  it('matches English source strings exactly', () => {
+    const upload = getMessages('en').generate.upload as Record<string, string>;
+    for (const [key, value] of Object.entries(DEFAULT_TEMPLATE_EN)) {
+      expect(upload[key]).toBe(value);
+    }
+  });
+
+  it('uses real translations in ar and zh-Hans for skip/restore/pending', () => {
+    const en = getMessages('en').generate.upload;
+    const ar = getMessages('ar').generate.upload;
+    const zh = getMessages('zh-Hans').generate.upload;
+    expect(ar.skippedForThisLesson).not.toBe(en.skippedForThisLesson);
+    expect(ar.useDefault).not.toBe(en.useDefault);
+    expect(zh.savingDefault).not.toBe(en.savingDefault);
+    expect(ar.skippedForThisLesson).toMatch(/[\u0600-\u06FF]/);
+    expect(zh.useDefault).toMatch(/[\u4e00-\u9fff]/);
+  });
+});
 

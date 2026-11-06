@@ -7,6 +7,8 @@ import { resolveGenerationMode } from '@/lib/generation/quota';
 import { mapGenerationError } from '@/lib/generation/map-error';
 import { persistLessonPlan } from '@/lib/generation/persist';
 import { encodeSSE } from '@/lib/generation/sse';
+import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
+import { isFillableTemplatePath } from '@/lib/lesson/template-path';
 import { LESSON_SECTION_KEYS } from '@/lib/lesson/sections';
 import type { GenerateRequest, GenerateStreamEvent, GenerationLocale } from '@/types';
 import { GENERATION_LOCALES } from '@/types';
@@ -62,6 +64,19 @@ export async function POST(request: NextRequest) {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  if (templatePath) {
+    if (
+      typeof templatePath !== 'string' ||
+      !isValidDefaultTemplatePath(user.id, templatePath) ||
+      !isFillableTemplatePath(templatePath)
+    ) {
+      return new Response(JSON.stringify({ error: 'Invalid template path' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   const generationMode = resolveGenerationMode(access.userPlan, requestedMode);
