@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -26,6 +26,9 @@ import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { cn } from '@/lib/utils';
+import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
+import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
+import { isValidDefaultTemplatePath } from '@/lib/lesson/default-template';
 import { ExternalLink, LogOut } from 'lucide-react';
 import { formatGenerationUsage } from '@/lib/generation/quota';
 import type { Plan, User } from '@/types';
@@ -88,6 +91,7 @@ export type SettingsClientProps = {
   generationLimit?: number | null;
   trialDays?: number | null;
   manageSubscriptionUrl?: string | null;
+  defaultTemplateMissing?: boolean;
 };
 
 export function SettingsClient({
@@ -98,6 +102,7 @@ export function SettingsClient({
   generationLimit,
   trialDays = null,
   manageSubscriptionUrl = null,
+  defaultTemplateMissing = false,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
   const curriculumField = usePresetField(user.default_curriculum, CURRICULA_PRESETS);
@@ -113,6 +118,27 @@ export function SettingsClient({
   });
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus | null>(null);
+  const [userDefaultPath, setUserDefaultPath] = useState<string | null>(
+    () => user.default_template_path,
+  );
+  const [userDefaultFileName, setUserDefaultFileName] = useState<string | null>(
+    () => user.default_template_file_name,
+  );
+  const [templateAttachSeed, setTemplateAttachSeed] = useState<{
+    path: string;
+    fileName: string;
+  } | null>(() =>
+    user.default_template_path && user.default_template_file_name
+      ? { path: user.default_template_path, fileName: user.default_template_file_name }
+      : null,
+  );
+  const [templateStatus, setTemplateStatus] = useState<string | null>(null);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+  const [templateWriteBusy, setTemplateWriteBusy] = useState<'idle' | 'saving' | 'removing'>(
+    'idle',
+  );
+  const templateUndoRef = useRef<{ path: string; fileName: string } | null>(null);
+  const templateWriteInFlightRef = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -149,6 +175,76 @@ export function SettingsClient({
     const timer = window.setTimeout(() => setSaveStatus(null), 4000);
     return () => window.clearTimeout(timer);
   }, [saveStatus]);
+
+  const persistTemplateDefault = async (path: string | null, fileName: string | null) => {
+    if (templateWriteInFlightRef.current) return false;
+    templateWriteInFlightRef.current = true;
+    setTemplateWriteBusy(path ? 'saving' : 'removing');
+    setTemplateError(null);
+    try {
+      const payload =
+        path && fileName
+          ? { default_template_path: path, default_template_file_name: fileName }
+          : { default_template_path: null, default_template_file_name: null };
+      if (path && !isValidDefaultTemplatePath(user.id, path)) {
+        setTemplateError(t('settings.saveFailedDefault'));
+        return false;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.from('users').update(payload).eq('id', user.id);
+      if (error) {
+        setTemplateError(t('settings.saveFailedDefault'));
+        return false;
+      }
+      setUserDefaultPath(path);
+      setUserDefaultFileName(fileName);
+      return true;
+    } finally {
+      templateWriteInFlightRef.current = false;
+      setTemplateWriteBusy('idle');
+    }
+  };
+
+  const handleSettingsTemplateComplete = async (path: string, fileName?: string) => {
+    const name = fileName ?? path.split('/').pop() ?? 'template';
+    // Hydrate from the existing account default must not re-write or lock the Stop button.
+    if (path === userDefaultPath && name === userDefaultFileName) {
+      setTemplateAttachSeed({ path, fileName: name });
+      return;
+    }
+    const ok = await persistTemplateDefault(path, name);
+    if (ok) {
+      setTemplateAttachSeed({ path, fileName: name });
+      setTemplateStatus(t('settings.defaultTemplateSaved'));
+    }
+  };
+
+  const handleSettingsTemplateRemove = () => {
+    if (!userDefaultPath) {
+      setTemplateAttachSeed(null);
+    }
+  };
+
+  const handleStopTemplateDefault = async () => {
+    if (!userDefaultPath || !userDefaultFileName) return;
+    templateUndoRef.current = { path: userDefaultPath, fileName: userDefaultFileName };
+    const ok = await persistTemplateDefault(null, null);
+    if (ok) {
+      setTemplateAttachSeed(null);
+      setTemplateStatus(t('settings.defaultRemoved'));
+    }
+  };
+
+  const handleUndoTemplateDefault = async () => {
+    const snap = templateUndoRef.current;
+    if (!snap) return;
+    const ok = await persistTemplateDefault(snap.path, snap.fileName);
+    if (ok) {
+      setTemplateAttachSeed(snap);
+      templateUndoRef.current = null;
+      setTemplateStatus(t('settings.attachedForEveryNew'));
+    }
+  };
 
   const handleLocaleChange = async (nextLocale: Locale) => {
     try {
@@ -371,6 +467,79 @@ export function SettingsClient({
                 />
               </div>
             )}
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm font-body font-medium text-text-secondary">
+              {t('settings.defaultTemplateHeading')}
+            </p>
+            {!templateAttachSeed ? (
+              <p className="mb-2 text-xs text-text-secondary">{t('settings.defaultTemplateHelper')}</p>
+            ) : null}
+            {defaultTemplateMissing ? (
+              <p role="status" className="mb-2 text-sm text-text-secondary">
+                {t('settings.missingDefaultFile')}
+              </p>
+            ) : null}
+            <DocumentUploadZone
+              key={templateAttachSeed?.path ?? 'empty-template'}
+              accept={FILLABLE_TEMPLATE_ACCEPT}
+              uploadType="template"
+              sectionHeading={t('settings.defaultTemplateHeading')}
+              initialAttachment={
+                templateAttachSeed
+                  ? { name: templateAttachSeed.fileName, storagePath: templateAttachSeed.path }
+                  : undefined
+              }
+              isDefaultAttachment={Boolean(templateAttachSeed && userDefaultPath)}
+              defaultChipLabel={t('settings.defaultTemplateChip')}
+              cleanupStorageOnRemove={false}
+              showRemoveButton={false}
+              hideDropZoneWhenReady={Boolean(templateAttachSeed)}
+              onUploadComplete={(path, fileName) => void handleSettingsTemplateComplete(path, fileName)}
+              onRemove={handleSettingsTemplateRemove}
+            />
+            {templateAttachSeed && userDefaultPath ? (
+              <p role="status" className="mt-2 text-sm text-text-secondary">
+                {templateStatus ?? t('settings.attachedForEveryNew')}
+              </p>
+            ) : null}
+            {templateAttachSeed && userDefaultPath ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-2 min-h-11 px-0 text-coral sm:min-h-10"
+                disabled={templateWriteBusy !== 'idle'}
+                onClick={() => void handleStopTemplateDefault()}
+              >
+                {templateWriteBusy === 'removing'
+                  ? t('settings.removingDefault')
+                  : t('settings.stopUsingAsDefault')}
+              </Button>
+            ) : null}
+            {templateStatus === t('settings.defaultRemoved') ? (
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <p role="status" className="text-sm text-text-secondary">
+                  {t('settings.defaultRemoved')}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 px-0 text-coral sm:min-h-10"
+                  disabled={templateWriteBusy !== 'idle'}
+                  onClick={() => void handleUndoTemplateDefault()}
+                >
+                  {templateWriteBusy === 'saving'
+                    ? t('settings.savingDefault')
+                    : t('settings.undo')}
+                </Button>
+              </div>
+            ) : null}
+            {templateError ? (
+              <p role="status" className="mt-2 text-sm text-error">
+                {templateError}
+              </p>
+            ) : null}
           </div>
 
           {/* Country — teaching default, saved with Save Settings */}

@@ -12,6 +12,7 @@ const mockSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-123' }, err
 const mockSelectChain = jest.fn(() => ({ single: mockSingle }));
 const mockDbInsert = jest.fn(() => ({ select: mockSelectChain }));
 const mockFromDb = jest.fn(() => ({ insert: mockDbInsert }));
+const mockUsersUpdateEq = jest.fn().mockResolvedValue({ error: null });
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(() => ({
@@ -21,7 +22,16 @@ jest.mock('@/lib/supabase/client', () => ({
         error: null,
       }),
     },
-    from: mockFromDb,
+    from: jest.fn((table: string) => {
+      if (table === 'users') {
+        return {
+          update: () => ({
+            eq: mockUsersUpdateEq,
+          }),
+        };
+      }
+      return mockFromDb();
+    }),
     storage: {
       from: jest.fn(() => ({
         upload: mockUpload,
@@ -310,6 +320,31 @@ describe('GenerateForm', () => {
     expect(global.fetch).toHaveBeenCalled();
   });
 
+  it('after failed opt-in default save, keeps template filename visible and opt-in enabled', async () => {
+    mockUsersUpdateEq.mockResolvedValueOnce({ error: { message: 'db error' } });
+
+    const { user } = render(<GenerateForm onSubmit={onSubmit} userId="user-123" />);
+    const file = new File(['%PDF-1.7'], 'my-default-candidate.pdf', { type: 'application/pdf' });
+
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+
+    await waitFor(() => {
+      expect(screen.getByText('my-default-candidate.pdf')).toBeInTheDocument();
+    });
+
+    const optIn = await screen.findByRole('button', { name: /use as my default/i });
+    expect(optIn).toBeEnabled();
+
+    await user.click(optIn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/could not save your default/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('my-default-candidate.pdf')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use as my default/i })).toBeEnabled();
+  });
+
   it('still rejects a plain-text template immediately without reading or waiting for upload', async () => {
     render(<GenerateForm onSubmit={onSubmit} />);
     const file = new File(['hello'], 'notes.txt', { type: 'text/plain' });
@@ -592,5 +627,102 @@ describe('GenerateForm', () => {
     );
 
     expect(screen.getByRole('button', { name: /generating/i })).toBeDisabled();
+  });
+
+  it('hydrates a default template without upload or ready copy', () => {
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('skips default for this lesson without deleting storage or updating users', async () => {
+    const { user } = render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /remove plan\.docx/i }));
+
+    expect(mockRemove).not.toHaveBeenCalled();
+    expect(mockUsersUpdateEq).not.toHaveBeenCalled();
+    expect(screen.getByText('Skipped for this lesson.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use default/i })).toBeInTheDocument();
+  });
+
+  it('after skip then Use default restore, shows Default chip and Stop using as default', async () => {
+    const { user } = render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /remove plan\.docx/i }));
+    await user.click(screen.getByRole('button', { name: /use default/i }));
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /stop using as default/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens default choice dialog when replacing an attached default via upload', async () => {
+    mockUpload.mockResolvedValue({
+      data: { path: 'user-123/template/replacement.docx' },
+      error: null,
+    });
+
+    render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    expect(screen.getByText('Default')).toBeInTheDocument();
+
+    const file = new File(['PK'], 'replacement.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    fireEvent.change(screen.getByLabelText(/upload lesson plan template/i), {
+      target: { files: [file] },
+    });
+
+    expect(
+      await screen.findByRole('dialog', {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Use this as your default template?'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /this lesson only/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /this lesson and every new one/i }),
+    ).toBeInTheDocument();
   });
 });

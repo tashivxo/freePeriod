@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSubscription, lemonSqueezySetup } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@/lib/supabase/server';
+import { loadDefaultTemplateForUser } from '@/lib/lesson/load-default-template';
 import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { getMessages } from '@/lib/i18n';
 import { readLocaleCookie } from '@/lib/i18n/server';
@@ -100,15 +101,24 @@ async function SettingsContent() {
     subscription?.ls_subscription_id ?? null,
   );
 
+  const loadedDefault = await loadDefaultTemplateForUser(supabase, authUser.id);
+  const defaultTemplateMissing = loadedDefault.status === 'missing';
+  let settingsUser = user;
+  if (defaultTemplateMissing) {
+    const { data: refreshed } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+    if (refreshed) settingsUser = refreshed as User;
+  }
+
   return (
     <SettingsClient
-      user={user}
+      user={settingsUser}
       email={email}
       usagePlan={generationAccess.userPlan}
       generationCount={generationAccess.generationCount}
       generationLimit={generationAccess.generationLimit}
       trialDays={trialDays}
       manageSubscriptionUrl={manageSubscriptionUrl}
+      defaultTemplateMissing={defaultTemplateMissing}
     />
   );
 }

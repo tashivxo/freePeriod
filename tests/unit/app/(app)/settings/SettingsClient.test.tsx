@@ -50,6 +50,18 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.enterCurriculum': 'Enter curriculum',
   'settings.country': 'Country',
   'settings.selectCountry': 'Select your country',
+  'settings.defaultTemplateHeading': 'Default lesson plan template',
+  'settings.defaultTemplateHelper': 'Automatically attached when you generate.',
+  'settings.defaultTemplateSaved': 'Saved as default.',
+  'settings.defaultTemplateChip': 'Default',
+  'settings.stopUsingAsDefault': 'Stop using as default',
+  'settings.defaultRemoved': 'Default removed.',
+  'settings.undo': 'Undo',
+  'settings.saveFailedDefault': 'Could not save your default. Try again.',
+  'settings.missingDefaultFile': 'That file is gone. Upload it again to keep using a default.',
+  'settings.attachedForEveryNew': 'Attached for every new lesson.',
+  'settings.savingDefault': 'Saving default…',
+  'settings.removingDefault': 'Removing default…',
   'settings.save': 'Save Settings',
   'settings.saving': 'Saving...',
   'settings.saved': 'Settings saved!',
@@ -147,6 +159,8 @@ const baseUser: User = {
   onboarding_complete: true,
   deletion_scheduled_at: null,
   preferred_locale: 'en',
+  default_template_path: null,
+  default_template_file_name: null,
   created_at: '2024-01-01T00:00:00Z',
 };
 
@@ -910,6 +924,30 @@ describe('SettingsClient — danger zone', () => {
 
     expect(await within(dangerZone()).findByText('Deletion already scheduled')).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('shows the default lesson plan template heading in teaching defaults', () => {
+    render(<SettingsClient {...defaultProps} />);
+    expect(screen.getAllByText('Default lesson plan template').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Automatically attached when you generate.')).toBeInTheDocument();
+  });
+
+  it('keeps Stop using as default enabled when hydrating an existing default', async () => {
+    render(
+      <SettingsClient
+        {...defaultProps}
+        user={{
+          ...baseUser,
+          default_template_path: 'user-123/template/plan.docx',
+          default_template_file_name: 'Plan.docx',
+        }}
+      />,
+    );
+
+    expect(await screen.findByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    expect(screen.queryByText('Saved as default.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /stop using as default/i })).toBeEnabled();
   });
 
   it('cancel closes the confirmation and returns focus to Delete account', async () => {

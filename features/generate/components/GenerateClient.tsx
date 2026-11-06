@@ -19,11 +19,17 @@ type GenerateClientProps = {
     curriculum: string;
   };
   plan?: Plan;
+  userId?: string;
+  defaultTemplate?: { path: string; fileName: string } | null;
+  defaultTemplateMissing?: boolean;
 };
 
 export function GenerateClient({
   defaults,
   plan = 'free',
+  userId,
+  defaultTemplate = null,
+  defaultTemplateMissing = false,
 }: GenerateClientProps) {
   const router = useRouter();
   const { locale } = useLocale();
@@ -164,6 +170,9 @@ export function GenerateClient({
       <GenerateForm
         defaults={defaults}
         userPlan={plan}
+        userId={userId}
+        defaultTemplate={defaultTemplate}
+        defaultTemplateMissing={defaultTemplateMissing}
         onSubmit={handleSubmit}
         isGenerating={isGenerating}
       />

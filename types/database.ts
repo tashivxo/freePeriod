@@ -22,6 +22,8 @@ export type User = {
   onboarding_complete: boolean;
   deletion_scheduled_at: string | null;
   preferred_locale: Locale;
+  default_template_path: string | null;
+  default_template_file_name: string | null;
   created_at: string;
 }
 
@@ -125,7 +127,7 @@ export type Database = {
     Tables: {
       users: {
         Row: User;
-        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at' | 'preferred_locale' | 'country'> & {
+        Insert: Omit<User, 'created_at' | 'generation_count' | 'generation_count_reset_at' | 'onboarding_complete' | 'plan' | 'is_admin' | 'deletion_scheduled_at' | 'preferred_locale' | 'country' | 'default_template_path' | 'default_template_file_name'> & {
           onboarding_complete?: boolean;
           preferred_locale?: Locale;
           country?: string | null;

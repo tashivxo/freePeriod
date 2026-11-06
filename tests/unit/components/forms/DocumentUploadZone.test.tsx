@@ -642,3 +642,157 @@ describe('DocumentUploadZone file input UX', () => {
     expect(alert).toHaveClass('dark:text-[#FCA5A5]');
   });
 });
+
+describe('DocumentUploadZone default template props', () => {
+  const onUploadComplete = jest.fn();
+  const onRemove = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    });
+  });
+
+  it('hydrates initialAttachment in ready state without upload or ready copy', () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".pdf,.docx,.xlsx,.xls"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        isDefaultAttachment
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+    expect(screen.getByText('Default')).toBeInTheDocument();
+    expect(screen.queryByText(/uploaded\. ready to generate/i)).not.toBeInTheDocument();
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('notifies onUploadComplete once per storage path across parent re-renders', () => {
+    const { rerender } = renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(onUploadComplete).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        onUploadComplete={jest.fn()}
+        onRemove={jest.fn()}
+      />,
+    );
+
+    expect(onUploadComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits file size when hydrated file size is zero', () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        isDefaultAttachment
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(screen.queryByText(/0\s*bytes/i)).not.toBeInTheDocument();
+  });
+
+  it('does not call storage.remove when cleanupStorageOnRemove is false', async () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        cleanupStorageOnRemove={false}
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /remove plan\.docx/i }),
+    );
+
+    expect(mockRemove).not.toHaveBeenCalled();
+    expect(onRemove).toHaveBeenCalled();
+  });
+
+  it('hides the remove button when showRemoveButton is false', () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        showRemoveButton={false}
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /remove plan\.docx/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Plan.docx')).toBeInTheDocument();
+  });
+
+  it('uses coral token class on the default chip', () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        initialAttachment={{ name: 'Plan.docx', storagePath: 'user-123/template/plan.docx' }}
+        isDefaultAttachment
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    const chip = screen.getByText('Default');
+    expect(chip).toHaveClass('text-coral');
+    expect(chip).toHaveClass('rounded-md');
+  });
+
+  it('regression: curriculum zone still deletes on remove', async () => {
+    (global as { fetch: unknown }).fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: 'Parsed' }),
+    });
+
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".pdf"
+        uploadType="curriculum_doc"
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    const file = new File(['%PDF'], 'unit.pdf', { type: 'application/pdf' });
+    fireEvent.change(screen.getByLabelText(/upload curriculum document/i), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('unit.pdf')).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole('button', { name: /remove unit\.pdf/i }));
+    expect(mockRemove).toHaveBeenCalled();
+  });
+});

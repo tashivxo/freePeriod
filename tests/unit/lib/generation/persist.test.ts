@@ -74,6 +74,119 @@ describe('linkUploadsToLesson', () => {
       expect(result.error).toMatch(/could not be linked/i);
     }
   });
+
+  it('skips linking template uploads when path equals user default_template_path', async () => {
+    const userMaybeSingle = jest.fn().mockResolvedValue({
+      data: { default_template_path: 'user-1/template/shared.docx' },
+      error: null,
+    });
+    const uploadMaybeSingle = jest.fn();
+    const supabase = mockFrom({
+      users: {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: userMaybeSingle,
+          }),
+        }),
+      },
+      uploads: {
+        update: () => ({
+          eq: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({ maybeSingle: uploadMaybeSingle }),
+              }),
+            }),
+          }),
+        }),
+      },
+    });
+
+    const result = await linkUploadsToLesson(supabase as never, {
+      userId: 'user-1',
+      lessonId: 'lesson-1',
+      curriculumDocPath: null,
+      templatePath: 'user-1/template/shared.docx',
+    });
+
+    expect(result).toEqual({ ok: true, lessonId: 'lesson-1' });
+    expect(uploadMaybeSingle).not.toHaveBeenCalled();
+  });
+
+  it('still links a non-default template path', async () => {
+    const userMaybeSingle = jest.fn().mockResolvedValue({
+      data: { default_template_path: 'user-1/template/default.docx' },
+      error: null,
+    });
+    const uploadMaybeSingle = jest.fn().mockResolvedValue({ data: { id: 'u1' }, error: null });
+    const supabase = mockFrom({
+      users: {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: userMaybeSingle,
+          }),
+        }),
+      },
+      uploads: {
+        update: () => ({
+          eq: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({ maybeSingle: uploadMaybeSingle }),
+              }),
+            }),
+          }),
+        }),
+      },
+    });
+
+    const result = await linkUploadsToLesson(supabase as never, {
+      userId: 'user-1',
+      lessonId: 'lesson-1',
+      curriculumDocPath: null,
+      templatePath: 'user-1/template/one-off.docx',
+    });
+
+    expect(result).toEqual({ ok: true, lessonId: 'lesson-1' });
+    expect(uploadMaybeSingle).toHaveBeenCalled();
+  });
+
+  it('fails when a non-default template link misses', async () => {
+    const userMaybeSingle = jest.fn().mockResolvedValue({
+      data: { default_template_path: null },
+      error: null,
+    });
+    const uploadMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+    const supabase = mockFrom({
+      users: {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: userMaybeSingle,
+          }),
+        }),
+      },
+      uploads: {
+        update: () => ({
+          eq: () => ({
+            eq: () => ({
+              eq: () => ({
+                select: () => ({ maybeSingle: uploadMaybeSingle }),
+              }),
+            }),
+          }),
+        }),
+      },
+    });
+
+    const result = await linkUploadsToLesson(supabase as never, {
+      userId: 'user-1',
+      lessonId: 'lesson-1',
+      curriculumDocPath: null,
+      templatePath: 'user-1/template/one-off.docx',
+    });
+
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe('persistLessonPlan', () => {
@@ -91,12 +204,23 @@ describe('persistLessonPlan', () => {
   });
 
   it('links curriculum and template uploads after saving the lesson', async () => {
+    const userMaybeSingle = jest.fn().mockResolvedValue({
+      data: { default_template_path: null },
+      error: null,
+    });
     const maybeSingle = jest.fn().mockResolvedValue({ data: { id: 'upload-1' }, error: null });
     const supabase = mockFrom({
       lesson_plans: {
         insert: () => ({
           select: () => ({
             single: async () => ({ data: { id: 'lesson-1' }, error: null }),
+          }),
+        }),
+      },
+      users: {
+        select: () => ({
+          eq: () => ({
+            maybeSingle: userMaybeSingle,
           }),
         }),
       },
