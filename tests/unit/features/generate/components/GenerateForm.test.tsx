@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@/tests/helpers';
+import { render, screen, waitFor, within } from '@/tests/helpers';
 import { fireEvent } from '@testing-library/react';
 
 // --- Mocks ---
@@ -713,13 +713,18 @@ describe('GenerateForm', () => {
 
     await user.click(screen.getByRole('button', { name: /^undo$/i }));
 
-    const savingStatus = await screen.findByText('Saving default…');
+    const undoButton = await screen.findByRole('button', { name: /^undo$/i });
+    const savingStatus = within(undoButton.parentElement!).getByRole('status');
+    expect(savingStatus).toHaveTextContent('Saving default…');
     expect(savingStatus).toHaveClass('text-text-primary');
 
-    const undoButton = screen.getByRole('button', { name: /^undo$/i });
     expect(undoButton).toBeDisabled();
     expect(undoButton).toHaveClass('text-coral');
     expect(undoButton).not.toHaveClass('text-text-primary');
+
+    const optInSaving = screen.getByRole('button', { name: /saving default/i });
+    expect(optInSaving).toBeDisabled();
+    expect(optInSaving).toHaveClass('text-coral');
 
     resolveUndo?.({ error: null });
     await waitFor(() => {

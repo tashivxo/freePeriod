@@ -596,11 +596,7 @@ export function GenerateForm({
           <Button
             type="button"
             variant="ghost"
-            className={
-              defaultWriteBusy === 'removing'
-                ? 'min-h-11 px-0 text-text-primary sm:min-h-10'
-                : 'min-h-11 px-0 text-coral sm:min-h-10'
-            }
+            className="min-h-11 px-0 text-coral sm:min-h-10"
             disabled={defaultWriteBusy !== 'idle'}
             onClick={() => void handleStopUsingDefault()}
           >
@@ -634,11 +630,7 @@ export function GenerateForm({
           <Button
             type="button"
             variant="ghost"
-            className={
-              defaultWriteBusy === 'saving'
-                ? 'min-h-11 px-0 text-text-primary sm:min-h-10'
-                : 'min-h-11 px-0 text-coral sm:min-h-10'
-            }
+            className="min-h-11 px-0 text-coral sm:min-h-10"
             disabled={defaultWriteBusy !== 'idle'}
             onClick={() => void handleUseAsDefault()}
           >

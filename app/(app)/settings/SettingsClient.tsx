@@ -515,10 +515,7 @@ export function SettingsClient({
               <Button
                 type="button"
                 variant="ghost"
-                className={cn(
-                  'mt-2 min-h-11 px-0 sm:min-h-10',
-                  templateWriteBusy === 'removing' ? 'text-text-primary' : 'text-coral',
-                )}
+                className="mt-2 min-h-11 px-0 text-coral sm:min-h-10"
                 disabled={templateWriteBusy !== 'idle'}
                 onClick={() => void handleStopTemplateDefault()}
               >
