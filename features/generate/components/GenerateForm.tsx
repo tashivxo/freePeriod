@@ -120,7 +120,7 @@ export function GenerateForm({
   const [choicePendingPath, setChoicePendingPath] = useState<string | null>(null);
   const [choicePendingName, setChoicePendingName] = useState<string | null>(null);
   const [defaultWriteBusy, setDefaultWriteBusy] = useState<'idle' | 'saving' | 'removing'>('idle');
-  const [defaultStatus, setDefaultStatus] = useState<string | null>(null);
+  const [defaultFeedback, setDefaultFeedback] = useState<'saved' | 'removed' | null>(null);
   const [defaultError, setDefaultError] = useState<string | null>(null);
   const [defaultPersistSucceeded, setDefaultPersistSucceeded] = useState(
     () => Boolean(defaultTemplate?.path),
@@ -253,18 +253,18 @@ export function GenerateForm({
     if (!templatePath || !attachedFileName) return;
     const ok = await persistUserDefault(templatePath, attachedFileName);
     if (ok) {
-      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+      setDefaultFeedback(null);
     }
-  }, [attachedFileName, persistUserDefault, t, templatePath]);
+  }, [attachedFileName, persistUserDefault, templatePath]);
 
   const handleStopUsingDefault = useCallback(async () => {
     if (!userDefaultPath || !userDefaultFileName) return;
     undoSnapshotRef.current = { path: userDefaultPath, fileName: userDefaultFileName };
     const ok = await persistUserDefault(null, null);
     if (ok) {
-      setDefaultStatus(t('generate.upload.defaultRemoved'));
+      setDefaultFeedback('removed');
     }
-  }, [persistUserDefault, t, userDefaultFileName, userDefaultPath]);
+  }, [persistUserDefault, userDefaultFileName, userDefaultPath]);
 
   const handleUndoDefault = useCallback(async () => {
     const snap = undoSnapshotRef.current;
@@ -272,9 +272,9 @@ export function GenerateForm({
     const ok = await persistUserDefault(snap.path, snap.fileName);
     if (ok) {
       undoSnapshotRef.current = null;
-      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+      setDefaultFeedback(null);
     }
-  }, [persistUserDefault, t]);
+  }, [persistUserDefault]);
 
   const handleRestoreDefault = useCallback(() => {
     if (!userDefaultPath || !userDefaultFileName) return;
@@ -295,7 +295,7 @@ export function GenerateForm({
     if (!choicePendingPath || !choicePendingName) return;
     const ok = await persistUserDefault(choicePendingPath, choicePendingName);
     if (ok) {
-      setDefaultStatus(t('generate.upload.attachedForEveryNew'));
+      setDefaultFeedback(null);
       setChoiceOpen(false);
       setChoicePendingPath(null);
       setChoicePendingName(null);
@@ -581,8 +581,15 @@ export function GenerateForm({
           </div>
         ) : null}
         {isAccountDefaultAttached ? (
-          <p role="status" className="text-sm text-text-secondary">
-            {defaultStatus ?? t('generate.upload.attachedForEveryNew')}
+          <p
+            role="status"
+            className={
+              defaultWriteBusy === 'removing' ? 'text-sm text-text-primary' : 'text-sm text-text-secondary'
+            }
+          >
+            {defaultWriteBusy === 'removing'
+              ? t('generate.upload.removingDefault')
+              : t('generate.upload.attachedForEveryNew')}
           </p>
         ) : null}
         {isAccountDefaultAttached ? (
@@ -593,15 +600,20 @@ export function GenerateForm({
             disabled={defaultWriteBusy !== 'idle'}
             onClick={() => void handleStopUsingDefault()}
           >
-            {defaultWriteBusy === 'removing'
-              ? t('generate.upload.removingDefault')
-              : t('generate.upload.stopUsingAsDefault')}
+            {t('generate.upload.stopUsingAsDefault')}
           </Button>
         ) : null}
-        {defaultStatus === t('generate.upload.defaultRemoved') && templatePath ? (
+        {defaultFeedback === 'removed' && templatePath ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p role="status" className="text-sm text-text-secondary">
-              {t('generate.upload.defaultRemoved')}
+            <p
+              role="status"
+              className={
+                defaultWriteBusy === 'saving' ? 'text-sm text-text-primary' : 'text-sm text-text-secondary'
+              }
+            >
+              {defaultWriteBusy === 'saving'
+                ? t('generate.upload.savingDefault')
+                : t('generate.upload.defaultRemoved')}
             </p>
             <Button
               type="button"
@@ -610,9 +622,7 @@ export function GenerateForm({
               disabled={defaultWriteBusy !== 'idle'}
               onClick={() => void handleUndoDefault()}
             >
-              {defaultWriteBusy === 'saving'
-                ? t('generate.upload.savingDefault')
-                : t('generate.upload.undo')}
+              {t('generate.upload.undo')}
             </Button>
           </div>
         ) : null}

@@ -69,6 +69,8 @@ type DefaultsSnapshot = {
   country: string;
 };
 
+type DefaultTemplateFeedback = 'saved' | 'removed' | null;
+
 function saveErrorMessage(err: unknown, fallback: string): string {
   const detail =
     err != null &&
@@ -132,7 +134,7 @@ export function SettingsClient({
       ? { path: user.default_template_path, fileName: user.default_template_file_name }
       : null,
   );
-  const [templateStatus, setTemplateStatus] = useState<string | null>(null);
+  const [templateFeedback, setTemplateFeedback] = useState<DefaultTemplateFeedback>(null);
   const [templateError, setTemplateError] = useState<string | null>(null);
   const [templateWriteBusy, setTemplateWriteBusy] = useState<'idle' | 'saving' | 'removing'>(
     'idle',
@@ -210,7 +212,7 @@ export function SettingsClient({
     const ok = await persistTemplateDefault(path, name);
     if (ok) {
       setTemplateAttachSeed({ path, fileName: name });
-      setTemplateStatus(t('settings.defaultTemplateSaved'));
+      setTemplateFeedback('saved');
     }
   };
 
@@ -226,7 +228,7 @@ export function SettingsClient({
     const ok = await persistTemplateDefault(null, null);
     if (ok) {
       setTemplateAttachSeed(null);
-      setTemplateStatus(t('settings.defaultRemoved'));
+      setTemplateFeedback('removed');
     }
   };
 
@@ -237,7 +239,7 @@ export function SettingsClient({
     if (ok) {
       setTemplateAttachSeed(snap);
       templateUndoRef.current = null;
-      setTemplateStatus(t('settings.attachedForEveryNew'));
+      setTemplateFeedback(null);
     }
   };
 
@@ -495,8 +497,18 @@ export function SettingsClient({
               onRemove={handleSettingsTemplateRemove}
             />
             {templateAttachSeed && userDefaultPath ? (
-              <p role="status" className="mt-2 text-sm text-text-secondary">
-                {templateStatus ?? t('settings.attachedForEveryNew')}
+              <p
+                role="status"
+                className={cn(
+                  'mt-2 text-sm',
+                  templateWriteBusy === 'removing' ? 'text-text-primary' : 'text-text-secondary',
+                )}
+              >
+                {templateWriteBusy === 'removing'
+                  ? t('settings.removingDefault')
+                  : templateFeedback === 'saved'
+                    ? t('settings.defaultTemplateSaved')
+                    : t('settings.attachedForEveryNew')}
               </p>
             ) : null}
             {templateAttachSeed && userDefaultPath ? (
@@ -507,15 +519,21 @@ export function SettingsClient({
                 disabled={templateWriteBusy !== 'idle'}
                 onClick={() => void handleStopTemplateDefault()}
               >
-                {templateWriteBusy === 'removing'
-                  ? t('settings.removingDefault')
-                  : t('settings.stopUsingAsDefault')}
+                {t('settings.stopUsingAsDefault')}
               </Button>
             ) : null}
-            {templateStatus === t('settings.defaultRemoved') ? (
+            {templateFeedback === 'removed' ? (
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                <p role="status" className="text-sm text-text-secondary">
-                  {t('settings.defaultRemoved')}
+                <p
+                  role="status"
+                  className={cn(
+                    'text-sm',
+                    templateWriteBusy === 'saving' ? 'text-text-primary' : 'text-text-secondary',
+                  )}
+                >
+                  {templateWriteBusy === 'saving'
+                    ? t('settings.savingDefault')
+                    : t('settings.defaultRemoved')}
                 </p>
                 <Button
                   type="button"
@@ -524,9 +542,7 @@ export function SettingsClient({
                   disabled={templateWriteBusy !== 'idle'}
                   onClick={() => void handleUndoTemplateDefault()}
                 >
-                  {templateWriteBusy === 'saving'
-                    ? t('settings.savingDefault')
-                    : t('settings.undo')}
+                  {t('settings.undo')}
                 </Button>
               </div>
             ) : null}

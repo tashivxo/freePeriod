@@ -40,6 +40,25 @@ jest.mock('@/hooks/useMotionSafeIconRef', () => ({
   }),
 }));
 
+jest.mock('@/lib/lesson/default-template', () => ({
+  writeUserDefaultTemplate: jest.fn().mockResolvedValue({ ok: true }),
+}));
+
+jest.mock('@/components/forms/DocumentUploadZone', () => ({
+  DocumentUploadZone: ({
+    onUploadComplete,
+  }: {
+    onUploadComplete?: (path: string, fileName?: string) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() => onUploadComplete?.('user-123/template/plan.docx', 'Plan.docx')}
+    >
+      Mock complete upload
+    </button>
+  ),
+}));
+
 const baseUser: User = {
   id: 'user-123',
   email: 'teacher@example.com',
@@ -139,5 +158,76 @@ describe('SettingsClient leftover English in Arabic', () => {
         accessibleName.includes('\u2068'),
     });
     expect(gradeFour).toBeInTheDocument();
+  });
+});
+
+describe('SettingsClient default template status localization', () => {
+  afterEach(() => {
+    localStorage.clear();
+    document.cookie = 'fp-locale=; Max-Age=0; path=/';
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+  });
+
+  it('re-localizes default removed status after switching to Arabic', async () => {
+    document.title = '';
+    localStorage.setItem('fp-locale', 'en');
+    document.cookie = 'fp-locale=en; path=/';
+    document.documentElement.lang = 'en';
+    document.documentElement.dir = 'ltr';
+    const ar = getMessages('ar').settings;
+    const userWithDefault: User = {
+      ...baseUser,
+      default_template_path: 'user-123/template/plan.docx',
+      default_template_file_name: 'Plan.docx',
+    };
+    const { user } = render(
+      <LocaleProvider initialLocale="en">
+        <SettingsClient
+          user={userWithDefault}
+          email={baseUser.email}
+          usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
+        />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: getMessages('en').settings.stopUsingAsDefault }));
+    expect(await screen.findByText('Default removed.')).toBeInTheDocument();
+
+    const language = screen.getByLabelText(getMessages('en').settings.language);
+    await user.click(language);
+    await user.click(screen.getByRole('option', { name: 'العربية' }));
+
+    expect(await screen.findByText(ar.defaultRemoved)).toBeInTheDocument();
+    expect(screen.queryByText('Default removed.')).not.toBeInTheDocument();
+    expect(document.documentElement.dir).toBe('rtl');
+  });
+
+  it('shows localized saved status under the file card in Arabic', async () => {
+    document.title = '';
+    localStorage.setItem('fp-locale', 'ar');
+    document.cookie = 'fp-locale=ar; path=/';
+    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'rtl';
+
+    const ar = getMessages('ar').settings;
+    const { user } = render(
+      <LocaleProvider initialLocale="ar">
+        <SettingsClient
+          user={baseUser}
+          email={baseUser.email}
+          usagePlan="free"
+          generationCount={0}
+          generationLimit={3}
+        />
+      </LocaleProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Mock complete upload' }));
+
+    expect(await screen.findByText(ar.defaultTemplateSaved)).toBeInTheDocument();
+    expect(screen.queryByText('Saved as default.')).not.toBeInTheDocument();
   });
 });

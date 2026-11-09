@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@/tests/helpers';
+import { render, screen, waitFor, within } from '@/tests/helpers';
 import { fireEvent } from '@testing-library/react';
 
 // --- Mocks ---
@@ -686,6 +686,80 @@ describe('GenerateForm', () => {
     expect(
       screen.getByRole('button', { name: /stop using as default/i }),
     ).toBeInTheDocument();
+  });
+
+  it('keeps coral on Undo while saving default is pending', async () => {
+    let resolveUndo: ((value: { error: null }) => void) | undefined;
+    mockUsersUpdateEq
+      .mockResolvedValueOnce({ error: null })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveUndo = resolve;
+          }),
+      );
+
+    const { user } = render(
+      <GenerateForm
+        onSubmit={onSubmit}
+        defaults={defaults}
+        userId="user-123"
+        defaultTemplate={{ path: 'user-123/template/plan-1.docx', fileName: 'Plan.docx' }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /stop using as default/i }));
+    expect(await screen.findByText('Default removed.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^undo$/i }));
+
+    const undoButton = await screen.findByRole('button', { name: /^undo$/i });
+    const savingStatus = within(undoButton.parentElement!).getByRole('status');
+    expect(savingStatus).toHaveTextContent('Saving default…');
+    expect(savingStatus).toHaveClass('text-text-primary');
+
+    expect(undoButton).toBeDisabled();
+    expect(undoButton).toHaveClass('text-coral');
+    expect(undoButton).not.toHaveClass('text-text-primary');
+
+    const optInSaving = screen.getByRole('button', { name: /saving default/i });
+    expect(optInSaving).toBeDisabled();
+    expect(optInSaving).toHaveClass('text-coral');
+
+    resolveUndo?.({ error: null });
+    await waitFor(() => {
+      expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps coral on Use as my default while saving is pending', async () => {
+    let resolveSave: ((value: { error: null }) => void) | undefined;
+    mockUsersUpdateEq.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+
+    const { user } = render(<GenerateForm onSubmit={onSubmit} userId="user-123" />);
+    const file = new File(['%PDF-1.7'], 'my-default-candidate.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText(/upload lesson plan template/i), file);
+    await waitFor(() => {
+      expect(screen.getByText('my-default-candidate.pdf')).toBeInTheDocument();
+    });
+
+    const optIn = await screen.findByRole('button', { name: /use as my default/i });
+    await user.click(optIn);
+
+    const savingButton = await screen.findByRole('button', { name: /saving default/i });
+    expect(savingButton).toBeDisabled();
+    expect(savingButton).toHaveClass('text-coral');
+    expect(savingButton).not.toHaveClass('text-text-primary');
+
+    resolveSave?.({ error: null });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /stop using as default/i })).toBeInTheDocument();
+    });
   });
 
   it('opens default choice dialog when replacing an attached default via upload', async () => {
