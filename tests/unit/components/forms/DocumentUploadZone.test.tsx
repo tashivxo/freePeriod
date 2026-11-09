@@ -751,6 +751,21 @@ describe('DocumentUploadZone default template props', () => {
     expect(screen.getByText('Plan.docx')).toBeInTheDocument();
   });
 
+  it('hides its own heading when the parent already labeled the field', () => {
+    renderWithLocale(
+      <DocumentUploadZone
+        accept=".docx"
+        uploadType="template"
+        sectionHeading={null}
+        onUploadComplete={onUploadComplete}
+        onRemove={onRemove}
+      />,
+    );
+
+    expect(screen.queryByText('Lesson Plan Template')).not.toBeInTheDocument();
+    expect(screen.getByText(/drag and drop a file here/i)).toBeInTheDocument();
+  });
+
   it('uses coral token class on the default chip', () => {
     renderWithLocale(
       <DocumentUploadZone
