@@ -932,6 +932,78 @@ describe('SettingsClient — danger zone', () => {
     expect(screen.getByText('Automatically attached when you generate.')).toBeInTheDocument();
   });
 
+  it('replaces Default removed with Saving default on the status line while undo is pending', async () => {
+    let resolveUndo: ((value: { error: null }) => void) | undefined;
+    mockUpdate.mockReturnValue({
+      eq: jest
+        .fn()
+        .mockResolvedValueOnce({ error: null })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveUndo = resolve;
+            }),
+        ),
+    });
+
+    const userWithDefault = {
+      ...baseUser,
+      default_template_path: 'user-123/template/plan.docx',
+      default_template_file_name: 'Plan.docx',
+    };
+    const { user } = render(<SettingsClient {...defaultProps} user={userWithDefault} />);
+
+    await user.click(screen.getByRole('button', { name: /stop using as default/i }));
+    expect(await screen.findByText('Default removed.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^undo$/i }));
+
+    const pendingStatuses = screen
+      .getAllByRole('status')
+      .map((node) => node.textContent?.trim())
+      .filter((text) => text === 'Saving default…' || text === 'Default removed.');
+    expect(pendingStatuses).toEqual(['Saving default…']);
+
+    resolveUndo?.({ error: null });
+    await waitFor(() => {
+      expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
+    });
+  });
+
+  it('uses body text colour on Stop using as default while removing is pending', async () => {
+    let resolveRemove: ((value: { error: null }) => void) | undefined;
+    mockUpdate.mockReturnValue({
+      eq: jest.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveRemove = resolve;
+          }),
+      ),
+    });
+
+    const userWithDefault = {
+      ...baseUser,
+      default_template_path: 'user-123/template/plan.docx',
+      default_template_file_name: 'Plan.docx',
+    };
+    const { user } = render(<SettingsClient {...defaultProps} user={userWithDefault} />);
+
+    const stopButton = screen.getByRole('button', { name: /stop using as default/i });
+    await user.click(stopButton);
+
+    expect(await screen.findByRole('button', { name: /removing default/i })).toHaveClass(
+      'text-text-primary',
+    );
+    expect(
+      screen.getByRole('button', { name: /removing default/i }),
+    ).not.toHaveClass('text-coral');
+
+    resolveRemove?.({ error: null });
+    await waitFor(() => {
+      expect(screen.getByText('Default removed.')).toBeInTheDocument();
+    });
+  });
+
   it('keeps Stop using as default enabled when hydrating an existing default', async () => {
     render(
       <SettingsClient
