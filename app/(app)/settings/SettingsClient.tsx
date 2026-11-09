@@ -480,7 +480,7 @@ export function SettingsClient({
               key={templateAttachSeed?.path ?? 'empty-template'}
               accept={FILLABLE_TEMPLATE_ACCEPT}
               uploadType="template"
-              sectionHeading={t('settings.defaultTemplateHeading')}
+              sectionHeading={null}
               initialAttachment={
                 templateAttachSeed
                   ? { name: templateAttachSeed.fileName, storagePath: templateAttachSeed.path }

@@ -36,7 +36,7 @@ interface DocumentUploadZoneProps {
   isDefaultAttachment?: boolean;
   skipFileCardMotion?: boolean;
   defaultChipLabel?: string;
-  sectionHeading?: string;
+  sectionHeading?: string | null;
   hideDropZoneWhenReady?: boolean;
 }
 
@@ -62,10 +62,11 @@ export function DocumentUploadZone({
   const helpId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sectionHeading =
-    sectionHeadingOverride ??
-    (uploadType === 'curriculum_doc'
-      ? t('generate.upload.curriculumHeading')
-      : t('generate.upload.templateHeading'));
+    sectionHeadingOverride === undefined
+      ? uploadType === 'curriculum_doc'
+        ? t('generate.upload.curriculumHeading')
+        : t('generate.upload.templateHeading')
+      : sectionHeadingOverride;
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
 
@@ -183,9 +184,11 @@ export function DocumentUploadZone({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-        {sectionHeading}
-      </p>
+      {sectionHeading ? (
+        <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+          {sectionHeading}
+        </p>
+      ) : null}
 
       <label
         htmlFor={inputId}
