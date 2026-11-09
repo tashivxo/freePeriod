@@ -991,12 +991,9 @@ describe('SettingsClient — danger zone', () => {
     const stopButton = screen.getByRole('button', { name: /stop using as default/i });
     await user.click(stopButton);
 
-    expect(await screen.findByRole('button', { name: /removing default/i })).toHaveClass(
-      'text-text-primary',
-    );
-    expect(
-      screen.getByRole('button', { name: /removing default/i }),
-    ).not.toHaveClass('text-coral');
+    const removingStatus = await screen.findByText('Removing default…');
+    expect(removingStatus).toHaveClass('text-text-primary');
+    expect(removingStatus).not.toHaveClass('text-coral');
 
     resolveRemove?.({ error: null });
     await waitFor(() => {
