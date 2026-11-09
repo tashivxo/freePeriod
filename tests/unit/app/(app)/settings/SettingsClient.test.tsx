@@ -964,13 +964,20 @@ describe('SettingsClient — danger zone', () => {
       .filter((text) => text === 'Saving default…' || text === 'Default removed.');
     expect(pendingStatuses).toEqual(['Saving default…']);
 
+    const savingStatus = screen.getByText('Saving default…');
+    expect(savingStatus).toHaveClass('text-text-primary');
+    const undoButton = screen.getByRole('button', { name: /^undo$/i });
+    expect(undoButton).toBeDisabled();
+    expect(undoButton).toHaveClass('text-coral');
+    expect(undoButton).not.toHaveClass('text-text-primary');
+
     resolveUndo?.({ error: null });
     await waitFor(() => {
       expect(screen.getByText('Attached for every new lesson.')).toBeInTheDocument();
     });
   });
 
-  it('uses body text colour on Stop using as default while removing is pending', async () => {
+  it('keeps coral on Stop using as default while removing is pending', async () => {
     let resolveRemove: ((value: { error: null }) => void) | undefined;
     mockUpdate.mockReturnValue({
       eq: jest.fn().mockImplementation(
@@ -994,6 +1001,10 @@ describe('SettingsClient — danger zone', () => {
     const removingStatus = await screen.findByText('Removing default…');
     expect(removingStatus).toHaveClass('text-text-primary');
     expect(removingStatus).not.toHaveClass('text-coral');
+
+    expect(stopButton).toBeDisabled();
+    expect(stopButton).toHaveClass('text-coral');
+    expect(stopButton).not.toHaveClass('text-text-primary');
 
     resolveRemove?.({ error: null });
     await waitFor(() => {
