@@ -805,3 +805,43 @@ describe('default lesson plan template copy', () => {
   });
 });
 
+const SETTINGS_DEFAULT_TEMPLATE_STATUS_EN = {
+  defaultTemplateSaved: 'Saved as default.',
+  defaultRemoved: 'Default removed.',
+  attachedForEveryNew: 'Attached for every new lesson.',
+  savingDefault: 'Saving default…',
+  removingDefault: 'Removing default…',
+  stopUsingAsDefault: 'Stop using as default',
+} as const;
+
+describe('settings default lesson plan template copy', () => {
+  it.each(LOCALES)('includes default-template status keys for %s', (locale) => {
+    const settings = getMessages(locale).settings;
+    for (const key of Object.keys(SETTINGS_DEFAULT_TEMPLATE_STATUS_EN)) {
+      const value = settings[key as keyof typeof SETTINGS_DEFAULT_TEMPLATE_STATUS_EN];
+      expect(value?.length).toBeGreaterThan(0);
+      expect(value).not.toContain('\u2014');
+      expect(value).not.toContain('...');
+    }
+  });
+
+  it('matches English source strings exactly', () => {
+    const settings = getMessages('en').settings;
+    for (const [key, value] of Object.entries(SETTINGS_DEFAULT_TEMPLATE_STATUS_EN)) {
+      expect(settings[key as keyof typeof SETTINGS_DEFAULT_TEMPLATE_STATUS_EN]).toBe(value);
+    }
+  });
+
+  it.each(LOCALES.filter((locale) => locale !== 'en'))(
+    'uses non-English default-template status strings for %s',
+    (locale) => {
+      const en = getMessages('en').settings;
+      const settings = getMessages(locale).settings;
+      for (const key of Object.keys(SETTINGS_DEFAULT_TEMPLATE_STATUS_EN)) {
+        const value = settings[key as keyof typeof SETTINGS_DEFAULT_TEMPLATE_STATUS_EN];
+        expect(value).not.toBe(en[key as keyof typeof SETTINGS_DEFAULT_TEMPLATE_STATUS_EN]);
+      }
+    },
+  );
+});
+
