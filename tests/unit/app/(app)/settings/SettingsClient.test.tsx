@@ -928,7 +928,7 @@ describe('SettingsClient — danger zone', () => {
 
   it('shows the default lesson plan template heading in teaching defaults', () => {
     render(<SettingsClient {...defaultProps} />);
-    expect(screen.getAllByText('Default lesson plan template').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Default lesson plan template')).toHaveLength(1);
     expect(screen.getByText('Automatically attached when you generate.')).toBeInTheDocument();
   });
 
