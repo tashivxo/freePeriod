@@ -9,6 +9,7 @@ type ChipRadioProps = {
   onSelect: () => void;
   children: ReactNode;
   className?: string;
+  id?: string;
   'aria-label'?: string;
   'aria-invalid'?: boolean;
 };
@@ -36,6 +37,7 @@ export function ChipRadio({
   onSelect,
   children,
   className,
+  id,
   'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
 }: ChipRadioProps) {
@@ -79,6 +81,7 @@ export function ChipRadio({
   return (
     <button
       ref={ref}
+      id={id}
       type="button"
       role="radio"
       aria-checked={checked}
@@ -88,7 +91,7 @@ export function ChipRadio({
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
+        'inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40',
         checked
           ? 'border-coral bg-coral text-primary-foreground'
           : 'border-border bg-background text-text-primary hover:border-coral',
