@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import { XIcon } from '@/components/ui/icons/x';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { useLocale, useT } from '@/providers/locale';
+import { PLAN_PRICES } from '@/features/billing/plan-prices';
 
 const SoftAurora = dynamic(
   () => import('@/components/ui/backgrounds/SoftAurora/SoftAurora'),
@@ -49,8 +50,8 @@ const PLANS: PlanConfig[] = [
     id: 'free',
     Icon: BookTextIcon,
     iconBg: 'bg-coral/10',
-    priceMonthly: 0,
-    priceAnnual: 0,
+    priceMonthly: PLAN_PRICES.free.monthly,
+    priceAnnual: PLAN_PRICES.free.annual,
     ctaClass:
       'border border-coral text-coral hover:bg-coral/10 focus-visible:ring-2 focus-visible:ring-coral',
     href: '/sign-up',
@@ -59,8 +60,8 @@ const PLANS: PlanConfig[] = [
     id: 'pro',
     Icon: SparklesIcon,
     iconBg: 'bg-coral/15',
-    priceMonthly: 9,
-    priceAnnual: 7,
+    priceMonthly: PLAN_PRICES.pro.monthly,
+    priceAnnual: PLAN_PRICES.pro.annual,
     ctaClass:
       'bg-coral hover:bg-coral-dark text-white focus-visible:ring-2 focus-visible:ring-coral',
     featured: true,
@@ -69,8 +70,8 @@ const PLANS: PlanConfig[] = [
     id: 'pro_plus',
     Icon: ZapIcon,
     iconBg: 'bg-coral/10',
-    priceMonthly: 12,
-    priceAnnual: 10,
+    priceMonthly: PLAN_PRICES.pro_plus.monthly,
+    priceAnnual: PLAN_PRICES.pro_plus.annual,
     ctaClass:
       'bg-mustard hover:bg-mustard/90 text-text-primary focus-visible:ring-2 focus-visible:ring-mustard',
   },

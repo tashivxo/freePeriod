@@ -30,7 +30,8 @@ jest.mock('@/providers/color-bends-atmosphere', () => ({
 }));
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock('@/hooks/useMotionSafeIconRef', () => ({
@@ -126,7 +127,7 @@ describe('SettingsClient leftover English in Arabic', () => {
     );
 
     expect(screen.queryByText('Free')).not.toBeInTheDocument();
-    expect(screen.getByText('مجاني')).toBeInTheDocument();
+    expect(screen.getAllByText('مجاني').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows a bidi-safe Arabic Grade 4 instead of leftover English', async () => {

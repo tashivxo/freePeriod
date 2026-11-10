@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { getGradeItems } from '@/lib/utils/grades';
@@ -25,32 +25,14 @@ import { AtmospherePicker } from '@/features/settings/components/AtmospherePicke
 import { LanguagesIcon } from '@/components/ui/icons/languages';
 import { LeafIcon } from '@/components/ui/icons/leaf';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
-import { cn } from '@/lib/utils';
 import { DocumentUploadZone } from '@/components/forms/DocumentUploadZone';
 import { FILLABLE_TEMPLATE_ACCEPT } from '@/lib/lesson/template-path';
 import { writeUserDefaultTemplate } from '@/lib/lesson/default-template';
-import { ExternalLink, LogOut } from 'lucide-react';
-import { formatGenerationUsage } from '@/lib/generation/quota';
-import type { Plan, User } from '@/types';
+import { LogOut } from 'lucide-react';
+import { PlanUsageSection } from '@/features/billing/components/PlanUsageSection';
+import type { BillingInterval, Plan, User } from '@/types';
 
 const CURRICULA_PRESETS = CURRICULUM_ITEMS.map((c) => c.value ?? c.name);
-
-const PLAN_NAME_KEYS: Record<Plan, 'settings.planFree' | 'settings.planPro' | 'settings.planProPlus'> = {
-  free: 'settings.planFree',
-  pro: 'settings.planPro',
-  pro_plus: 'settings.planProPlus',
-};
-
-function planDisplayLabel(
-  plan: Plan,
-  trialDays: number | null | undefined,
-  t: (key: string, vars?: Record<string, string>) => string,
-): string {
-  const name = t(PLAN_NAME_KEYS[plan]);
-  if (trialDays == null) return name;
-  const key = trialDays === 1 ? 'settings.planWithTrialOne' : 'settings.planWithTrial';
-  return t(key, { plan: name, days: String(trialDays) });
-}
 
 const LOCALE_ITEMS = LOCALES.map((code) => ({
   name: LOCALE_LABELS[code],
@@ -93,6 +75,9 @@ export type SettingsClientProps = {
   generationLimit?: number | null;
   trialDays?: number | null;
   manageSubscriptionUrl?: string | null;
+  billingInterval?: BillingInterval | null;
+  usageResetsAt?: string | null;
+  isAdmin?: boolean;
   defaultTemplateMissing?: boolean;
 };
 
@@ -104,6 +89,9 @@ export function SettingsClient({
   generationLimit,
   trialDays = null,
   manageSubscriptionUrl = null,
+  billingInterval = null,
+  usageResetsAt = null,
+  isAdmin = false,
   defaultTemplateMissing = false,
 }: SettingsClientProps) {
   const subjectField = usePresetField(user.default_subject, SUBJECTS as readonly string[]);
@@ -151,17 +139,9 @@ export function SettingsClient({
   const { zenMode, setZenMode } = useZenMode();
   const { locale, setLocale } = useLocale();
   const t = useT();
-  const displayPlanLabel = planDisplayLabel(usagePlan ?? user.plan, trialDays, t);
+  const searchParams = useSearchParams();
   const gradeItems = useMemo(() => getGradeItems(t), [t]);
-  const displayUsage =
-    typeof generationCount === 'number'
-      ? formatGenerationUsage({
-          plan: usagePlan ?? user.plan,
-          generationCount,
-          generationLimit: generationLimit ?? null,
-          locale,
-        })
-      : null;
+  const [upgradedFlash, setUpgradedFlash] = useState(false);
   const { setProfileSignals } = useColorBendsAtmosphere();
 
   const isDirty =
@@ -177,6 +157,23 @@ export function SettingsClient({
     const timer = window.setTimeout(() => setSaveStatus(null), 4000);
     return () => window.clearTimeout(timer);
   }, [saveStatus]);
+
+  useEffect(() => {
+    if (searchParams.get('upgraded') !== 'true') return;
+    setUpgradedFlash(true);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('upgraded');
+    const query = next.toString();
+    router.replace(query ? `/settings?${query}` : '/settings', { scroll: false });
+    const timer = window.setTimeout(() => setUpgradedFlash(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#billing') return;
+    const el = document.getElementById('billing');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const persistTemplateDefault = async (path: string | null, fileName: string | null) => {
     if (templateWriteInFlightRef.current) return false;
@@ -598,6 +595,28 @@ export function SettingsClient({
         </div>
       </div>
 
+      {upgradedFlash && (
+        <div
+          role="status"
+          className="mt-4 rounded-xl bg-success/10 p-3 text-center font-body text-sm text-success"
+        >
+          {t('settings.upgradedSuccess')}
+        </div>
+      )}
+
+      {typeof generationCount === 'number' && (
+        <PlanUsageSection
+          plan={usagePlan ?? user.plan}
+          isAdmin={isAdmin}
+          generationCount={generationCount}
+          generationLimit={generationLimit ?? null}
+          trialDays={trialDays}
+          billingInterval={billingInterval}
+          usageResetsAt={usageResetsAt}
+          manageSubscriptionUrl={manageSubscriptionUrl}
+        />
+      )}
+
       {/* Account */}
       <div className="mt-4 rounded-2xl border border-border bg-surface p-6 md:p-8">
         <h2 className="mb-4 font-display text-lg font-semibold text-text-primary">{t('settings.account')}</h2>
@@ -606,29 +625,8 @@ export function SettingsClient({
             <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.email')}</dt>
             <dd className="truncate text-sm font-body text-text-primary">{email}</dd>
           </div>
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-            <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.plan')}</dt>
-            <dd className="text-sm font-body text-text-primary">{displayPlanLabel}</dd>
-          </div>
-          {displayUsage && (
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-              <dt className="text-sm font-body font-medium text-text-secondary">{t('settings.usage')}</dt>
-              <dd className="text-sm font-body text-text-primary">{displayUsage}</dd>
-            </div>
-          )}
         </dl>
         <div className="space-y-3">
-          {manageSubscriptionUrl && (
-            <a
-              href={manageSubscriptionUrl}
-              rel="noopener noreferrer"
-              className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
-            >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              {t('settings.manageSubscription')}
-            </a>
-          )}
-
           <Button
             variant="outline"
             className="w-full"

@@ -81,6 +81,30 @@ const SETTINGS_LABELS: Record<string, string> = {
   'settings.deleteFailed': 'Failed to delete account',
   'settings.somethingWentWrong': 'Something went wrong. Please try again.',
   'settings.manageSubscription': 'Manage subscription',
+  'settings.upgradedSuccess': 'Your plan is updated. Thanks for supporting FreePeriod.',
+  'settings.planUsage.title': 'Plan & Usage',
+  'settings.planUsage.currentPlanEyebrow': 'Current plan',
+  'settings.planUsage.upgradeAvailableEyebrow': 'Upgrade available',
+  'settings.planUsage.adjustPlan': 'Adjust plan',
+  'settings.planUsage.comparePlans': 'Compare plans',
+  'settings.planUsage.upgradeNow': 'Upgrade now',
+  'settings.planUsage.reasonRecommended': 'Pro is recommended for weekly planning.',
+  'settings.planUsage.reasonNearLimit':
+    "You've used most of this month's lesson plans. Upgrade to keep generating.",
+  'settings.planUsage.reasonProPlus': 'Unlimited lesson plans, no monthly cap.',
+  'settings.planUsage.proFeature1': '20 lesson plans a month',
+  'settings.planUsage.proFeature2': 'Fast and Quality modes',
+  'settings.planUsage.proFeature3': 'OCR text extraction',
+  'settings.planUsage.proPlusFeature1': 'Unlimited lesson plans',
+  'settings.planUsage.proPlusFeature2': 'Everything in Pro',
+  'settings.planUsage.proPlusFeature3': 'No monthly cap',
+  'settings.planUsage.lessonPlans': 'Lesson plans',
+  'settings.planUsage.usageBarAria': 'Lesson plan usage this period',
+  'settings.planUsage.resetsOn': 'Usage resets on {date}',
+  'pricing.freePrice': '$0',
+  'pricing.perMonth': '/month',
+  'pricing.checkoutRedirecting': 'Opening checkout…',
+  'pricing.checkoutError': "Couldn't open checkout, try again",
   'settings.logOut': 'Log out',
   'settings.logOutFailed': 'Could not log out. Check your connection and try again.',
   'settings.deleteAccount': 'Delete account',
@@ -138,8 +162,10 @@ jest.mock('@/lib/supabase/client', () => ({
 }));
 
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -223,7 +249,7 @@ describe('SettingsClient — log out', () => {
 });
 
 describe('SettingsClient — account context', () => {
-  it('shows read-only email, plan, and usage', () => {
+  it('shows email only in Account; plan and usage live in Plan & Usage', () => {
     render(
       <SettingsClient
         {...defaultProps}
@@ -234,19 +260,29 @@ describe('SettingsClient — account context', () => {
     );
 
     expect(screen.getByText('teacher@example.com')).toBeInTheDocument();
-    expect(screen.getByText('Pro')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Plan & Usage' })).toBeInTheDocument();
+    expect(screen.getAllByText('Pro').length).toBeGreaterThan(0);
     expect(document.body.textContent?.replace(/[\u2068\u2069]/g, '')).toContain(
       '5 of 20 used this period',
     );
+
+    const account = screen.getByRole('heading', { name: 'Account' }).closest('div')!;
+    expect(within(account).queryByText('Plan')).not.toBeInTheDocument();
+    expect(within(account).queryByText('Usage')).not.toBeInTheDocument();
   });
 
-  it('does not show manage subscription when portal URL is missing', () => {
+  it('places Plan & Usage above Account with billing id', () => {
     render(<SettingsClient {...defaultProps} />);
 
-    expect(screen.queryByRole('link', { name: /manage subscription/i })).not.toBeInTheDocument();
+    const planUsage = screen.getByRole('heading', { name: 'Plan & Usage' });
+    const account = screen.getByRole('heading', { name: 'Account' });
+    expect(
+      planUsage.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(document.getElementById('billing')).toBeInTheDocument();
   });
 
-  it('shows manage subscription when portal URL is available', () => {
+  it('shows Adjust plan link to portal when portal URL is available', () => {
     render(
       <SettingsClient
         {...defaultProps}
@@ -255,7 +291,7 @@ describe('SettingsClient — account context', () => {
       />,
     );
 
-    const link = screen.getByRole('link', { name: /manage subscription/i });
+    const link = screen.getByRole('link', { name: /adjust plan/i });
     expect(link).toHaveAttribute('href', 'https://example.lemonsqueezy.com/billing');
   });
 });
