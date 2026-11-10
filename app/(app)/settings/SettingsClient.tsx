@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 import { SUBJECTS, SUBJECT_ITEMS } from '@/lib/utils/subjects';
 import { getGradeItems } from '@/lib/utils/grades';
 import { CURRICULUM_ITEMS } from '@/lib/utils/curricula';
