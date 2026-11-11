@@ -10,7 +10,7 @@ import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/
 import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
-import { ChipRadio } from '@/components/forms/ChipRadio';
+import { RoundRadioIndicator } from '@/components/forms/RoundRadioIndicator';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -219,12 +219,9 @@ export function SignUpPage() {
   const agreeToLegalBefore = t('auth.agreeToLegalBefore');
   const agreeToLegalBetween = t('auth.agreeToLegalBetween');
 
-  function toggleAcceptedTerms() {
-    setAcceptedTerms((prev) => {
-      const next = !prev;
-      if (next) setTermsError('');
-      return next;
-    });
+  function onAcceptedTermsChange(checked: boolean) {
+    setAcceptedTerms(checked);
+    if (checked) setTermsError('');
   }
 
   return (
@@ -333,61 +330,55 @@ export function SignUpPage() {
           />
 
           <div className="space-y-1.5">
-            <div
-              role="radiogroup"
-              aria-label={t('auth.termsAgreement')}
-              className="flex min-h-11 min-w-0 flex-wrap items-center gap-3"
-            >
-              <ChipRadio
-                id="terms-agreement"
-                checked={acceptedTerms}
-                aria-label={t('auth.iAgreeAria')}
-                aria-invalid={Boolean(termsError)}
-                onSelect={toggleAcceptedTerms}
-              >
-                {t('auth.iAgree')}
-              </ChipRadio>
-              <span className="text-sm font-body text-text-secondary">
-                {[
-                  agreeToLegalBefore ? (
-                    <button
-                      key="before"
-                      type="button"
-                      onClick={toggleAcceptedTerms}
-                      className="cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit"
-                    >
+            <fieldset className="min-w-0 border-0 p-0">
+              <legend className="sr-only">{t('auth.termsAgreement')}</legend>
+              <div className="flex min-h-11 items-start gap-3">
+                <label
+                  htmlFor="terms-agreement"
+                  className="mt-0.5 shrink-0 cursor-pointer has-[:focus-visible]:rounded-full has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-coral/40"
+                >
+                  <RoundRadioIndicator selected={acceptedTerms} />
+                  <input
+                    id="terms-agreement"
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(event) => onAcceptedTermsChange(event.target.checked)}
+                    aria-label={t('auth.iAgreeAria')}
+                    aria-invalid={Boolean(termsError) || undefined}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="min-w-0 flex-1 text-sm font-body leading-relaxed text-text-secondary">
+                  <label htmlFor="terms-agreement" className="cursor-pointer text-text-primary">
+                    {t('auth.iAgree')}
+                  </label>
+                  {agreeToLegalBefore ? (
+                    <label htmlFor="terms-agreement" className="cursor-pointer">
                       {agreeToLegalBefore}
-                    </button>
-                  ) : null,
+                    </label>
+                  ) : null}
                   <Link
-                    key="terms"
                     href="/terms"
                     className="text-coral font-semibold hover:underline"
                     target="_blank"
                   >
                     {t('settings.termsOfService')}
-                  </Link>,
-                  agreeToLegalBetween ? (
-                    <button
-                      key="between"
-                      type="button"
-                      onClick={toggleAcceptedTerms}
-                      className="cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit"
-                    >
+                  </Link>
+                  {agreeToLegalBetween ? (
+                    <label htmlFor="terms-agreement" className="cursor-pointer">
                       {agreeToLegalBetween}
-                    </button>
-                  ) : null,
+                    </label>
+                  ) : null}
                   <Link
-                    key="privacy"
                     href="/privacy"
                     className="text-coral font-semibold hover:underline"
                     target="_blank"
                   >
                     {t('settings.privacyPolicy')}
-                  </Link>,
-                ]}
-              </span>
-            </div>
+                  </Link>
+                </p>
+              </div>
+            </fieldset>
             {termsError && <FieldError message={termsError} className="px-1" />}
           </div>
 
