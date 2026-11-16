@@ -2,10 +2,15 @@ import { act, renderHook } from '@testing-library/react';
 import { useState } from 'react';
 import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 
+const mockRenameLesson = jest.fn();
+
+jest.mock('@/lib/lesson/rename-lesson', () => ({
+  renameLesson: (...args: unknown[]) => mockRenameLesson(...args),
+}));
+
 const eq = jest.fn();
-const update = jest.fn(() => ({ eq }));
 const del = jest.fn(() => ({ eq }));
-const from = jest.fn(() => ({ update, delete: del }));
+const from = jest.fn(() => ({ delete: del }));
 
 jest.mock('@/lib/supabase/client', () => ({
   createClient: () => ({ from }),
@@ -28,24 +33,24 @@ describe('useLessonActions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     eq.mockResolvedValue({ error: null });
+    mockRenameLesson.mockResolvedValue({ lesson: { id: 'a', title: 'Ratios', updated_at: '' } });
   });
 
-  it('renames in the database and updates the row', async () => {
+  it('renames via the API and updates the row', async () => {
     const { result } = setup();
 
     await act(async () => {
       await result.current.handleRename('a', 'Ratios');
     });
 
-    expect(from).toHaveBeenCalledWith('lesson_plans');
-    expect(update).toHaveBeenCalledWith({ title: 'Ratios' });
-    expect(eq).toHaveBeenCalledWith('id', 'a');
+    expect(mockRenameLesson).toHaveBeenCalledWith('a', 'Ratios');
     expect(result.current.lessons[0]!.title).toBe('Ratios');
+    expect(from).not.toHaveBeenCalledWith('lesson_plans');
   });
 
   it('updates the title optimistically before the request resolves', async () => {
-    let resolve!: (value: { error: null }) => void;
-    eq.mockReturnValue(new Promise((r) => (resolve = r)));
+    let resolve!: () => void;
+    mockRenameLesson.mockReturnValue(new Promise<void>((r) => (resolve = r)));
     const { result } = setup();
 
     let pending!: Promise<void>;
@@ -55,13 +60,13 @@ describe('useLessonActions', () => {
     expect(result.current.lessons[0]!.title).toBe('Ratios');
 
     await act(async () => {
-      resolve({ error: null });
+      resolve();
       await pending;
     });
   });
 
   it('rolls back and rethrows when the update fails', async () => {
-    eq.mockResolvedValue({ error: { message: 'boom' } });
+    mockRenameLesson.mockRejectedValue(new Error('rename_failed'));
     const { result } = setup();
 
     await act(async () => {

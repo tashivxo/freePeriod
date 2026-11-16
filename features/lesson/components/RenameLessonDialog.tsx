@@ -4,10 +4,10 @@ import { useRef, useState, type MutableRefObject } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogClose, DialogContent } from '@/components/ui/dialog';
 import { LessonDialogChrome } from '@/features/lesson/components/LessonDialogChrome';
+import { LESSON_TITLE_MAX_LENGTH } from '@/lib/lesson/title';
 import { useT } from '@/providers/locale';
 
-/** Matches the longest title the generator produces; keeps cards readable. */
-export const LESSON_TITLE_MAX_LENGTH = 200;
+export { LESSON_TITLE_MAX_LENGTH };
 
 type RenameFormProps = {
   initialTitle: string;
