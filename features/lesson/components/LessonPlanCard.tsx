@@ -6,6 +6,7 @@ import { Ellipsis } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DeleteIcon } from '@/components/ui/icons/delete';
+import { SendIcon } from '@/components/ui/icons/send';
 import { SquarePenIcon } from '@/components/ui/icons/square-pen';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +35,7 @@ import {
 import { formatDurationShort } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { useT } from '@/providers/locale';
+import { ShareLessonDialog } from '@/features/lesson/components/ShareLessonDialog';
 import type { LessonPlan } from '@/types';
 
 export type LessonPlanCardData = Pick<
@@ -67,8 +69,10 @@ type MenuParts = {
 
 type LessonMenuItemsProps = MenuParts & {
   canRename: boolean;
+  canShare: boolean;
   canDelete: boolean;
   onRename: () => void;
+  onShare: () => void;
   onDelete: () => void;
 };
 
@@ -77,8 +81,10 @@ function LessonMenuItems({
   Item,
   Separator,
   canRename,
+  canShare,
   canDelete,
   onRename,
+  onShare,
   onDelete,
 }: LessonMenuItemsProps) {
   const t = useT();
@@ -90,7 +96,13 @@ function LessonMenuItems({
           {t('history.rename')}
         </Item>
       )}
-      {canRename && canDelete && <Separator />}
+      {canShare && (
+        <Item onSelect={onShare}>
+          <MotionSafeIcon icon={SendIcon} size={16} parentHover parentFocus />
+          {t('history.share')}
+        </Item>
+      )}
+      {(canRename || canShare) && canDelete && <Separator />}
       {canDelete && (
         <Item variant="destructive" onSelect={onDelete}>
           <MotionSafeIcon icon={DeleteIcon} size={16} parentHover parentFocus />
@@ -197,6 +209,7 @@ export function LessonPlanCard({
   const t = useT();
   const [confirming, setConfirming] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const renameSavingRef = useRef(false);
@@ -206,6 +219,7 @@ export function LessonPlanCard({
 
   const canRename = Boolean(onRename);
   const canDelete = Boolean(onDelete);
+  const canShare = canRename || canDelete;
   const hasActions = canRename || canDelete;
 
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -251,6 +265,11 @@ export function LessonPlanCard({
   const startRename = () => {
     keepFocusRef.current = true;
     setRenaming(true);
+  };
+
+  const startShare = () => {
+    keepFocusRef.current = true;
+    setSharing(true);
   };
 
   const startDelete = () => {
@@ -331,8 +350,10 @@ export function LessonPlanCard({
                 <LessonMenuItems
                   {...dropdownParts}
                   canRename={canRename}
+                  canShare={canShare}
                   canDelete={canDelete}
                   onRename={startRename}
+                  onShare={startShare}
                   onDelete={startDelete}
                 />
               </DropdownMenuContent>
@@ -399,8 +420,10 @@ export function LessonPlanCard({
           <LessonMenuItems
             {...contextParts}
             canRename={canRename}
+            canShare={canShare}
             canDelete={canDelete}
             onRename={startRename}
+            onShare={startShare}
             onDelete={startDelete}
           />
         </ContextMenuContent>
@@ -433,6 +456,15 @@ export function LessonPlanCard({
           </DialogContent>
         </Dialog>
       )}
+
+      {canShare ? (
+        <ShareLessonDialog
+          open={sharing}
+          onOpenChange={setSharing}
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+        />
+      ) : null}
     </>
   );
 }

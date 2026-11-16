@@ -3,6 +3,8 @@ export type {
   Database,
   Export,
   ExportFormat,
+  LessonShare,
+  LessonShareSnapshot,
   LessonPlan,
   LessonSection,
   LessonTemplateSlots,
