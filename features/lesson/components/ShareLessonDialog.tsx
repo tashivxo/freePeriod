@@ -126,6 +126,7 @@ export function ShareLessonDialog({
                   id="share-url"
                   ref={urlInputRef}
                   readOnly
+                  dir="ltr"
                   value={share.url}
                   className="min-h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 font-body text-sm text-text-primary"
                   onFocus={(e) => e.target.select()}
