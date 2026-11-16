@@ -119,4 +119,13 @@ describe('ShareLessonDialog share URL row', () => {
     expect(copyButton).toHaveClass('h-11', 'shrink-0');
     expect(urlField.parentElement).toHaveClass('flex', 'items-center', 'gap-2');
   });
+
+  it('renders the share URL input with dir ltr so the link start is visible in RTL', async () => {
+    document.documentElement.dir = 'rtl';
+
+    render(<ShareLessonDialog {...defaultProps} />);
+
+    const urlField = await screen.findByLabelText('Share link');
+    expect(urlField).toHaveAttribute('dir', 'ltr');
+  });
 });
