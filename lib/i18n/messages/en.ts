@@ -357,6 +357,7 @@ export const en = {
     nothingFound: 'Nothing found, try a different search.',
     noLessons: 'No lessons yet.',
     generateALesson: 'Generate a lesson',
+    openingLesson: 'Opening…',
   },
   dashboard: {
     greeting: 'Hi, {name}!',

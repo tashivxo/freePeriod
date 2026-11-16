@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Loader2 } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DeleteIcon } from '@/components/ui/icons/delete';
@@ -47,6 +47,13 @@ export type LessonPlanCardData = Pick<
 
 /** Matches the longest title the generator produces; keeps cards readable. */
 export const LESSON_TITLE_MAX_LENGTH = 200;
+
+function isInAppLessonLinkClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
+  if (event.defaultPrevented) return false;
+  if (event.button !== 0) return false;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  return true;
+}
 
 type LessonPlanCardProps = {
   lesson: LessonPlanCardData;
@@ -208,6 +215,7 @@ export function LessonPlanCard({
 }: LessonPlanCardProps) {
   const t = useT();
   const [confirming, setConfirming] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -230,6 +238,27 @@ export function LessonPlanCard({
     const id = window.setTimeout(() => cancelRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [confirming]);
+
+  useEffect(() => {
+    const clearOpening = () => setOpening(false);
+
+    const handlePageShow = () => {
+      clearOpening();
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        clearOpening();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   const handleDeleteConfirm = async () => {
     if (deleting) return;
@@ -289,13 +318,27 @@ export function LessonPlanCard({
     }
   };
 
+  const showOpeningOverlay = opening && !confirming;
+
   const card = (
-    <Card className="group relative border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow h-full">
+    <Card
+      className="group relative border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow h-full"
+      aria-busy={opening || undefined}
+    >
       <CardContent className="p-5">
         <Link
           href={`/lesson/${lesson.id}`}
           className="block"
-          inert={confirming || undefined}
+          inert={confirming || opening || undefined}
+          onClick={(event) => {
+            if (confirming) return;
+            if (!isInAppLessonLinkClick(event)) return;
+            setOpening(true);
+          }}
+          onNavigate={() => {
+            if (confirming) return;
+            setOpening(true);
+          }}
         >
           <h3
             className={`font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2 ${hasActions ? 'pe-12' : ''}`}
@@ -405,6 +448,20 @@ export function LessonPlanCard({
               </div>
             )}
           </>
+        )}
+
+        {showOpeningOverlay && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-surface/90 backdrop-blur-[2px]"
+          >
+            <Loader2
+              className="h-5 w-5 shrink-0 text-coral motion-safe:animate-spin"
+              aria-hidden
+            />
+            <span className="font-body text-sm text-text-secondary">{t('history.openingLesson')}</span>
+          </div>
         )}
       </CardContent>
     </Card>

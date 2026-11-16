@@ -352,6 +352,7 @@ export const zhHans: Messages = {
     nothingFound: '没有找到，请换个搜索。',
     noLessons: '还没有教案。',
     generateALesson: '生成教案',
+    openingLesson: '正在打开…',
   },
   dashboard: {
     greeting: '你好，{name}！',

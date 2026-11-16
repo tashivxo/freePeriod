@@ -360,6 +360,7 @@ export const es: Messages = {
     nothingFound: 'Nada encontrado, prueba otra búsqueda.',
     noLessons: 'Aún no hay lecciones.',
     generateALesson: 'Generar una lección',
+    openingLesson: 'Abriendo…',
   },
   dashboard: {
     greeting: 'Hola, {name}!',
