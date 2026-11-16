@@ -359,6 +359,7 @@ export const ar: Messages = {
     nothingFound: 'لا نتائج، جرّب بحثا مختلفا.',
     noLessons: 'لا دروس بعد.',
     generateALesson: 'أنشئ درسا',
+    openingLesson: 'جارٍ الفتح…',
   },
   dashboard: {
     greeting: 'مرحبا، {name}!',
@@ -418,6 +419,7 @@ export const ar: Messages = {
     downloadFile: 'تنزيل الملف',
     download: 'تنزيل',
     error: 'تعذّر إنشاء رابط المشاركة. حاول مرة أخرى.',
+    downloadError: 'تعذّر تنزيل الملف. حاول مرة أخرى.',
     docxFallbackNote:
       'تعذّر تعبئة قالب مدرستك، لذا يحصل المستلمون على ملف خطة Free Period بدلًا من ذلك.',
     brandLine: 'درس مشترك',

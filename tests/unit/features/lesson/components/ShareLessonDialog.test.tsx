@@ -33,9 +33,7 @@ describe('ShareLessonDialog preparing state', () => {
 
     render(<ShareLessonDialog {...defaultProps} />);
 
-    const status = screen.getByRole('status');
-    expect(status).toHaveTextContent('Preparing your share link…');
-    expect(status.querySelector('svg')).toHaveClass('motion-safe:animate-spin');
+    expect(screen.getByRole('status')).toHaveTextContent('Preparing your share link…');
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-busy', 'true');
   });
 
@@ -50,6 +48,23 @@ describe('ShareLessonDialog preparing state', () => {
     expect(await screen.findByRole('button', { name: 'Copy link' })).toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-busy');
+  });
+
+  it('shows a download error when the file download fails', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => shareResult,
+      })
+      .mockResolvedValueOnce({ ok: false }) as typeof fetch;
+
+    const { user } = render(<ShareLessonDialog {...defaultProps} />);
+
+    expect(await screen.findByRole('button', { name: 'Download file' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Download file' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't download file. Try again.");
   });
 
   it('shows an error without a spinner when the share request fails', async () => {

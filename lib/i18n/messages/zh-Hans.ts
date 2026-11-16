@@ -352,6 +352,7 @@ export const zhHans: Messages = {
     nothingFound: '没有找到，请换个搜索。',
     noLessons: '还没有教案。',
     generateALesson: '生成教案',
+    openingLesson: '正在打开…',
   },
   dashboard: {
     greeting: '你好，{name}！',
@@ -411,6 +412,7 @@ export const zhHans: Messages = {
     downloadFile: '下载文件',
     download: '下载',
     error: '无法创建分享链接。请重试。',
+    downloadError: '无法下载文件。请重试。',
     docxFallbackNote: '无法填充您学校的模板，收件人将改为获得 Free Period 教案文件。',
     brandLine: '共享课程',
     madeWith: '由 FreePeriod 制作',
