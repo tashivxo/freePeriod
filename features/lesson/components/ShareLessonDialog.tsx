@@ -121,7 +121,7 @@ export function ShareLessonDialog({
               <label htmlFor="share-url" className="sr-only">
                 {t('share.linkLabel')}
               </label>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <input
                   id="share-url"
                   ref={urlInputRef}
@@ -130,7 +130,12 @@ export function ShareLessonDialog({
                   className="min-h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 font-body text-sm text-text-primary"
                   onFocus={(e) => e.target.select()}
                 />
-                <Button type="button" variant="outline" className="shrink-0" onClick={() => void handleCopy()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 shrink-0 sm:h-11"
+                  onClick={() => void handleCopy()}
+                >
                   {copyState === 'copied' ? t('share.copied') : t('share.copyLink')}
                 </Button>
               </div>
