@@ -72,6 +72,7 @@ describe('LessonPlanCard actions menu', () => {
     fireEvent.contextMenu(screen.getByText('Fractions'));
 
     expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Share' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
   });
 
@@ -92,6 +93,7 @@ describe('LessonPlanCard actions menu', () => {
     await user.click(screen.getByRole('button', { name: 'Actions for Fractions' }));
 
     expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Share' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
   });
 

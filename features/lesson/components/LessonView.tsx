@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
+import { SendIcon } from '@/components/ui/icons/send';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
 import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
@@ -25,6 +26,7 @@ import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { SectionValueView } from '@/features/lesson/components/SectionValueView';
+import { ShareLessonDialog } from '@/features/lesson/components/ShareLessonDialog';
 import {
   FilledTemplateChoiceDialog,
   type FilledTemplateDialogVariant,
@@ -68,6 +70,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [exportError, setExportError] = useState<string | null>(null);
   const { ref: exportErrorIconRef, animationDisabled: exportErrorIconMotionDisabled } =
     useMotionSafeIconRef();
+  const [shareOpen, setShareOpen] = useState(false);
   const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
   const [dialogActionError, setDialogActionError] = useState<string | null>(null);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
@@ -371,26 +374,37 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         </div>
 
         <div className="mt-4 flex flex-col gap-1.5">
-          <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
+              <Button
+                className={toolbarButtonClassName}
+                variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
+                aria-describedby={
+                  filledTemplateVariant === 'has-template' ? fillHelperId : undefined
+                }
+                onClick={() => handleFilledTemplateDialogOpenChange(true)}
+              >
+                <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
+                {FILL_MY_TEMPLATE_LABEL}
+              </Button>
+              <Button
+                className={toolbarButtonClassName}
+                variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
+                onClick={() => void handleExport()}
+                isLoading={exportLoading}
+              >
+                <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
+                {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
+              </Button>
+            </div>
             <Button
-              className={toolbarButtonClassName}
-              variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
-              aria-describedby={
-                filledTemplateVariant === 'has-template' ? fillHelperId : undefined
-              }
-              onClick={() => handleFilledTemplateDialogOpenChange(true)}
+              type="button"
+              variant="soft"
+              className="min-h-11 h-11 w-full px-5 text-base sm:w-auto sm:self-start"
+              onClick={() => setShareOpen(true)}
             >
-              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
-              {FILL_MY_TEMPLATE_LABEL}
-            </Button>
-            <Button
-              className={toolbarButtonClassName}
-              variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
-              onClick={() => void handleExport()}
-              isLoading={exportLoading}
-            >
-              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
-              {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
+              <MotionSafeIcon icon={SendIcon} size={20} className="mr-2" parentHover parentFocus />
+              {t('history.share')}
             </Button>
           </div>
           {filledTemplateVariant === 'has-template' ? (
@@ -415,6 +429,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </div>
         ) : null}
       </div>
+
+      <ShareLessonDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        lessonId={lesson.id}
+        lessonTitle={lesson.title}
+        onBeforeShare={flush}
+      />
 
       <FilledTemplateChoiceDialog
         open={filledTemplateDialogOpen}

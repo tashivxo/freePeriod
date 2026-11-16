@@ -336,13 +336,14 @@ describe('LessonView', () => {
     const downloadButton = screen.getByRole('button', { name: FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL });
     const helper = screen.getByText('Uses your uploaded template');
     const row = fillButton.parentElement;
+    const toolbarBlock = row?.parentElement;
 
     expect(fillButton).toHaveAttribute('data-variant', 'default');
     expect(downloadButton).toHaveAttribute('data-variant', 'secondary');
     expect(row).toBe(downloadButton.parentElement);
     expect(row).not.toContainElement(helper);
     expect(row).toHaveClass('grid', 'grid-cols-2', 'gap-3');
-    expect(row?.nextElementSibling).toBe(helper);
+    expect(toolbarBlock?.nextElementSibling).toBe(helper);
     expect(helper).toHaveClass('text-xs');
     expect(helper.id).toBeTruthy();
     expect(fillButton).toHaveAttribute('aria-describedby', helper.id);
