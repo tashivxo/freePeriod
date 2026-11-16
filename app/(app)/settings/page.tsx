@@ -8,6 +8,7 @@ import { resolveGenerationAccess } from '@/lib/generation/authorize';
 import { getMessages } from '@/lib/i18n';
 import { readLocaleCookie } from '@/lib/i18n/server';
 import { getTrialDaysRemaining, isTrialActive } from '@/lib/utils/trial';
+import { periodEndForReset, shouldResetGenerationWindow } from '@/lib/generation/quota';
 import { SettingsClient } from './SettingsClient';
 import type { Subscription, User } from '@/types';
 
@@ -101,6 +102,22 @@ async function SettingsContent() {
     subscription?.ls_subscription_id ?? null,
   );
 
+  const now = new Date();
+  const resetAt = user.generation_count_reset_at;
+  const usageResetsAt = shouldResetGenerationWindow(resetAt, now)
+    ? periodEndForReset({
+        plan: generationAccess.userPlan,
+        renewsAt: subscription?.renews_at ?? null,
+        now,
+      })
+    : resetAt ??
+      periodEndForReset({
+        plan: generationAccess.userPlan,
+        renewsAt: subscription?.renews_at ?? null,
+        now,
+      });
+  const billingInterval = subscription?.billing_interval ?? null;
+
   const loadedDefault = await loadDefaultTemplateForUser(supabase, authUser.id);
   const defaultTemplateMissing = loadedDefault.status === 'missing';
   let settingsUser = user;
@@ -118,6 +135,9 @@ async function SettingsContent() {
       generationLimit={generationAccess.generationLimit}
       trialDays={trialDays}
       manageSubscriptionUrl={manageSubscriptionUrl}
+      billingInterval={billingInterval}
+      usageResetsAt={usageResetsAt}
+      isAdmin={user.is_admin}
       defaultTemplateMissing={defaultTemplateMissing}
     />
   );

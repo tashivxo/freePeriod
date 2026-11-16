@@ -65,6 +65,48 @@ describe('LessonPlanCard locale meta', () => {
   });
 });
 
+describe('LessonPlanCard opening lesson', () => {
+  function lessonLink() {
+    return screen.getByRole('link', { name: /Fractions/ });
+  }
+
+  it('shows an opening overlay on in-app link click', () => {
+    render(<LessonPlanCard lesson={lesson} />);
+
+    fireEvent.click(lessonLink());
+
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Opening…');
+    expect(status.querySelector('svg')).toHaveClass('motion-safe:animate-spin');
+    expect(screen.getByText('Fractions').closest('[data-slot="card"]')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('does not show the opening overlay on modifier-key click', () => {
+    render(<LessonPlanCard lesson={lesson} />);
+
+    fireEvent.click(lessonLink(), { ctrlKey: true });
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('shows delete confirmation instead of the opening overlay while confirming', async () => {
+    const { user } = render(
+      <LessonPlanCard lesson={lesson} onDelete={jest.fn()} onRename={jest.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Actions for Fractions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
+
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    fireEvent.click(lessonLink());
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  });
+});
+
 describe('LessonPlanCard actions menu', () => {
   it('shows Rename and Delete on right-click', async () => {
     render(<LessonPlanCard lesson={lesson} onDelete={jest.fn()} onRename={jest.fn()} />);
@@ -72,6 +114,7 @@ describe('LessonPlanCard actions menu', () => {
     fireEvent.contextMenu(screen.getByText('Fractions'));
 
     expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Share' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
   });
 
@@ -92,6 +135,7 @@ describe('LessonPlanCard actions menu', () => {
     await user.click(screen.getByRole('button', { name: 'Actions for Fractions' }));
 
     expect(await screen.findByRole('menuitem', { name: 'Rename' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Share' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
   });
 

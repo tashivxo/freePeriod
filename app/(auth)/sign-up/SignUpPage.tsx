@@ -10,8 +10,8 @@ import { EMAIL_ALREADY_EXISTS, isValidEmailFormat, normalizeEmail } from '@/lib/
 import { AUTH_UNEXPECTED_ERROR, mapAuthError } from '@/lib/auth/map-auth-error';
 import { signInWithGoogle } from '@/lib/auth/google';
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton';
-import { ChipCheckbox } from '@/components/forms/ChipCheckbox';
 import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/ui/branding/Logo';
@@ -219,6 +219,11 @@ export function SignUpPage() {
   const agreeToLegalBefore = t('auth.agreeToLegalBefore');
   const agreeToLegalBetween = t('auth.agreeToLegalBetween');
 
+  function onAcceptedTermsChange(checked: boolean) {
+    setAcceptedTerms(checked);
+    if (checked) setTermsError('');
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background/80 px-4 py-12">
       <div className="w-full max-w-sm">
@@ -328,48 +333,46 @@ export function SignUpPage() {
             <fieldset className="min-w-0 border-0 p-0">
               <legend className="sr-only">{t('auth.termsAgreement')}</legend>
               <div className="flex min-h-11 items-center gap-3">
-                <ChipCheckbox
+                <Switch
                   id="terms-agreement"
                   checked={acceptedTerms}
+                  onCheckedChange={(checked) => onAcceptedTermsChange(!!checked)}
+                  className="data-checked:bg-coral shrink-0"
                   aria-label={t('auth.iAgreeAria')}
-                  aria-invalid={Boolean(termsError)}
-                  onCheckedChange={(next) => {
-                    setAcceptedTerms(next);
-                    if (next) setTermsError('');
-                  }}
-                >
-                  {t('auth.iAgree')}
-                </ChipCheckbox>
-                <span className="text-sm font-body text-text-secondary">
-                  {[
-                    agreeToLegalBefore ? (
-                      <label key="before" htmlFor="terms-agreement" className="cursor-pointer">
+                  aria-invalid={Boolean(termsError) || undefined}
+                />
+                <p className="min-w-0 flex-1 text-sm font-body leading-relaxed text-text-secondary">
+                  <label htmlFor="terms-agreement" className="cursor-pointer text-text-primary">
+                    {t('auth.iAgree')}
+                  </label>
+                  {agreeToLegalBefore ? (
+                    <>
+                      {' '}
+                      <label htmlFor="terms-agreement" className="cursor-pointer">
                         {agreeToLegalBefore}
                       </label>
-                    ) : null,
-                    <Link
-                      key="terms"
-                      href="/terms"
-                      className="text-coral font-semibold hover:underline"
-                      target="_blank"
-                    >
-                      {t('settings.termsOfService')}
-                    </Link>,
-                    agreeToLegalBetween ? (
-                      <label key="between" htmlFor="terms-agreement" className="cursor-pointer">
-                        {agreeToLegalBetween}
-                      </label>
-                    ) : null,
-                    <Link
-                      key="privacy"
-                      href="/privacy"
-                      className="text-coral font-semibold hover:underline"
-                      target="_blank"
-                    >
-                      {t('settings.privacyPolicy')}
-                    </Link>,
-                  ]}
-                </span>
+                    </>
+                  ) : null}
+                  <Link
+                    href="/terms"
+                    className="text-coral font-semibold hover:underline"
+                    target="_blank"
+                  >
+                    {t('settings.termsOfService')}
+                  </Link>
+                  {agreeToLegalBetween ? (
+                    <label htmlFor="terms-agreement" className="cursor-pointer">
+                      {agreeToLegalBetween}
+                    </label>
+                  ) : null}
+                  <Link
+                    href="/privacy"
+                    className="text-coral font-semibold hover:underline"
+                    target="_blank"
+                  >
+                    {t('settings.privacyPolicy')}
+                  </Link>
+                </p>
               </div>
             </fieldset>
             {termsError && <FieldError message={termsError} className="px-1" />}

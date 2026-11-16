@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Loader2 } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DeleteIcon } from '@/components/ui/icons/delete';
+import { SendIcon } from '@/components/ui/icons/send';
 import { SquarePenIcon } from '@/components/ui/icons/square-pen';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +35,7 @@ import {
 import { formatDurationShort } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { useT } from '@/providers/locale';
+import { ShareLessonDialog } from '@/features/lesson/components/ShareLessonDialog';
 import type { LessonPlan } from '@/types';
 
 export type LessonPlanCardData = Pick<
@@ -45,6 +47,13 @@ export type LessonPlanCardData = Pick<
 
 /** Matches the longest title the generator produces; keeps cards readable. */
 export const LESSON_TITLE_MAX_LENGTH = 200;
+
+function isInAppLessonLinkClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
+  if (event.defaultPrevented) return false;
+  if (event.button !== 0) return false;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  return true;
+}
 
 type LessonPlanCardProps = {
   lesson: LessonPlanCardData;
@@ -67,8 +76,10 @@ type MenuParts = {
 
 type LessonMenuItemsProps = MenuParts & {
   canRename: boolean;
+  canShare: boolean;
   canDelete: boolean;
   onRename: () => void;
+  onShare: () => void;
   onDelete: () => void;
 };
 
@@ -77,8 +88,10 @@ function LessonMenuItems({
   Item,
   Separator,
   canRename,
+  canShare,
   canDelete,
   onRename,
+  onShare,
   onDelete,
 }: LessonMenuItemsProps) {
   const t = useT();
@@ -90,7 +103,13 @@ function LessonMenuItems({
           {t('history.rename')}
         </Item>
       )}
-      {canRename && canDelete && <Separator />}
+      {canShare && (
+        <Item onSelect={onShare}>
+          <MotionSafeIcon icon={SendIcon} size={16} parentHover parentFocus />
+          {t('history.share')}
+        </Item>
+      )}
+      {(canRename || canShare) && canDelete && <Separator />}
       {canDelete && (
         <Item variant="destructive" onSelect={onDelete}>
           <MotionSafeIcon icon={DeleteIcon} size={16} parentHover parentFocus />
@@ -196,7 +215,9 @@ export function LessonPlanCard({
 }: LessonPlanCardProps) {
   const t = useT();
   const [confirming, setConfirming] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const renameSavingRef = useRef(false);
@@ -206,6 +227,7 @@ export function LessonPlanCard({
 
   const canRename = Boolean(onRename);
   const canDelete = Boolean(onDelete);
+  const canShare = canRename || canDelete;
   const hasActions = canRename || canDelete;
 
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -253,6 +275,11 @@ export function LessonPlanCard({
     setRenaming(true);
   };
 
+  const startShare = () => {
+    keepFocusRef.current = true;
+    setSharing(true);
+  };
+
   const startDelete = () => {
     keepFocusRef.current = true;
     setDeleteFailed(false);
@@ -270,13 +297,27 @@ export function LessonPlanCard({
     }
   };
 
+  const showOpeningOverlay = opening && !confirming;
+
   const card = (
-    <Card className="group relative border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow h-full">
+    <Card
+      className="group relative border-border/60 bg-surface shadow-sm hover:shadow-md transition-shadow h-full"
+      aria-busy={opening || undefined}
+    >
       <CardContent className="p-5">
         <Link
           href={`/lesson/${lesson.id}`}
           className="block"
-          inert={confirming || undefined}
+          inert={confirming || opening || undefined}
+          onClick={(event) => {
+            if (confirming) return;
+            if (!isInAppLessonLinkClick(event)) return;
+            setOpening(true);
+          }}
+          onNavigate={() => {
+            if (confirming) return;
+            setOpening(true);
+          }}
         >
           <h3
             className={`font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2 ${hasActions ? 'pe-12' : ''}`}
@@ -331,8 +372,10 @@ export function LessonPlanCard({
                 <LessonMenuItems
                   {...dropdownParts}
                   canRename={canRename}
+                  canShare={canShare}
                   canDelete={canDelete}
                   onRename={startRename}
+                  onShare={startShare}
                   onDelete={startDelete}
                 />
               </DropdownMenuContent>
@@ -385,6 +428,20 @@ export function LessonPlanCard({
             )}
           </>
         )}
+
+        {showOpeningOverlay && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-surface/90 backdrop-blur-[2px]"
+          >
+            <Loader2
+              className="h-5 w-5 shrink-0 text-coral motion-safe:animate-spin"
+              aria-hidden
+            />
+            <span className="font-body text-sm text-text-secondary">{t('history.openingLesson')}</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -399,8 +456,10 @@ export function LessonPlanCard({
           <LessonMenuItems
             {...contextParts}
             canRename={canRename}
+            canShare={canShare}
             canDelete={canDelete}
             onRename={startRename}
+            onShare={startShare}
             onDelete={startDelete}
           />
         </ContextMenuContent>
@@ -433,6 +492,15 @@ export function LessonPlanCard({
           </DialogContent>
         </Dialog>
       )}
+
+      {canShare ? (
+        <ShareLessonDialog
+          open={sharing}
+          onOpenChange={setSharing}
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+        />
+      ) : null}
     </>
   );
 }

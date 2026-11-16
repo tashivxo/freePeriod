@@ -304,6 +304,19 @@ describe('LessonView', () => {
     expect(screen.getByRole('button', { name: /back to dashboard/i })).toHaveClass('min-h-11');
   });
 
+  it('places Share with Back as chrome, not as a third download button', () => {
+    render(<LessonView lesson={lesson} />);
+
+    const back = screen.getByRole('button', { name: /back to dashboard/i });
+    const share = screen.getByRole('button', { name: 'Share' });
+    const fill = screen.getByRole('button', { name: FILL_MY_TEMPLATE_LABEL });
+
+    expect(back.parentElement).toContainElement(share);
+    expect(fill.parentElement).not.toContainElement(share);
+    expect(share).not.toHaveAttribute('data-variant');
+    expect(share).toHaveClass('min-h-11');
+  });
+
   it('makes Download the solid yellow action and Fill the soft coral action when no template is uploaded', async () => {
     const { user } = render(<LessonView lesson={lesson} />);
 

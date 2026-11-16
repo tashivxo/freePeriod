@@ -101,6 +101,28 @@ export type Export = {
   created_at: string;
 }
 
+export type LessonShareSnapshot = {
+  title: string;
+  subject: string;
+  grade: string;
+  duration_minutes: number;
+  curriculum: string | null;
+  content: LessonSection;
+};
+
+export type LessonShare = {
+  id: string;
+  lesson_id: string;
+  user_id: string;
+  token: string;
+  snapshot: LessonShareSnapshot;
+  file_path: string;
+  file_name: string;
+  content_type: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Subscription = {
   id: string;
   user_id: string;
@@ -160,6 +182,16 @@ export type Database = {
         Row: Export;
         Insert: Omit<Export, 'id' | 'created_at'> & { id?: string };
         Update: Partial<Omit<Export, 'id' | 'created_at'>>;
+        Relationships: [];
+      };
+      lesson_shares: {
+        Row: LessonShare;
+        Insert: Omit<LessonShare, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<LessonShare, 'id' | 'lesson_id' | 'user_id' | 'created_at'>>;
         Relationships: [];
       };
       subscriptions: {
