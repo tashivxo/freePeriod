@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DownloadIcon } from '@/components/ui/icons/download';
+import { SendIcon } from '@/components/ui/icons/send';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { XIcon } from '@/components/ui/icons/x';
 import { stripAdaptiveSelfPointers } from '@/lib/lesson/adaptive-self-reference';
@@ -25,6 +26,7 @@ import { useDebouncedLessonSave } from '@/hooks/useDebouncedLessonSave';
 import { useMotionSafeIconRef } from '@/hooks/useMotionSafeIconRef';
 import { SectionCard } from '@/features/lesson/components/SectionCard';
 import { SectionValueView } from '@/features/lesson/components/SectionValueView';
+import { ShareLessonDialog } from '@/features/lesson/components/ShareLessonDialog';
 import {
   FilledTemplateChoiceDialog,
   type FilledTemplateDialogVariant,
@@ -68,6 +70,7 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   const [exportError, setExportError] = useState<string | null>(null);
   const { ref: exportErrorIconRef, animationDisabled: exportErrorIconMotionDisabled } =
     useMotionSafeIconRef();
+  const [shareOpen, setShareOpen] = useState(false);
   const [filledTemplateDialogOpen, setFilledTemplateDialogOpen] = useState(false);
   const [dialogActionError, setDialogActionError] = useState<string | null>(null);
   const [autosaveFlashBySection, setAutosaveFlashBySection] = useState<
@@ -316,17 +319,27 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8">
-        <button
-          type="button"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            void handleBack();
-          }}
-          className="min-h-11 inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              void handleBack();
+            }}
+            className="min-h-11 inline-flex items-center gap-1 rounded-md text-sm font-body text-text-secondary transition-[color,transform] hover:text-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40 active:scale-[0.96]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="min-h-11 inline-flex shrink-0 items-center gap-1.5 rounded-md text-sm font-body text-text-secondary transition-[color,transform] hover:text-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40 active:scale-[0.96]"
+          >
+            <MotionSafeIcon icon={SendIcon} size={16} parentHover parentFocus />
+            {t('history.share')}
+          </button>
+        </div>
 
         <BlurText as="h1" text={content.title || lesson.title} className="font-display text-3xl font-bold text-text-primary mb-2" />
 
@@ -415,6 +428,14 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
           </div>
         ) : null}
       </div>
+
+      <ShareLessonDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        lessonId={lesson.id}
+        lessonTitle={lesson.title}
+        onBeforeShare={flush}
+      />
 
       <FilledTemplateChoiceDialog
         open={filledTemplateDialogOpen}

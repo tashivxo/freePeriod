@@ -41,6 +41,7 @@ jest.mock('@/providers/color-bends-atmosphere', () => ({
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock('@/hooks/useMotionSafeIconRef', () => ({

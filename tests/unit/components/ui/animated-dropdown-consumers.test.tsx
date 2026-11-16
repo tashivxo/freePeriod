@@ -54,6 +54,7 @@ jest.mock('@/lib/supabase/client', () => ({
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock('animejs', () => ({
