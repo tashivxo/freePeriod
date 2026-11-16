@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { SendIcon } from '@/components/ui/icons/send';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
@@ -161,14 +162,34 @@ export function ShareLessonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogTitle>{t('share.dialogTitle')}</DialogTitle>
-        <DialogDescription>{t('share.dialogDescription')}</DialogDescription>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-5 p-6 sm:max-w-md"
+        aria-busy={loading || undefined}
+      >
+        <div className="flex flex-col gap-1">
+          <DialogTitle className="font-display text-lg font-semibold text-text-primary">
+            {t('share.dialogTitle')}
+          </DialogTitle>
+          <DialogDescription className="font-body text-sm text-text-secondary">
+            {t('share.dialogDescription')}
+          </DialogDescription>
+        </div>
 
         {loading ? (
-          <p className="font-body text-sm text-text-secondary" role="status">
-            {t('share.preparing')}
-          </p>
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-[7.5rem] flex-col items-center justify-center gap-2"
+          >
+            <Loader2
+              className="h-5 w-5 shrink-0 text-coral motion-safe:animate-spin"
+              aria-hidden
+            />
+            <p className="font-body text-sm text-text-secondary text-center text-pretty">
+              {t('share.preparing')}
+            </p>
+          </div>
         ) : null}
 
         {error ? (
