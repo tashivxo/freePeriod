@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
+import { renameLesson } from '@/lib/lesson/rename-lesson';
 import { createClient } from '@/lib/supabase/client';
 
 type LessonRow = { id: string; title: string };
@@ -37,9 +38,9 @@ export function useLessonActions<T extends LessonRow>(
         }),
       );
 
-      const supabase = createClient();
-      const { error } = await supabase.from('lesson_plans').update({ title }).eq('id', id);
-      if (error) {
+      try {
+        await renameLesson(id, title);
+      } catch (error) {
         setLessons((prev) =>
           prev.map((lesson) =>
             lesson.id === id && previousTitle !== undefined
