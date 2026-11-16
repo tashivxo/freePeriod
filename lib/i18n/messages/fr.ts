@@ -423,6 +423,7 @@ export const fr: Messages = {
     downloadFile: 'Télécharger le fichier',
     download: 'Télécharger',
     error: 'Impossible de créer le lien de partage. Réessayez.',
+    downloadError: 'Impossible de télécharger le fichier. Réessayez.',
     docxFallbackNote:
       'Votre modèle d’établissement n’a pas pu être rempli ; les destinataires recevront le plan Free Period.',
     brandLine: 'Leçon partagée',

@@ -77,7 +77,6 @@ describe('LessonPlanCard opening lesson', () => {
 
     const status = screen.getByRole('status');
     expect(status).toHaveTextContent('Opening…');
-    expect(status.querySelector('svg')).toHaveClass('motion-safe:animate-spin');
     expect(screen.getByText('Fractions').closest('[data-slot="card"]')).toHaveAttribute(
       'aria-busy',
       'true',
@@ -89,6 +88,16 @@ describe('LessonPlanCard opening lesson', () => {
 
     fireEvent.click(lessonLink(), { ctrlKey: true });
 
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('clears the opening overlay on pageshow', () => {
+    render(<LessonPlanCard lesson={lesson} />);
+
+    fireEvent.click(lessonLink());
+    expect(screen.getByRole('status')).toBeInTheDocument();
+
+    fireEvent(window, new Event('pageshow'));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 

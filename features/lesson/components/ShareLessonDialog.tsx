@@ -1,26 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadIcon } from '@/components/ui/icons/download';
 import { SendIcon } from '@/components/ui/icons/send';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { PendingStatus } from '@/components/ui/pending-status';
 import { downloadBlob } from '@/lib/download-blob';
+import { canShareLessonFile, canUseNativeWebShare } from '@/lib/share/web-share';
+import { LessonDialogChrome } from '@/features/lesson/components/LessonDialogChrome';
+import { useCreateLessonShare } from '@/features/lesson/hooks/useCreateLessonShare';
 import { useT } from '@/providers/locale';
-
-type ShareResult = {
-  url: string;
-  fileName: string;
-  contentType: string;
-  usedDocxFallback: boolean;
-  token: string;
-};
 
 type ShareLessonDialogProps = {
   open: boolean;
@@ -39,73 +30,27 @@ export function ShareLessonDialog({
   onBeforeShare,
 }: ShareLessonDialogProps) {
   const t = useT();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [share, setShare] = useState<ShareResult | null>(null);
+  const { loading, error, share } = useCreateLessonShare({
+    open,
+    lessonId,
+    onOpenChange,
+    onBeforeShare,
+  });
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
-  const shareRequestRef = useRef(0);
-
-  const reset = useCallback(() => {
-    setLoading(false);
-    setError(null);
-    setShare(null);
-    setCopyState('idle');
-  }, []);
 
   useEffect(() => {
     if (!open) {
-      reset();
-      return;
-    }
-
-    const requestId = ++shareRequestRef.current;
-    let cancelled = false;
-
-    async function runShare() {
-      setLoading(true);
-      setError(null);
-      setShare(null);
       setCopyState('idle');
-
-      if (onBeforeShare) {
-        const ok = await onBeforeShare();
-        if (!ok) {
-          if (cancelled || requestId !== shareRequestRef.current) return;
-          setLoading(false);
-          onOpenChange(false);
-          return;
-        }
-      }
-
-      try {
-        const response = await fetch(`/api/lessons/${lessonId}/share`, { method: 'POST' });
-        if (cancelled || requestId !== shareRequestRef.current) return;
-
-        if (!response.ok) {
-          setError(t('share.error'));
-          setLoading(false);
-          return;
-        }
-
-        const body = (await response.json()) as ShareResult;
-        setShare(body);
-      } catch {
-        if (cancelled || requestId !== shareRequestRef.current) return;
-        setError(t('share.error'));
-      } finally {
-        if (!cancelled && requestId === shareRequestRef.current) {
-          setLoading(false);
-        }
-      }
+      setDownloadError(null);
     }
+  }, [open]);
 
-    void runShare();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lessonId, onBeforeShare, onOpenChange, open, reset, t]);
+  const showSend = useMemo(() => {
+    if (!share || !canUseNativeWebShare()) return false;
+    return canShareLessonFile(share.fileName, share.contentType);
+  }, [share]);
 
   const handleCopy = async () => {
     if (!share?.url) return;
@@ -121,21 +66,28 @@ export function ShareLessonDialog({
 
   const handleDownload = async () => {
     if (!share) return;
-    const response = await fetch(`/api/share/${share.token}/download`);
-    if (!response.ok) return;
-    downloadBlob(await response.blob(), share.fileName);
-  };
-
-  const canNativeShare =
-    typeof navigator !== 'undefined' &&
-    typeof navigator.share === 'function' &&
-    typeof navigator.canShare === 'function';
-
-  const handleSendFile = async () => {
-    if (!share || !canNativeShare) return;
+    setDownloadError(null);
     try {
       const response = await fetch(`/api/share/${share.token}/download`);
-      if (!response.ok) return;
+      if (!response.ok) {
+        setDownloadError(t('share.downloadError'));
+        return;
+      }
+      downloadBlob(await response.blob(), share.fileName);
+    } catch {
+      setDownloadError(t('share.downloadError'));
+    }
+  };
+
+  const handleSendFile = async () => {
+    if (!share || !canUseNativeWebShare()) return;
+    setDownloadError(null);
+    try {
+      const response = await fetch(`/api/share/${share.token}/download`);
+      if (!response.ok) {
+        setDownloadError(t('share.downloadError'));
+        return;
+      }
       const blob = await response.blob();
       const file = new File([blob], share.fileName, { type: share.contentType });
       const payload: ShareData = { title: lessonTitle, url: share.url, files: [file] };
@@ -146,30 +98,16 @@ export function ShareLessonDialog({
     }
   };
 
-  const showSend =
-    canNativeShare &&
-    share != null &&
-    typeof navigator.canShare === 'function' &&
-    (() => {
-      try {
-        const testFile = new File([''], share.fileName, { type: share.contentType });
-        return navigator.canShare({ files: [testFile] });
-      } catch {
-        return false;
-      }
-    })();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogTitle>{t('share.dialogTitle')}</DialogTitle>
-        <DialogDescription>{t('share.dialogDescription')}</DialogDescription>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-5 p-6 sm:max-w-md"
+        aria-busy={loading || undefined}
+      >
+        <LessonDialogChrome title={t('share.dialogTitle')} description={t('share.dialogDescription')} />
 
-        {loading ? (
-          <p className="font-body text-sm text-text-secondary" role="status">
-            {t('share.preparing')}
-          </p>
-        ) : null}
+        {loading ? <PendingStatus layout="inset" message={t('share.preparing')} /> : null}
 
         {error ? (
           <p className="font-body text-sm text-destructive" role="alert">
@@ -183,16 +121,22 @@ export function ShareLessonDialog({
               <label htmlFor="share-url" className="sr-only">
                 {t('share.linkLabel')}
               </label>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <input
                   id="share-url"
                   ref={urlInputRef}
                   readOnly
+                  dir="ltr"
                   value={share.url}
                   className="min-h-11 flex-1 rounded-lg border border-border bg-muted/40 px-3 font-body text-sm text-text-primary"
                   onFocus={(e) => e.target.select()}
                 />
-                <Button type="button" variant="outline" className="shrink-0" onClick={() => void handleCopy()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 shrink-0 sm:h-11"
+                  onClick={() => void handleCopy()}
+                >
                   {copyState === 'copied' ? t('share.copied') : t('share.copyLink')}
                 </Button>
               </div>
@@ -203,6 +147,12 @@ export function ShareLessonDialog({
 
             {share.usedDocxFallback ? (
               <p className="font-body text-xs text-text-secondary">{t('share.docxFallbackNote')}</p>
+            ) : null}
+
+            {downloadError ? (
+              <p className="font-body text-sm text-destructive" role="alert">
+                {downloadError}
+              </p>
             ) : null}
 
             <div className="flex flex-col gap-2 sm:flex-row">
