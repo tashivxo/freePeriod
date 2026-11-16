@@ -420,6 +420,7 @@ export const es: Messages = {
     downloadFile: 'Descargar archivo',
     download: 'Descargar',
     error: 'No se pudo crear el enlace para compartir. Inténtalo de nuevo.',
+    downloadError: 'No se pudo descargar el archivo. Inténtalo de nuevo.',
     docxFallbackNote:
       'No pudimos rellenar la plantilla de tu escuela, así que los destinatarios recibirán el plan de Free Period.',
     brandLine: 'Lección compartida',

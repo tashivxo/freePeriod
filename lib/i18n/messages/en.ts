@@ -417,6 +417,7 @@ export const en = {
     downloadFile: 'Download file',
     download: 'Download',
     error: "Couldn't create share link. Try again.",
+    downloadError: "Couldn't download file. Try again.",
     docxFallbackNote:
       "Your school template couldn't be filled, so recipients get the Free Period lesson plan file instead.",
     brandLine: 'Shared lesson',

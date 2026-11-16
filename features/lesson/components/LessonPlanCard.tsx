@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Ellipsis, Loader2 } from 'lucide-react';
+import { Ellipsis } from 'lucide-react';
 import { BookTextIcon } from '@/components/ui/icons/book-text';
 import { ClockIcon } from '@/components/ui/icons/clock';
 import { DeleteIcon } from '@/components/ui/icons/delete';
@@ -10,6 +10,7 @@ import { SendIcon } from '@/components/ui/icons/send';
 import { SquarePenIcon } from '@/components/ui/icons/square-pen';
 import { MotionSafeIcon } from '@/components/ui/icons/MotionSafeIcon';
 import { Button } from '@/components/ui/Button';
+import { PendingStatus } from '@/components/ui/pending-status';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   ContextMenu,
@@ -450,19 +451,9 @@ export function LessonPlanCard({
           </>
         )}
 
-        {showOpeningOverlay && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-xl bg-surface/90 backdrop-blur-[2px]"
-          >
-            <Loader2
-              className="h-5 w-5 shrink-0 text-coral motion-safe:animate-spin"
-              aria-hidden
-            />
-            <span className="font-body text-sm text-text-secondary">{t('history.openingLesson')}</span>
-          </div>
-        )}
+        {showOpeningOverlay ? (
+          <PendingStatus layout="overlay" message={t('history.openingLesson')} />
+        ) : null}
       </CardContent>
     </Card>
   );
