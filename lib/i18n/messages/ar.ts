@@ -359,6 +359,7 @@ export const ar: Messages = {
     nothingFound: 'لا نتائج، جرّب بحثا مختلفا.',
     noLessons: 'لا دروس بعد.',
     generateALesson: 'أنشئ درسا',
+    openingLesson: 'جارٍ الفتح…',
   },
   dashboard: {
     greeting: 'مرحبا، {name}!',

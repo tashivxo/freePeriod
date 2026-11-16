@@ -362,6 +362,7 @@ export const fr: Messages = {
     nothingFound: 'Aucun résultat, essayez une autre recherche.',
     noLessons: 'Pas encore de leçons.',
     generateALesson: 'Générer une leçon',
+    openingLesson: 'Ouverture…',
   },
   dashboard: {
     greeting: 'Bonjour, {name} !',
