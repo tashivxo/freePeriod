@@ -26,16 +26,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { formatDurationShort } from '@/lib/i18n/format';
 import { formatGradeLabel } from '@/lib/utils/grades';
 import { useT } from '@/providers/locale';
+import { LessonCardDeleteOverlay } from '@/features/lesson/components/LessonCardDeleteOverlay';
+import {
+  LESSON_TITLE_MAX_LENGTH,
+  RenameLessonDialog,
+} from '@/features/lesson/components/RenameLessonDialog';
 import { ShareLessonDialog } from '@/features/lesson/components/ShareLessonDialog';
 import type { LessonPlan } from '@/types';
 
@@ -46,8 +44,7 @@ export type LessonPlanCardData = Pick<
   firstObjective?: string | null;
 };
 
-/** Matches the longest title the generator produces; keeps cards readable. */
-export const LESSON_TITLE_MAX_LENGTH = 200;
+export { LESSON_TITLE_MAX_LENGTH };
 
 function isInAppLessonLinkClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
   if (event.defaultPrevented) return false;
@@ -77,7 +74,7 @@ type MenuParts = {
 
 type LessonMenuItemsProps = MenuParts & {
   canRename: boolean;
-  canShare: boolean;
+  showOwnerMenu: boolean;
   canDelete: boolean;
   onRename: () => void;
   onShare: () => void;
@@ -89,7 +86,7 @@ function LessonMenuItems({
   Item,
   Separator,
   canRename,
-  canShare,
+  showOwnerMenu,
   canDelete,
   onRename,
   onShare,
@@ -104,13 +101,13 @@ function LessonMenuItems({
           {t('history.rename')}
         </Item>
       )}
-      {canShare && (
+      {showOwnerMenu && (
         <Item onSelect={onShare}>
           <MotionSafeIcon icon={SendIcon} size={16} parentHover parentFocus />
           {t('history.share')}
         </Item>
       )}
-      {(canRename || canShare) && canDelete && <Separator />}
+      {(canRename || showOwnerMenu) && canDelete && <Separator />}
       {canDelete && (
         <Item variant="destructive" onSelect={onDelete}>
           <MotionSafeIcon icon={DeleteIcon} size={16} parentHover parentFocus />
@@ -131,83 +128,6 @@ const dropdownParts: MenuParts = {
   Separator: DropdownMenuSeparator as ComponentType,
 };
 
-type RenameFormProps = {
-  initialTitle: string;
-  onSave: (title: string) => void | Promise<void>;
-};
-
-function RenameForm({ initialTitle, onSave }: RenameFormProps) {
-  const t = useT();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState(initialTitle);
-  const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  const trimmed = draft.trim();
-  const isBlank = trimmed.length === 0;
-  const canSave = !isBlank && trimmed !== initialTitle && !saving;
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!canSave) return;
-    setSaving(true);
-    setFailed(false);
-    try {
-      await onSave(trimmed);
-    } catch {
-      setFailed(true);
-      setSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="rename-lesson-title"
-          className="font-body text-sm font-medium text-text-primary"
-        >
-          {t('history.renameLabel')}
-        </label>
-        <input
-          ref={inputRef}
-          id="rename-lesson-title"
-          type="text"
-          value={draft}
-          maxLength={LESSON_TITLE_MAX_LENGTH}
-          onFocus={(event) => event.currentTarget.select()}
-          onChange={(event) => {
-            setDraft(event.target.value);
-            setFailed(false);
-          }}
-          aria-invalid={isBlank || failed || undefined}
-          className="h-12 w-full rounded-xl border-2 border-border bg-surface px-3 text-base font-body text-text-primary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-        />
-        {isBlank && (
-          <p role="alert" className="font-body text-sm text-destructive">
-            {t('history.titleRequired')}
-          </p>
-        )}
-        {failed && (
-          <p role="alert" className="font-body text-sm text-destructive">
-            {t('history.renameError')}
-          </p>
-        )}
-      </div>
-      <div className="flex justify-end gap-2">
-        <DialogClose asChild>
-          <Button type="button" variant="outline">
-            {t('lesson.cancel')}
-          </Button>
-        </DialogClose>
-        <Button type="submit" disabled={!canSave} isLoading={saving}>
-          {t('lesson.save')}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 export function LessonPlanCard({
   lesson,
   onDelete,
@@ -223,17 +143,14 @@ export function LessonPlanCard({
   const [deleteFailed, setDeleteFailed] = useState(false);
   const renameSavingRef = useRef(false);
   const actionsRef = useRef<HTMLButtonElement>(null);
-  // Menus return focus to their trigger on close; an action that opens its own surface keeps focus there.
   const keepFocusRef = useRef(false);
 
   const canRename = Boolean(onRename);
   const canDelete = Boolean(onDelete);
-  const canShare = canRename || canDelete;
-  const hasActions = canRename || canDelete;
+  const showOwnerMenu = canRename || canDelete;
 
   const cancelRef = useRef<HTMLButtonElement>(null);
 
-  // Safe default: Cancel takes focus. Deferred so the closing menu's own focus handling cannot win.
   useEffect(() => {
     if (!confirming) return;
     const id = window.setTimeout(() => cancelRef.current?.focus(), 0);
@@ -342,7 +259,7 @@ export function LessonPlanCard({
           }}
         >
           <h3
-            className={`font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2 ${hasActions ? 'pe-12' : ''}`}
+            className={`font-display text-base font-semibold text-text-primary group-hover:text-coral transition-colors line-clamp-2 mb-2 ${showOwnerMenu ? 'pe-12' : ''}`}
           >
             {lesson.title}
           </h3>
@@ -375,7 +292,7 @@ export function LessonPlanCard({
           </p>
         </Link>
 
-        {hasActions && (
+        {showOwnerMenu && (
           <>
             <DropdownMenu modal={false} onOpenChange={handleMenuOpenChange}>
               <DropdownMenuTrigger asChild>
@@ -394,7 +311,7 @@ export function LessonPlanCard({
                 <LessonMenuItems
                   {...dropdownParts}
                   canRename={canRename}
-                  canShare={canShare}
+                  showOwnerMenu={showOwnerMenu}
                   canDelete={canDelete}
                   onRename={startRename}
                   onShare={startShare}
@@ -403,51 +320,17 @@ export function LessonPlanCard({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {confirming && (
-              <div
-                role="alertdialog"
-                aria-label={t('history.deleteConfirm', { title: lesson.title })}
-                className="absolute inset-0 flex items-center justify-center rounded-xl bg-surface"
-                onContextMenu={(event) => event.stopPropagation()}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    event.stopPropagation();
-                    closeConfirm();
-                  }
-                }}
-              >
-                <div className="px-4 text-center">
-                  <p className="mb-3 text-sm font-body text-text-primary">
-                    {t('history.deleteConfirm', { title: lesson.title })}
-                  </p>
-                  {deleteFailed && (
-                    <p role="alert" className="mb-3 text-sm font-body text-destructive">
-                      {t('history.deleteError')}
-                    </p>
-                  )}
-                  <div className="flex justify-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      ref={cancelRef}
-                      onClick={closeConfirm}
-                      className="h-auto min-h-11 px-4 py-2.5 text-xs sm:h-auto sm:min-h-0"
-                    >
-                      {t('lesson.cancel')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="default"
-                      onClick={handleDeleteConfirm}
-                      isLoading={deleting}
-                      className="h-auto min-h-11 px-4 py-2.5 text-xs sm:h-auto sm:min-h-0 bg-red-700 text-white hover:bg-red-800"
-                    >
-                      {t('history.delete')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {confirming ? (
+              <LessonCardDeleteOverlay
+                lessonTitle={lesson.title}
+                deleteFailed={deleteFailed}
+                deleting={deleting}
+                cancelRef={cancelRef}
+                onCancel={closeConfirm}
+                onConfirm={handleDeleteConfirm}
+                onDismissEscape={closeConfirm}
+              />
+            ) : null}
           </>
         )}
 
@@ -458,7 +341,7 @@ export function LessonPlanCard({
     </Card>
   );
 
-  if (!hasActions) return card;
+  if (!showOwnerMenu) return card;
 
   return (
     <>
@@ -468,7 +351,7 @@ export function LessonPlanCard({
           <LessonMenuItems
             {...contextParts}
             canRename={canRename}
-            canShare={canShare}
+            showOwnerMenu={showOwnerMenu}
             canDelete={canDelete}
             onRename={startRename}
             onShare={startShare}
@@ -477,35 +360,21 @@ export function LessonPlanCard({
         </ContextMenuContent>
       </ContextMenu>
 
-      {canRename && (
-        <Dialog
+      {canRename ? (
+        <RenameLessonDialog
           open={renaming}
-          onOpenChange={(open) => {
-            // A save in flight owns the dialog; closing it would orphan the request's result.
-            if (!open && renameSavingRef.current) return;
-            setRenaming(open);
+          onOpenChange={setRenaming}
+          lessonTitle={lesson.title}
+          onSave={handleRenameSave}
+          savingRef={renameSavingRef}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            actionsRef.current?.focus();
           }}
-        >
-          <DialogContent
-            showCloseButton={false}
-            className="gap-5 p-6 sm:max-w-md"
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              actionsRef.current?.focus();
-            }}
-          >
-            <div className="flex flex-col gap-1">
-              <DialogTitle className="font-display text-lg font-semibold">
-                {t('history.renameDialogTitle')}
-              </DialogTitle>
-              <DialogDescription className="sr-only">{lesson.title}</DialogDescription>
-            </div>
-            <RenameForm initialTitle={lesson.title} onSave={handleRenameSave} />
-          </DialogContent>
-        </Dialog>
-      )}
+        />
+      ) : null}
 
-      {canShare ? (
+      {showOwnerMenu ? (
         <ShareLessonDialog
           open={sharing}
           onOpenChange={setSharing}
