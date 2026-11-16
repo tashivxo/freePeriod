@@ -319,17 +319,27 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8">
-        <button
-          type="button"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            void handleBack();
-          }}
-          className="min-h-11 inline-flex items-center gap-1 text-sm font-body text-text-secondary hover:text-coral transition-colors mb-4"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              void handleBack();
+            }}
+            className="min-h-11 inline-flex items-center gap-1 rounded-md text-sm font-body text-text-secondary transition-[color,transform] hover:text-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40 active:scale-[0.96]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="min-h-11 inline-flex shrink-0 items-center gap-1.5 rounded-md text-sm font-body text-text-secondary transition-[color,transform] hover:text-coral focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-coral/40 active:scale-[0.96]"
+          >
+            <MotionSafeIcon icon={SendIcon} size={16} parentHover parentFocus />
+            {t('history.share')}
+          </button>
+        </div>
 
         <BlurText as="h1" text={content.title || lesson.title} className="font-display text-3xl font-bold text-text-primary mb-2" />
 
@@ -374,37 +384,26 @@ export function LessonView({ lesson: initialLesson }: LessonViewProps) {
         </div>
 
         <div className="mt-4 flex flex-col gap-1.5">
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
-              <Button
-                className={toolbarButtonClassName}
-                variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
-                aria-describedby={
-                  filledTemplateVariant === 'has-template' ? fillHelperId : undefined
-                }
-                onClick={() => handleFilledTemplateDialogOpenChange(true)}
-              >
-                <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
-                {FILL_MY_TEMPLATE_LABEL}
-              </Button>
-              <Button
-                className={toolbarButtonClassName}
-                variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
-                onClick={() => void handleExport()}
-                isLoading={exportLoading}
-              >
-                <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
-                {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
-              </Button>
-            </div>
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-3">
             <Button
-              type="button"
-              variant="soft"
-              className="min-h-11 h-11 w-full px-5 text-base sm:w-auto sm:self-start"
-              onClick={() => setShareOpen(true)}
+              className={toolbarButtonClassName}
+              variant={filledTemplateVariant === 'has-template' ? 'default' : 'soft'}
+              aria-describedby={
+                filledTemplateVariant === 'has-template' ? fillHelperId : undefined
+              }
+              onClick={() => handleFilledTemplateDialogOpenChange(true)}
             >
-              <MotionSafeIcon icon={SendIcon} size={20} className="mr-2" parentHover parentFocus />
-              {t('history.share')}
+              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
+              {FILL_MY_TEMPLATE_LABEL}
+            </Button>
+            <Button
+              className={toolbarButtonClassName}
+              variant={filledTemplateVariant === 'has-template' ? 'secondary' : 'accent'}
+              onClick={() => void handleExport()}
+              isLoading={exportLoading}
+            >
+              <MotionSafeIcon icon={DownloadIcon} size={20} className="mr-2" />
+              {FREEPERIOD_TEMPLATE_DOWNLOAD_LABEL}
             </Button>
           </div>
           {filledTemplateVariant === 'has-template' ? (
