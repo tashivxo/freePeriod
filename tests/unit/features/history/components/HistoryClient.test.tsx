@@ -57,6 +57,36 @@ const allLessons: LessonRow[] = [
   },
 ];
 
+const momLessons: LessonRow[] = [
+  {
+    id: 'm1',
+    title: 'English 5',
+    subject: 'English',
+    grade: '5',
+    curriculum: 'National',
+    duration_minutes: 45,
+    created_at: '2026-01-03',
+  },
+  {
+    id: 'm2',
+    title: 'Arabic 8',
+    subject: 'Arabic',
+    grade: '8',
+    curriculum: 'National',
+    duration_minutes: 45,
+    created_at: '2026-01-02',
+  },
+  {
+    id: 'm3',
+    title: 'English 11',
+    subject: 'English',
+    grade: '11',
+    curriculum: 'National',
+    duration_minutes: 45,
+    created_at: '2026-01-01',
+  },
+];
+
 let lessonRows = [...allLessons];
 
 const lastLessonFetch = {
@@ -274,12 +304,18 @@ describe('HistoryClient', () => {
     expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
   });
 
-  it('hides the subject dropdown when the account has only one subject', async () => {
+  it('shows the subject dropdown when the account has only one subject', async () => {
     lessonRows = [allLessons[0]!];
-    renderHistory();
+    const { user } = renderHistory();
 
     await screen.findByText('Fractions');
-    expect(screen.queryByRole('button', { name: /all subjects/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(1);
   });
 
   it('centres the search icon on the input text with logical start inset, not translate hacks', async () => {
@@ -415,16 +451,40 @@ describe('HistoryClient', () => {
     });
   });
 
-  it('hides grade or curriculum dropdowns when fewer than two distinct values exist', async () => {
-    lessonRows = [
-      allLessons[0]!,
-      { ...allLessons[0]!, id: '3', title: 'Decimals', subject: 'Mathematics' },
-    ];
-    renderHistory();
-    await screen.findByText('Fractions');
+  it('shows all three dropdowns when only one curriculum exists', async () => {
+    lessonRows = momLessons;
+    const { user } = renderHistory();
+    await screen.findByText('English 5');
 
-    expect(screen.queryByRole('button', { name: /all grades/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /all curricula/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    expect(screen.getByRole('option', { name: 'National' })).toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+  });
+
+  it('shows empty Subject, Grade and Curriculum dropdowns when no facet values exist', async () => {
+    lessonRows = [];
+    const { user } = renderHistory();
+    await screen.findByText('No lessons yet.');
+
+    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    await user.keyboard('{Escape}');
+
+    await user.click(screen.getByRole('button', { name: /all grades/i }));
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+    await user.keyboard('{Escape}');
+
+    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 
   it('keeps the desktop toolbar without a Filters button, chips, or sheet', async () => {
@@ -645,18 +705,49 @@ describe('HistoryClient', () => {
       expect(screen.getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
     });
 
-    it('hides the Filters button when no facet has more than one value', async () => {
+    it('shows the Filters button and all facet dropdowns when no facet has more than one value', async () => {
       lessonRows = [
         allLessons[0]!,
         { ...allLessons[0]!, id: '3', title: 'Decimals', subject: 'Mathematics' },
       ];
-      renderHistory();
+      const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      expect(screen.queryByRole('button', { name: /^Filters$/ })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /all subjects/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /all grades/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /all curricula/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      const dialog = await openFiltersSheet(user);
+      expect(within(dialog).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole('button', { name: /all subjects/i }));
+      expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
+      expect(screen.getAllByRole('option')).toHaveLength(1);
+    });
+
+    it('shows all three dropdowns in the Filters sheet when only one curriculum exists', async () => {
+      lessonRows = momLessons;
+      const { user } = renderHistory();
+      await screen.findByText('English 5');
+
+      const dialog = await openFiltersSheet(user);
+      expect(within(dialog).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    });
+
+    it('shows empty facet dropdowns in the Filters sheet when no values exist', async () => {
+      lessonRows = [];
+      const { user } = renderHistory();
+      await screen.findByText('No lessons yet.');
+
+      const dialog = await openFiltersSheet(user);
+      expect(within(dialog).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole('button', { name: /all subjects/i }));
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+      expect(screen.queryAllByRole('option')).toHaveLength(0);
     });
 
     it('labels the Filters button in Arabic', async () => {
