@@ -168,6 +168,14 @@ function classOf(el: Element) {
   return el.getAttribute('class') ?? '';
 }
 
+function isContentsOnMobile(className: string) {
+  return /\bmax-sm:contents\b/.test(className) || /(?:^|\s)contents\b/.test(className);
+}
+
+function isStickyOnMobile(className: string) {
+  return /(?:^|\s)sticky\b/.test(className);
+}
+
 describe('HistoryClient', () => {
   beforeEach(() => {
     lessonRows = [...allLessons];
@@ -450,6 +458,29 @@ describe('HistoryClient', () => {
       expect(title.contains(screen.getByRole('link', { name: /plan lesson/i }))).toBe(true);
       expect(toolbar.contains(title)).toBe(false);
       expect(toolbar.contains(fractions)).toBe(false);
+    });
+
+    it('does not nest the sticky toolbar in a non-sticky wrapper that ends at the toolbar', async () => {
+      renderHistory();
+      const fractions = await screen.findByText('Fractions');
+      const toolbar = screen.getByTestId('history-toolbar');
+
+      expect(isStickyOnMobile(classOf(toolbar))).toBe(true);
+      expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
+
+      const trappingAncestors: string[] = [];
+      let ancestor = toolbar.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const cls = classOf(ancestor);
+        const createsBox = !isContentsOnMobile(cls);
+        const sticky = isStickyOnMobile(cls);
+        if (createsBox && !sticky && !ancestor.contains(fractions)) {
+          trappingAncestors.push(ancestor.getAttribute('data-testid') ?? ancestor.tagName);
+        }
+        ancestor = ancestor.parentElement;
+      }
+
+      expect(trappingAncestors).toEqual([]);
     });
 
     it('shows Filters (N) for facet filters and ignores title search', async () => {

@@ -28,11 +28,16 @@ test.describe('History toolbar layout at 390x844', () => {
     const toolbarHeight = await toolbar.evaluate((el) => el.getBoundingClientRect().height);
     expect(toolbarHeight).toBeLessThanOrEqual(88);
 
-    const canScroll = await page.evaluate(() => document.scrollHeight > window.innerHeight);
+    const canScroll = await page.evaluate(
+      () => document.documentElement.scrollHeight > window.innerHeight,
+    );
     if (canScroll) {
       const titleBefore = await title.evaluate((el) => el.getBoundingClientRect().top);
       await page.evaluate(() => window.scrollBy(0, 400));
       await expect(toolbar).toBeInViewport();
+      const toolbarTop = await toolbar.evaluate((el) => el.getBoundingClientRect().top);
+      expect(toolbarTop).toBeGreaterThanOrEqual(48);
+      expect(toolbarTop).toBeLessThanOrEqual(64);
       const titleAfter = await title.evaluate((el) => el.getBoundingClientRect().top);
       expect(titleAfter).toBeLessThan(titleBefore);
       await expect(page.getByRole('textbox', { name: /search lessons by title/i })).toBeVisible();
@@ -56,7 +61,9 @@ test.describe('History toolbar layout at 1440x900', () => {
     const search = page.getByRole('textbox', { name: /search lessons by title/i });
     const header = page.getByTestId('history-page-header');
 
-    const canScroll = await page.evaluate(() => document.scrollHeight > window.innerHeight);
+    const canScroll = await page.evaluate(
+      () => document.documentElement.scrollHeight > window.innerHeight,
+    );
     if (canScroll) {
       await page.evaluate(() => window.scrollBy(0, 400));
     }
