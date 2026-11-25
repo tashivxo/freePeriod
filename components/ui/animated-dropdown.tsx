@@ -559,8 +559,7 @@ export function AnimatedDropdown({
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
         aria-labelledby={triggerAriaLabelledBy}
         className={cn(
-          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] ps-4 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
-          showClear && !hideChevron ? 'pe-14' : 'pe-3',
+          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] ps-4 pe-3 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
           triggerClassName,
         )}
       >
@@ -580,7 +579,9 @@ export function AnimatedDropdown({
         >
           {displayText}
         </span>
-        {!hideChevron ? (
+        {showClear ? (
+          <span className="h-11 w-11 shrink-0" aria-hidden />
+        ) : !hideChevron ? (
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -595,7 +596,7 @@ export function AnimatedDropdown({
         <button
           type="button"
           aria-label={clearAriaLabel}
-          className="absolute end-9 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)]/10 hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-coral/20"
+          className="absolute end-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)]/10 hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-coral/20"
           onClick={handleClearClick}
           onMouseDown={(event) => event.preventDefault()}
         >
@@ -624,8 +625,9 @@ export function AnimatedDropdown({
                   left: listboxPosition.left,
                   width: listboxPosition.width,
                   maxHeight: listboxPosition.maxHeight,
+                  pointerEvents: 'auto',
                 }}
-                className="z-[10000] max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 shadow-xl"
+                className="z-[10000] max-h-60 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-background-elevated)] py-1 shadow-xl pointer-events-auto"
                 onKeyDown={handleListKeyDown}
                 onBlur={handleWidgetBlur}
                 onMouseDown={handleListMouseDown}

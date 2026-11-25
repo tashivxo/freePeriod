@@ -551,7 +551,7 @@ describe('HistoryClient', () => {
         expect(screen.getByText('Cells')).toBeInTheDocument();
       });
       expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
-      expect(getSearchInput()).toHaveValue('e');
+      expect(screen.getByRole('textbox', { name: /search lessons by title/i, hidden: true })).toHaveValue('e');
       expect(screen.getByRole('button', { name: /^Filters$/, hidden: true })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });
@@ -605,8 +605,7 @@ describe('HistoryClient', () => {
 
     it('labels the Filters button in Arabic', async () => {
       renderHistory(<HistoryClient />, 'ar');
-      await screen.findByRole('heading', { level: 1 });
-      expect(screen.getByRole('button', { name: 'عوامل التصفية' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'عوامل التصفية' })).toBeInTheDocument();
     });
   });
 });
