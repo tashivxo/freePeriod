@@ -915,3 +915,71 @@ describe('AnimatedDropdown locked options', () => {
     expect(trigger.className).not.toMatch(/background-color/);
   });
 });
+
+describe('AnimatedDropdown clearable', () => {
+  const items = [
+    { name: 'Alpha', value: 'a' },
+    { name: 'Beta', value: 'b' },
+  ];
+
+  it('does not render a clear button without clearable and selectedValue', () => {
+    render(<AnimatedDropdown id="clr-dd" text="Pick" items={items} />);
+    expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render clear when clearable but no selection', () => {
+    render(
+      <AnimatedDropdown
+        id="clr-dd"
+        text="Pick"
+        items={items}
+        clearable
+        clearAriaLabel="Clear selection"
+        onClear={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /clear selection/i })).not.toBeInTheDocument();
+  });
+
+  it('calls onClear when the clear button is clicked and does not open the listbox', async () => {
+    const onClear = jest.fn();
+    const { user } = render(
+      <AnimatedDropdown
+        id="clr-dd"
+        text="Pick"
+        items={items}
+        selectedValue="a"
+        clearable
+        clearAriaLabel="Clear selection"
+        onClear={onClear}
+      />,
+    );
+
+    const clearBtn = screen.getByRole('button', { name: 'Clear selection' });
+    expect(clearBtn.className).toMatch(/\bh-10\b/);
+    expect(clearBtn.className).toMatch(/\bw-10\b/);
+
+    await user.click(clearBtn);
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('exposes the clear button as a focusable control with the provided aria-label', () => {
+    render(
+      <AnimatedDropdown
+        id="clr-dd"
+        text="Pick"
+        items={items}
+        selectedValue="b"
+        clearable
+        clearAriaLabel="Clear filter"
+        onClear={jest.fn()}
+      />,
+    );
+
+    const clearBtn = screen.getByRole('button', { name: 'Clear filter' });
+    clearBtn.focus();
+    expect(clearBtn).toHaveFocus();
+    expect(clearBtn.tagName).toBe('BUTTON');
+  });
+});

@@ -7,6 +7,7 @@ type LessonRow = {
   title: string;
   subject: string;
   grade: string;
+  curriculum: string;
   duration_minutes: number;
   created_at: string;
 };
@@ -17,6 +18,7 @@ const allLessons: LessonRow[] = [
     title: 'Fractions',
     subject: 'Mathematics',
     grade: '5',
+    curriculum: 'Common Core',
     duration_minutes: 45,
     created_at: '2026-01-02',
   },
@@ -25,6 +27,7 @@ const allLessons: LessonRow[] = [
     title: 'Cells',
     subject: 'Science',
     grade: '6',
+    curriculum: 'NGSS',
     duration_minutes: 45,
     created_at: '2026-01-01',
   },
@@ -33,19 +36,39 @@ const allLessons: LessonRow[] = [
 let lessonRows = [...allLessons];
 
 function createFromMock() {
-  const filters: { subject: string | null; titleIlike: string | null; columns: string } = {
+  const filters: {
+    subject: string | null;
+    grade: string | null;
+    curriculum: string | null;
+    titleIlike: string | null;
+    columns: string;
+  } = {
     subject: null,
+    grade: null,
+    curriculum: null,
     titleIlike: null,
     columns: '',
   };
 
   const execute = () => {
-    if (filters.columns === 'subject') {
-      return { data: lessonRows.map((row) => ({ subject: row.subject })) };
+    if (filters.columns === 'subject, grade, curriculum') {
+      return {
+        data: lessonRows.map((row) => ({
+          subject: row.subject,
+          grade: row.grade,
+          curriculum: row.curriculum,
+        })),
+      };
     }
     let rows = lessonRows;
     if (filters.subject) {
       rows = rows.filter((row) => row.subject === filters.subject);
+    }
+    if (filters.grade) {
+      rows = rows.filter((row) => row.grade === filters.grade);
+    }
+    if (filters.curriculum) {
+      rows = rows.filter((row) => row.curriculum === filters.curriculum);
     }
     if (filters.titleIlike) {
       const term = filters.titleIlike.replace(/%/g, '').toLowerCase();
@@ -69,6 +92,8 @@ function createFromMock() {
     order: jest.fn(() => chain),
     eq: jest.fn((column: string, value: string) => {
       if (column === 'subject') filters.subject = value;
+      if (column === 'grade') filters.grade = value;
+      if (column === 'curriculum') filters.curriculum = value;
       return chain;
     }),
     ilike: jest.fn((_column: string, value: string) => {
@@ -173,11 +198,14 @@ describe('HistoryClient', () => {
     expect(screen.queryByPlaceholderText('Search by title...')).not.toBeInTheDocument();
   });
 
-  it('keeps the subject dropdown after a subject is picked and restores All subjects', async () => {
+  it('lists only distinct subjects in the menu and clears the filter with the X control', async () => {
     const { user } = renderHistory();
 
     const trigger = await screen.findByRole('button', { name: /all subjects/i });
     await user.click(trigger);
+    expect(screen.getByRole('option', { name: 'Science' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /all subjects/i })).not.toBeInTheDocument();
     await user.click(screen.getByRole('option', { name: 'Science' }));
 
     await waitFor(() => {
@@ -185,15 +213,14 @@ describe('HistoryClient', () => {
     });
     expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
 
-    const filteredTrigger = screen.getByRole('button', { name: /science/i });
-    expect(filteredTrigger).toHaveAttribute('aria-haspopup', 'listbox');
-    await user.click(filteredTrigger);
-    await user.click(screen.getByRole('option', { name: /all subjects/i }));
+    expect(screen.getByRole('button', { name: /science/i })).toHaveAttribute('aria-haspopup', 'listbox');
+    await user.click(screen.getByRole('button', { name: 'Clear subject filter' }));
 
     await waitFor(() => {
       expect(screen.getByText('Fractions')).toBeInTheDocument();
       expect(screen.getByText('Cells')).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
   });
 
   it('hides the subject dropdown when the account has only one subject', async () => {
@@ -243,15 +270,16 @@ describe('HistoryClient', () => {
     document.documentElement.dir = 'ltr';
   });
 
-  it('matches search and All subjects control height, border, and radius', async () => {
+  it('matches search and filter control height, border, radius, and toolbar layout', async () => {
     renderHistory();
     const trigger = await screen.findByRole('button', { name: /all subjects/i });
+    const gradeTrigger = screen.getByRole('button', { name: /all grades/i });
     const { input, field } = getSearchField();
-    const row = field.parentElement as HTMLElement;
-    const dropdown = trigger.parentElement as HTMLElement;
+    const filtersRow = field.parentElement as HTMLElement;
 
     expect(input.className).toMatch(/\bh-13\b/);
     expect(trigger.className).toMatch(/\bh-13\b/);
+    expect(gradeTrigger.className).toMatch(/\bh-13\b/);
     expect(input.className).toMatch(/\bborder-2\b/);
     expect(trigger.className).toMatch(/\bborder-2\b/);
     expect(input.className).toMatch(/\brounded-xl\b/);
@@ -260,49 +288,85 @@ describe('HistoryClient', () => {
     expect(input.className).not.toMatch(/\bmd:text-sm\b/);
 
     expect(field.className).toMatch(/\bw-full\b/);
+    expect(field.className).toMatch(/\bmin-w-0\b/);
     expect(field.className).toMatch(/\bflex-1\b/);
-    expect(dropdown.className).toMatch(/\bw-full\b/);
-    expect(dropdown.className).toMatch(/\bsm:w-auto\b/);
-    expect(dropdown.className).toMatch(/sm:min-w-\[10rem\]/);
-    expect(row.className).toMatch(/\bflex-col\b/);
-    expect(row.className).toMatch(/\bsm:flex-row\b/);
-    expect(row.className).toMatch(/\bsm:items-center\b/);
+    expect(field.className).not.toMatch(/\blg:max-w-sm\b/);
+    expect(filtersRow.className).toMatch(/\bgrid\b/);
+    expect(filtersRow.className).toMatch(/\bsm:grid-cols-2\b/);
+    expect(filtersRow.className).toMatch(/\blg:grid-cols-none\b/);
+    expect(filtersRow.className).toMatch(/\blg:flex\b/);
+    expect(trigger.parentElement?.className).toMatch(/lg:min-w-\[9rem\]/);
   });
 
-  it('keeps the search and subject row sticky below the nav without covering cards', async () => {
+  it('pins the title and filter row below the nav while lesson cards scroll', async () => {
     const { user } = renderHistory();
     const fractions = await screen.findByText('Fractions');
 
     const { input } = getSearchField();
-    const toolbar = input.closest('[class*="sticky"]');
-    expect(toolbar).toBeInstanceOf(HTMLElement);
-    expect(toolbar).toHaveClass('sticky');
-    expect(toolbar).toHaveClass('top-14');
-    expect(toolbar).toHaveClass('z-30');
-    expect(toolbar).toHaveClass('bg-background/90');
-    expect(toolbar).toHaveClass('backdrop-blur-md');
-    expect(toolbar?.className).not.toMatch(/\bfixed\b/);
-    expect(toolbar?.className).not.toMatch(/\bz-40\b/);
-    expect(toolbar?.className).not.toMatch(/\bz-50\b/);
+    const pageHeader = screen.getByTestId('history-page-header');
+    expect(classOf(pageHeader)).toMatch(/\bsticky\b/);
+    expect(classOf(pageHeader)).toMatch(/\btop-14\b/);
+    expect(classOf(pageHeader)).toMatch(/\bbg-background\b/);
+    expect(classOf(pageHeader)).not.toMatch(/bg-background\/90/);
+    expect(classOf(pageHeader)).not.toMatch(/backdrop-blur/);
 
-    expect(toolbar!.contains(fractions)).toBe(false);
-    expect(toolbar!.contains(input)).toBe(true);
-    expect(toolbar!.contains(screen.getByRole('button', { name: /all subjects/i }))).toBe(true);
+    expect(pageHeader.contains(fractions)).toBe(false);
+    expect(pageHeader.contains(input)).toBe(true);
+    expect(pageHeader).toContainElement(screen.getByRole('heading', { level: 1 }));
 
     await user.click(screen.getByRole('button', { name: /all subjects/i }));
     const listbox = screen.getByRole('listbox');
     expect(document.body.contains(listbox)).toBe(true);
-    expect(toolbar!.contains(listbox)).toBe(false);
+    expect(pageHeader.contains(listbox)).toBe(false);
   });
 
-  it('keeps the Arabic filter row sticky below the nav with a readable backdrop', async () => {
-    document.documentElement.dir = 'rtl';
-    renderHistory(<HistoryClient />, 'ar');
+  it('shows grade and curriculum filters when at least two distinct values exist', async () => {
+    const { user } = renderHistory();
+    await screen.findByText('Fractions');
 
-    const input = await screen.findByRole('textbox', { name: 'البحث في الدروس حسب العنوان' });
-    const toolbar = input.closest('[class*="sticky"]');
-    expect(toolbar).toHaveClass('sticky', 'top-14', 'z-30', 'bg-background/90', 'backdrop-blur-md');
-    expect(toolbar!.contains(await screen.findByText('Fractions'))).toBe(false);
-    document.documentElement.dir = 'ltr';
+    const gradeTrigger = screen.getByRole('button', { name: /all grades/i });
+    const curriculumTrigger = screen.getByRole('button', { name: /all curricula/i });
+
+    await user.click(gradeTrigger);
+    expect(screen.getByRole('option', { name: /grade.*5/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /grade.*6/i })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    await user.click(curriculumTrigger);
+    expect(screen.getByRole('option', { name: 'Common Core' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'NGSS' })).toBeInTheDocument();
+  });
+
+  it('narrows results when grade and curriculum filters are active', async () => {
+    const { user } = renderHistory();
+    await screen.findByText('Fractions');
+
+    await user.click(screen.getByRole('button', { name: /all grades/i }));
+    await user.click(screen.getByRole('option', { name: /grade.*5/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Fractions')).toBeInTheDocument();
+      expect(screen.queryByText('Cells')).not.toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Clear grade filter' }));
+
+    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    await user.click(screen.getByRole('option', { name: 'NGSS' }));
+    await waitFor(() => {
+      expect(screen.getByText('Cells')).toBeInTheDocument();
+      expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
+    });
+  });
+
+  it('hides grade or curriculum dropdowns when fewer than two distinct values exist', async () => {
+    lessonRows = [
+      allLessons[0]!,
+      { ...allLessons[0]!, id: '3', title: 'Decimals', subject: 'Mathematics' },
+    ];
+    renderHistory();
+    await screen.findByText('Fractions');
+
+    expect(screen.queryByRole('button', { name: /all grades/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /all curricula/i })).not.toBeInTheDocument();
   });
 });
