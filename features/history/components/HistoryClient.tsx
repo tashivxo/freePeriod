@@ -97,20 +97,23 @@ export function HistoryClient() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <BlurText
-          as="h1"
-          text={t('history.title')}
-          className="font-display text-3xl font-bold text-text-primary"
-        />
-        <Button asChild>
-          <Link href="/generate">{t('history.planLesson')}</Link>
-        </Button>
-      </div>
+      <div
+        data-testid="history-page-header"
+        className="sticky top-14 z-30 -mx-4 mb-6 border-b border-border/50 bg-background px-4 pb-6"
+      >
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <BlurText
+            as="h1"
+            text={t('history.title')}
+            className="font-display text-3xl font-bold text-text-primary"
+          />
+          <Button asChild>
+            <Link href="/generate">{t('history.planLesson')}</Link>
+          </Button>
+        </div>
 
-      <div className="mb-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:grid-cols-none lg:items-center lg:gap-3">
-            <div className="relative min-w-0 w-full flex-1 sm:col-span-2 lg:max-w-sm">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:grid-cols-none lg:items-center lg:gap-4">
+            <div className="relative min-w-0 w-full flex-1 sm:col-span-2">
               <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
                 <Search className="size-4 text-text-secondary" aria-hidden />
               </span>

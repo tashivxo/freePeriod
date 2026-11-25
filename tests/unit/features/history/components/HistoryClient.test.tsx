@@ -290,7 +290,7 @@ describe('HistoryClient', () => {
     expect(field.className).toMatch(/\bw-full\b/);
     expect(field.className).toMatch(/\bmin-w-0\b/);
     expect(field.className).toMatch(/\bflex-1\b/);
-    expect(field.className).toMatch(/\blg:max-w-sm\b/);
+    expect(field.className).not.toMatch(/\blg:max-w-sm\b/);
     expect(filtersRow.className).toMatch(/\bgrid\b/);
     expect(filtersRow.className).toMatch(/\bsm:grid-cols-2\b/);
     expect(filtersRow.className).toMatch(/\blg:grid-cols-none\b/);
@@ -298,26 +298,26 @@ describe('HistoryClient', () => {
     expect(trigger.parentElement?.className).toMatch(/lg:min-w-\[9rem\]/);
   });
 
-  it('uses a transparent toolbar without sticky or frosted strip classes', async () => {
+  it('pins the title and filter row below the nav while lesson cards scroll', async () => {
     const { user } = renderHistory();
     const fractions = await screen.findByText('Fractions');
 
-    const { input, field } = getSearchField();
-    const toolbar = field.parentElement?.parentElement as HTMLElement;
-    expect(toolbar).toBeInstanceOf(HTMLElement);
-    expect(classOf(toolbar)).not.toMatch(/\bsticky\b/);
-    expect(classOf(toolbar)).not.toMatch(/bg-background\/90/);
-    expect(classOf(toolbar)).not.toMatch(/backdrop-blur/);
-    expect(classOf(toolbar)).not.toMatch(/\bborder-b\b/);
-    expect(classOf(toolbar)).toMatch(/\bmb-6\b/);
+    const { input } = getSearchField();
+    const pageHeader = screen.getByTestId('history-page-header');
+    expect(classOf(pageHeader)).toMatch(/\bsticky\b/);
+    expect(classOf(pageHeader)).toMatch(/\btop-14\b/);
+    expect(classOf(pageHeader)).toMatch(/\bbg-background\b/);
+    expect(classOf(pageHeader)).not.toMatch(/bg-background\/90/);
+    expect(classOf(pageHeader)).not.toMatch(/backdrop-blur/);
 
-    expect(toolbar.contains(fractions)).toBe(false);
-    expect(toolbar.contains(input)).toBe(true);
+    expect(pageHeader.contains(fractions)).toBe(false);
+    expect(pageHeader.contains(input)).toBe(true);
+    expect(pageHeader).toContainElement(screen.getByRole('heading', { level: 1 }));
 
     await user.click(screen.getByRole('button', { name: /all subjects/i }));
     const listbox = screen.getByRole('listbox');
     expect(document.body.contains(listbox)).toBe(true);
-    expect(toolbar.contains(listbox)).toBe(false);
+    expect(pageHeader.contains(listbox)).toBe(false);
   });
 
   it('shows grade and curriculum filters when at least two distinct values exist', async () => {
