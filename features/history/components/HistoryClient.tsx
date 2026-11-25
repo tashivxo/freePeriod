@@ -2,17 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import type { LessonPlan } from '@/types';
 import { BlurText } from '@/components/ui/effects/BlurText';
-import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
 import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useT } from '@/providers/locale';
-import { formatGradeLabel } from '@/lib/utils/grades';
+import { HistoryToolbar } from '@/features/history/components/HistoryToolbar';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
@@ -93,15 +91,16 @@ export function HistoryClient() {
     debouncedSearch || subjectFilter || gradeFilter || curriculumFilter,
   );
 
-  const filterDropdownClass = 'w-full min-w-0 lg:w-auto lg:min-w-[9rem]';
-
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div
         data-testid="history-page-header"
-        className="sticky top-14 z-30 -mx-4 mb-6 border-b border-border/50 bg-background px-4 pb-6"
+        className="max-sm:contents sm:sticky sm:top-14 sm:z-30 -mx-4 mb-6 border-b border-border/50 bg-background px-4 pb-4 sm:pb-6"
       >
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div
+          data-testid="history-page-title"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3"
+        >
           <BlurText
             as="h1"
             text={t('history.title')}
@@ -112,60 +111,19 @@ export function HistoryClient() {
           </Button>
         </div>
 
-        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:grid-cols-none lg:items-center lg:gap-4">
-            <div className="relative min-w-0 w-full flex-1 sm:col-span-2">
-              <span className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3">
-                <Search className="size-4 text-text-secondary" aria-hidden />
-              </span>
-              <input
-                type="text"
-                placeholder={t('history.searchPlaceholder')}
-                aria-label={t('history.searchAriaLabel')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-13 w-full rounded-xl border-2 border-border bg-surface py-0 ps-9 pe-3 text-base font-body text-text-primary placeholder:text-text-secondary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-              />
-            </div>
-            {allSubjects.length > 1 && (
-              <AnimatedDropdown
-                text={t('history.allSubjects')}
-                items={allSubjects.map((s) => ({ name: s, value: s } as DropdownItem))}
-                selectedValue={subjectFilter || undefined}
-                onSelect={(item) => setSubjectFilter(item.value ?? '')}
-                clearable
-                onClear={() => setSubjectFilter('')}
-                clearAriaLabel={t('history.clearSubjectFilter')}
-                className={filterDropdownClass}
-              />
-            )}
-            {allGrades.length > 1 && (
-              <AnimatedDropdown
-                text={t('history.allGrades')}
-                items={allGrades.map((g) => ({
-                  name: formatGradeLabel(g, t),
-                  value: g,
-                }))}
-                selectedValue={gradeFilter || undefined}
-                onSelect={(item) => setGradeFilter(item.value ?? '')}
-                clearable
-                onClear={() => setGradeFilter('')}
-                clearAriaLabel={t('history.clearGradeFilter')}
-                className={filterDropdownClass}
-              />
-            )}
-            {allCurricula.length > 1 && (
-              <AnimatedDropdown
-                text={t('history.allCurricula')}
-                items={allCurricula.map((c) => ({ name: c, value: c } as DropdownItem))}
-                selectedValue={curriculumFilter || undefined}
-                onSelect={(item) => setCurriculumFilter(item.value ?? '')}
-                clearable
-                onClear={() => setCurriculumFilter('')}
-                clearAriaLabel={t('history.clearCurriculumFilter')}
-                className={filterDropdownClass}
-              />
-            )}
-        </div>
+        <HistoryToolbar
+          search={search}
+          onSearchChange={setSearch}
+          subjectFilter={subjectFilter}
+          gradeFilter={gradeFilter}
+          curriculumFilter={curriculumFilter}
+          onSubjectFilterChange={setSubjectFilter}
+          onGradeFilterChange={setGradeFilter}
+          onCurriculumFilterChange={setCurriculumFilter}
+          allSubjects={allSubjects}
+          allGrades={allGrades}
+          allCurricula={allCurricula}
+        />
       </div>
 
       {initialLoading ? (
