@@ -393,10 +393,11 @@ describe('HistoryClient', () => {
     const pageHeader = screen.getByTestId('history-page-header');
     expect(classOf(pageHeader)).toMatch(/\bsm:sticky\b/);
     expect(classOf(pageHeader)).toMatch(/\bsm:top-14\b/);
-    expect(classOf(pageHeader)).toMatch(/bg-background\/70/);
-    expect(classOf(pageHeader)).toMatch(/backdrop-blur/);
     expect(classOf(pageHeader)).not.toMatch(/(?:^|\s)bg-background(?:\s|$)/);
+    expect(classOf(pageHeader)).not.toMatch(/bg-background\/\d+/);
+    expect(classOf(pageHeader)).not.toMatch(/backdrop-blur/);
     expect(classOf(pageHeader)).not.toMatch(/\bborder-b\b/);
+    expect(classOf(pageHeader)).not.toMatch(/max-sm:border-b/);
     expect(classOf(pageHeader)).not.toMatch(/\bshadow\b/);
 
     expect(pageHeader.contains(fractions)).toBe(false);
@@ -529,9 +530,9 @@ describe('HistoryClient', () => {
 
       expect(classOf(toolbar)).toMatch(/(?:^|\s)sticky\b/);
       expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
-      expect(classOf(toolbar)).toMatch(/bg-background\/70/);
-      expect(classOf(toolbar)).toMatch(/backdrop-blur/);
       expect(classOf(toolbar)).not.toMatch(/(?:^|\s)bg-background(?:\s|$)/);
+      expect(classOf(toolbar)).not.toMatch(/bg-background\/\d+/);
+      expect(classOf(toolbar)).not.toMatch(/backdrop-blur/);
       expect(classOf(toolbar)).not.toMatch(/max-sm:border-b/);
       expect(classOf(toolbar)).not.toMatch(/\bborder-b\b/);
       expect(classOf(toolbar)).not.toMatch(/\bshadow\b/);
