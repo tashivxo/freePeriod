@@ -59,6 +59,20 @@ const allLessons: LessonRow[] = [
 
 let lessonRows = [...allLessons];
 
+const lastLessonFetch = {
+  subject: null as string | null,
+  grade: null as string | null,
+  curriculum: null as string | null,
+  titleIlike: null as string | null,
+};
+
+function resetLastLessonFetch() {
+  lastLessonFetch.subject = null;
+  lastLessonFetch.grade = null;
+  lastLessonFetch.curriculum = null;
+  lastLessonFetch.titleIlike = null;
+}
+
 function createFromMock() {
   const filters: {
     subject: string | null;
@@ -84,6 +98,10 @@ function createFromMock() {
         })),
       };
     }
+    lastLessonFetch.subject = filters.subject;
+    lastLessonFetch.grade = filters.grade;
+    lastLessonFetch.curriculum = filters.curriculum;
+    lastLessonFetch.titleIlike = filters.titleIlike;
     let rows = lessonRows;
     if (filters.subject) {
       rows = rows.filter((row) => row.subject === filters.subject);
@@ -179,6 +197,7 @@ function isStickyOnMobile(className: string) {
 describe('HistoryClient', () => {
   beforeEach(() => {
     lessonRows = [...allLessons];
+    resetLastLessonFetch();
     document.title = '';
   });
 
@@ -559,8 +578,9 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      await user.type(getSearchInput(), 'e');
+      await user.type(getSearchInput(), 's');
       await waitFor(() => {
+        expect(lastLessonFetch.titleIlike).toBe('%s%');
         expect(screen.getByText('Fractions')).toBeInTheDocument();
         expect(screen.getByText('Cells')).toBeInTheDocument();
       });
@@ -570,6 +590,7 @@ describe('HistoryClient', () => {
       await user.click(screen.getByRole('option', { name: 'Science' }));
 
       await waitFor(() => {
+        expect(lastLessonFetch.subject).toBe('Science');
         expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
         expect(screen.getByText('Cells')).toBeInTheDocument();
       });
@@ -577,12 +598,16 @@ describe('HistoryClient', () => {
 
       await user.click(within(dialog).getByRole('button', { name: 'Clear all' }));
 
-      await waitFor(() => {
-        expect(screen.getByText('Fractions')).toBeInTheDocument();
-        expect(screen.getByText('Cells')).toBeInTheDocument();
-      });
+      await waitFor(
+        () => {
+          expect(lastLessonFetch.subject).toBeNull();
+          expect(screen.getByText('Fractions')).toBeInTheDocument();
+          expect(screen.getByText('Cells')).toBeInTheDocument();
+        },
+        { timeout: 5000 },
+      );
       expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: /search lessons by title/i, hidden: true })).toHaveValue('e');
+      expect(screen.getByRole('textbox', { name: /search lessons by title/i, hidden: true })).toHaveValue('s');
       expect(screen.getByRole('button', { name: /^Filters$/, hidden: true })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });

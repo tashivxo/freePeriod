@@ -187,7 +187,7 @@ export function HistoryToolbar({
     <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
       <div
         data-testid="history-toolbar"
-        className="sticky top-14 z-30 -mx-4 bg-background px-4 py-2.5 sm:static sm:z-auto sm:mx-0 sm:px-0 sm:py-0"
+        className="sticky top-14 z-30 -mx-4 max-sm:mb-6 max-sm:border-b max-sm:border-border/50 bg-background px-4 py-2.5 sm:static sm:z-auto sm:mx-0 sm:px-0 sm:py-0"
       >
         <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-3 sm:grid-cols-2 lg:flex lg:grid-cols-none lg:items-center lg:gap-4">
           <div className="relative min-w-0 w-full flex-1 sm:col-span-2">
