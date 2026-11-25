@@ -62,48 +62,42 @@ function FacetDropdowns({
 
   return (
     <>
-      {allSubjects.length > 1 && (
-        <AnimatedDropdown
-          id={`${idPrefix}-subject`}
-          text={t('history.allSubjects')}
-          items={allSubjects.map((s) => ({ name: s, value: s } as DropdownItem))}
-          selectedValue={subjectFilter || undefined}
-          onSelect={(item) => onSubjectFilterChange(item.value ?? '')}
-          clearable
-          onClear={() => onSubjectFilterChange('')}
-          clearAriaLabel={t('history.clearSubjectFilter')}
-          className={filterDropdownClass}
-        />
-      )}
-      {allGrades.length > 1 && (
-        <AnimatedDropdown
-          id={`${idPrefix}-grade`}
-          text={t('history.allGrades')}
-          items={allGrades.map((g) => ({
-            name: formatGradeLabel(g, t),
-            value: g,
-          }))}
-          selectedValue={gradeFilter || undefined}
-          onSelect={(item) => onGradeFilterChange(item.value ?? '')}
-          clearable
-          onClear={() => onGradeFilterChange('')}
-          clearAriaLabel={t('history.clearGradeFilter')}
-          className={filterDropdownClass}
-        />
-      )}
-      {allCurricula.length > 1 && (
-        <AnimatedDropdown
-          id={`${idPrefix}-curriculum`}
-          text={t('history.allCurricula')}
-          items={allCurricula.map((c) => ({ name: c, value: c } as DropdownItem))}
-          selectedValue={curriculumFilter || undefined}
-          onSelect={(item) => onCurriculumFilterChange(item.value ?? '')}
-          clearable
-          onClear={() => onCurriculumFilterChange('')}
-          clearAriaLabel={t('history.clearCurriculumFilter')}
-          className={filterDropdownClass}
-        />
-      )}
+      <AnimatedDropdown
+        id={`${idPrefix}-subject`}
+        text={t('history.allSubjects')}
+        items={allSubjects.map((s) => ({ name: s, value: s } as DropdownItem))}
+        selectedValue={subjectFilter || undefined}
+        onSelect={(item) => onSubjectFilterChange(item.value ?? '')}
+        clearable
+        onClear={() => onSubjectFilterChange('')}
+        clearAriaLabel={t('history.clearSubjectFilter')}
+        className={filterDropdownClass}
+      />
+      <AnimatedDropdown
+        id={`${idPrefix}-grade`}
+        text={t('history.allGrades')}
+        items={allGrades.map((g) => ({
+          name: formatGradeLabel(g, t),
+          value: g,
+        }))}
+        selectedValue={gradeFilter || undefined}
+        onSelect={(item) => onGradeFilterChange(item.value ?? '')}
+        clearable
+        onClear={() => onGradeFilterChange('')}
+        clearAriaLabel={t('history.clearGradeFilter')}
+        className={filterDropdownClass}
+      />
+      <AnimatedDropdown
+        id={`${idPrefix}-curriculum`}
+        text={t('history.allCurricula')}
+        items={allCurricula.map((c) => ({ name: c, value: c } as DropdownItem))}
+        selectedValue={curriculumFilter || undefined}
+        onSelect={(item) => onCurriculumFilterChange(item.value ?? '')}
+        clearable
+        onClear={() => onCurriculumFilterChange('')}
+        clearAriaLabel={t('history.clearCurriculumFilter')}
+        className={filterDropdownClass}
+      />
     </>
   );
 }
@@ -130,8 +124,6 @@ export function HistoryToolbar({
   }, [isMobile]);
 
   const facetCount = [subjectFilter, gradeFilter, curriculumFilter].filter(Boolean).length;
-  const showFiltersButton =
-    allSubjects.length > 1 || allGrades.length > 1 || allCurricula.length > 1;
 
   const chips: HistoryFilterChip[] = [];
   if (subjectFilter) {
@@ -203,22 +195,20 @@ export function HistoryToolbar({
               className="h-13 w-full rounded-xl border-2 border-border bg-surface py-0 ps-9 pe-3 text-base font-body text-text-primary placeholder:text-text-secondary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
             />
           </div>
-          {showFiltersButton ? (
-            <div
-              className="sm:hidden"
-              inert={!isMobile || undefined}
-              aria-hidden={!isMobile || undefined}
-            >
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  className="h-11 shrink-0 rounded-xl border-2 border-border bg-surface px-3 font-body text-base text-text-primary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
-                >
-                  {filtersLabel}
-                </button>
-              </SheetTrigger>
-            </div>
-          ) : null}
+          <div
+            className="sm:hidden"
+            inert={!isMobile || undefined}
+            aria-hidden={!isMobile || undefined}
+          >
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="h-11 shrink-0 rounded-xl border-2 border-border bg-surface px-3 font-body text-base text-text-primary hover:border-coral/60 focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20"
+              >
+                {filtersLabel}
+              </button>
+            </SheetTrigger>
+          </div>
           <div
             className="contents max-sm:hidden"
             inert={isMobile || undefined}
