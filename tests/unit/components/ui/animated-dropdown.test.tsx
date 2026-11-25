@@ -955,13 +955,34 @@ describe('AnimatedDropdown clearable', () => {
       />,
     );
 
+    const trigger = screen.getByRole('button', { name: /^alpha$/i });
     const clearBtn = screen.getByRole('button', { name: 'Clear selection' });
-    expect(clearBtn.className).toMatch(/\bh-10\b/);
-    expect(clearBtn.className).toMatch(/\bw-10\b/);
+    expect(clearBtn.className).toMatch(/\bh-11\b/);
+    expect(clearBtn.className).toMatch(/\bw-11\b/);
+    expect(clearBtn.className).not.toMatch(/\bend-9\b/);
+    expect(trigger.className).not.toMatch(/\bpe-14\b/);
+    expect(trigger.querySelector('svg')).toBeNull();
 
     await user.click(clearBtn);
     expect(onClear).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('keeps the chevron and omits clear when there is no selection', () => {
+    render(
+      <AnimatedDropdown
+        id="clr-dd"
+        text="Pick"
+        items={items}
+        clearable
+        clearAriaLabel="Clear selection"
+        onClear={jest.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: /pick/i });
+    expect(screen.queryByRole('button', { name: 'Clear selection' })).not.toBeInTheDocument();
+    expect(trigger.querySelector('svg')).not.toBeNull();
   });
 
   it('exposes the clear button as a focusable control with the provided aria-label', () => {

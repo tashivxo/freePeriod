@@ -1,6 +1,30 @@
-import { render, screen, waitFor } from '@/tests/helpers';
+import { render, screen, waitFor, within } from '@/tests/helpers';
 import { LocaleProvider } from '@/providers/locale';
 import type { ReactElement } from 'react';
+
+const MOBILE_QUERY = '(max-width: 639px)';
+
+function setMobileViewport() {
+  const original = window.matchMedia;
+  window.matchMedia = jest.fn((query: string) => {
+    if (query === MOBILE_QUERY) {
+      return {
+        matches: true,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      };
+    }
+    return original(query);
+  }) as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}
 
 type LessonRow = {
   id: string;
@@ -35,6 +59,20 @@ const allLessons: LessonRow[] = [
 
 let lessonRows = [...allLessons];
 
+const lastLessonFetch = {
+  subject: null as string | null,
+  grade: null as string | null,
+  curriculum: null as string | null,
+  titleIlike: null as string | null,
+};
+
+function resetLastLessonFetch() {
+  lastLessonFetch.subject = null;
+  lastLessonFetch.grade = null;
+  lastLessonFetch.curriculum = null;
+  lastLessonFetch.titleIlike = null;
+}
+
 function createFromMock() {
   const filters: {
     subject: string | null;
@@ -60,6 +98,10 @@ function createFromMock() {
         })),
       };
     }
+    lastLessonFetch.subject = filters.subject;
+    lastLessonFetch.grade = filters.grade;
+    lastLessonFetch.curriculum = filters.curriculum;
+    lastLessonFetch.titleIlike = filters.titleIlike;
     let rows = lessonRows;
     if (filters.subject) {
       rows = rows.filter((row) => row.subject === filters.subject);
@@ -144,9 +186,18 @@ function classOf(el: Element) {
   return el.getAttribute('class') ?? '';
 }
 
+function isContentsOnMobile(className: string) {
+  return /\bmax-sm:contents\b/.test(className) || /(?:^|\s)contents\b/.test(className);
+}
+
+function isStickyOnMobile(className: string) {
+  return /(?:^|\s)sticky\b/.test(className);
+}
+
 describe('HistoryClient', () => {
   beforeEach(() => {
     lessonRows = [...allLessons];
+    resetLastLessonFetch();
     document.title = '';
   });
 
@@ -304,8 +355,8 @@ describe('HistoryClient', () => {
 
     const { input } = getSearchField();
     const pageHeader = screen.getByTestId('history-page-header');
-    expect(classOf(pageHeader)).toMatch(/\bsticky\b/);
-    expect(classOf(pageHeader)).toMatch(/\btop-14\b/);
+    expect(classOf(pageHeader)).toMatch(/\bsm:sticky\b/);
+    expect(classOf(pageHeader)).toMatch(/\bsm:top-14\b/);
     expect(classOf(pageHeader)).toMatch(/\bbg-background\b/);
     expect(classOf(pageHeader)).not.toMatch(/bg-background\/90/);
     expect(classOf(pageHeader)).not.toMatch(/backdrop-blur/);
@@ -313,6 +364,12 @@ describe('HistoryClient', () => {
     expect(pageHeader.contains(fractions)).toBe(false);
     expect(pageHeader.contains(input)).toBe(true);
     expect(pageHeader).toContainElement(screen.getByRole('heading', { level: 1 }));
+    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all subjects/i }));
+    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all grades/i }));
+    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all curricula/i }));
+
+    const toolbar = screen.getByTestId('history-toolbar');
+    expect(classOf(toolbar)).toMatch(/\bsm:static\b/);
 
     await user.click(screen.getByRole('button', { name: /all subjects/i }));
     const listbox = screen.getByRole('listbox');
@@ -368,5 +425,243 @@ describe('HistoryClient', () => {
 
     expect(screen.queryByRole('button', { name: /all grades/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /all curricula/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the desktop toolbar without a Filters button, chips, or sheet', async () => {
+    renderHistory();
+    await screen.findByText('Fractions');
+
+    expect(screen.queryByRole('button', { name: /^Filters$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+  });
+
+  describe('mobile toolbar', () => {
+    let restoreMatchMedia: () => void;
+
+    beforeEach(() => {
+      restoreMatchMedia = setMobileViewport();
+    });
+
+    afterEach(() => {
+      restoreMatchMedia();
+    });
+
+    async function openFiltersSheet(user: Awaited<ReturnType<typeof renderHistory>>['user']) {
+      await user.click(screen.getByRole('button', { name: /^Filters$/ }));
+      return screen.getByRole('dialog', { name: 'Filters' });
+    }
+
+    it('pins only the search row with a 44px Filters button', async () => {
+      renderHistory();
+      const fractions = await screen.findByText('Fractions');
+
+      const toolbar = screen.getByTestId('history-toolbar');
+      const title = screen.getByTestId('history-page-title');
+      const header = screen.getByTestId('history-page-header');
+      const { input } = getSearchField();
+      const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
+
+      expect(classOf(toolbar)).toMatch(/(?:^|\s)sticky\b/);
+      expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
+      expect(toolbar.contains(input)).toBe(true);
+      expect(toolbar).toContainElement(filtersButton);
+      expect(classOf(filtersButton)).toMatch(/\bh-11\b/);
+
+      expect(classOf(header)).not.toMatch(/(?:^|\s)sticky\b/);
+      expect(classOf(header)).not.toMatch(/(?:^|\s)top-14\b/);
+      expect(title.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
+      expect(title.contains(screen.getByRole('link', { name: /plan lesson/i }))).toBe(true);
+      expect(toolbar.contains(title)).toBe(false);
+      expect(toolbar.contains(fractions)).toBe(false);
+    });
+
+    it('does not nest the sticky toolbar in a non-sticky wrapper that ends at the toolbar', async () => {
+      renderHistory();
+      const fractions = await screen.findByText('Fractions');
+      const toolbar = screen.getByTestId('history-toolbar');
+
+      expect(isStickyOnMobile(classOf(toolbar))).toBe(true);
+      expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
+
+      const trappingAncestors: string[] = [];
+      let ancestor = toolbar.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const cls = classOf(ancestor);
+        const createsBox = !isContentsOnMobile(cls);
+        const sticky = isStickyOnMobile(cls);
+        if (createsBox && !sticky && !ancestor.contains(fractions)) {
+          trappingAncestors.push(ancestor.getAttribute('data-testid') ?? ancestor.tagName);
+        }
+        ancestor = ancestor.parentElement;
+      }
+
+      expect(trappingAncestors).toEqual([]);
+    });
+
+    it('shows Filters (N) for facet filters and ignores title search', async () => {
+      const { user } = renderHistory();
+      await screen.findByText('Fractions');
+
+      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
+
+      const dialog = await openFiltersSheet(user);
+      await user.click(within(dialog).getByRole('button', { name: /all subjects/i }));
+      await user.click(screen.getByRole('option', { name: 'Science' }));
+      await user.click(within(dialog).getByRole('button', { name: /all grades/i }));
+      await user.click(screen.getByRole('option', { name: /grade.*5/i }));
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /^Filters \(2\)$/ })).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Remove subject filter: Science' }));
+      expect(screen.getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /Remove grade filter:/i }));
+      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+
+      await user.type(getSearchInput(), 'Frac');
+      await waitFor(() => {
+        expect(screen.getByText('Fractions')).toBeInTheDocument();
+        expect(screen.queryByText('Cells')).not.toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
+    });
+
+    it('opens an accessible Filters sheet that returns focus on Esc, Done, and overlay dismiss', async () => {
+      const { user } = renderHistory();
+      await screen.findByText('Fractions');
+
+      const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
+      await user.click(filtersButton);
+
+      const dialog = screen.getByRole('dialog', { name: 'Filters' });
+      expect(dialog).toBeInTheDocument();
+      expect(dialog.contains(document.activeElement)).toBe(true);
+      expect(classOf(dialog)).toMatch(/motion-reduce:/);
+      expect(classOf(dialog) + classOf(dialog.querySelector('[data-slot="sheet-footer"]') ?? dialog)).toMatch(
+        /safe-area-inset-bottom/,
+      );
+
+      await user.keyboard('{Escape}');
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+      expect(filtersButton).toHaveFocus();
+
+      await user.click(filtersButton);
+      expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Done' }));
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+      expect(filtersButton).toHaveFocus();
+
+      await user.click(filtersButton);
+      const overlay = document.querySelector('[data-slot="sheet-overlay"]');
+      expect(overlay).toBeInstanceOf(HTMLElement);
+      await user.click(overlay as HTMLElement);
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+      expect(filtersButton).toHaveFocus();
+    });
+
+    it('applies sheet facet changes live and Clear all leaves the sheet open', async () => {
+      const { user } = renderHistory();
+      await screen.findByText('Fractions');
+
+      await user.type(getSearchInput(), 's');
+      await waitFor(() => {
+        expect(lastLessonFetch.titleIlike).toBe('%s%');
+        expect(screen.getByText('Fractions')).toBeInTheDocument();
+        expect(screen.getByText('Cells')).toBeInTheDocument();
+      });
+
+      const dialog = await openFiltersSheet(user);
+      await user.click(within(dialog).getByRole('button', { name: /all subjects/i }));
+      await user.click(screen.getByRole('option', { name: 'Science' }));
+
+      await waitFor(() => {
+        expect(lastLessonFetch.subject).toBe('Science');
+        expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
+        expect(screen.getByText('Cells')).toBeInTheDocument();
+      });
+      expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Clear all' }));
+
+      await waitFor(
+        () => {
+          expect(lastLessonFetch.subject).toBeNull();
+          expect(screen.getByText('Fractions')).toBeInTheDocument();
+          expect(screen.getByText('Cells')).toBeInTheDocument();
+        },
+        { timeout: 5000 },
+      );
+      expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: /search lessons by title/i, hidden: true })).toHaveValue('s');
+      expect(screen.getByRole('button', { name: /^Filters$/, hidden: true })).toBeInTheDocument();
+      expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
+    });
+
+    it('shows removable chips in the pinned toolbar for active facets', async () => {
+      const { user } = renderHistory();
+      await screen.findByText('Fractions');
+
+      expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
+
+      const dialog = await openFiltersSheet(user);
+      await user.click(within(dialog).getByRole('button', { name: /all subjects/i }));
+      await user.click(screen.getByRole('option', { name: 'Science' }));
+      await user.click(within(dialog).getByRole('button', { name: /all grades/i }));
+      await user.click(screen.getByRole('option', { name: /grade.*5/i }));
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+
+      const toolbar = screen.getByTestId('history-toolbar');
+      const chips = await screen.findByTestId('history-filter-chips');
+      expect(toolbar.contains(chips)).toBe(true);
+      expect(classOf(chips)).toMatch(/overflow-x-auto/);
+      expect(chips).toHaveTextContent('Science');
+      expect(chips.textContent ?? '').toMatch(/Grade.*5/);
+
+      const removeSubject = screen.getByRole('button', { name: 'Remove subject filter: Science' });
+      const removeGrade = screen.getByRole('button', { name: /Remove grade filter:/i });
+      expect(classOf(removeSubject)).toMatch(/min-h-11|h-11/);
+      expect(classOf(removeGrade)).toMatch(/min-h-11|h-11/);
+
+      await user.click(removeSubject);
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'Remove subject filter: Science' })).not.toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /Remove grade filter:/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+    });
+
+    it('hides the Filters button when no facet has more than one value', async () => {
+      lessonRows = [
+        allLessons[0]!,
+        { ...allLessons[0]!, id: '3', title: 'Decimals', subject: 'Mathematics' },
+      ];
+      renderHistory();
+      await screen.findByText('Fractions');
+
+      expect(screen.queryByRole('button', { name: /^Filters$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /all subjects/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /all grades/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /all curricula/i })).not.toBeInTheDocument();
+    });
+
+    it('labels the Filters button in Arabic', async () => {
+      renderHistory(<HistoryClient />, 'ar');
+      expect(await screen.findByRole('button', { name: 'عوامل التصفية' })).toBeInTheDocument();
+    });
   });
 });
