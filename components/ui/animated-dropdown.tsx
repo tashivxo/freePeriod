@@ -14,7 +14,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** ~15rem — matches Tailwind `max-h-60` */
@@ -59,6 +59,9 @@ interface AnimatedDropdownProps {
   searchPlaceholder?: string;
   menuAlign?: 'stretch' | 'end';
   menuMinWidth?: number;
+  clearable?: boolean;
+  onClear?: () => void;
+  clearAriaLabel?: string;
 }
 
 type ListboxPlacement = 'below' | 'above';
@@ -221,6 +224,9 @@ export function AnimatedDropdown({
   searchPlaceholder = 'Search',
   menuAlign = 'stretch',
   menuMinWidth = 0,
+  clearable = false,
+  onClear,
+  clearAriaLabel,
 }: AnimatedDropdownProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,6 +255,16 @@ export function AnimatedDropdown({
     : null;
 
   const displayText = selectedItem ? selectedItem.name : text;
+  const showClear = Boolean(clearable && selectedValue && onClear);
+
+  const handleClearClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onClear?.();
+    },
+    [onClear],
+  );
 
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -543,7 +559,8 @@ export function AnimatedDropdown({
         aria-label={triggerAriaLabelledBy ? undefined : triggerAriaLabel}
         aria-labelledby={triggerAriaLabelledBy}
         className={cn(
-          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] ps-4 pe-3 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
+          'h-13 w-full flex items-center justify-between gap-2 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-background-elevated)] ps-4 font-body text-base hover:border-coral/60 focus:border-coral focus:ring-2 focus:ring-coral/20 focus:outline-none',
+          showClear && !hideChevron ? 'pe-14' : 'pe-3',
           triggerClassName,
         )}
       >
@@ -573,6 +590,18 @@ export function AnimatedDropdown({
           </motion.span>
         ) : null}
       </button>
+
+      {showClear ? (
+        <button
+          type="button"
+          aria-label={clearAriaLabel}
+          className="absolute end-9 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-primary-light)]/10 hover:text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-coral/20"
+          onClick={handleClearClick}
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      ) : null}
 
       <AnimatePresence>
         {open && listboxPosition ? (
