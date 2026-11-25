@@ -95,7 +95,7 @@ export function HistoryClient() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div
         data-testid="history-page-header"
-        className="max-sm:contents sm:sticky sm:top-14 sm:z-30 -mx-4 mb-6 bg-background/70 backdrop-blur-md px-4 pb-4 sm:pb-6"
+        className="max-sm:contents sm:sticky sm:top-14 sm:z-30 -mx-4 mb-6 px-4 pb-4 sm:pb-6"
       >
         <div
           data-testid="history-page-title"
