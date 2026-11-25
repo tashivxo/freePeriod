@@ -43,6 +43,7 @@ test.describe('History toolbar layout at 390x844', () => {
       await expect(page.getByRole('textbox', { name: /search lessons by title/i })).toBeVisible();
     }
 
+    await expect(page.getByRole('button', { name: /^Filters$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /all subjects/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /all grades/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /all curricula/i })).toHaveCount(0);
@@ -74,9 +75,9 @@ test.describe('History toolbar layout at 1440x900', () => {
     await expect(page.getByRole('button', { name: /^Filters$/ })).toHaveCount(0);
     await expect(page.getByTestId('history-filter-chips')).toHaveCount(0);
 
-    const subject = page.getByRole('button', { name: /all subjects/i });
-    if ((await subject.count()) > 0) {
-      await expect(header.locator('[aria-haspopup="listbox"]').first()).toBeVisible();
-    }
+    await expect(page.getByRole('button', { name: /all subjects/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /all grades/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /all curricula/i })).toBeVisible();
+    await expect(header.locator('[aria-haspopup="listbox"]').first()).toBeVisible();
   });
 });
