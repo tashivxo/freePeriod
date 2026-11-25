@@ -723,6 +723,7 @@ describe('SettingsClient — dirty save', () => {
 
     fireEvent.keyDown(search, { key: 'Tab' });
     expect(country).toHaveFocus();
+    expect(country).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
