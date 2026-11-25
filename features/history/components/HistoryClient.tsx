@@ -92,71 +92,80 @@ export function HistoryClient() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div
-        data-testid="history-page-header"
-        className="max-sm:contents sm:sticky sm:top-14 sm:z-30 -mx-4 mb-6 px-4 pb-4 sm:pb-6"
-      >
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col gap-6 overflow-hidden">
+      <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8">
         <div
-          data-testid="history-page-title"
-          className="mb-6 flex flex-wrap items-center justify-between gap-3"
+          data-testid="history-page-header"
+          className="max-sm:contents sm:sticky sm:top-14 sm:z-30"
         >
-          <BlurText
-            as="h1"
-            text={t('history.title')}
-            className="font-display text-3xl font-bold text-text-primary"
-          />
-          <Button asChild>
-            <Link href="/generate">{t('history.planLesson')}</Link>
-          </Button>
-        </div>
+          <div
+            data-testid="history-page-title"
+            className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-3"
+          >
+            <BlurText
+              as="h1"
+              text={t('history.title')}
+              className="font-display text-3xl font-bold text-text-primary"
+            />
+            <Button asChild>
+              <Link href="/generate">{t('history.planLesson')}</Link>
+            </Button>
+          </div>
 
-        <HistoryToolbar
-          search={search}
-          onSearchChange={setSearch}
-          subjectFilter={subjectFilter}
-          gradeFilter={gradeFilter}
-          curriculumFilter={curriculumFilter}
-          onSubjectFilterChange={setSubjectFilter}
-          onGradeFilterChange={setGradeFilter}
-          onCurriculumFilterChange={setCurriculumFilter}
-          allSubjects={allSubjects}
-          allGrades={allGrades}
-          allCurricula={allCurricula}
-        />
+          <HistoryToolbar
+            search={search}
+            onSearchChange={setSearch}
+            subjectFilter={subjectFilter}
+            gradeFilter={gradeFilter}
+            curriculumFilter={curriculumFilter}
+            onSubjectFilterChange={setSubjectFilter}
+            onGradeFilterChange={setGradeFilter}
+            onCurriculumFilterChange={setCurriculumFilter}
+            allSubjects={allSubjects}
+            allGrades={allGrades}
+            allCurricula={allCurricula}
+          />
+        </div>
       </div>
 
-      {initialLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-36 bg-surface rounded-xl" />
-          ))}
-        </div>
-      ) : lessons.length === 0 ? (
-        <div className="text-center font-body text-text-secondary py-12">
-          {hasActiveFilters ? (
-            <p>{t('history.nothingFound')}</p>
+      <div
+        data-testid="history-lesson-scroller"
+        className="min-h-0 flex-1 overflow-y-auto"
+      >
+        <div className="mx-auto max-w-5xl px-4 pb-8">
+          {initialLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-36 bg-surface rounded-xl" />
+              ))}
+            </div>
+          ) : lessons.length === 0 ? (
+            <div className="text-center font-body text-text-secondary py-12">
+              {hasActiveFilters ? (
+                <p>{t('history.nothingFound')}</p>
+              ) : (
+                <>
+                  <p className="mb-4">{t('history.noLessons')}</p>
+                  <Button asChild>
+                    <Link href="/generate">{t('history.generateALesson')}</Link>
+                  </Button>
+                </>
+              )}
+            </div>
           ) : (
-            <>
-              <p className="mb-4">{t('history.noLessons')}</p>
-              <Button asChild>
-                <Link href="/generate">{t('history.generateALesson')}</Link>
-              </Button>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {lessons.map((lesson) => (
+                <LessonPlanCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  onDelete={handleDelete}
+                  onRename={handleRename}
+                />
+              ))}
+            </div>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {lessons.map((lesson) => (
-            <LessonPlanCard
-              key={lesson.id}
-              lesson={lesson}
-              onDelete={handleDelete}
-              onRename={handleRename}
-            />
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
