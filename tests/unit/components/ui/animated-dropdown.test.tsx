@@ -1018,4 +1018,60 @@ describe('AnimatedDropdown clearable', () => {
     expect(clearBtn).toHaveFocus();
     expect(clearBtn.tagName).toBe('BUTTON');
   });
+
+  it('applies valueClassName to the trigger label span', () => {
+    render(
+      <AnimatedDropdown
+        id="value-class-dd"
+        text="Pick"
+        valueClassName="truncate text-sm"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const label = screen.getByRole('button', { name: /pick/i }).querySelector('span');
+    expect(label).not.toBeNull();
+    expect(label!.className).toMatch(/\btruncate\b/);
+    expect(label!.className).toMatch(/\btext-sm\b/);
+  });
+
+  it('applies chevronClassName to the chevron icon', () => {
+    render(
+      <AnimatedDropdown
+        id="chevron-class-dd"
+        text="Pick"
+        chevronClassName="h-[12px] w-[12px]"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const chevron = screen.getByRole('button', { name: /pick/i }).querySelector('svg');
+    expect(chevron).not.toBeNull();
+    expect(chevron!.className.baseVal ?? chevron!.getAttribute('class') ?? '').toMatch(/h-\[12px\]/);
+  });
+
+  it('applies selectedValueClassName only when a value is selected', () => {
+    const { rerender } = render(
+      <AnimatedDropdown
+        id="selected-value-class-dd"
+        text="Placeholder"
+        valueClassName="shrink-0 text-sm"
+        selectedValueClassName="truncate min-w-0"
+        items={[{ name: 'Alpha long label', value: 'a' }]}
+      />,
+    );
+    let valueSpan = screen.getByRole('button', { name: /placeholder/i }).querySelector('span');
+    expect(valueSpan!.className).not.toMatch(/\btruncate\b/);
+
+    rerender(
+      <AnimatedDropdown
+        id="selected-value-class-dd"
+        text="Placeholder"
+        valueClassName="shrink-0 text-sm"
+        selectedValueClassName="truncate min-w-0"
+        selectedValue="a"
+        items={[{ name: 'Alpha long label', value: 'a' }]}
+      />,
+    );
+    valueSpan = screen.getByRole('button', { name: /alpha long label/i }).querySelector('span');
+    expect(valueSpan!.className).toMatch(/\btruncate\b/);
+  });
 });
