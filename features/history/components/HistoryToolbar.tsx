@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 const COMPACT_TOOLBAR_QUERY = '(max-width: 1023px)';
 const desktopDropdownClass = 'w-full min-w-0 lg:w-auto lg:min-w-[9rem]';
-const compactDropdownClass = 'min-w-0 w-full';
+const compactDropdownClass = 'min-w-0 w-full flex-auto';
 const compactTriggerClass =
   'h-11 px-3 text-sm font-body border-2 border-border bg-surface hover:border-coral/60';
 const compactValueClass = 'truncate text-sm';
@@ -168,7 +168,7 @@ export function HistoryToolbar({
         </div>
         <div
           data-testid="history-facet-grid"
-          className="grid min-w-0 grid-cols-3 gap-2 lg:contents"
+          className="flex min-w-0 gap-2 max-lg:flex lg:contents"
         >
           <FacetDropdowns
             compact={isCompactToolbar}

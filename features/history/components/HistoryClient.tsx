@@ -186,12 +186,12 @@ export function HistoryClient() {
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-5xl shrink-0">
-        <div data-testid="history-page-header" className="max-sm:hidden px-4 pt-8">
-          <HistoryPageTitleBlock testId="history-page-title-desktop" />
+        <div data-testid="history-page-header" className="px-4 pt-8 max-sm:pt-4">
+          <HistoryPageTitleBlock testId="history-page-title" />
         </div>
         <div
           data-testid="history-mobile-toolbar-row"
-          className="shrink-0 px-4 py-3 sm:px-4 sm:py-0"
+          className="shrink-0 px-4 py-3 sm:py-0"
         >
           <HistoryToolbar {...toolbarProps} />
         </div>
@@ -203,12 +203,7 @@ export function HistoryClient() {
         className="min-h-0 flex-1 overflow-y-auto"
       >
         <div className="mx-auto max-w-5xl px-0.5 pt-2 pb-8">
-          <div className="px-3.5 sm:px-0">
-            <div className="sm:hidden">
-              <HistoryPageTitleBlock testId="history-page-title-mobile" />
-            </div>
-            {lessonGrid}
-          </div>
+          <div className="px-3.5 sm:px-0">{lessonGrid}</div>
         </div>
       </div>
     </div>
