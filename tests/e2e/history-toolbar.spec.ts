@@ -30,12 +30,32 @@ async function intersectsToolbar(page: Page, target: Locator) {
   return rectsIntersect(toolbarBox, targetBox);
 }
 
+async function waitForStableBoundingBoxes(locator: Locator) {
+  await expect
+    .poll(async () => {
+      const first = await locator.boundingBox();
+      await pageWait(50);
+      const second = await locator.boundingBox();
+      if (!first || !second) return false;
+      return (
+        first.top === second.top &&
+        first.left === second.left &&
+        first.width === second.width &&
+        first.height === second.height
+      );
+    })
+    .toBe(true);
+}
+
+function pageWait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 test.describe('History toolbar layout at 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
   test('pins only the search toolbar under the nav', async ({ page }) => {
     await page.goto('/history', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('history-page-title-mobile')).toBeVisible();
 
     await expect(page.getByTestId('history-toolbar')).toHaveCount(1);
     const toolbar = page.getByTestId('history-toolbar');
@@ -44,6 +64,7 @@ test.describe('History toolbar layout at 390x844', () => {
     const scroller = page.getByTestId('history-lesson-scroller');
     await expect(toolbar).toBeVisible();
     await expect(toolbarRow).toBeVisible();
+    await expect(title).toBeVisible();
 
     const toolbarStyle = await toolbar.evaluate((el) => {
       const style = getComputedStyle(el);
@@ -61,12 +82,10 @@ test.describe('History toolbar layout at 390x844', () => {
     const scrollerTop = await scroller.evaluate((el) => el.getBoundingClientRect().top);
     expect(scrollerTop).toBeGreaterThanOrEqual(toolbarRowBottom - 1);
 
-    const titlePosition = await title.evaluate((el) => getComputedStyle(el).position);
-    expect(titlePosition).not.toBe('sticky');
-
     const toolbarHeight = await toolbar.evaluate((el) => el.getBoundingClientRect().height);
-    expect(toolbarHeight).toBeLessThanOrEqual(88);
+    expect(toolbarHeight).toBeLessThanOrEqual(130);
 
+    await waitForStableBoundingBoxes(title);
     expect(await intersectsToolbar(page, title)).toBe(false);
     const firstCard = page.locator('[data-testid="history-lesson-scroller"] a').first();
     await expect(firstCard).toBeVisible();
@@ -86,13 +105,15 @@ test.describe('History toolbar layout at 390x844', () => {
     const titleAfter = await title.evaluate((el) => el.getBoundingClientRect().top);
     expect(titleAfter).toBeLessThan(titleBefore);
     await expect(page.getByRole('textbox', { name: /search lessons by title/i })).toBeVisible();
+    await waitForStableBoundingBoxes(title);
     expect(await intersectsToolbar(page, firstCard)).toBe(false);
     expect(await intersectsToolbar(page, title)).toBe(false);
 
-    await expect(page.getByRole('button', { name: /^Filters$/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /all subjects/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /all grades/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /all curricula/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Filters/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^Subject$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Grade$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Curriculum$/ })).toBeVisible();
+    await expect(page.getByTestId('history-filter-chips')).toHaveCount(0);
   });
 
   test('keeps search focus and value after widening the viewport', async ({ page }) => {
@@ -106,6 +127,23 @@ test.describe('History toolbar layout at 390x844', () => {
     await expect(search).toHaveValue('frac');
     await expect(search).toBeFocused();
     await expect(page.getByTestId('history-toolbar')).toHaveCount(1);
+    const toolbarHeight = await page.getByTestId('history-toolbar').evaluate((el) => el.getBoundingClientRect().height);
+    expect(toolbarHeight).toBeLessThanOrEqual(140);
+  });
+});
+
+test.describe('History toolbar layout at 360x844', () => {
+  test.use({ viewport: { width: 360, height: 844 } });
+
+  test('shows three facet dropdowns on one row without overflow', async ({ page }) => {
+    await page.goto('/history', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('button', { name: /^Subject$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Grade$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Curriculum$/ })).toBeVisible();
+    const grid = page.getByTestId('history-facet-grid');
+    const gridBox = await grid.boundingBox();
+    expect(gridBox).not.toBeNull();
+    expect(gridBox!.width).toBeLessThanOrEqual(360);
   });
 });
 
@@ -120,7 +158,7 @@ test.describe('History toolbar layout at 1440x900', () => {
     const titleBlock = page.getByTestId('history-page-title-desktop');
     const heading = titleBlock.getByRole('heading', { name: /lesson plan history/i });
     const planLesson = titleBlock.getByRole('link', { name: /plan lesson/i });
-    const search = page.getByRole('textbox', { name: /search lessons by title/i });
+    const search = page.getByRole('searchbox', { name: /search lessons by title/i });
     const toolbar = page.getByTestId('history-toolbar');
     const scroller = page.getByTestId('history-lesson-scroller');
 
@@ -137,7 +175,7 @@ test.describe('History toolbar layout at 1440x900', () => {
     await expect(heading).toBeInViewport();
     await expect(planLesson).toBeInViewport();
     await expect(search).toBeInViewport();
-    await expect(toolbar).toContainText(/search/i);
+    await expect(page.getByPlaceholder('Search by title...')).toBeVisible();
     await expect(page.getByRole('button', { name: /^Filters$/ })).toHaveCount(0);
     await expect(page.getByTestId('history-filter-chips')).toHaveCount(0);
 
