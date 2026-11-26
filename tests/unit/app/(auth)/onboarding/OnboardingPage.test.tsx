@@ -333,6 +333,7 @@ describe('OnboardingPage', () => {
 
     fireEvent.keyDown(search, { key: 'Tab' });
     expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
