@@ -207,6 +207,27 @@ function getSearchField() {
   return { input, field: field as HTMLElement };
 }
 
+function getDesktopHeader() {
+  return screen.getByTestId('history-page-header');
+}
+
+function getDesktopToolbar() {
+  return within(getDesktopHeader()).getByTestId('history-toolbar');
+}
+
+function getMobileToolbarRow() {
+  return screen.getByTestId('history-mobile-toolbar-row');
+}
+
+function getMobileToolbar() {
+  return within(getMobileToolbarRow()).getByTestId('history-toolbar');
+}
+
+function getMobileTitleInPane() {
+  const scroller = screen.getByTestId('history-lesson-scroller');
+  return within(scroller).getByTestId('history-page-title');
+}
+
 function getSearchIconWrap(field: HTMLElement) {
   const svg = field.querySelector('svg');
   expect(svg).not.toBeNull();
@@ -226,14 +247,6 @@ function expectHeaderHasNoChromeFrost(className: string) {
   expect(className).not.toMatch(/\bborder-b\b/);
   expect(className).not.toMatch(/max-sm:border-b/);
   expect(className).not.toMatch(/\bshadow\b/);
-}
-
-function isContentsOnMobile(className: string) {
-  return /\bmax-sm:contents\b/.test(className) || /(?:^|\s)contents\b/.test(className);
-}
-
-function isStickyOnMobile(className: string) {
-  return /(?:^|\s)sticky\b/.test(className);
 }
 
 describe('HistoryClient', () => {
@@ -403,21 +416,22 @@ describe('HistoryClient', () => {
     const fractions = await screen.findByText('Fractions');
 
     const { input } = getSearchField();
-    const pageHeader = screen.getByTestId('history-page-header');
+    const pageHeader = getDesktopHeader();
     const scroller = screen.getByTestId('history-lesson-scroller');
     expectHeaderHasNoChromeFrost(classOf(pageHeader));
     expect(classOf(pageHeader)).not.toMatch(/\bsm:sticky\b/);
     expect(classOf(pageHeader)).not.toMatch(/\bsm:top-14\b/);
+    expect(screen.getByTestId('history-mobile-toolbar-row')).toBeInTheDocument();
 
     expect(scroller).toContainElement(fractions);
     expect(pageHeader.contains(fractions)).toBe(false);
     expect(pageHeader.contains(input)).toBe(true);
-    expect(pageHeader).toContainElement(screen.getByRole('heading', { level: 1 }));
+    expect(pageHeader).toContainElement(within(pageHeader).getByRole('heading', { level: 1 }));
     expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all subjects/i }));
     expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all grades/i }));
     expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all curricula/i }));
 
-    const toolbar = screen.getByTestId('history-toolbar');
+    const toolbar = getDesktopToolbar();
     expect(classOf(toolbar)).toMatch(/\bsm:static\b/);
 
     await user.click(screen.getByRole('button', { name: /all subjects/i }));
@@ -575,14 +589,20 @@ describe('HistoryClient', () => {
       renderHistory();
       const fractions = await screen.findByText('Fractions');
 
-      const toolbar = screen.getByTestId('history-toolbar');
-      const title = screen.getByTestId('history-page-title');
+      const toolbarRow = getMobileToolbarRow();
+      const toolbar = getMobileToolbar();
+      const title = getMobileTitleInPane();
       const scroller = screen.getByTestId('history-lesson-scroller');
       const { input } = getSearchField();
       const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
 
-      expect(classOf(toolbar)).toMatch(/(?:^|\s)sticky\b/);
-      expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
+      expect(classOf(toolbarRow)).toMatch(/\bshrink-0\b/);
+      expect(classOf(toolbarRow)).toMatch(/\bpx-4\b/);
+      expect(classOf(toolbarRow)).toMatch(/\bpy-3\b/);
+      expect(classOf(toolbarRow)).not.toMatch(/\bmax-sm:contents\b/);
+      expect(classOf(toolbarRow)).not.toMatch(/\bcontents\b/);
+      expect(classOf(toolbar)).not.toMatch(/(?:^|\s)sticky\b/);
+      expect(classOf(toolbar)).not.toMatch(/(?:^|\s)top-14\b/);
       expectHeaderHasNoChromeFrost(classOf(toolbar));
       expect(toolbar.contains(input)).toBe(true);
       expect(toolbar).toContainElement(filtersButton);
@@ -590,34 +610,35 @@ describe('HistoryClient', () => {
 
       expect(scroller).toContainElement(title);
       expect(scroller).toContainElement(fractions);
-      expect(title.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
-      expect(title.contains(screen.getByRole('link', { name: /plan lesson/i }))).toBe(true);
+      expect(title.contains(within(title).getByRole('heading', { level: 1 }))).toBe(true);
+      expect(title.contains(within(title).getByRole('link', { name: /plan lesson/i }))).toBe(true);
       expect(toolbar.contains(title)).toBe(false);
       expect(toolbar.contains(fractions)).toBe(false);
-      expect(screen.queryByTestId('history-page-header')).not.toBeInTheDocument();
+      expect(getDesktopHeader()).toBeInTheDocument();
+      expect(classOf(getDesktopHeader().parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
     });
 
-    it('does not nest the sticky toolbar in a non-sticky wrapper that ends at the toolbar', async () => {
+    it('keeps mobile and desktop chrome in the DOM for CSS visibility without a viewport hook split', async () => {
       renderHistory();
-      const fractions = await screen.findByText('Fractions');
-      const toolbar = screen.getByTestId('history-toolbar');
+      await screen.findByText('Fractions');
 
-      expect(isStickyOnMobile(classOf(toolbar))).toBe(true);
-      expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
+      expect(screen.getByTestId('history-mobile-toolbar-row')).toBeInTheDocument();
+      expect(getDesktopHeader()).toBeInTheDocument();
+      expect(classOf(getMobileToolbarRow())).toMatch(/\bsm:hidden\b/);
+      expect(classOf(getDesktopHeader().parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
+      expect(getMobileTitleInPane()).toBeInTheDocument();
+      expect(within(getDesktopHeader()).getByTestId('history-page-title')).toBeInTheDocument();
+    });
 
-      const trappingAncestors: string[] = [];
-      let ancestor = toolbar.parentElement;
-      while (ancestor && ancestor !== document.body) {
-        const cls = classOf(ancestor);
-        const createsBox = !isContentsOnMobile(cls);
-        const sticky = isStickyOnMobile(cls);
-        if (createsBox && !sticky && !ancestor.contains(fractions)) {
-          trappingAncestors.push(ancestor.getAttribute('data-testid') ?? ancestor.tagName);
-        }
-        ancestor = ancestor.parentElement;
-      }
+    it('places the mobile toolbar row above the scroll pane without overlapping it', async () => {
+      renderHistory();
+      await screen.findByText('Fractions');
 
-      expect(trappingAncestors).toEqual([]);
+      const toolbarRow = getMobileToolbarRow();
+      const scroller = screen.getByTestId('history-lesson-scroller');
+      expect(scroller.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeFalsy();
+      expect(scroller.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+      expect(toolbarRow.contains(scroller)).toBe(false);
     });
 
     it('shows Filters (N) for facet filters and ignores title search', async () => {
@@ -743,7 +764,7 @@ describe('HistoryClient', () => {
       await user.click(screen.getByRole('option', { name: /grade.*5/i }));
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
 
-      const toolbar = screen.getByTestId('history-toolbar');
+      const toolbar = getMobileToolbar();
       const chips = await screen.findByTestId('history-filter-chips');
       expect(toolbar.contains(chips)).toBe(true);
       expect(classOf(chips)).toMatch(/overflow-x-auto/);

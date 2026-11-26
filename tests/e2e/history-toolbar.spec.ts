@@ -1,6 +1,34 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 test.use({ storageState: 'tests/e2e/.auth/user.json' });
+
+function rectsIntersect(
+  a: { top: number; left: number; right: number; bottom: number },
+  b: { top: number; left: number; right: number; bottom: number },
+) {
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+}
+
+async function getNavBottom(page: Page) {
+  return page.evaluate(() => {
+    const nav =
+      document.querySelector('header') ??
+      document.querySelector('[data-testid="app-nav"]') ??
+      document.querySelector('nav');
+    if (!nav) return null;
+    return nav.getBoundingClientRect().bottom;
+  });
+}
+
+async function intersectsToolbarRow(page: Page, target: Locator) {
+  const toolbar = page.getByTestId('history-toolbar');
+  const [toolbarBox, targetBox] = await Promise.all([
+    toolbar.boundingBox(),
+    target.boundingBox(),
+  ]);
+  if (!toolbarBox || !targetBox) return false;
+  return rectsIntersect(toolbarBox, targetBox);
+}
 
 test.describe('History toolbar layout at 390x844', () => {
   test.use({ viewport: { width: 390, height: 844 } });
@@ -10,17 +38,27 @@ test.describe('History toolbar layout at 390x844', () => {
     await expect(page.getByRole('heading', { name: /lesson plan history/i })).toBeVisible();
 
     const toolbar = page.getByTestId('history-toolbar');
-    const title = page.getByTestId('history-page-title');
+    const toolbarRow = page.getByTestId('history-mobile-toolbar-row');
+    const title = page.getByTestId('history-page-title').first();
+    const scroller = page.getByTestId('history-lesson-scroller');
     await expect(toolbar).toBeVisible();
+    await expect(toolbarRow).toBeVisible();
 
     const toolbarStyle = await toolbar.evaluate((el) => {
       const style = getComputedStyle(el);
       return { position: style.position, top: style.top };
     });
-    expect(toolbarStyle.position).toBe('sticky');
-    const topPx = parseFloat(toolbarStyle.top);
-    expect(topPx).toBeGreaterThanOrEqual(48);
-    expect(topPx).toBeLessThanOrEqual(64);
+    expect(toolbarStyle.position).not.toBe('sticky');
+
+    const navBottom = await getNavBottom(page);
+    const toolbarRowTop = await toolbarRow.evaluate((el) => el.getBoundingClientRect().top);
+    if (navBottom != null) {
+      expect(Math.abs(toolbarRowTop - navBottom)).toBeLessThanOrEqual(2);
+    }
+
+    const toolbarRowBottom = await toolbarRow.evaluate((el) => el.getBoundingClientRect().bottom);
+    const scrollerTop = await scroller.evaluate((el) => el.getBoundingClientRect().top);
+    expect(scrollerTop).toBeGreaterThanOrEqual(toolbarRowBottom - 1);
 
     const titlePosition = await title.evaluate((el) => getComputedStyle(el).position);
     expect(titlePosition).not.toBe('sticky');
@@ -28,20 +66,27 @@ test.describe('History toolbar layout at 390x844', () => {
     const toolbarHeight = await toolbar.evaluate((el) => el.getBoundingClientRect().height);
     expect(toolbarHeight).toBeLessThanOrEqual(88);
 
-    const canScroll = await page.evaluate(
-      () => document.documentElement.scrollHeight > window.innerHeight,
+    expect(await intersectsToolbarRow(page, title)).toBe(false);
+    const firstCard = page.locator('[data-testid="history-lesson-scroller"] a').first();
+    await expect(firstCard).toBeVisible();
+    expect(await intersectsToolbarRow(page, firstCard)).toBe(false);
+
+    const canScrollPane = await scroller.evaluate(
+      (el) => el.scrollHeight > el.clientHeight,
     );
-    if (canScroll) {
-      const titleBefore = await title.evaluate((el) => el.getBoundingClientRect().top);
-      await page.evaluate(() => window.scrollBy(0, 400));
-      await expect(toolbar).toBeInViewport();
-      const toolbarTop = await toolbar.evaluate((el) => el.getBoundingClientRect().top);
-      expect(toolbarTop).toBeGreaterThanOrEqual(48);
-      expect(toolbarTop).toBeLessThanOrEqual(64);
-      const titleAfter = await title.evaluate((el) => el.getBoundingClientRect().top);
-      expect(titleAfter).toBeLessThan(titleBefore);
-      await expect(page.getByRole('textbox', { name: /search lessons by title/i })).toBeVisible();
-    }
+    expect(canScrollPane).toBe(true);
+
+    const titleBefore = await title.evaluate((el) => el.getBoundingClientRect().top);
+    await scroller.evaluate((el) => {
+      el.scrollTop = 400;
+    });
+    await page.waitForTimeout(100);
+    await expect(toolbar).toBeInViewport();
+    const titleAfter = await title.evaluate((el) => el.getBoundingClientRect().top);
+    expect(titleAfter).toBeLessThan(titleBefore);
+    await expect(page.getByRole('textbox', { name: /search lessons by title/i })).toBeVisible();
+    expect(await intersectsToolbarRow(page, firstCard)).toBe(false);
+    expect(await intersectsToolbarRow(page, title)).toBe(false);
 
     await expect(page.getByRole('button', { name: /^Filters$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /all subjects/i })).toHaveCount(0);
@@ -57,16 +102,20 @@ test.describe('History toolbar layout at 1440x900', () => {
     await page.goto('/history', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /lesson plan history/i })).toBeVisible();
 
-    const heading = page.getByRole('heading', { name: /lesson plan history/i });
-    const planLesson = page.getByRole('link', { name: /plan lesson/i });
-    const search = page.getByRole('textbox', { name: /search lessons by title/i });
     const header = page.getByTestId('history-page-header');
+    const heading = header.getByRole('heading', { name: /lesson plan history/i });
+    const planLesson = header.getByRole('link', { name: /plan lesson/i });
+    const search = header.getByRole('textbox', { name: /search lessons by title/i });
+    const scroller = page.getByTestId('history-lesson-scroller');
 
-    const canScroll = await page.evaluate(
-      () => document.documentElement.scrollHeight > window.innerHeight,
+    const canScrollPane = await scroller.evaluate(
+      (el) => el.scrollHeight > el.clientHeight,
     );
-    if (canScroll) {
-      await page.evaluate(() => window.scrollBy(0, 400));
+    if (canScrollPane) {
+      await scroller.evaluate((el) => {
+        el.scrollTop = 400;
+      });
+      await page.waitForTimeout(100);
     }
 
     await expect(heading).toBeInViewport();
