@@ -11,9 +11,10 @@ import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useT } from '@/providers/locale';
+
+const MOBILE_VIEWPORT_QUERY = '(max-width: 639px)';
 import { HistoryToolbar } from '@/features/history/components/HistoryToolbar';
 
-const MOBILE_QUERY = '(max-width: 639px)';
 const HISTORY_LESSON_SCROLL_KEY = 'freeperiod:history-lesson-scroll';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
@@ -44,7 +45,7 @@ function HistoryPageTitle() {
 
 export function HistoryClient() {
   const t = useT();
-  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const isMobileViewport = useMediaQuery(MOBILE_VIEWPORT_QUERY);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [lessons, setLessons] = useState<LessonCard[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
@@ -154,22 +155,57 @@ export function HistoryClient() {
     allCurricula,
   };
 
+  const lessonGrid = initialLoading ? (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-36 bg-surface rounded-xl" />
+      ))}
+    </div>
+  ) : lessons.length === 0 ? (
+    <div className="text-center font-body text-text-secondary py-12">
+      {hasActiveFilters ? (
+        <p>{t('history.nothingFound')}</p>
+      ) : (
+        <>
+          <p className="mb-4">{t('history.noLessons')}</p>
+          <Button asChild>
+            <Link href="/generate">{t('history.generateALesson')}</Link>
+          </Button>
+        </>
+      )}
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {lessons.map((lesson) => (
+        <LessonPlanCard
+          key={lesson.id}
+          lesson={lesson}
+          onDelete={handleDelete}
+          onRename={handleRename}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
-      {isMobile ? (
-        <div className="max-sm:contents">
-          <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-4 max-sm:contents">
-            <HistoryToolbar {...toolbarProps} />
-          </div>
+      <div
+        data-testid="history-mobile-toolbar-row"
+        className="mx-auto w-full max-w-5xl shrink-0 px-4 py-3 sm:hidden"
+        inert={!isMobileViewport ? true : undefined}
+      >
+        <HistoryToolbar {...toolbarProps} />
+      </div>
+
+      <div
+        className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8 max-sm:hidden sm:block"
+        inert={isMobileViewport ? true : undefined}
+      >
+        <div data-testid="history-page-header">
+          <HistoryPageTitle />
+          <HistoryToolbar {...toolbarProps} />
         </div>
-      ) : (
-        <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8">
-          <div data-testid="history-page-header">
-            <HistoryPageTitle />
-            <HistoryToolbar {...toolbarProps} />
-          </div>
-        </div>
-      )}
+      </div>
 
       <div
         ref={scrollerRef}
@@ -178,38 +214,10 @@ export function HistoryClient() {
       >
         <div className="mx-auto max-w-5xl px-0.5 pt-2 pb-8">
           <div className="px-3.5 sm:px-0">
-            {isMobile ? <HistoryPageTitle /> : null}
-            {initialLoading ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-36 bg-surface rounded-xl" />
-                ))}
-              </div>
-            ) : lessons.length === 0 ? (
-              <div className="text-center font-body text-text-secondary py-12">
-                {hasActiveFilters ? (
-                  <p>{t('history.nothingFound')}</p>
-                ) : (
-                  <>
-                    <p className="mb-4">{t('history.noLessons')}</p>
-                    <Button asChild>
-                      <Link href="/generate">{t('history.generateALesson')}</Link>
-                    </Button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {lessons.map((lesson) => (
-                  <LessonPlanCard
-                    key={lesson.id}
-                    lesson={lesson}
-                    onDelete={handleDelete}
-                    onRename={handleRename}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="sm:hidden" inert={!isMobileViewport ? true : undefined}>
+              <HistoryPageTitle />
+            </div>
+            {lessonGrid}
           </div>
         </div>
       </div>

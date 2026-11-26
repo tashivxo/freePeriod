@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@/tests/helpers';
+import { render, screen, within } from '@/tests/helpers';
 import { SettingsClient } from '@/app/(app)/settings/SettingsClient';
 import { OnboardingPage } from '@/app/(auth)/onboarding/OnboardingPage';
 import { LanguagePicker } from '@/components/layout/LanguagePicker';
@@ -171,8 +171,10 @@ describe('AnimatedDropdown consumers', () => {
   it('HistoryClient filter uses a listbox trigger when subjects exist', async () => {
     render(<HistoryClient />);
     expectNoNativeSelects();
-    await screen.findByRole('button', { name: /all subjects/i });
-    expect(screen.getByRole('button', { name: /all subjects/i })).toHaveAttribute(
+    const header = screen.getByTestId('history-page-header');
+    const toolbar = within(header).getByTestId('history-toolbar');
+    await within(toolbar).findByRole('button', { name: /all subjects/i });
+    expect(within(toolbar).getByRole('button', { name: /all subjects/i })).toHaveAttribute(
       'aria-haspopup',
       'listbox',
     );

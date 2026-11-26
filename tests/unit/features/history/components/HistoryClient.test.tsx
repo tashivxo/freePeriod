@@ -197,11 +197,19 @@ function renderHistory(ui: ReactElement = <HistoryClient />, locale: 'en' | 'ar'
 }
 
 function getSearchInput() {
-  return screen.getByRole('textbox', { name: /search lessons by title/i });
+  return within(getDesktopToolbar()).getByRole('textbox', { name: /search lessons by title/i });
 }
 
 function getSearchField() {
   const input = getSearchInput();
+  const field = input.parentElement;
+  expect(field).toBeInstanceOf(HTMLElement);
+  return { input, field: field as HTMLElement };
+}
+
+function getMobileSearchField() {
+  const toolbar = getMobileToolbar();
+  const input = within(toolbar).getByRole('textbox', { name: /search lessons by title/i });
   const field = input.parentElement;
   expect(field).toBeInstanceOf(HTMLElement);
   return { input, field: field as HTMLElement };
@@ -226,6 +234,14 @@ function getMobileToolbar() {
 function getMobileTitleInPane() {
   const scroller = screen.getByTestId('history-lesson-scroller');
   return within(scroller).getByTestId('history-page-title');
+}
+
+function getDesktopTitleHeading() {
+  return within(getDesktopHeader()).getByRole('heading', { level: 1 });
+}
+
+async function findDesktopTitleHeading() {
+  return within(getDesktopHeader()).findByRole('heading', { level: 1 });
 }
 
 function getSearchIconWrap(field: HTMLElement) {
@@ -259,13 +275,13 @@ describe('HistoryClient', () => {
 
   it('sets the browser document title from locale copy', async () => {
     renderHistory();
-    await screen.findByRole('heading', { level: 1 });
+    await findDesktopTitleHeading();
     expect(document.title).toBe('Lesson Plan History | FreePeriod');
   });
 
   it('sets the Arabic browser document title instead of leftover English', async () => {
     renderHistory(<HistoryClient />, 'ar');
-    await screen.findByRole('heading', { level: 1 });
+    await findDesktopTitleHeading();
     expect(document.title).toBe('سجل خطط الدروس | FreePeriod');
     expect(document.title).not.toBe('Lesson Plan History | FreePeriod');
   });
@@ -273,8 +289,8 @@ describe('HistoryClient', () => {
   it('keeps the heading and Plan Lesson action as separate elements', async () => {
     renderHistory();
 
-    const heading = await screen.findByRole('heading', { level: 1 });
-    const planLesson = await screen.findByRole('link', { name: /plan lesson/i });
+    const heading = await findDesktopTitleHeading();
+    const planLesson = within(getDesktopHeader()).getByRole('link', { name: /plan lesson/i });
 
     expect(heading).not.toContainElement(planLesson);
     expect(heading.compareDocumentPosition(planLesson) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -286,7 +302,7 @@ describe('HistoryClient', () => {
     document.documentElement.dir = 'rtl';
     renderHistory(<HistoryClient />, 'ar');
 
-    const heading = await screen.findByRole('heading', { level: 1 });
+    const heading = getDesktopTitleHeading();
     const wordSpans = heading.querySelectorAll('span');
     expect(wordSpans.length).toBeGreaterThan(1);
     wordSpans.forEach((span, index) => {
@@ -301,14 +317,14 @@ describe('HistoryClient', () => {
   it('translates the search placeholder in Arabic', async () => {
     renderHistory(<HistoryClient />, 'ar');
 
-    expect(await screen.findByPlaceholderText('ابحث حسب العنوان...')).toBeInTheDocument();
+    expect(await within(getDesktopToolbar()).findByPlaceholderText('ابحث حسب العنوان...')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Search by title...')).not.toBeInTheDocument();
   });
 
   it('lists only distinct subjects in the menu and clears the filter with the X control', async () => {
     const { user } = renderHistory();
 
-    const trigger = await screen.findByRole('button', { name: /all subjects/i });
+    const trigger = await within(getDesktopToolbar()).findByRole('button', { name: /all subjects/i });
     await user.click(trigger);
     expect(screen.getByRole('option', { name: 'Science' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
@@ -320,14 +336,17 @@ describe('HistoryClient', () => {
     });
     expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
 
-    expect(screen.getByRole('button', { name: /science/i })).toHaveAttribute('aria-haspopup', 'listbox');
-    await user.click(screen.getByRole('button', { name: 'Clear subject filter' }));
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /science/i })).toHaveAttribute(
+      'aria-haspopup',
+      'listbox',
+    );
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: 'Clear subject filter' }));
 
     await waitFor(() => {
       expect(screen.getByText('Fractions')).toBeInTheDocument();
       expect(screen.getByText('Cells')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
   });
 
   it('shows the subject dropdown when the account has only one subject', async () => {
@@ -335,18 +354,18 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
 
     await screen.findByText('Fractions');
-    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
     expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(1);
   });
 
   it('centres the search icon on the input text with logical start inset, not translate hacks', async () => {
     renderHistory();
-    await screen.findByRole('heading', { level: 1 });
+    await findDesktopTitleHeading();
 
     const { input, field } = getSearchField();
     const { wrap } = getSearchIconWrap(field);
@@ -369,7 +388,9 @@ describe('HistoryClient', () => {
     document.documentElement.dir = 'rtl';
     renderHistory(<HistoryClient />, 'ar');
 
-    const input = await screen.findByRole('textbox', { name: 'البحث في الدروس حسب العنوان' });
+    const input = await within(getDesktopToolbar()).findByRole('textbox', {
+      name: 'البحث في الدروس حسب العنوان',
+    });
     const field = input.parentElement as HTMLElement;
     const { wrap } = getSearchIconWrap(field);
 
@@ -385,8 +406,8 @@ describe('HistoryClient', () => {
 
   it('matches search and filter control height, border, radius, and toolbar layout', async () => {
     renderHistory();
-    const trigger = await screen.findByRole('button', { name: /all subjects/i });
-    const gradeTrigger = screen.getByRole('button', { name: /all grades/i });
+    const trigger = await within(getDesktopToolbar()).findByRole('button', { name: /all subjects/i });
+    const gradeTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all grades/i });
     const { input, field } = getSearchField();
     const filtersRow = field.parentElement as HTMLElement;
 
@@ -427,14 +448,14 @@ describe('HistoryClient', () => {
     expect(pageHeader.contains(fractions)).toBe(false);
     expect(pageHeader.contains(input)).toBe(true);
     expect(pageHeader).toContainElement(within(pageHeader).getByRole('heading', { level: 1 }));
-    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all subjects/i }));
-    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all grades/i }));
-    expect(pageHeader).toContainElement(screen.getByRole('button', { name: /all curricula/i }));
+    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
+    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
+    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
 
     const toolbar = getDesktopToolbar();
     expect(classOf(toolbar)).toMatch(/\bsm:static\b/);
 
-    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
     const listbox = screen.getByRole('listbox');
     expect(document.body.contains(listbox)).toBe(true);
     expect(pageHeader.contains(listbox)).toBe(false);
@@ -487,8 +508,8 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('Fractions');
 
-    const gradeTrigger = screen.getByRole('button', { name: /all grades/i });
-    const curriculumTrigger = screen.getByRole('button', { name: /all curricula/i });
+    const gradeTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all grades/i });
+    const curriculumTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i });
 
     await user.click(gradeTrigger);
     expect(screen.getByRole('option', { name: /grade.*5/i })).toBeInTheDocument();
@@ -504,16 +525,16 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('Fractions');
 
-    await user.click(screen.getByRole('button', { name: /all grades/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
     await user.click(screen.getByRole('option', { name: /grade.*5/i }));
     await waitFor(() => {
       expect(screen.getByText('Fractions')).toBeInTheDocument();
       expect(screen.queryByText('Cells')).not.toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'Clear grade filter' }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: 'Clear grade filter' }));
 
-    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
     await user.click(screen.getByRole('option', { name: 'NGSS' }));
     await waitFor(() => {
       expect(screen.getByText('Cells')).toBeInTheDocument();
@@ -526,11 +547,11 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('English 5');
 
-    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
     expect(screen.getByRole('option', { name: 'National' })).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(1);
   });
@@ -540,20 +561,20 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('No lessons yet.');
 
-    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     await user.keyboard('{Escape}');
 
-    await user.click(screen.getByRole('button', { name: /all grades/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     await user.keyboard('{Escape}');
 
-    await user.click(screen.getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
     expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 
@@ -564,9 +585,9 @@ describe('HistoryClient', () => {
     expect(screen.queryByRole('button', { name: /^Filters$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
   });
 
   describe('mobile toolbar', () => {
@@ -581,7 +602,7 @@ describe('HistoryClient', () => {
     });
 
     async function openFiltersSheet(user: Awaited<ReturnType<typeof renderHistory>>['user']) {
-      await user.click(screen.getByRole('button', { name: /^Filters$/ }));
+      await user.click(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ }));
       return screen.getByRole('dialog', { name: 'Filters' });
     }
 
@@ -593,8 +614,8 @@ describe('HistoryClient', () => {
       const toolbar = getMobileToolbar();
       const title = getMobileTitleInPane();
       const scroller = screen.getByTestId('history-lesson-scroller');
-      const { input } = getSearchField();
-      const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
+      const { input } = getMobileSearchField();
+      const filtersButton = within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ });
 
       expect(classOf(toolbarRow)).toMatch(/\bshrink-0\b/);
       expect(classOf(toolbarRow)).toMatch(/\bpx-4\b/);
@@ -645,7 +666,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
 
       const dialog = await openFiltersSheet(user);
@@ -656,21 +677,21 @@ describe('HistoryClient', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /^Filters \(2\)$/ })).toBeInTheDocument();
+        expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(2\)$/ })).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', { name: 'Remove subject filter: Science' }));
-      expect(screen.getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+      await user.click(within(getMobileToolbar()).getByRole('button', { name: 'Remove subject filter: Science' }));
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', { name: /Remove grade filter:/i }));
-      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      await user.click(within(getMobileToolbar()).getByRole('button', { name: /Remove grade filter:/i }));
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
 
-      await user.type(getSearchInput(), 'Frac');
+      await user.type(within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 'Frac');
       await waitFor(() => {
         expect(screen.getByText('Fractions')).toBeInTheDocument();
         expect(screen.queryByText('Cells')).not.toBeInTheDocument();
       });
-      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });
 
@@ -678,7 +699,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
+      const filtersButton = within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ });
       await user.click(filtersButton);
 
       const dialog = screen.getByRole('dialog', { name: 'Filters' });
@@ -717,7 +738,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      await user.type(getSearchInput(), 's');
+      await user.type(within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 's');
       await waitFor(() => {
         expect(lastLessonFetch.titleIlike).toBe('%s%');
         expect(screen.getByText('Fractions')).toBeInTheDocument();
@@ -746,8 +767,12 @@ describe('HistoryClient', () => {
         { timeout: 5000 },
       );
       expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: /search lessons by title/i, hidden: true })).toHaveValue('s');
-      expect(screen.getByRole('button', { name: /^Filters$/, hidden: true })).toBeInTheDocument();
+      expect(
+        within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i, hidden: true }),
+      ).toHaveValue('s');
+      expect(
+        within(getMobileToolbar()).getByRole('button', { name: /^Filters$/, hidden: true }),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });
 
@@ -765,14 +790,14 @@ describe('HistoryClient', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
 
       const toolbar = getMobileToolbar();
-      const chips = await screen.findByTestId('history-filter-chips');
+      const chips = await within(toolbar).findByTestId('history-filter-chips');
       expect(toolbar.contains(chips)).toBe(true);
       expect(classOf(chips)).toMatch(/overflow-x-auto/);
       expect(chips).toHaveTextContent('Science');
       expect(chips.textContent ?? '').toMatch(/Grade.*5/);
 
-      const removeSubject = screen.getByRole('button', { name: 'Remove subject filter: Science' });
-      const removeGrade = screen.getByRole('button', { name: /Remove grade filter:/i });
+      const removeSubject = within(toolbar).getByRole('button', { name: 'Remove subject filter: Science' });
+      const removeGrade = within(toolbar).getByRole('button', { name: /Remove grade filter:/i });
       expect(classOf(removeSubject)).toMatch(/min-h-11|h-11/);
       expect(classOf(removeGrade)).toMatch(/min-h-11|h-11/);
 
@@ -780,8 +805,8 @@ describe('HistoryClient', () => {
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: 'Remove subject filter: Science' })).not.toBeInTheDocument();
       });
-      expect(screen.getByRole('button', { name: /Remove grade filter:/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+      expect(within(toolbar).getByRole('button', { name: /Remove grade filter:/i })).toBeInTheDocument();
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
     });
 
     it('shows the Filters button and all facet dropdowns when no facet has more than one value', async () => {
@@ -792,7 +817,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      expect(screen.getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       const dialog = await openFiltersSheet(user);
       expect(within(dialog).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
       expect(within(dialog).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
@@ -831,7 +856,9 @@ describe('HistoryClient', () => {
 
     it('labels the Filters button in Arabic', async () => {
       renderHistory(<HistoryClient />, 'ar');
-      expect(await screen.findByRole('button', { name: 'عوامل التصفية' })).toBeInTheDocument();
+      expect(
+        await within(getMobileToolbar()).findByRole('button', { name: 'عوامل التصفية' }),
+      ).toBeInTheDocument();
     });
   });
 });
