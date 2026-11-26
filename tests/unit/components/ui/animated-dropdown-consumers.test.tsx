@@ -171,8 +171,7 @@ describe('AnimatedDropdown consumers', () => {
   it('HistoryClient filter uses a listbox trigger when subjects exist', async () => {
     render(<HistoryClient />);
     expectNoNativeSelects();
-    const header = screen.getByTestId('history-page-header');
-    const toolbar = within(header).getByTestId('history-toolbar');
+    const toolbar = screen.getByTestId('history-toolbar');
     await within(toolbar).findByRole('button', { name: /all subjects/i });
     expect(within(toolbar).getByRole('button', { name: /all subjects/i })).toHaveAttribute(
       'aria-haspopup',

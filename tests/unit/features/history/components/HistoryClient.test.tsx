@@ -1,4 +1,4 @@
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 import { render, screen, waitFor, within } from '@/tests/helpers';
 import { LocaleProvider } from '@/providers/locale';
 import type { ReactElement } from 'react';
@@ -196,8 +196,12 @@ function renderHistory(ui: ReactElement = <HistoryClient />, locale: 'en' | 'ar'
   return render(<LocaleProvider initialLocale={locale}>{ui}</LocaleProvider>);
 }
 
+function getToolbar() {
+  return screen.getByTestId('history-toolbar');
+}
+
 function getSearchInput() {
-  return within(getDesktopToolbar()).getByRole('textbox', { name: /search lessons by title/i });
+  return within(getToolbar()).getByRole('textbox', { name: /search lessons by title/i });
 }
 
 function getSearchField() {
@@ -207,41 +211,36 @@ function getSearchField() {
   return { input, field: field as HTMLElement };
 }
 
-function getMobileSearchField() {
-  const toolbar = getMobileToolbar();
-  const input = within(toolbar).getByRole('textbox', { name: /search lessons by title/i });
-  const field = input.parentElement;
-  expect(field).toBeInstanceOf(HTMLElement);
-  return { input, field: field as HTMLElement };
-}
-
 function getDesktopHeader() {
   return screen.getByTestId('history-page-header');
 }
 
-function getDesktopToolbar() {
-  return within(getDesktopHeader()).getByTestId('history-toolbar');
+function getDesktopTitleBlock() {
+  return screen.getByTestId('history-page-title-desktop');
+}
+
+function getMobileTitleInPane() {
+  return screen.getByTestId('history-page-title-mobile');
 }
 
 function getMobileToolbarRow() {
   return screen.getByTestId('history-mobile-toolbar-row');
 }
 
-function getMobileToolbar() {
-  return within(getMobileToolbarRow()).getByTestId('history-toolbar');
-}
-
-function getMobileTitleInPane() {
-  const scroller = screen.getByTestId('history-lesson-scroller');
-  return within(scroller).getByTestId('history-page-title');
-}
-
 function getDesktopTitleHeading() {
-  return within(getDesktopHeader()).getByRole('heading', { level: 1 });
+  return within(getDesktopTitleBlock()).getByRole('heading', { level: 1 });
 }
 
 async function findDesktopTitleHeading() {
-  return within(getDesktopHeader()).findByRole('heading', { level: 1 });
+  return within(getDesktopTitleBlock()).findByRole('heading', { level: 1 });
+}
+
+function duplicateElementIds(root: ParentNode) {
+  const counts = new Map<string, number>();
+  root.querySelectorAll('[id]').forEach((el) => {
+    counts.set(el.id, (counts.get(el.id) ?? 0) + 1);
+  });
+  return [...counts.entries()].filter(([, count]) => count > 1);
 }
 
 function getSearchIconWrap(field: HTMLElement) {
@@ -290,7 +289,7 @@ describe('HistoryClient', () => {
     renderHistory();
 
     const heading = await findDesktopTitleHeading();
-    const planLesson = within(getDesktopHeader()).getByRole('link', { name: /plan lesson/i });
+    const planLesson = within(getDesktopTitleBlock()).getByRole('link', { name: /plan lesson/i });
 
     expect(heading).not.toContainElement(planLesson);
     expect(heading.compareDocumentPosition(planLesson) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -317,14 +316,14 @@ describe('HistoryClient', () => {
   it('translates the search placeholder in Arabic', async () => {
     renderHistory(<HistoryClient />, 'ar');
 
-    expect(await within(getDesktopToolbar()).findByPlaceholderText('ابحث حسب العنوان...')).toBeInTheDocument();
+    expect(await within(getToolbar()).findByPlaceholderText('ابحث حسب العنوان...')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Search by title...')).not.toBeInTheDocument();
   });
 
   it('lists only distinct subjects in the menu and clears the filter with the X control', async () => {
     const { user } = renderHistory();
 
-    const trigger = await within(getDesktopToolbar()).findByRole('button', { name: /all subjects/i });
+    const trigger = await within(getToolbar()).findByRole('button', { name: /all subjects/i });
     await user.click(trigger);
     expect(screen.getByRole('option', { name: 'Science' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
@@ -336,17 +335,17 @@ describe('HistoryClient', () => {
     });
     expect(screen.queryByText('Fractions')).not.toBeInTheDocument();
 
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /science/i })).toHaveAttribute(
+    expect(within(getToolbar()).getByRole('button', { name: /science/i })).toHaveAttribute(
       'aria-haspopup',
       'listbox',
     );
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: 'Clear subject filter' }));
+    await user.click(within(getToolbar()).getByRole('button', { name: 'Clear subject filter' }));
 
     await waitFor(() => {
       expect(screen.getByText('Fractions')).toBeInTheDocument();
       expect(screen.getByText('Cells')).toBeInTheDocument();
     });
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
   });
 
   it('shows the subject dropdown when the account has only one subject', async () => {
@@ -354,11 +353,11 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
 
     await screen.findByText('Fractions');
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all subjects/i }));
     expect(screen.getByRole('option', { name: 'Mathematics' })).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(1);
   });
@@ -388,7 +387,7 @@ describe('HistoryClient', () => {
     document.documentElement.dir = 'rtl';
     renderHistory(<HistoryClient />, 'ar');
 
-    const input = await within(getDesktopToolbar()).findByRole('textbox', {
+    const input = await within(getToolbar()).findByRole('textbox', {
       name: 'البحث في الدروس حسب العنوان',
     });
     const field = input.parentElement as HTMLElement;
@@ -406,8 +405,8 @@ describe('HistoryClient', () => {
 
   it('matches search and filter control height, border, radius, and toolbar layout', async () => {
     renderHistory();
-    const trigger = await within(getDesktopToolbar()).findByRole('button', { name: /all subjects/i });
-    const gradeTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all grades/i });
+    const trigger = await within(getToolbar()).findByRole('button', { name: /all subjects/i });
+    const gradeTrigger = within(getToolbar()).getByRole('button', { name: /all grades/i });
     const { input, field } = getSearchField();
     const filtersRow = field.parentElement as HTMLElement;
 
@@ -438,24 +437,24 @@ describe('HistoryClient', () => {
 
     const { input } = getSearchField();
     const pageHeader = getDesktopHeader();
+    const toolbarRow = getMobileToolbarRow();
     const scroller = screen.getByTestId('history-lesson-scroller');
+    const toolbar = getToolbar();
     expectHeaderHasNoChromeFrost(classOf(pageHeader));
+    expectHeaderHasNoChromeFrost(classOf(toolbar));
     expect(classOf(pageHeader)).not.toMatch(/\bsm:sticky\b/);
     expect(classOf(pageHeader)).not.toMatch(/\bsm:top-14\b/);
-    expect(screen.getByTestId('history-mobile-toolbar-row')).toBeInTheDocument();
 
     expect(scroller).toContainElement(fractions);
     expect(pageHeader.contains(fractions)).toBe(false);
-    expect(pageHeader.contains(input)).toBe(true);
-    expect(pageHeader).toContainElement(within(pageHeader).getByRole('heading', { level: 1 }));
-    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
-    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
-    expect(pageHeader).toContainElement(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
-
-    const toolbar = getDesktopToolbar();
+    expect(toolbarRow.contains(toolbar)).toBe(true);
+    expect(toolbar.contains(input)).toBe(true);
+    expect(pageHeader).toContainElement(within(getDesktopTitleBlock()).getByRole('heading', { level: 1 }));
+    expect(pageHeader.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolbarRow.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(classOf(toolbar)).toMatch(/\bsm:static\b/);
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all subjects/i }));
     const listbox = screen.getByRole('listbox');
     expect(document.body.contains(listbox)).toBe(true);
     expect(pageHeader.contains(listbox)).toBe(false);
@@ -504,12 +503,82 @@ describe('HistoryClient', () => {
     });
   });
 
+  it('renders exactly one history toolbar in the document', async () => {
+    renderHistory();
+    await screen.findByText('Fractions');
+    expect(screen.getAllByTestId('history-toolbar')).toHaveLength(1);
+  });
+
+  it('does not duplicate element ids within the History client render', async () => {
+    const { container } = renderHistory();
+    await screen.findByText('Fractions');
+    expect(duplicateElementIds(container)).toEqual([]);
+  });
+
+  it('orders the desktop title above the toolbar and the mobile title inside the scroll pane', async () => {
+    renderHistory();
+    await screen.findByText('Fractions');
+    const desktopTitle = getDesktopTitleBlock();
+    const mobileTitle = getMobileTitleInPane();
+    const toolbarRow = getMobileToolbarRow();
+    const scroller = screen.getByTestId('history-lesson-scroller');
+    expect(classOf(desktopTitle.parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
+    expect(classOf(mobileTitle.parentElement as HTMLElement)).toMatch(/\bsm:hidden\b/);
+    expect(desktopTitle.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scroller.contains(mobileTitle)).toBe(true);
+    expect(toolbarRow.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('keeps the same search input element when the viewport media query changes', async () => {
+    const mediaListeners = new Map<string, Set<() => void>>();
+    const originalMatchMedia = window.matchMedia;
+    let mobileMatches = false;
+
+    window.matchMedia = jest.fn((query: string) => {
+      const listeners = mediaListeners.get(query) ?? new Set<() => void>();
+      mediaListeners.set(query, listeners);
+      return {
+        matches: query === MOBILE_QUERY ? mobileMatches : originalMatchMedia(query).matches,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: (type: string, listener: () => void) => {
+          if (type === 'change') listeners.add(listener);
+        },
+        removeEventListener: (type: string, listener: () => void) => {
+          if (type === 'change') listeners.delete(listener);
+        },
+        dispatchEvent: () => false,
+      };
+    }) as typeof window.matchMedia;
+
+    const { user } = renderHistory();
+    await screen.findByText('Fractions');
+    const input = getSearchInput();
+    await user.click(input);
+    await user.type(input, 'cel');
+    expect(input).toHaveFocus();
+
+    mobileMatches = true;
+    act(() => {
+      mediaListeners.get(MOBILE_QUERY)?.forEach((listener) => listener());
+    });
+
+    const inputAfterChange = getSearchInput();
+    expect(inputAfterChange).toBe(input);
+    expect(inputAfterChange).toHaveValue('cel');
+    expect(inputAfterChange).toHaveFocus();
+
+    window.matchMedia = originalMatchMedia;
+  });
+
   it('shows grade and curriculum filters when at least two distinct values exist', async () => {
     const { user } = renderHistory();
     await screen.findByText('Fractions');
 
-    const gradeTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all grades/i });
-    const curriculumTrigger = within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i });
+    const gradeTrigger = within(getToolbar()).getByRole('button', { name: /all grades/i });
+    const curriculumTrigger = within(getToolbar()).getByRole('button', { name: /all curricula/i });
 
     await user.click(gradeTrigger);
     expect(screen.getByRole('option', { name: /grade.*5/i })).toBeInTheDocument();
@@ -525,16 +594,16 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('Fractions');
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all grades/i }));
     await user.click(screen.getByRole('option', { name: /grade.*5/i }));
     await waitFor(() => {
       expect(screen.getByText('Fractions')).toBeInTheDocument();
       expect(screen.queryByText('Cells')).not.toBeInTheDocument();
     });
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: 'Clear grade filter' }));
+    await user.click(within(getToolbar()).getByRole('button', { name: 'Clear grade filter' }));
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all curricula/i }));
     await user.click(screen.getByRole('option', { name: 'NGSS' }));
     await waitFor(() => {
       expect(screen.getByText('Cells')).toBeInTheDocument();
@@ -547,11 +616,11 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('English 5');
 
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all curricula/i }));
     expect(screen.getByRole('option', { name: 'National' })).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(1);
   });
@@ -561,20 +630,20 @@ describe('HistoryClient', () => {
     const { user } = renderHistory();
     await screen.findByText('No lessons yet.');
 
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all subjects/i }));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     await user.keyboard('{Escape}');
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all grades/i }));
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     await user.keyboard('{Escape}');
 
-    await user.click(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i }));
+    await user.click(within(getToolbar()).getByRole('button', { name: /all curricula/i }));
     expect(screen.queryAllByRole('option')).toHaveLength(0);
   });
 
@@ -585,9 +654,9 @@ describe('HistoryClient', () => {
     expect(screen.queryByRole('button', { name: /^Filters$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
-    expect(within(getDesktopToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
+    expect(within(getToolbar()).getByRole('button', { name: /all curricula/i })).toBeInTheDocument();
   });
 
   describe('mobile toolbar', () => {
@@ -602,7 +671,7 @@ describe('HistoryClient', () => {
     });
 
     async function openFiltersSheet(user: Awaited<ReturnType<typeof renderHistory>>['user']) {
-      await user.click(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ }));
+      await user.click(within(getToolbar()).getByRole('button', { name: /^Filters$/ }));
       return screen.getByRole('dialog', { name: 'Filters' });
     }
 
@@ -611,11 +680,11 @@ describe('HistoryClient', () => {
       const fractions = await screen.findByText('Fractions');
 
       const toolbarRow = getMobileToolbarRow();
-      const toolbar = getMobileToolbar();
+      const toolbar = getToolbar();
       const title = getMobileTitleInPane();
       const scroller = screen.getByTestId('history-lesson-scroller');
-      const { input } = getMobileSearchField();
-      const filtersButton = within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ });
+      const { input } = getSearchField();
+      const filtersButton = within(getToolbar()).getByRole('button', { name: /^Filters$/ });
 
       expect(classOf(toolbarRow)).toMatch(/\bshrink-0\b/);
       expect(classOf(toolbarRow)).toMatch(/\bpx-4\b/);
@@ -636,19 +705,8 @@ describe('HistoryClient', () => {
       expect(toolbar.contains(title)).toBe(false);
       expect(toolbar.contains(fractions)).toBe(false);
       expect(getDesktopHeader()).toBeInTheDocument();
-      expect(classOf(getDesktopHeader().parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
-    });
-
-    it('keeps mobile and desktop chrome in the DOM for CSS visibility without a viewport hook split', async () => {
-      renderHistory();
-      await screen.findByText('Fractions');
-
-      expect(screen.getByTestId('history-mobile-toolbar-row')).toBeInTheDocument();
-      expect(getDesktopHeader()).toBeInTheDocument();
-      expect(classOf(getMobileToolbarRow())).toMatch(/\bsm:hidden\b/);
-      expect(classOf(getDesktopHeader().parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
-      expect(getMobileTitleInPane()).toBeInTheDocument();
-      expect(within(getDesktopHeader()).getByTestId('history-page-title')).toBeInTheDocument();
+      expect(classOf(getDesktopHeader())).toMatch(/\bmax-sm:hidden\b/);
+      expect(screen.getAllByTestId('history-toolbar')).toHaveLength(1);
     });
 
     it('places the mobile toolbar row above the scroll pane without overlapping it', async () => {
@@ -666,7 +724,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
 
       const dialog = await openFiltersSheet(user);
@@ -677,21 +735,21 @@ describe('HistoryClient', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
 
       await waitFor(() => {
-        expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(2\)$/ })).toBeInTheDocument();
+        expect(within(getToolbar()).getByRole('button', { name: /^Filters \(2\)$/ })).toBeInTheDocument();
       });
 
-      await user.click(within(getMobileToolbar()).getByRole('button', { name: 'Remove subject filter: Science' }));
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+      await user.click(within(getToolbar()).getByRole('button', { name: 'Remove subject filter: Science' }));
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
 
-      await user.click(within(getMobileToolbar()).getByRole('button', { name: /Remove grade filter:/i }));
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      await user.click(within(getToolbar()).getByRole('button', { name: /Remove grade filter:/i }));
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
 
-      await user.type(within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 'Frac');
+      await user.type(within(getToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 'Frac');
       await waitFor(() => {
         expect(screen.getByText('Fractions')).toBeInTheDocument();
         expect(screen.queryByText('Cells')).not.toBeInTheDocument();
       });
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });
 
@@ -699,7 +757,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      const filtersButton = within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ });
+      const filtersButton = within(getToolbar()).getByRole('button', { name: /^Filters$/ });
       await user.click(filtersButton);
 
       const dialog = screen.getByRole('dialog', { name: 'Filters' });
@@ -738,7 +796,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      await user.type(within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 's');
+      await user.type(within(getToolbar()).getByRole('textbox', { name: /search lessons by title/i }), 's');
       await waitFor(() => {
         expect(lastLessonFetch.titleIlike).toBe('%s%');
         expect(screen.getByText('Fractions')).toBeInTheDocument();
@@ -768,10 +826,10 @@ describe('HistoryClient', () => {
       );
       expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument();
       expect(
-        within(getMobileToolbar()).getByRole('textbox', { name: /search lessons by title/i, hidden: true }),
+        within(getToolbar()).getByRole('textbox', { name: /search lessons by title/i, hidden: true }),
       ).toHaveValue('s');
       expect(
-        within(getMobileToolbar()).getByRole('button', { name: /^Filters$/, hidden: true }),
+        within(getToolbar()).getByRole('button', { name: /^Filters$/, hidden: true }),
       ).toBeInTheDocument();
       expect(screen.queryByTestId('history-filter-chips')).not.toBeInTheDocument();
     });
@@ -789,7 +847,7 @@ describe('HistoryClient', () => {
       await user.click(screen.getByRole('option', { name: /grade.*5/i }));
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
 
-      const toolbar = getMobileToolbar();
+      const toolbar = getToolbar();
       const chips = await within(toolbar).findByTestId('history-filter-chips');
       expect(toolbar.contains(chips)).toBe(true);
       expect(classOf(chips)).toMatch(/overflow-x-auto/);
@@ -806,7 +864,7 @@ describe('HistoryClient', () => {
         expect(screen.queryByRole('button', { name: 'Remove subject filter: Science' })).not.toBeInTheDocument();
       });
       expect(within(toolbar).getByRole('button', { name: /Remove grade filter:/i })).toBeInTheDocument();
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters \(1\)$/ })).toBeInTheDocument();
     });
 
     it('shows the Filters button and all facet dropdowns when no facet has more than one value', async () => {
@@ -817,7 +875,7 @@ describe('HistoryClient', () => {
       const { user } = renderHistory();
       await screen.findByText('Fractions');
 
-      expect(within(getMobileToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
+      expect(within(getToolbar()).getByRole('button', { name: /^Filters$/ })).toBeInTheDocument();
       const dialog = await openFiltersSheet(user);
       expect(within(dialog).getByRole('button', { name: /all subjects/i })).toBeInTheDocument();
       expect(within(dialog).getByRole('button', { name: /all grades/i })).toBeInTheDocument();
@@ -857,7 +915,7 @@ describe('HistoryClient', () => {
     it('labels the Filters button in Arabic', async () => {
       renderHistory(<HistoryClient />, 'ar');
       expect(
-        await within(getMobileToolbar()).findByRole('button', { name: 'عوامل التصفية' }),
+        await within(getToolbar()).findByRole('button', { name: 'عوامل التصفية' }),
       ).toBeInTheDocument();
     });
   });
