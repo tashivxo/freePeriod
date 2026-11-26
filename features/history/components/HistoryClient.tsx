@@ -9,10 +9,7 @@ import { BlurText } from '@/components/ui/effects/BlurText';
 import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
 import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useT } from '@/providers/locale';
-
-const MOBILE_VIEWPORT_QUERY = '(max-width: 639px)';
 import { HistoryToolbar } from '@/features/history/components/HistoryToolbar';
 
 const HISTORY_LESSON_SCROLL_KEY = 'freeperiod:history-lesson-scroll';
@@ -23,12 +20,12 @@ function distinctSorted(values: (string | null | undefined)[]): string[] {
   return [...new Set(values.filter((v): v is string => Boolean(v)))].sort();
 }
 
-function HistoryPageTitle() {
+function HistoryPageTitleBlock({ testId }: { testId: string }) {
   const t = useT();
 
   return (
     <div
-      data-testid="history-page-title"
+      data-testid={testId}
       className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-3"
     >
       <BlurText
@@ -45,7 +42,6 @@ function HistoryPageTitle() {
 
 export function HistoryClient() {
   const t = useT();
-  const isMobileViewport = useMediaQuery(MOBILE_VIEWPORT_QUERY);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [lessons, setLessons] = useState<LessonCard[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
@@ -189,20 +185,14 @@ export function HistoryClient() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
-      <div
-        data-testid="history-mobile-toolbar-row"
-        className="mx-auto w-full max-w-5xl shrink-0 px-4 py-3 sm:hidden"
-        inert={!isMobileViewport ? true : undefined}
-      >
-        <HistoryToolbar {...toolbarProps} />
-      </div>
-
-      <div
-        className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8 max-sm:hidden sm:block"
-        inert={isMobileViewport ? true : undefined}
-      >
-        <div data-testid="history-page-header">
-          <HistoryPageTitle />
+      <div className="mx-auto w-full max-w-5xl shrink-0">
+        <div data-testid="history-page-header" className="max-sm:hidden px-4 pt-8">
+          <HistoryPageTitleBlock testId="history-page-title-desktop" />
+        </div>
+        <div
+          data-testid="history-mobile-toolbar-row"
+          className="shrink-0 px-4 py-3 sm:px-4 sm:py-0"
+        >
           <HistoryToolbar {...toolbarProps} />
         </div>
       </div>
@@ -214,8 +204,8 @@ export function HistoryClient() {
       >
         <div className="mx-auto max-w-5xl px-0.5 pt-2 pb-8">
           <div className="px-3.5 sm:px-0">
-            <div className="sm:hidden" inert={!isMobileViewport ? true : undefined}>
-              <HistoryPageTitle />
+            <div className="sm:hidden">
+              <HistoryPageTitleBlock testId="history-page-title-mobile" />
             </div>
             {lessonGrid}
           </div>
