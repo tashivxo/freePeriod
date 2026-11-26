@@ -712,7 +712,8 @@ describe('HistoryClient', () => {
       expect(classOf(facetRow)).toMatch(/\bflex\b/);
       expect(classOf(facetRow)).toMatch(/\bgap-2\b/);
       expect(classOf(facetRow)).not.toMatch(/\bgrid-cols-3\b/);
-      expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/\bflex-auto\b/);
+      expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/flex-\[1_1_auto\]/);
+      expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/\bbasis-auto\b/);
       expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/\bmin-w-0\b/);
 
       expect(title.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -751,26 +752,60 @@ describe('HistoryClient', () => {
       });
     });
 
-    it('uses compact facet trigger styles with truncate and a 14px chevron', async () => {
+    it('uses tight compact facet triggers with a 12px chevron and no truncated placeholders', async () => {
+      renderHistory();
+      await screen.findByText('Fractions');
+
+      const curriculumTrigger = compactFacetTrigger('Curriculum');
+      expect(classOf(curriculumTrigger)).toMatch(/\bpx-2\b/);
+      expect(classOf(curriculumTrigger)).toMatch(/\bgap-1\.5\b/);
+      expect(classOf(curriculumTrigger)).toMatch(/\bh-11\b/);
+      const valueSpan = curriculumTrigger.querySelector('span');
+      expect(valueSpan).not.toBeNull();
+      expect(classOf(valueSpan as HTMLElement)).toMatch(/\bshrink-0\b/);
+      expect(classOf(valueSpan as HTMLElement)).not.toMatch(/\btruncate\b/);
+      const chevron = curriculumTrigger.querySelector('svg');
+      expect(chevron).not.toBeNull();
+      expect(classOf(chevron as SVGElement)).toMatch(/\bh-\[12px\]/);
+    });
+
+    it('truncates only the selected value label on compact facet triggers', async () => {
       lessonRows = [
         {
           ...allLessons[0]!,
           curriculum: 'International Baccalaureate Middle Years Programme',
         },
       ];
-      renderHistory();
+      const { user } = renderHistory();
       await screen.findByText('Fractions');
-
-      const curriculumTrigger = compactFacetTrigger('Curriculum');
-      expect(classOf(curriculumTrigger)).toMatch(/\btext-sm\b/);
-      expect(classOf(curriculumTrigger)).toMatch(/\bpx-3\b/);
-      expect(classOf(curriculumTrigger)).toMatch(/\bh-11\b/);
+      await user.click(compactFacetTrigger('Curriculum'));
+      await user.click(
+        screen.getByRole('option', { name: 'International Baccalaureate Middle Years Programme' }),
+      );
+      const curriculumTrigger = within(getToolbar()).getByRole('button', {
+        name: /International Baccalaureate/,
+      });
       const valueSpan = curriculumTrigger.querySelector('span');
       expect(valueSpan).not.toBeNull();
       expect(classOf(valueSpan as HTMLElement)).toMatch(/\btruncate\b/);
-      const chevron = curriculumTrigger.querySelector('svg');
-      expect(chevron).not.toBeNull();
-      expect(classOf(chevron as SVGElement)).toMatch(/\bh-\[14px\]/);
+    });
+
+    it('shows unpicked Currículo in full for Spanish', async () => {
+      renderHistory(<HistoryClient />, 'es');
+      await screen.findByText('Fractions');
+      const curriculum = within(getToolbar()).getByRole('button', { name: 'Currículo' });
+      const label = curriculum.querySelector('span');
+      expect(label).not.toBeNull();
+      expect(classOf(label as HTMLElement)).not.toMatch(/\btruncate\b/);
+      expect(label).toHaveTextContent(/^Currículo$/);
+    });
+
+    it('shows unpicked Programme in full for French', async () => {
+      renderHistory(<HistoryClient />, 'fr');
+      await screen.findByText('Fractions');
+      const programme = within(getToolbar()).getByRole('button', { name: 'Programme' });
+      const frLabel = programme.querySelector('span');
+      expect(classOf(frLabel as HTMLElement)).not.toMatch(/\btruncate\b/);
     });
 
     it('shows facet dropdowns at 360px in a single flex row without wrapping', async () => {

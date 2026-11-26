@@ -2,6 +2,16 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 
 test.use({ storageState: 'tests/e2e/.auth/user.json' });
 
+const LOCALE_FACETS = {
+  en: ['Subject', 'Grade', 'Curriculum'] as const,
+  ar: ['المادة', 'الصف', 'المنهج'] as const,
+  es: ['Materia', 'Grado', 'Currículo'] as const,
+  fr: ['Matière', 'Niveau', 'Programme'] as const,
+  'zh-Hans': ['学科', '年级', '课程'] as const,
+} as const;
+
+type LocaleKey = keyof typeof LOCALE_FACETS;
+
 async function getNavBottom(page: Page) {
   return page.evaluate(() => {
     const nav =
@@ -35,7 +45,19 @@ async function readPinnedChromeTops(page: Page) {
     const search = document
       .querySelector('[data-testid="history-toolbar"] input')!
       .getBoundingClientRect();
-    const facets = document.querySelector('[data-testid="history-facet-grid"]')!.getBoundingClientRect();
+    const triggers = Array.from(
+      document.querySelectorAll(
+        '[data-testid="history-facet-grid"] button[aria-haspopup="listbox"]',
+      ),
+    );
+    let facetsTop = Number.POSITIVE_INFINITY;
+    let facetsBottom = Number.NEGATIVE_INFINITY;
+    for (const el of triggers) {
+      const r = el.getBoundingClientRect();
+      facetsTop = Math.min(facetsTop, r.top);
+      facetsBottom = Math.max(facetsBottom, r.bottom);
+    }
+    const facets = { top: facetsTop, bottom: facetsBottom };
     const scroller = document.querySelector('[data-testid="history-lesson-scroller"]')!.getBoundingClientRect();
     return { title, search, facets, scrollerTop: scroller.top };
   });
@@ -46,6 +68,55 @@ async function expectPinnedChromeOrder(page: Page) {
   expect(title.bottom).toBeLessThanOrEqual(search.top + 1);
   expect(search.bottom).toBeLessThanOrEqual(facets.top + 1);
   expect(facets.bottom).toBeLessThanOrEqual(scrollerTop + 1);
+}
+
+async function setLocale(page: Page, locale: LocaleKey) {
+  await page.goto('/history', { waitUntil: 'domcontentloaded' });
+  await page.evaluate((loc) => {
+    localStorage.setItem('fp-locale', loc);
+    document.cookie = `fp-locale=${encodeURIComponent(loc)}; path=/; max-age=31536000; SameSite=Lax`;
+  }, locale);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+}
+
+type FacetFitResult = {
+  rowFits: boolean;
+  rowScrollWidth: number;
+  rowClientWidth: number;
+  triggers: Array<{ height: number; labelFits: boolean; label: string }>;
+};
+
+async function measureCompactFacetRow(page: Page): Promise<FacetFitResult> {
+  return page.evaluate(() => {
+    const row = document.querySelector('[data-testid="history-facet-grid"]') as HTMLElement;
+    const buttons = Array.from(
+      row.querySelectorAll('button[aria-haspopup="listbox"]'),
+    ) as HTMLButtonElement[];
+    const triggers = buttons.map((btn) => {
+      const label = btn.querySelector('span');
+      const height = btn.getBoundingClientRect().height;
+      const labelFits = label ? label.scrollWidth <= label.clientWidth + 1 : true;
+      return { height, labelFits, label: label?.textContent?.trim() ?? '' };
+    });
+    return {
+      rowFits: row.scrollWidth <= row.clientWidth + 1,
+      rowScrollWidth: row.scrollWidth,
+      rowClientWidth: row.clientWidth,
+      triggers,
+    };
+  });
+}
+
+async function expectCompactFacetRowFits(page: Page, labels: readonly [string, string, string]) {
+  for (const label of labels) {
+    await expect(page.getByRole('button', { name: new RegExp(`^${label}$`) })).toBeVisible();
+  }
+  const fit = await measureCompactFacetRow(page);
+  expect(fit.rowFits, `row overflow ${fit.rowScrollWidth} > ${fit.rowClientWidth}`).toBe(true);
+  for (const trigger of fit.triggers) {
+    expect(trigger.height).toBeGreaterThanOrEqual(44);
+    expect(trigger.labelFits, `label truncated: ${trigger.label}`).toBe(true);
+  }
 }
 
 test.describe('History toolbar layout at 390x844', () => {
@@ -144,18 +215,30 @@ test.describe('History toolbar layout at 360x844', () => {
 
   test('shows three facet dropdowns on one row without overflow', async ({ page }) => {
     await page.goto('/history', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('button', { name: /^Subject$/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Grade$/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Curriculum$/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^Curriculum$/ })).toHaveText(/^Curriculum$/);
+    await expectCompactFacetRowFits(page, LOCALE_FACETS.en);
     const facetRow = page.getByTestId('history-facet-grid');
-    const rowBox = await facetRow.boundingBox();
-    expect(rowBox).not.toBeNull();
-    expect(rowBox!.width).toBeLessThanOrEqual(360);
     const flexWrap = await facetRow.evaluate((el) => getComputedStyle(el).flexWrap);
     expect(flexWrap).not.toBe('wrap');
   });
 });
+
+for (const locale of Object.keys(LOCALE_FACETS) as LocaleKey[]) {
+  const labels = LOCALE_FACETS[locale];
+
+  test.describe(`History compact facets – ${locale}`, () => {
+    test('fits unpicked labels at 390x844', async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await setLocale(page, locale);
+      await expectCompactFacetRowFits(page, labels);
+    });
+
+    test('fits unpicked labels at 360x740', async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 740 });
+      await setLocale(page, locale);
+      await expectCompactFacetRowFits(page, labels);
+    });
+  });
+}
 
 test.describe('History toolbar layout at 1440x900', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
