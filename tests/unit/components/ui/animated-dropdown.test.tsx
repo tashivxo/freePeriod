@@ -1018,4 +1018,33 @@ describe('AnimatedDropdown clearable', () => {
     expect(clearBtn).toHaveFocus();
     expect(clearBtn.tagName).toBe('BUTTON');
   });
+
+  it('applies valueClassName to the trigger label span', () => {
+    render(
+      <AnimatedDropdown
+        id="value-class-dd"
+        text="Pick"
+        valueClassName="truncate text-sm"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const label = screen.getByRole('button', { name: /pick/i }).querySelector('span');
+    expect(label).not.toBeNull();
+    expect(label!.className).toMatch(/\btruncate\b/);
+    expect(label!.className).toMatch(/\btext-sm\b/);
+  });
+
+  it('applies chevronClassName to the chevron icon', () => {
+    render(
+      <AnimatedDropdown
+        id="chevron-class-dd"
+        text="Pick"
+        chevronClassName="h-[14px] w-[14px]"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const chevron = screen.getByRole('button', { name: /pick/i }).querySelector('svg');
+    expect(chevron).not.toBeNull();
+    expect(chevron!.className.baseVal ?? chevron!.getAttribute('class') ?? '').toMatch(/h-\[14px\]/);
+  });
 });

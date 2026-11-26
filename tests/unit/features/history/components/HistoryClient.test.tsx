@@ -229,25 +229,22 @@ function getDesktopHeader() {
   return screen.getByTestId('history-page-header');
 }
 
-function getDesktopTitleBlock() {
-  return screen.getByTestId('history-page-title-desktop');
+function getPageTitleBlock() {
+  return screen.getByTestId('history-page-title');
 }
 
-function getMobileTitleInPane() {
-  return screen.getByTestId('history-page-title-mobile');
+function getPinnedTitleHeading() {
+  return within(getPageTitleBlock()).getByRole('heading', { level: 1 });
+}
+
+async function findPinnedTitleHeading() {
+  return within(getPageTitleBlock()).findByRole('heading', { level: 1 });
 }
 
 function getMobileToolbarRow() {
   return screen.getByTestId('history-mobile-toolbar-row');
 }
 
-function getDesktopTitleHeading() {
-  return within(getDesktopTitleBlock()).getByRole('heading', { level: 1 });
-}
-
-async function findDesktopTitleHeading() {
-  return within(getDesktopTitleBlock()).findByRole('heading', { level: 1 });
-}
 
 function duplicateElementIds(root: ParentNode) {
   const counts = new Map<string, number>();
@@ -288,13 +285,13 @@ describe('HistoryClient', () => {
 
   it('sets the browser document title from locale copy', async () => {
     renderHistory();
-    await findDesktopTitleHeading();
+    await findPinnedTitleHeading();
     expect(document.title).toBe('Lesson Plan History | FreePeriod');
   });
 
   it('sets the Arabic browser document title instead of leftover English', async () => {
     renderHistory(<HistoryClient />, 'ar');
-    await findDesktopTitleHeading();
+    await findPinnedTitleHeading();
     expect(document.title).toBe('سجل خطط الدروس | FreePeriod');
     expect(document.title).not.toBe('Lesson Plan History | FreePeriod');
   });
@@ -302,8 +299,8 @@ describe('HistoryClient', () => {
   it('keeps the heading and Plan Lesson action as separate elements', async () => {
     renderHistory();
 
-    const heading = await findDesktopTitleHeading();
-    const planLesson = within(getDesktopTitleBlock()).getByRole('link', { name: /plan lesson/i });
+    const heading = await findPinnedTitleHeading();
+    const planLesson = within(getPageTitleBlock()).getByRole('link', { name: /plan lesson/i });
 
     expect(heading).not.toContainElement(planLesson);
     expect(heading.compareDocumentPosition(planLesson) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -315,7 +312,7 @@ describe('HistoryClient', () => {
     document.documentElement.dir = 'rtl';
     renderHistory(<HistoryClient />, 'ar');
 
-    const heading = getDesktopTitleHeading();
+    const heading = getPinnedTitleHeading();
     const wordSpans = heading.querySelectorAll('span');
     expect(wordSpans.length).toBeGreaterThan(1);
     wordSpans.forEach((span, index) => {
@@ -378,7 +375,7 @@ describe('HistoryClient', () => {
 
   it('centres the search icon on the input text with logical start inset, not translate hacks', async () => {
     renderHistory();
-    await findDesktopTitleHeading();
+    await findPinnedTitleHeading();
 
     const { input, field } = getSearchField();
     const { wrap } = getSearchIconWrap(field);
@@ -438,9 +435,10 @@ describe('HistoryClient', () => {
     expect(field.className).toMatch(/\bmin-w-0\b/);
     expect(field.className).toMatch(/\bflex-1\b/);
     expect(field.className).not.toMatch(/\blg:max-w-sm\b/);
-    expect(classOf(facetGrid)).toMatch(/\bgrid\b/);
-    expect(classOf(facetGrid)).toMatch(/\bgrid-cols-3\b/);
+    expect(classOf(facetGrid)).toMatch(/\bmax-lg:flex\b/);
+    expect(classOf(facetGrid)).toMatch(/\bgap-2\b/);
     expect(classOf(facetGrid)).toMatch(/\blg:contents\b/);
+    expect(classOf(facetGrid)).not.toMatch(/\bgrid-cols-3\b/);
     expect(trigger.parentElement?.className).toMatch(/lg:min-w-\[9rem\]/);
   });
 
@@ -462,7 +460,7 @@ describe('HistoryClient', () => {
     expect(pageHeader.contains(fractions)).toBe(false);
     expect(toolbarRow.contains(toolbar)).toBe(true);
     expect(toolbar.contains(input)).toBe(true);
-    expect(pageHeader).toContainElement(within(getDesktopTitleBlock()).getByRole('heading', { level: 1 }));
+    expect(pageHeader).toContainElement(within(getPageTitleBlock()).getByRole('heading', { level: 1 }));
     expect(pageHeader.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toolbarRow.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
@@ -527,17 +525,21 @@ describe('HistoryClient', () => {
     expect(duplicateElementIds(container)).toEqual([]);
   });
 
-  it('orders the desktop title above the toolbar and the mobile title inside the scroll pane', async () => {
+  it('renders a single pinned page title above the toolbar on every viewport', async () => {
     renderHistory();
     await screen.findByText('Fractions');
-    const desktopTitle = getDesktopTitleBlock();
-    const mobileTitle = getMobileTitleInPane();
+    const title = getPageTitleBlock();
     const toolbarRow = getMobileToolbarRow();
+    const toolbar = getToolbar();
     const scroller = screen.getByTestId('history-lesson-scroller');
-    expect(classOf(desktopTitle.parentElement as HTMLElement)).toMatch(/\bmax-sm:hidden\b/);
-    expect(classOf(mobileTitle.parentElement as HTMLElement)).toMatch(/\bsm:hidden\b/);
-    expect(desktopTitle.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(scroller.contains(mobileTitle)).toBe(true);
+    const { input } = getSearchField();
+
+    expect(screen.queryByTestId('history-page-title-desktop')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('history-page-title-mobile')).not.toBeInTheDocument();
+    expect(title.compareDocumentPosition(toolbarRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolbar.contains(input)).toBe(true);
+    expect(input.compareDocumentPosition(getCompactFacetGrid()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scroller.contains(title)).toBe(false);
     expect(toolbarRow.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -682,18 +684,18 @@ describe('HistoryClient', () => {
       restoreMatchMedia();
     });
 
-    it('pins search and three facet dropdowns without a Filters sheet or chip row', async () => {
+    it('pins the title, search, and facet dropdowns without a Filters sheet or chip row', async () => {
       renderHistory();
       const fractions = await screen.findByText('Fractions');
 
       const toolbarRow = getMobileToolbarRow();
       const toolbar = getToolbar();
-      const title = getMobileTitleInPane();
+      const title = getPageTitleBlock();
       const scroller = screen.getByTestId('history-lesson-scroller');
       const { input } = getSearchField();
+      const facetRow = getCompactFacetGrid();
 
       expect(classOf(toolbarRow)).toMatch(/\bshrink-0\b/);
-      expect(classOf(toolbarRow)).toMatch(/\bpx-4\b/);
       expect(classOf(toolbarRow)).toMatch(/\bpy-3\b/);
       expect(classOf(toolbar)).not.toMatch(/(?:^|\s)sticky\b/);
       expect(classOf(toolbar)).not.toMatch(/(?:^|\s)top-14\b/);
@@ -707,11 +709,16 @@ describe('HistoryClient', () => {
       expect(compactFacetTrigger('Grade')).toBeInTheDocument();
       expect(compactFacetTrigger('Curriculum')).toBeInTheDocument();
       expect(classOf(compactFacetTrigger('Subject'))).toMatch(/\bh-11\b/);
-      expect(classOf(getCompactFacetGrid())).toMatch(/\bgrid-cols-3\b/);
+      expect(classOf(facetRow)).toMatch(/\bflex\b/);
+      expect(classOf(facetRow)).toMatch(/\bgap-2\b/);
+      expect(classOf(facetRow)).not.toMatch(/\bgrid-cols-3\b/);
+      expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/\bflex-auto\b/);
+      expect(classOf(compactFacetTrigger('Subject').parentElement as HTMLElement)).toMatch(/\bmin-w-0\b/);
 
-      expect(scroller).toContainElement(title);
+      expect(title.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(input.compareDocumentPosition(facetRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(scroller.contains(title)).toBe(false);
       expect(scroller).toContainElement(fractions);
-      expect(toolbar.contains(title)).toBe(false);
       expect(screen.getAllByTestId('history-toolbar')).toHaveLength(1);
     });
 
@@ -766,15 +773,17 @@ describe('HistoryClient', () => {
       expect(classOf(chevron as SVGElement)).toMatch(/\bh-\[14px\]/);
     });
 
-    it('shows facet dropdowns at 360px without wrapping the facet grid', async () => {
+    it('shows facet dropdowns at 360px in a single flex row without wrapping', async () => {
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 360 });
       renderHistory();
       await screen.findByText('Fractions');
-      expect(classOf(getCompactFacetGrid())).toMatch(/\bgrid-cols-3\b/);
-      expect(classOf(getCompactFacetGrid())).not.toMatch(/\bgrid-cols-1\b/);
+      const facetRow = getCompactFacetGrid();
+      expect(classOf(facetRow)).toMatch(/\bflex\b/);
+      expect(classOf(facetRow)).not.toMatch(/\bflex-wrap\b/);
       expect(compactFacetTrigger('Subject')).toBeVisible();
       expect(compactFacetTrigger('Grade')).toBeVisible();
       expect(compactFacetTrigger('Curriculum')).toBeVisible();
+      expect(compactFacetTrigger('Curriculum')).toHaveTextContent(/^Curriculum$/);
     });
 
     it('labels compact facet triggers in Arabic with RTL-friendly layout', async () => {
@@ -794,7 +803,19 @@ describe('HistoryClient', () => {
       const layout = within(getToolbar()).getByTestId('history-toolbar-compact-layout');
       expect(classOf(layout)).toMatch(/\bflex-col\b/);
       expect(classOf(layout)).not.toMatch(/\bflex-wrap\b/);
-      expect(classOf(getCompactFacetGrid())).toMatch(/\bgrid-cols-3\b/);
+      expect(classOf(getCompactFacetGrid())).toMatch(/\bflex\b/);
+    });
+
+    it('keeps the pinned title outside the scroller when the lesson pane scrolls', async () => {
+      renderHistory();
+      await screen.findByText('Fractions');
+      const title = getPageTitleBlock();
+      const scroller = screen.getByTestId('history-lesson-scroller');
+      expect(scroller.contains(title)).toBe(false);
+      Object.defineProperty(scroller, 'scrollTop', { writable: true, configurable: true, value: 320 });
+      fireEvent.scroll(scroller);
+      expect(scroller.contains(title)).toBe(false);
+      expect(getPageTitleBlock()).toBeInTheDocument();
     });
   });
 });
