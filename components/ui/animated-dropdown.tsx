@@ -63,6 +63,7 @@ interface AnimatedDropdownProps {
   onClear?: () => void;
   clearAriaLabel?: string;
   valueClassName?: string;
+  selectedValueClassName?: string;
   chevronClassName?: string;
 }
 
@@ -230,6 +231,7 @@ export function AnimatedDropdown({
   onClear,
   clearAriaLabel,
   valueClassName,
+  selectedValueClassName,
   chevronClassName,
 }: AnimatedDropdownProps) {
   const [open, setOpen] = useState(false);
@@ -574,12 +576,13 @@ export function AnimatedDropdown({
         ) : null}
         <span
           className={cn(
-            'min-w-0 flex-1 text-left font-body text-base',
+            'text-left font-body text-base',
+            selectedItem ? 'min-w-0 flex-1' : 'shrink-0',
             hideTriggerLabel && 'sr-only',
             selectedItem
               ? 'text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)]',
-            valueClassName,
+            selectedItem ? selectedValueClassName : valueClassName,
           )}
         >
           {displayText}
