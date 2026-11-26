@@ -752,12 +752,27 @@ describe('HistoryClient', () => {
       });
     });
 
+    it('applies ps-2 pe-2 on compact facet triggers instead of default ps-4 pe-3', async () => {
+      renderHistory();
+      await screen.findByText('Fractions');
+      for (const name of ['Subject', 'Grade', 'Curriculum']) {
+        const trigger = compactFacetTrigger(name);
+        expect(classOf(trigger)).toMatch(/\bps-2\b/);
+        expect(classOf(trigger)).toMatch(/\bpe-2\b/);
+        expect(classOf(trigger)).not.toMatch(/\bps-4\b/);
+        expect(classOf(trigger)).not.toMatch(/\bpe-3\b/);
+      }
+    });
+
     it('uses tight compact facet triggers with a 12px chevron and no truncated placeholders', async () => {
       renderHistory();
       await screen.findByText('Fractions');
 
       const curriculumTrigger = compactFacetTrigger('Curriculum');
-      expect(classOf(curriculumTrigger)).toMatch(/\bpx-2\b/);
+      expect(classOf(curriculumTrigger)).toMatch(/\bps-2\b/);
+      expect(classOf(curriculumTrigger)).toMatch(/\bpe-2\b/);
+      expect(classOf(curriculumTrigger)).not.toMatch(/\bps-4\b/);
+      expect(classOf(curriculumTrigger)).not.toMatch(/\bpe-3\b/);
       expect(classOf(curriculumTrigger)).toMatch(/\bgap-1\.5\b/);
       expect(classOf(curriculumTrigger)).toMatch(/\bh-11\b/);
       const valueSpan = curriculumTrigger.querySelector('span');

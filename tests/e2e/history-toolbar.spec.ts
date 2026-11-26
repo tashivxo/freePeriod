@@ -64,10 +64,21 @@ async function readPinnedChromeTops(page: Page) {
 }
 
 async function expectPinnedChromeOrder(page: Page) {
+  const viewport = page.viewportSize();
+  const isLgPlus = (viewport?.width ?? 0) >= 1024;
   const { title, search, facets, scrollerTop } = await readPinnedChromeTops(page);
+
   expect(title.bottom).toBeLessThanOrEqual(search.top + 1);
-  expect(search.bottom).toBeLessThanOrEqual(facets.top + 1);
-  expect(facets.bottom).toBeLessThanOrEqual(scrollerTop + 1);
+  expect(title.bottom).toBeLessThanOrEqual(facets.top + 1);
+
+  if (isLgPlus) {
+    expect(Math.abs(search.top - facets.top)).toBeLessThanOrEqual(4);
+    const toolbarBottom = Math.max(search.bottom, facets.bottom);
+    expect(toolbarBottom).toBeLessThanOrEqual(scrollerTop + 1);
+  } else {
+    expect(search.bottom).toBeLessThanOrEqual(facets.top + 1);
+    expect(facets.bottom).toBeLessThanOrEqual(scrollerTop + 1);
+  }
 }
 
 async function setLocale(page: Page, locale: LocaleKey) {
