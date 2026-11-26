@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
@@ -9,8 +9,12 @@ import { BlurText } from '@/components/ui/effects/BlurText';
 import { LessonPlanCard } from '@/features/lesson/components/LessonPlanCard';
 import { useLessonActions } from '@/features/lesson/hooks/useLessonActions';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useT } from '@/providers/locale';
 import { HistoryToolbar } from '@/features/history/components/HistoryToolbar';
+
+const MOBILE_QUERY = '(max-width: 639px)';
+const HISTORY_LESSON_SCROLL_KEY = 'freeperiod:history-lesson-scroll';
 
 type LessonCard = Pick<LessonPlan, 'id' | 'title' | 'subject' | 'grade' | 'duration_minutes' | 'created_at'>;
 
@@ -18,8 +22,30 @@ function distinctSorted(values: (string | null | undefined)[]): string[] {
   return [...new Set(values.filter((v): v is string => Boolean(v)))].sort();
 }
 
+function HistoryPageTitle() {
+  const t = useT();
+
+  return (
+    <div
+      data-testid="history-page-title"
+      className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-3"
+    >
+      <BlurText
+        as="h1"
+        text={t('history.title')}
+        className="font-display text-3xl font-bold text-text-primary"
+      />
+      <Button asChild>
+        <Link href="/generate">{t('history.planLesson')}</Link>
+      </Button>
+    </div>
+  );
+}
+
 export function HistoryClient() {
   const t = useT();
+  const isMobile = useMediaQuery(MOBILE_QUERY);
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const [lessons, setLessons] = useState<LessonCard[]>([]);
   const [allSubjects, setAllSubjects] = useState<string[]>([]);
   const [allGrades, setAllGrades] = useState<string[]>([]);
@@ -83,6 +109,29 @@ export function HistoryClient() {
     fetchLessons();
   }, [fetchLessons]);
 
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      sessionStorage.setItem(HISTORY_LESSON_SCROLL_KEY, String(el.scrollTop));
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (initialLoading) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    const saved = sessionStorage.getItem(HISTORY_LESSON_SCROLL_KEY);
+    if (!saved) return;
+    const top = Number.parseInt(saved, 10);
+    if (!Number.isFinite(top)) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = top;
+    });
+  }, [initialLoading]);
+
   const { handleDelete, handleRename } = useLessonActions(setLessons, {
     afterDelete: refreshFacets,
   });
@@ -91,79 +140,77 @@ export function HistoryClient() {
     debouncedSearch || subjectFilter || gradeFilter || curriculumFilter,
   );
 
-  return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col gap-6 overflow-hidden">
-      <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8">
-        <div
-          data-testid="history-page-header"
-          className="max-sm:contents sm:sticky sm:top-14 sm:z-30"
-        >
-          <div
-            data-testid="history-page-title"
-            className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-3"
-          >
-            <BlurText
-              as="h1"
-              text={t('history.title')}
-              className="font-display text-3xl font-bold text-text-primary"
-            />
-            <Button asChild>
-              <Link href="/generate">{t('history.planLesson')}</Link>
-            </Button>
-          </div>
+  const toolbarProps = {
+    search,
+    onSearchChange: setSearch,
+    subjectFilter,
+    gradeFilter,
+    curriculumFilter,
+    onSubjectFilterChange: setSubjectFilter,
+    onGradeFilterChange: setGradeFilter,
+    onCurriculumFilterChange: setCurriculumFilter,
+    allSubjects,
+    allGrades,
+    allCurricula,
+  };
 
-          <HistoryToolbar
-            search={search}
-            onSearchChange={setSearch}
-            subjectFilter={subjectFilter}
-            gradeFilter={gradeFilter}
-            curriculumFilter={curriculumFilter}
-            onSubjectFilterChange={setSubjectFilter}
-            onGradeFilterChange={setGradeFilter}
-            onCurriculumFilterChange={setCurriculumFilter}
-            allSubjects={allSubjects}
-            allGrades={allGrades}
-            allCurricula={allCurricula}
-          />
+  return (
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+      {isMobile ? (
+        <div className="max-sm:contents">
+          <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-4 max-sm:contents">
+            <HistoryToolbar {...toolbarProps} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="mx-auto w-full max-w-5xl shrink-0 px-4 pt-8">
+          <div data-testid="history-page-header">
+            <HistoryPageTitle />
+            <HistoryToolbar {...toolbarProps} />
+          </div>
+        </div>
+      )}
 
       <div
+        ref={scrollerRef}
         data-testid="history-lesson-scroller"
         className="min-h-0 flex-1 overflow-y-auto"
       >
-        <div className="mx-auto max-w-5xl px-4 pb-8">
-          {initialLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-pulse">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-36 bg-surface rounded-xl" />
-              ))}
-            </div>
-          ) : lessons.length === 0 ? (
-            <div className="text-center font-body text-text-secondary py-12">
-              {hasActiveFilters ? (
-                <p>{t('history.nothingFound')}</p>
-              ) : (
-                <>
-                  <p className="mb-4">{t('history.noLessons')}</p>
-                  <Button asChild>
-                    <Link href="/generate">{t('history.generateALesson')}</Link>
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {lessons.map((lesson) => (
-                <LessonPlanCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  onDelete={handleDelete}
-                  onRename={handleRename}
-                />
-              ))}
-            </div>
-          )}
+        <div className="mx-auto max-w-5xl px-0.5 pt-2 pb-8">
+          <div className="px-3.5 sm:px-0">
+            {isMobile ? <HistoryPageTitle /> : null}
+            {initialLoading ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-36 bg-surface rounded-xl" />
+                ))}
+              </div>
+            ) : lessons.length === 0 ? (
+              <div className="text-center font-body text-text-secondary py-12">
+                {hasActiveFilters ? (
+                  <p>{t('history.nothingFound')}</p>
+                ) : (
+                  <>
+                    <p className="mb-4">{t('history.noLessons')}</p>
+                    <Button asChild>
+                      <Link href="/generate">{t('history.generateALesson')}</Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {lessons.map((lesson) => (
+                  <LessonPlanCard
+                    key={lesson.id}
+                    lesson={lesson}
+                    onDelete={handleDelete}
+                    onRename={handleRename}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
