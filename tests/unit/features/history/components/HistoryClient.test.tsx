@@ -1,6 +1,9 @@
+import { fireEvent } from '@testing-library/react';
 import { render, screen, waitFor, within } from '@/tests/helpers';
 import { LocaleProvider } from '@/providers/locale';
 import type { ReactElement } from 'react';
+
+const HISTORY_LESSON_SCROLL_KEY = 'freeperiod:history-lesson-scroll';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 
@@ -216,6 +219,15 @@ function classOf(el: Element) {
   return el.getAttribute('class') ?? '';
 }
 
+function expectHeaderHasNoChromeFrost(className: string) {
+  expect(className).not.toMatch(/(?:^|\s)bg-background(?:\s|$)/);
+  expect(className).not.toMatch(/bg-background\/\d+/);
+  expect(className).not.toMatch(/backdrop-blur/);
+  expect(className).not.toMatch(/\bborder-b\b/);
+  expect(className).not.toMatch(/max-sm:border-b/);
+  expect(className).not.toMatch(/\bshadow\b/);
+}
+
 function isContentsOnMobile(className: string) {
   return /\bmax-sm:contents\b/.test(className) || /(?:^|\s)contents\b/.test(className);
 }
@@ -229,6 +241,7 @@ describe('HistoryClient', () => {
     lessonRows = [...allLessons];
     resetLastLessonFetch();
     document.title = '';
+    sessionStorage.clear();
   });
 
   it('sets the browser document title from locale copy', async () => {
@@ -385,21 +398,18 @@ describe('HistoryClient', () => {
     expect(trigger.parentElement?.className).toMatch(/lg:min-w-\[9rem\]/);
   });
 
-  it('pins the title and filter row below the nav while lesson cards scroll', async () => {
+  it('keeps the title and filters above the lesson scroll pane while cards scroll inside it', async () => {
     const { user } = renderHistory();
     const fractions = await screen.findByText('Fractions');
 
     const { input } = getSearchField();
     const pageHeader = screen.getByTestId('history-page-header');
-    expect(classOf(pageHeader)).toMatch(/\bsm:sticky\b/);
-    expect(classOf(pageHeader)).toMatch(/\bsm:top-14\b/);
-    expect(classOf(pageHeader)).not.toMatch(/(?:^|\s)bg-background(?:\s|$)/);
-    expect(classOf(pageHeader)).not.toMatch(/bg-background\/\d+/);
-    expect(classOf(pageHeader)).not.toMatch(/backdrop-blur/);
-    expect(classOf(pageHeader)).not.toMatch(/\bborder-b\b/);
-    expect(classOf(pageHeader)).not.toMatch(/max-sm:border-b/);
-    expect(classOf(pageHeader)).not.toMatch(/\bshadow\b/);
+    const scroller = screen.getByTestId('history-lesson-scroller');
+    expectHeaderHasNoChromeFrost(classOf(pageHeader));
+    expect(classOf(pageHeader)).not.toMatch(/\bsm:sticky\b/);
+    expect(classOf(pageHeader)).not.toMatch(/\bsm:top-14\b/);
 
+    expect(scroller).toContainElement(fractions);
     expect(pageHeader.contains(fractions)).toBe(false);
     expect(pageHeader.contains(input)).toBe(true);
     expect(pageHeader).toContainElement(screen.getByRole('heading', { level: 1 }));
@@ -414,6 +424,49 @@ describe('HistoryClient', () => {
     const listbox = screen.getByRole('listbox');
     expect(document.body.contains(listbox)).toBe(true);
     expect(pageHeader.contains(listbox)).toBe(false);
+  });
+
+  it('renders lesson cards inside the dedicated scroll pane below the toolbar', async () => {
+    renderHistory();
+    const fractions = await screen.findByText('Fractions');
+    const cells = screen.getByText('Cells');
+    const scroller = screen.getByTestId('history-lesson-scroller');
+
+    expect(scroller).toContainElement(fractions);
+    expect(scroller).toContainElement(cells);
+    expect(classOf(scroller)).toMatch(/\boverflow-y-auto\b/);
+    expect(classOf(scroller)).toMatch(/\bmin-h-0\b/);
+  });
+
+  it('pads the scroll pane so card shadows and focus rings are not clipped', async () => {
+    renderHistory();
+    await screen.findByText('Fractions');
+    const scroller = screen.getByTestId('history-lesson-scroller');
+    const inner = scroller.firstElementChild;
+    expect(inner).toBeInstanceOf(HTMLElement);
+    expect(classOf(inner as HTMLElement)).toMatch(/\bpt-2\b/);
+    expect(classOf(inner as HTMLElement)).toMatch(/\bpx-0\.5\b/);
+  });
+
+  it('restores lesson scroll position from sessionStorage when the page mounts', async () => {
+    sessionStorage.setItem(HISTORY_LESSON_SCROLL_KEY, '240');
+    renderHistory();
+    await screen.findByText('Fractions');
+    const scroller = screen.getByTestId('history-lesson-scroller');
+    await waitFor(() => {
+      expect(scroller.scrollTop).toBe(240);
+    });
+  });
+
+  it('persists lesson scroll position to sessionStorage while scrolling the pane', async () => {
+    renderHistory();
+    await screen.findByText('Fractions');
+    const scroller = screen.getByTestId('history-lesson-scroller');
+    Object.defineProperty(scroller, 'scrollTop', { writable: true, configurable: true, value: 180 });
+    fireEvent.scroll(scroller);
+    await waitFor(() => {
+      expect(sessionStorage.getItem(HISTORY_LESSON_SCROLL_KEY)).toBe('180');
+    });
   });
 
   it('shows grade and curriculum filters when at least two distinct values exist', async () => {
@@ -524,28 +577,24 @@ describe('HistoryClient', () => {
 
       const toolbar = screen.getByTestId('history-toolbar');
       const title = screen.getByTestId('history-page-title');
-      const header = screen.getByTestId('history-page-header');
+      const scroller = screen.getByTestId('history-lesson-scroller');
       const { input } = getSearchField();
       const filtersButton = screen.getByRole('button', { name: /^Filters$/ });
 
       expect(classOf(toolbar)).toMatch(/(?:^|\s)sticky\b/);
       expect(classOf(toolbar)).toMatch(/(?:^|\s)top-14\b/);
-      expect(classOf(toolbar)).not.toMatch(/(?:^|\s)bg-background(?:\s|$)/);
-      expect(classOf(toolbar)).not.toMatch(/bg-background\/\d+/);
-      expect(classOf(toolbar)).not.toMatch(/backdrop-blur/);
-      expect(classOf(toolbar)).not.toMatch(/max-sm:border-b/);
-      expect(classOf(toolbar)).not.toMatch(/\bborder-b\b/);
-      expect(classOf(toolbar)).not.toMatch(/\bshadow\b/);
+      expectHeaderHasNoChromeFrost(classOf(toolbar));
       expect(toolbar.contains(input)).toBe(true);
       expect(toolbar).toContainElement(filtersButton);
       expect(classOf(filtersButton)).toMatch(/\bh-11\b/);
 
-      expect(classOf(header)).not.toMatch(/(?:^|\s)sticky\b/);
-      expect(classOf(header)).not.toMatch(/(?:^|\s)top-14\b/);
+      expect(scroller).toContainElement(title);
+      expect(scroller).toContainElement(fractions);
       expect(title.contains(screen.getByRole('heading', { level: 1 }))).toBe(true);
       expect(title.contains(screen.getByRole('link', { name: /plan lesson/i }))).toBe(true);
       expect(toolbar.contains(title)).toBe(false);
       expect(toolbar.contains(fractions)).toBe(false);
+      expect(screen.queryByTestId('history-page-header')).not.toBeInTheDocument();
     });
 
     it('does not nest the sticky toolbar in a non-sticky wrapper that ends at the toolbar', async () => {
