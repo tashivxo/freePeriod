@@ -1,4 +1,5 @@
 import { act, fireEvent } from '@testing-library/react';
+import { MotionGlobalConfig } from 'motion/react';
 import { render, screen, waitFor } from '@/tests/helpers';
 import { AnimatedDropdown, type DropdownItem } from '@/components/ui/animated-dropdown';
 
@@ -317,20 +318,29 @@ describe('AnimatedDropdown trigger label and exit', () => {
   });
 
   it('keeps the listbox mounted through the close animation', async () => {
-    const { user } = render(
-      <AnimatedDropdown id="exit-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
-    );
+    MotionGlobalConfig.skipAnimations = false;
+    try {
+      const { user } = render(
+        <AnimatedDropdown id="exit-dd" text="Pick" items={[{ name: 'One', value: '1' }]} />,
+      );
 
-    const trigger = screen.getByRole('button', { name: /pick/i });
-    await user.click(trigger);
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+      const trigger = screen.getByRole('button', { name: /pick/i });
+      await user.click(trigger);
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
 
-    await user.click(trigger);
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    });
+      await waitFor(
+        () => {
+          expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
+    } finally {
+      MotionGlobalConfig.skipAnimations = true;
+    }
   });
 });
 
@@ -598,6 +608,7 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
 
     expect(focusAtKeydown[0]).toBe(trigger);
     expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -635,6 +646,7 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
 
     expect(focusAtKeydown[0]).toBe(trigger);
     expect(trigger).toHaveFocus();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -671,6 +683,7 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
     await user.tab();
     document.removeEventListener('keydown', recordTab);
     expect(focusAtTab[0]).toBe(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -724,12 +737,14 @@ describe('AnimatedDropdown Tab, blur, and portal clicks', () => {
       </div>,
     );
 
-    await user.click(screen.getByRole('button', { name: /select your country/i }));
+    const trigger = screen.getByRole('button', { name: /select your country/i });
+    await user.click(trigger);
     const search = screen.getByRole('searchbox', { name: /select your country/i });
     const after = screen.getByRole('button', { name: /after country/i });
     expect(screen.getByRole('listbox')).toBeInTheDocument();
 
     fireEvent.blur(search, { relatedTarget: after });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await waitFor(() => {
       expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
@@ -1002,5 +1017,61 @@ describe('AnimatedDropdown clearable', () => {
     clearBtn.focus();
     expect(clearBtn).toHaveFocus();
     expect(clearBtn.tagName).toBe('BUTTON');
+  });
+
+  it('applies valueClassName to the trigger label span', () => {
+    render(
+      <AnimatedDropdown
+        id="value-class-dd"
+        text="Pick"
+        valueClassName="truncate text-sm"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const label = screen.getByRole('button', { name: /pick/i }).querySelector('span');
+    expect(label).not.toBeNull();
+    expect(label!.className).toMatch(/\btruncate\b/);
+    expect(label!.className).toMatch(/\btext-sm\b/);
+  });
+
+  it('applies chevronClassName to the chevron icon', () => {
+    render(
+      <AnimatedDropdown
+        id="chevron-class-dd"
+        text="Pick"
+        chevronClassName="h-[12px] w-[12px]"
+        items={[{ name: 'Alpha', value: 'a' }]}
+      />,
+    );
+    const chevron = screen.getByRole('button', { name: /pick/i }).querySelector('svg');
+    expect(chevron).not.toBeNull();
+    expect(chevron!.className.baseVal ?? chevron!.getAttribute('class') ?? '').toMatch(/h-\[12px\]/);
+  });
+
+  it('applies selectedValueClassName only when a value is selected', () => {
+    const { rerender } = render(
+      <AnimatedDropdown
+        id="selected-value-class-dd"
+        text="Placeholder"
+        valueClassName="shrink-0 text-sm"
+        selectedValueClassName="truncate min-w-0"
+        items={[{ name: 'Alpha long label', value: 'a' }]}
+      />,
+    );
+    let valueSpan = screen.getByRole('button', { name: /placeholder/i }).querySelector('span');
+    expect(valueSpan!.className).not.toMatch(/\btruncate\b/);
+
+    rerender(
+      <AnimatedDropdown
+        id="selected-value-class-dd"
+        text="Placeholder"
+        valueClassName="shrink-0 text-sm"
+        selectedValueClassName="truncate min-w-0"
+        selectedValue="a"
+        items={[{ name: 'Alpha long label', value: 'a' }]}
+      />,
+    );
+    valueSpan = screen.getByRole('button', { name: /alpha long label/i }).querySelector('span');
+    expect(valueSpan!.className).toMatch(/\btruncate\b/);
   });
 });
