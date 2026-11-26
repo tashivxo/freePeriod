@@ -62,6 +62,8 @@ interface AnimatedDropdownProps {
   clearable?: boolean;
   onClear?: () => void;
   clearAriaLabel?: string;
+  valueClassName?: string;
+  chevronClassName?: string;
 }
 
 type ListboxPlacement = 'below' | 'above';
@@ -227,6 +229,8 @@ export function AnimatedDropdown({
   clearable = false,
   onClear,
   clearAriaLabel,
+  valueClassName,
+  chevronClassName,
 }: AnimatedDropdownProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -575,6 +579,7 @@ export function AnimatedDropdown({
             selectedItem
               ? 'text-[var(--color-text-primary)]'
               : 'text-[var(--color-text-secondary)]',
+            valueClassName,
           )}
         >
           {displayText}
@@ -587,7 +592,9 @@ export function AnimatedDropdown({
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             className="ml-2 flex-shrink-0"
           >
-            <ChevronDown className="h-4 w-4 text-[var(--color-text-secondary)]" />
+            <ChevronDown
+              className={cn('h-4 w-4 text-[var(--color-text-secondary)]', chevronClassName)}
+            />
           </motion.span>
         ) : null}
       </button>
