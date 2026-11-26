@@ -11,7 +11,7 @@ const COMPACT_TOOLBAR_QUERY = '(max-width: 1023px)';
 const desktopDropdownClass = 'w-full min-w-0 lg:w-auto lg:min-w-[9rem]';
 const compactDropdownClass = 'min-w-0 flex-[1_1_auto] basis-auto';
 const compactTriggerClass =
-  'h-11 min-h-11 px-2 gap-1.5 text-sm font-body border-2 border-border bg-surface hover:border-coral/60 [&>span:last-child]:ms-0 [&>span:last-child]:ml-0';
+  'h-11 min-h-11 ps-2 pe-2 gap-1.5 text-sm font-body border-2 border-border bg-surface hover:border-coral/60 [&>span:last-child]:ms-0 [&>span:last-child]:ml-0';
 const compactPlaceholderValueClass = 'text-sm shrink-0';
 const compactSelectedValueClass = 'truncate text-sm min-w-0';
 const compactChevronClass = 'h-[12px] w-[12px]';
